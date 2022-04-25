@@ -1,0 +1,77 @@
+{% extends 'supplies/base.html' %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+
+
+    <div class="allSupply">
+<h3>
+  <small class="text-muted">Заказ №: {{order.id}}</small>
+</h3>
+<h3>
+  <small class="text-muted">Для: {{order.place.name}}, {{order.place.city}}</small>
+</h3>
+{#{{#if order.comment}}#}
+{#<h4>#}
+{#  <small class="text-muted">Комментарий: {{order.comment}}</small>#}
+{#</h4>#}
+
+{% if order.isComplete %}
+        <p class="mb-2"><span>Статус:</span> <span class="complete">Отправлен</span> <span>{{order.dateSent}}</span></p>
+        {% else %}
+        <p class="mb-2"><span>Статус:</span> <span class="waiting">В ожидании</span></p>
+        {%  endif %}
+</div>
+
+    <table class="table centred mt-5">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">{{supplies|length}}</th>
+      <th scope="col" class="textAlignLeft">Название товара</th>
+        <th scope="col">REF</th>
+        <th scope="col">LOT</th>
+        <th scope="col">Кол-во ()</th>
+        <th scope="col">Назначение</th>
+        <th scope="col">Срок годности</th>
+        <th scope="col">Обновлено</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for el in supplies %}
+
+     <tr>
+      <th scope="row">{{forloop.counter}}</th>
+      <td style="text-align: left;">{{ el.supply_in_storage.name }}</td>
+      <td style="text-align: left;">
+
+          {% if el.supply_in_storage.ref is not none %}
+                        {{ el.supply_in_storage.ref }}
+                {% endif %}
+      </td>
+
+         <td class="supplyRow">
+                    {% if el.lot is not none %}
+                        {{ el.lot }}
+                {% endif %}
+                    </td>
+
+            <td>{{ el.count_in_order }}</td>
+            <td>{{ el.supply_in_storage.category.name }}</td>
+            <td>{{ el.date_expired|date:"d.m.Y" }}</td>
+            <td>{{ el.date_created|date:"d.m.Y" }}</td>
+    </tr>
+   {% endfor %}
+  </tbody>
+</table>
+
+
+</div>
+
+
+{% endblock %}
+
+

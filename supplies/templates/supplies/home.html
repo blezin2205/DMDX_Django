@@ -1,0 +1,71 @@
+{% extends 'supplies/base.html' %}
+{% load bootstrap %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+     <form method="get" class="form-inline justify-content-center">
+         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
+             <div class="hstack gap-2">
+                 {{ suppFilter.form.ordering|bootstrap }}
+                 {{ suppFilter.form.category|bootstrap }}
+                 {{ suppFilter.form.ref|bootstrap }}
+                 {{ suppFilter.form.supplyLot|bootstrap }}
+                 {{ suppFilter.form.name|bootstrap }}
+
+             </div>
+             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
+
+</div>
+        </form>
+
+    <table class="table centred mt-5">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">{{supplies|length}}</th>
+      <th scope="col" class="textAlignLeft">Назва товару</th>
+        <th scope="col">REF</th>
+        <th scope="col">LOT</th>
+        <th scope="col">Кількість</th>
+        <th scope="col">Категорія</th>
+        <th scope="col">Строк придатності</th>
+        <th scope="col">Оновлено</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for el in supplies %}
+
+     <tr>
+      <th scope="row">{{forloop.counter}}</th>
+      <td style="text-align: left;">{{ el.name }}</td>
+      <td style="text-align: left;">
+
+          {% if el.ref is not none %}
+                        {{ el.ref }}
+                {% endif %}
+      </td>
+
+         <td class="supplyRow">
+                    {% if el.supplyLot is not none %}
+                        {{ el.supplyLot }}
+                {% endif %}
+                    </td>
+
+            <td>{{ el.count }}</td>
+            <td>{{ el.category.name }}</td>
+             {% if el.date_is_good %}
+                 <td style="color:blue;">{{ el.expiredDate|date:"d.m.Y" }}</td>
+             {% elif el.date_is_today %}
+                 <td style="color:orange;">{{ el.expiredDate|date:"d.m.Y" }}</td>
+                 {% else %}
+            <td style="color:red;">{{ el.expiredDate|date:"d.m.Y" }}</td>
+             {% endif %}
+            <td>{{ el.dateCreated|date:"d.m.Y" }}</td>
+    </tr>
+   {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+
+

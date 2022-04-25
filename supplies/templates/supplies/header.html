@@ -1,0 +1,53 @@
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow p-3 mb-5 bg-white rounded" aria-label="Eighth navbar example">
+      <div class="collapse navbar-collapse" id="navbarsExample07">
+        <ul class="nav nav-pills me-auto mb-2 mb-lg-0">
+          {% if isHome %}
+        <li class="nav-item"><a href="/" class="nav-link active" aria-current="page">Склад</a></li>
+        {% else %}
+        <li class="nav-item"><a href="/" class="nav-link" aria-current="page">Склад</a></li>
+        {% endif %}
+
+
+      {% if isOrders %}
+        <li class="nav-item"><a href="/orders" class="nav-link active" aria-current="page">Замовлення</a></li>
+        {% else %}
+        <li class="nav-item"><a href="/orders" class="nav-link" aria-current="page">Замовлення</a></li>
+        {% endif %}
+
+        {% if request.user.is_staff %}
+      {% if isClients %}
+        <li class="nav-item"><a href="/clientsInfo" class="nav-link active" aria-current="page">Клієнти</a></li>
+        {% else %}
+        <li class="nav-item"><a href="/clientsInfo" class="nav-link" aria-current="page">Клієнти</a></li>
+        {% endif %}
+        {% endif %}
+
+      {% if isService %}
+        <li class="nav-item"><a href="/serviceNotes" class="nav-link active" aria-current="page">Сервісні записи</a></li>
+        {% else %}
+        <li class="nav-item"><a href="/serviceNotes" class="nav-link" aria-current="page">Сервісні записи</a></li>
+        {% endif %}
+
+
+         <li class="nav-item dropdown ms-4">
+                            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Додати</a>
+                            <div class="dropdown-menu">
+                              <a class="dropdown-item" href="{% url 'create_note' %}">Сервісну замітку</a>
+                              <a class="dropdown-item" href="#">Товар</a>
+                              <a class="dropdown-item" href="#">Клієнта</a>
+                              <div class="dropdown-divider"></div>
+                              <a class="dropdown-item" href="#">Separated link</a>
+                            </div>
+                        </li>
+
+        </ul>
+        {% if request.user %}
+            <span>&#129409; Привіт, {{ request.user.first_name }} {{ request.user.last_name }} &#129409;</span>
+            <span>
+            <a class="btn btn-outline-primary ms-3" href="{% url 'logout' %}" role="button">Вийти</a>
+            </span>
+        {% endif %}
+
+      </div>
+  </nav>

@@ -1,0 +1,80 @@
+{% extends 'supplies/base.html' %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<div class="row row-cols-2 row-cols-lg-2 g-2 g-lg-3">
+    {% for client in clients %}
+    <div class="col">
+      <div class="p-3 border bg-light rounded-3">
+      <h4>{{client.name}}, {{client.city}}.</h4>
+
+        {% if client.servicenote_set.count > 0 %}
+            <a href="{% url 'serviceNotesForClient' client.id %}" class="icon-link me-3">
+          Cервісні записи ({{ client.servicenote_set.count }})
+        </a>
+        {% endif %}
+
+            {% if client.order_set.count > 0 %}
+                <a href="{% url 'ordersForClient' client.id %}">
+          Замовлення клієнта ({{ client.order_set.count }})
+        </a>
+            {% endif %}
+
+
+      <div class="vstack">
+          {% if client.address %}
+
+      <ul class="list-inline mb-0">
+  <li class="list-inline-item"><h6><i class="bi bi-dot">Адреса:</i></h6></li>
+  <li class="list-inline-item">{{ client.address }}</li>
+</ul>
+      {% endif %}
+
+      {% if client.link %}
+          <ul class="list-inline mb-0">
+  <li class="list-inline-item"><h6>
+      <i class="bi bi-dot">Link:</i></h6></li>
+  <li class="list-inline-item">
+      <a href="{{ client.link }}" class="link-primary">{{ client.link }}</a>
+  </li>
+</ul>
+      {% endif %}
+      </div>
+
+        <p>
+{% if client.workers_set.count > 0 %}
+
+    <h6 class="my-0"><i class="bi bi-dot">Контакти:</i></h6>
+<div class="vstack p-1">
+    {% for worker in client.workers_set.all %}
+            <div class="hstack">
+            <p class="start-0 mb-0">
+
+                {{ worker.name }}
+
+                </p>
+                <div class="ms-auto me-2">
+                    {{ worker.position }}
+                </div>
+
+
+
+
+          <a href="tel:123-456-78-90">{{ worker.telNumber }}</a>
+            </div>
+        <hr class="my-1">
+        {% endfor %}
+
+</div>
+        {% endif %}
+
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% endblock %}
+
+
