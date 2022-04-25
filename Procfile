@@ -1,0 +1,1 @@
+web: gunicorn dmdx-storage.wsgi --log-file -
