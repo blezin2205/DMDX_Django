@@ -1,0 +1,70 @@
+.nav-wrapper {
+    padding: 0 5rem;
+    padding-left: 10rem;
+
+}
+
+.font-italic        { font-style: italic !important; }
+
+.waiting {
+    color:orange;
+    font-weight: 600;
+}
+
+.complete {
+    color: green;
+    font-weight: 600;
+}
+
+.listOrders {
+    padding-top: 1rem;
+}
+
+.homeList {
+    padding-top: 2rem;
+}
+
+.date {
+    font-weight: 300;
+}
+
+.table {
+    text-align: center;
+    max-height: 80%;
+    box-sizing: border-box;
+    overflow: auto;
+    }
+    .table .textAlignLeft {
+        text-align: left;
+        }
+
+.btnFilter {
+    padding-bottom: 2rem;
+}
+
+.body {
+    background-color: brown;
+}
+
+.load-more {
+    text-align: center;
+    display: none;
+}
+.container {
+    max-height: 80%;
+    box-sizing: border-box;
+    overflow: auto;
+
+}
+
+.categoriesList {
+    padding-bottom: 1rem;
+}
+
+.categoriesList a {
+    font-size:x-large;
+    font-weight: 400;
+}
+
+
+
