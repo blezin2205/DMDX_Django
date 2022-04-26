@@ -18,7 +18,7 @@ from django.http import Http404
 from .forms import *
 from django.contrib.auth.decorators import login_required
 from bootstrap_modal_forms.generic import BSModalCreateView
-
+import requests
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)

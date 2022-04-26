@@ -100,8 +100,8 @@ DATABASES = {
     }
 }
 
-db_from_env = dj_database_url.config(conn_max_age=500)
-DATABASES['default'].update(db_from_env)
+# db_from_env = dj_database_url.config(conn_max_age=500)
+# DATABASES['default'].update(db_from_env)
 
 # DATABASES = {
 #     'default': {
@@ -158,12 +158,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DATE_INPUT_FORMATS = '%d-%m-%Y'
 
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-        ),
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'supplies.backends.JWTAuthentication',
-        )
+   'DEFAULT_AUTHENTICATION_CLASSES': (
+   'rest_framework.authentication.TokenAuthentication',
+   )
 }
 
 X_FRAME_OPTIONS='SAMEORIGIN'
