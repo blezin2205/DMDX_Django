@@ -1,53 +1,159 @@
 
-<nav class="navbar navbar-expand-lg navbar-light bg-light shadow p-3 mb-5 bg-white rounded" aria-label="Eighth navbar example">
-      <div class="collapse navbar-collapse" id="navbarsExample07">
-        <ul class="nav nav-pills me-auto mb-2 mb-lg-0">
-          {% if isHome %}
-        <li class="nav-item"><a href="/" class="nav-link active" aria-current="page">Склад</a></li>
-        {% else %}
-        <li class="nav-item"><a href="/" class="nav-link" aria-current="page">Склад</a></li>
-        {% endif %}
+{#<nav class="navbar navbar-expand-md navbar-light bg-light shadow p-3 mb-5 bg-white rounded" aria-label="Eighth navbar example">#}
+{#      <div class="navbar navbar-default" id="navbarsExample07">#}
+{#        <ul class="nav nav-pills me-auto mb-2 mb-lg-0">#}
+{##}
+{##}
+{##}
+{#      {% if isOrders %}#}
+{#        <li class="nav-item"><a href="/orders" class="nav-link{% if isOrders %} active {% endif %}" aria-current="page">Замовлення</a></li>#}
+{#        {% else %}#}
+{#        <li class="nav-item"><a href="/orders" class="nav-link" aria-current="page">Замовлення</a></li>#}
+{#        {% endif %}#}
+{##}
+{#        {% if request.user.is_staff %}#}
+{#      {% if isClients %}#}
+{#        <li class="nav-item"><a href="/clientsInfo" class="nav-link{% if isClients %} active {% endif %}" aria-current="page">Клієнти</a></li>#}
+{#        {% else %}#}
+{#        <li class="nav-item"><a href="/clientsInfo" class="nav-link" aria-current="page">Клієнти</a></li>#}
+{#        {% endif %}#}
+{#        {% endif %}#}
+{##}
+{#      {% if isService %}#}
+{#        <li class="nav-item"><a href="/serviceNotes" class="nav-link{% if isService %} active {% endif %}" aria-current="page">Сервісні записи</a></li>#}
+{#        {% else %}#}
+{#        <li class="nav-item"><a href="/serviceNotes" class="nav-link" aria-current="page">Сервісні записи</a></li>#}
+{#        {% endif %}#}
+{##}
+{##}
+{#         <li class="nav-item dropdown ms-4">#}
+{#                            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Додати</a>#}
+{#                            <div class="dropdown-menu">#}
+{#                              <a class="dropdown-item" href="{% url 'create_note' %}">Сервісну замітку</a>#}
+{#                              <a class="dropdown-item" href="/add-general-supply">Товар (назва)</a>#}
+{#                              <a class="dropdown-item" href="#">Клієнта</a>#}
+{#                              <div class="dropdown-divider"></div>#}
+{#                              <a class="dropdown-item" href="#">Separated link</a>#}
+{#                            </div>#}
+{#                        </li>#}
+{##}
+{#        </ul>#}
+{#        {% if request.user %}#}
+{#            <span>&#129409; Привіт, {{ request.user.first_name }} {{ request.user.last_name }} &#129409;</span>#}
+{#            <span>#}
+{#            <a class="btn btn-outline-primary ms-3" href="{% url 'logout' %}" role="button">Вийти</a>#}
+{#            </span>#}
+{#        {% endif %}#}
+{##}
+{#      </div>#}
+{#  </nav>#}
 
 
-      {% if isOrders %}
-        <li class="nav-item"><a href="/orders" class="nav-link active" aria-current="page">Замовлення</a></li>
-        {% else %}
-        <li class="nav-item"><a href="/orders" class="nav-link" aria-current="page">Замовлення</a></li>
-        {% endif %}
+<nav class="navbar navbar-expand-md navbar-light bg-light shadow p-3 mb-5 bg-white rounded">
+    <div class="container-fluid">
+        <a class="navbar-brand abs" href="#">DMDX-Storage</a>
+        <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-collapse collapse" id="collapseNavbar">
+            <ul class="navbar-nav gap-3">
+                     <li class="nav-item"><a href="/" class="btn btn-outline-primary{% if isHome %} active {% endif %}" aria-current="page">Склад</a></li>
 
-        {% if request.user.is_staff %}
-      {% if isClients %}
-        <li class="nav-item"><a href="/clientsInfo" class="nav-link active" aria-current="page">Клієнти</a></li>
-        {% else %}
-        <li class="nav-item"><a href="/clientsInfo" class="nav-link" aria-current="page">Клієнти</a></li>
-        {% endif %}
-        {% endif %}
+                   <li class="nav-item"><a href="/orders" class="btn btn-outline-primary{% if isOrders %} active {% endif %}" aria-current="page">Замовлення</a></li>
 
-      {% if isService %}
-        <li class="nav-item"><a href="/serviceNotes" class="nav-link active" aria-current="page">Сервісні записи</a></li>
-        {% else %}
-        <li class="nav-item"><a href="/serviceNotes" class="nav-link" aria-current="page">Сервісні записи</a></li>
-        {% endif %}
+                    <li class="nav-item"><a href="/clientsInfo" class="btn btn-outline-primary{% if isClients %} active {% endif %}" aria-current="page">Клієнти</a></li>
 
+            <li class="nav-item"><a href="/serviceNotes" class="btn btn-outline-primary{% if isService %} active {% endif %}" aria-current="page">Сервісні записи</a></li>
 
-         <li class="nav-item dropdown ms-4">
+              <li class="nav-item dropdown mx-4">
                             <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Додати</a>
                             <div class="dropdown-menu">
                               <a class="dropdown-item" href="{% url 'create_note' %}">Сервісну замітку</a>
-                              <a class="dropdown-item" href="#">Товар</a>
+                              <a class="dropdown-item" href="/add-general-supply">Товар (назва)</a>
                               <a class="dropdown-item" href="#">Клієнта</a>
                               <div class="dropdown-divider"></div>
                               <a class="dropdown-item" href="#">Separated link</a>
                             </div>
                         </li>
 
-        </ul>
-        {% if request.user %}
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    {% if request.user %}
             <span>&#129409; Привіт, {{ request.user.first_name }} {{ request.user.last_name }} &#129409;</span>
             <span>
             <a class="btn btn-outline-primary ms-3" href="{% url 'logout' %}" role="button">Вийти</a>
             </span>
         {% endif %}
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
 
-      </div>
-  </nav>
+{#<nav class="navbar navbar-expand-md navbar-dark bg-primary">#}
+{#    <div class="container-fluid">#}
+{#        <a class="navbar-brand abs" href="#">Navbar 1</a>#}
+{#        <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNavbar">#}
+{#            <span class="navbar-toggler-icon"></span>#}
+{#        </button>#}
+{#        <div class="navbar-collapse collapse" id="collapseNavbar">#}
+{#            <ul class="navbar-nav">#}
+{#                <li class="nav-item active">#}
+{#                    <a class="nav-link" href="#">Link</a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link" href="//codeply.com">Codeply</a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link" href="#myAlert" data-bs-toggle="collapse">Link</a>#}
+{#                </li>#}
+{#            </ul>#}
+{#            <ul class="navbar-nav ms-auto">#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link" href="" data-bs-target="#myModal" data-bs-toggle="modal">About</a>#}
+{#                </li>#}
+{#            </ul>#}
+{#        </div>#}
+{#    </div>#}
+{#</nav>#}
+{#<!-- example 2 - using auto margins -->#}
+{#<nav class="navbar navbar-expand-md navbar-dark bg-dark">#}
+{#    <div class="container-fluid">#}
+{#        <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">#}
+{#            <ul class="navbar-nav me-auto">#}
+{#                <li class="nav-item active">#}
+{#                    <a class="nav-link" href="#">Left</a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link" href="//codeply.com">Codeply</a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link" href="#">Link</a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link" href="#">Link</a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link" href="#">Link</a>#}
+{#                </li>#}
+{#            </ul>#}
+{#        </div>#}
+{#        <div class="mx-auto order-0">#}
+{#            <a class="navbar-brand mx-auto" href="#">Navbar 2</a>#}
+{#            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".dual-collapse2">#}
+{#                <span class="navbar-toggler-icon"></span>#}
+{#            </button>#}
+{#        </div>#}
+{#        <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">#}
+{#            <ul class="navbar-nav ms-auto">#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link" href="#">Right</a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a class="nav-link" href="#">Link</a>#}
+{#                </li>#}
+{#            </ul>#}
+{#        </div>#}
+{#    </div>#}
+{#</nav>#}

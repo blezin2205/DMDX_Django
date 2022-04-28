@@ -45,11 +45,11 @@
 
      <tr>
       <th scope="row">{{forloop.counter}}</th>
-      <td style="text-align: left;">{{ el.supply_in_storage.name }}</td>
+      <td style="text-align: left;">{{ el.generalSupply.name }}</td>
       <td style="text-align: left;">
 
-          {% if el.supply_in_storage.ref is not none %}
-                        {{ el.supply_in_storage.ref }}
+          {% if el.generalSupply.ref is not none %}
+                        {{ el.generalSupply.ref }}
                 {% endif %}
       </td>
 
@@ -60,7 +60,7 @@
                     </td>
 
             <td>{{ el.count_in_order }}</td>
-            <td>{{ el.supply_in_storage.category.name }}</td>
+            <td>{{ el.generalSupply.category.name }}</td>
             <td>{{ el.date_expired|date:"d.m.Y" }}</td>
             <td>{{ el.date_created|date:"d.m.Y" }}</td>
     </tr>

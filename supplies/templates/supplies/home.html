@@ -5,13 +5,20 @@
 {% endblock %}
 
 {% block content %}
+
+    <button class="battonTest" id="battonTest" type="submit">SUBMIT</button>
+    <div class="btn-group pb-3">
+  <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+  <a href="/onlyGood" class="btn btn-primary {% if isGood %} active {% endif %}">Придатні</a>
+  <a href="/onlyExpired" class="btn btn-primary {% if isExpired %} active {% endif %}">Прострочені</a>
+</div>
+
      <form method="get" class="form-inline justify-content-center">
          <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
              <div class="hstack gap-2">
-                 {{ suppFilter.form.ordering|bootstrap }}
+{#                 {{ suppFilter.form.ordering|bootstrap }}#}
                  {{ suppFilter.form.category|bootstrap }}
                  {{ suppFilter.form.ref|bootstrap }}
-                 {{ suppFilter.form.supplyLot|bootstrap }}
                  {{ suppFilter.form.name|bootstrap }}
 
              </div>
@@ -25,12 +32,10 @@
     <tr>
       <th scope="col">{{supplies|length}}</th>
       <th scope="col" class="textAlignLeft">Назва товару</th>
-        <th scope="col">REF</th>
-        <th scope="col">LOT</th>
-        <th scope="col">Кількість</th>
         <th scope="col">Категорія</th>
-        <th scope="col">Строк придатності</th>
-        <th scope="col">Оновлено</th>
+        <th scope="col">REF</th>
+        <th scope="col">LOT / Кількість / Строк</th>
+{#        <th scope="col"></th>#}
     </tr>
   </thead>
   <tbody>
@@ -39,6 +44,7 @@
      <tr>
       <th scope="row">{{forloop.counter}}</th>
       <td style="text-align: left;">{{ el.name }}</td>
+      <td>{{ el.category.name }}</td>
       <td style="text-align: left;">
 
           {% if el.ref is not none %}
@@ -47,23 +53,80 @@
       </td>
 
          <td class="supplyRow">
-                    {% if el.supplyLot is not none %}
-                        {{ el.supplyLot }}
-                {% endif %}
+
+<table class="table table-borderless mb-0">
+  <tbody>
+   {% for supp in el.general.all %}
+    <tr>
+
+      <td style="width: 150px">{% if supp.supplyLot is not none %} {{ supp.supplyLot }} {% endif %}</td>
+      <td style="width: 50px">{{ supp.count }}</td>
+      <td style="width: 150px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.expiredDate|date:"d.m.Y" }}
+
+                            </div></td>
+
+    <td style="width: 20px"><a href="{% url 'updateSupply' supp.id %}"><i class="bi mx-3 bi-pencil"></i></a></td>
+    <td style="width: 20px">
+        <button data-product={{ supp.id }} data-action="add" class="btn btn-sm add-btn update-cart"><i class="bi bi-cart-plus"></i></button>
+    </td>
+
+    <td style="width: 20px">
+        <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm add-btn delete-supp-button"><i class="bi bi-trash"></i></button>
+    </td>
+
+    </tr>
+     {% endfor %}
+  </tbody>
+</table>
+
                     </td>
 
-            <td>{{ el.count }}</td>
-            <td>{{ el.category.name }}</td>
-             {% if el.date_is_good %}
-                 <td style="color:blue;">{{ el.expiredDate|date:"d.m.Y" }}</td>
-             {% elif el.date_is_today %}
-                 <td style="color:orange;">{{ el.expiredDate|date:"d.m.Y" }}</td>
-                 {% else %}
-            <td style="color:red;">{{ el.expiredDate|date:"d.m.Y" }}</td>
-             {% endif %}
-            <td>{{ el.dateCreated|date:"d.m.Y" }}</td>
+
+{##}
+{#                 <td style="text-align: end">#}
+{##}
+{#                     <div class="vstack gap-1">#}
+{#                         {% for supp in el.general.all %}#}
+{#                                 <div class="hstack gap-2 justify-content-end">#}
+{#                                 <div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.expiredDate|date:"d.m.Y" }}#}
+{##}
+{#                            </div>#}
+{#                                  #}
+{#                                 <form action="{% if isAll %} {% url 'home' %} {% elif isGood %} {% url 'onlyGood' %} {% else %}  {% url 'onlyExpired' %} {% endif %}"#}
+{#    method="POST" style="display: inline;" onsubmit="window.mytest()">#}
+{#    {% csrf_token %}#}
+{#    <input type="hidden" name="supp_id"#}
+{#        value="{{ el.id }}" />#}
+{##}
+{#</form>#}
+{##}
+{#                                     #}
+{##}
+{#                                 </div>#}
+{##}
+{#                         {% endfor %}#}
+{#                        </div>#}
+{#                 </td>#}
+
+            <td>
+                <a href="{% url 'addNewLot' el.id %}"><i class="bi bi-plus"></i> LOT</a>
+
+            <form action="{% if isAll %} {% url 'home' %} {% elif isGood %} {% url 'onlyGood' %} {% else %}  {% url 'onlyExpired' %} {% endif %}"
+    method="POST" style="display: inline;" onsubmit="window.mytest()">
+    {% csrf_token %}
+    <input type="hidden" name="supp_id"
+        value="{{ el.id }}" />
+    <button type="submit" class="btn btn-sm btn-danger ms-2">
+        <i class="bi bi-trash"></i>
+    </button>
+</form>
+<script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
+            </td>
+
+
+     {% endfor %}
     </tr>
-   {% endfor %}
+
   </tbody>
 </table>
 {% endblock %}

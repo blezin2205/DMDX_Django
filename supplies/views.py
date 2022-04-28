@@ -18,12 +18,54 @@ from django.http import Http404
 from .forms import *
 from django.contrib.auth.decorators import login_required
 from bootstrap_modal_forms.generic import BSModalCreateView
-import requests
+from django.http import JsonResponse
+import json
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
+
+def deleteSupply(request):
+    data = json.loads(request.body)
+    prodId = data['productId']
+    action = data['action']
+
+    if action == 'delete':
+      supp = Supply.objects.get(id=prodId)
+      supp.delete()
+    return JsonResponse('Item was added', safe=False)
+
+
+def updateItem(request):
+    data = json.loads(request.body)
+    prodId = data['productId']
+    action = data['action']
+
+    print('Action', action)
+    print('id', prodId)
+
+    user = request.user
+    supply = Supply.objects.get(id=prodId)
+    order, created = Order.objects.get_or_create(userCreated=user, isComplete=False)
+    orderItem, created = SupplyInOrder.objects.get_or_create(count_in_order=0,
+                                                             general_supply=supply.general_supply,
+                                                             supply_for_order=order,
+                                                             lot=supply.supplyLot,
+                                                             date_expired=supply.expiredDate,
+                                                             date_created=supply.dateCreated)
+    if action == 'add':
+        orderItem.count_in_order = (orderItem.count_in_order + 1)
+    elif action == 'remove':
+        orderItem.count_in_order = (orderItem.count_in_order - 1)
+
+    orderItem.save()
+
+    if orderItem.count_in_order <= 0:
+        orderItem.delete()
+
+
+    return  JsonResponse('Item was added', safe=False)
 
 def registerPage(request):
     if request.user.is_authenticated:
@@ -58,36 +100,59 @@ def logoutUser(request):
 
 @login_required(login_url='login')
 def home(request):
-    # supplies = []
-    # docs = db.collection(u'supplies').stream()
-    # for index, doc in enumerate(docs):
-    #     name = doc.to_dict()['name']
-    #     device = doc.to_dict()['device']
-    #     supply_lot = doc.to_dict()['supplyLot']
-    #     count = doc.to_dict()['count']
-    #     date_created = doc.to_dict()['dateCreated']
-    #     expired_date = doc.to_dict()['expiredDate']
-    #
-    #     try:
-    #         cat = Category.objects.get(name=device)
-    #     except Category.DoesNotExist:
-    #         cat = None
-    #     if not supply_lot:
-    #      supply_lot = None
-    #
-    #     if count < 0:
-    #        count = 0
-    #
-    #     supp = Supply(firebase_id=doc.id, name=name, category=cat, supplyLot=supply_lot, count=count, dateCreated=date_created, expiredDate=expired_date)
-    #     supp.save()
+
+    if request.user.is_staff:
+        supplies = GeneralSupply.objects.all().order_by('name')
 
 
-    supplies = Supply.objects.exclude(count__exact=0).order_by('name')
+    else:
+        supplies = GeneralSupply.objects.all().exclude(general__count__exact=0).order_by('name')
+
 
     suppFilter = SupplyFilter(request.GET, queryset=supplies)
     supplies = suppFilter.qs
 
+    if request.method == 'POST':
+        supp = supplies.get(id=request.POST.get('supp_id'))
+        supp.delete()
+
     return render(request, 'supplies/home.html', {'title': 'Всі товари', 'supplies': supplies,'suppFilter': suppFilter, 'isHome': True, 'isAll': True})
+
+
+
+@login_required(login_url='login')
+def onlyGood(request):
+    supplies = GeneralSupply.objects.prefetch_related(
+        Prefetch('general', queryset=Supply.objects.filter(expiredDate__gte=timezone.now().date()).exclude(count__exact=0)))
+    retSupp = supplies.distinct().filter(general__expiredDate__gte=timezone.now().date()).exclude(general__count__exact=0).order_by('name')
+
+    suppFilter = SupplyFilter(request.GET, queryset=retSupp)
+    retSupp = suppFilter.qs
+
+    if request.method == 'POST':
+        supp = supplies.get(id=request.POST.get('supp_id'))
+        supp.delete()
+
+    return render(request, 'supplies/home.html',
+                  {'title': 'Всі товари', 'supplies': retSupp, 'suppFilter': suppFilter, 'isHome': True, 'isGood': True})
+
+
+@login_required(login_url='login')
+def onlyExpired(request):
+    supplies = GeneralSupply.objects.prefetch_related(
+        Prefetch('general', queryset=Supply.objects.filter(expiredDate__lt=timezone.now().date()).exclude(count__exact=0)))
+    retSupp = supplies.distinct().filter(general__expiredDate__lt=timezone.now().date()).exclude(general__count__exact=0).order_by('name')
+
+    suppFilter = SupplyFilter(request.GET, queryset=retSupp)
+    retSupp = suppFilter.qs
+
+    if request.method == 'POST':
+        supp = supplies.get(id=request.POST.get('supp_id'))
+        supp.delete()
+
+    return render(request, 'supplies/home.html',
+                  {'title': 'Всі товари', 'supplies': retSupp, 'suppFilter': suppFilter, 'isHome': True, 'isExpired': True})
+
 
 
 @login_required(login_url='login')
@@ -157,6 +222,59 @@ def updateNote(request, note_id):
                     'isService': True})
 
 
+def updateSupply(request, supp_id):
+    note = Supply.objects.get(id=supp_id)
+    form = SupplyForm(instance=note)
+    if request.method == 'POST':
+        form = SupplyForm(request.POST, instance=note)
+        if form.is_valid():
+            # obj = form.save(commit=False)
+            # obj.from_user = User.objects.get(pk=request.user.id)
+            form.save()
+            return redirect('/')
+
+    return render(request, 'supplies/createSupply.html',
+                  {'title': f'Редагувати запис №{supp_id}', 'form': form})
+
+
+def addNewLotforSupply(request, supp_id):
+    generalSupp = GeneralSupply.objects.get(id=supp_id)
+    form = SupplyForm()
+    if request.method == 'POST':
+        form = SupplyForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.general_supply = generalSupp
+            obj.category = generalSupp.category
+            obj.save()
+            return redirect('/')
+
+    return render(request, 'supplies/createSupply.html',
+                  {'title': f'Додати новий LOT для {generalSupp.name}', 'form': form})
+
+
+
+def addgeneralSupply(request):
+    form = NewSupplyForm()
+    if request.method == 'POST':
+        form = NewSupplyForm(request.POST)
+        if form.is_valid():
+            try:
+                genSupp = GeneralSupply.objects.get(name=form.cleaned_data['name'])
+            except:
+                genSupp = GeneralSupply(name=form.cleaned_data['name'], ref=form.cleaned_data['ref'], category=form.cleaned_data['category'])
+            genSupp.save()
+            obj = form.save(commit=False)
+            obj.general_supply = genSupp
+            obj.save()
+            # form.save()
+            return redirect('/')
+
+    return render(request, 'supplies/createSupply.html',
+                  {'title': f'Додати новий товар (назву)', 'form': form})
+
+
+
 def deleteServiceNote(request, note_id):
     note = ServiceNote.objects.get(id=note_id)
     if request.method == 'POST':
@@ -169,7 +287,7 @@ def deleteServiceNote(request, note_id):
 @login_required(login_url='login')
 def orderDetail(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
-    supplies_in_order = order.supplies.all()
+    supplies_in_order = order.supplyinorder_set.all()
 
     print(supplies_in_order.first())
     return render(request, 'supplies/orderDetail.html', {'title': f'Замовлення № {order_id}', 'order': order, 'supplies': supplies_in_order, 'isOrders': True})

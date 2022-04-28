@@ -3,6 +3,19 @@ from . import views
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('onlyGood', views.onlyGood, name='onlyGood'),
+    path('onlyExpired', views.onlyExpired, name='onlyExpired'),
+
+    path('update_item/', views.updateItem, name='update_item'),
+    path('delete_supply/', views.deleteSupply, name='delete_supply'),
+
+
+
+
+    path('add-general-supply', views.addgeneralSupply, name='addGeneralSupply'),
+    path('newLot/<int:supp_id>', views.addNewLotforSupply, name='addNewLot'),
+
+    path('update/<int:supp_id>', views.updateSupply, name='updateSupply'),
 
     # path('auth', views.registerPage, name='auth'),
     path('login', views.loginPage, name='login'),

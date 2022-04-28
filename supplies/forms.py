@@ -6,10 +6,10 @@ from django.contrib.auth.models import User
 from bootstrap_modal_forms.forms import BSModalModelForm
 
 
-# class SupplyForm(ModelForm):
-#     class Meta:
-#         model = Supply
-#         fields = ["name", "supplyId", "device", "supplyLot", "count", "dateCreated", "expiredDate"]
+class GeneralSupplyForm(ModelForm):
+    class Meta:
+        model = GeneralSupply
+        fields = '__all__'
 
 
 class CreateUserForm(UserCreationForm):
@@ -33,3 +33,15 @@ class ServiceNoteForm(ModelForm):
         super(ServiceNoteForm, self).__init__(*args, **kwargs)
         self.fields['description'].label = "Опис виконаних робіт"
         self.fields['for_place'].label = "Клієнт"
+
+
+class SupplyForm(ModelForm):
+    class Meta:
+        model = Supply
+        fields = ['supplyLot', 'count', 'expiredDate']
+
+
+class NewSupplyForm(ModelForm):
+    class Meta:
+        model = Supply
+        fields = ['supplyLot', 'count', 'expiredDate', 'name', 'ref', 'category']

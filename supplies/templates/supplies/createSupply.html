@@ -1,0 +1,16 @@
+{% extends 'supplies/base.html' %}
+{% load static %}
+{% load bootstrap %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<form method="post" action="">
+  {% csrf_token %}
+
+{{ form|bootstrap }}
+
+<button class="btn btn-outline-primary my-5" type="submit">Зберегти</button>
+</form>
+{% endblock %}

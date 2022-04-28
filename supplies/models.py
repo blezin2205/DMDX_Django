@@ -23,9 +23,25 @@ class Category(models.Model):
         verbose_name_plural = 'Категорії'
 
 
+class GeneralSupply(models.Model):
+    name = models.CharField(max_length=50, null=True)
+    ref = models.CharField(max_length=20, null=True, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Товар (назва)'
+        verbose_name_plural = 'Товари (назва)'
+
+
+
 class Supply(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=50)
+    firebase_id = models.CharField(max_length=50, null=True, blank=True)
+    name = models.CharField(max_length=50, null=True, blank=True)
+    general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True, related_name='general')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     ref = models.CharField(max_length=20, null=True, blank=True)
     supplyLot = models.CharField(max_length=20, null=True, blank=True)
@@ -44,7 +60,7 @@ class Supply(models.Model):
         return self.expiredDate == timezone.now().date()
 
     def __str__(self):
-        return self.name
+        return self.firebase_id
 
     class Meta:
         verbose_name = 'Товар'
@@ -95,6 +111,7 @@ class ServiceNote(models.Model):
 
 
 class Order(models.Model):
+    userCreated = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     place = models.ForeignKey(Place, on_delete=models.SET_NULL, null=True)
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)
@@ -102,7 +119,7 @@ class Order(models.Model):
     comment = models.CharField(max_length=300, null=True, blank=True)
 
     def __str__(self):
-        return f'Заказ № {self.id}, для {self.place.name}, {self.place.city} от {self.dateSent}'
+        return f'Заказ № {self.id}, для {self.place.name}, от {self.dateSent}'
 
     class Meta:
         verbose_name = 'Замовлення'
@@ -110,26 +127,18 @@ class Order(models.Model):
 
 
 class SupplyInOrder(models.Model):
-    id = models.AutoField(primary_key=True)
     count_in_order = models.PositiveIntegerField(null=True, blank=True)
-    supply_in_storage = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True)
-    supply_for = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, related_name='supplies')
+    generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.SET_NULL, null=True, blank=True, related_name='inGeneralSupp')
+    supply_for_order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True)
     lot = models.CharField(max_length=20, null=True, blank=True)
     date_expired = models.DateField(null=True)
-    date_created = models.DateField(null=True)
+    date_created = models.DateField(null=True, blank=True)
 
     def __str__(self):
-        suppName = 'Unknown Supply'
-        if self.supply_in_storage:
-            suppName = self.supply_in_storage.name
-
-        return f'Товар: {suppName} | Для заказа №{self.supply_for.id}: {self.supply_for.place.name}, {self.supply_for.place.city} от {self.date_created.strftime("%d/%m/%y")}'
+        return f'Товар: для замовлення: | '
 
     class Meta:
         verbose_name = 'Товар в замовленні'
         verbose_name_plural = 'Товари в замовленнях'
-
-
-
 
 
