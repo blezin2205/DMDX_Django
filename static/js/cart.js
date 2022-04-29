@@ -7,7 +7,9 @@ for(var a = 0; a < deleteBtns.length; a++) {
     deleteBtns[a].addEventListener('click', function () {
         var productId = this.dataset.product
         var action = this.dataset.action
-        deleteSupply(productId, action)
+
+        var url = 'delete_supply/'
+        senadAction(productId, action)
 
     })
 }
@@ -22,45 +24,19 @@ for(var i = 0; i < updateBtns.length; i++) {
         var productId = this.dataset.product
         var action = this.dataset.action
         console.log('id:', productId, 'action:', action)
+         var url = 'update_item/'
 
         console.log('USER:', user)
         if (user === 'AnonymousUser') {
             console.log('Not logged in')
         } else {
-            updateUserOrder(productId, action)
+            senadAction(productId, action, url)
         }
     })
 }
 
 
-function deleteSupply(productId, action) {
-
-    var url = 'delete_supply/'
-
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken,
-        },
-        body: JSON.stringify({'productId': productId, 'action': action})
-    })
-
-     .then((response) =>{
-            return response.json()
-        })
-
-    .then((data) => {
-        console.log('data:', data)
-        location.reload()
-        })
-}
-
-
-function updateUserOrder(productId, action) {
-
-    var url = 'update_item/'
-
+function senadAction(productId, action, url) {
     fetch(url, {
         method: 'POST',
         headers: {
