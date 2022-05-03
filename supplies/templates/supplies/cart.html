@@ -1,0 +1,73 @@
+{% extends 'supplies/base.html' %}
+{% load bootstrap %}
+{% load mathfilters %}
+
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<form method="POST" action="">
+
+<section class="h-100" style="background-color: #eee;">
+  <div class="container h-100 py-3">
+    <div class="row d-flex justify-content-center align-items-center h-100">
+      <div class="col-10">
+          {% for item in supplies %}
+        <div class="card rounded-5 mb-4">
+          <div class="card-body px-4">
+            <div class="row d-flex justify-content-between align-items-center">
+              <div class="col-md-3 col-lg-3 col-xl-3">
+               {{ item.supply.general_supply.name }}
+                  {% if item.supply.general_supply.ref %}
+                      <p><span class="text-muted">REF: {{ item.supply.general_supply.ref }}</span></p>
+                  {% endif %}
+
+              </div>
+              <div class="col-md-3 col-lg-3 col-xl-2 d-flex">
+                  <div class="vstack">
+                      <label for="form1">Доступно: {{ item.supply.count|sub:item.supply.countOnHold }}</label>
+                <input id="form1" min="0" name="count_list" value="{{ item.count_in_order }}" type="number"
+                  class="form-control form-control-sm" />
+                  <input type="hidden" name="count_list_id" value="{{ item.id }}">
+                  </div>
+
+              </div>
+
+
+
+
+
+
+
+
+              <div class="col-md-2 col-lg-2 col-xl-2 offset-lg-1">
+                  {% if item.lot %}
+                      <span class="text-muted"> LOT:</span> <span>{{ item.lot }}</span>
+                  {% endif %}
+
+                  <p><span class="text-muted"> Строк:</span> <span>{{ item.date_expired|date:"d.m.Y" }}</span> </p>
+              </div>
+              <div class="col-md-1 col-lg-1 col-xl-1 text-end">
+                  <button data-product="{{ item.id }}" data-action="delete" class="btn btn-lg add-btn update-cart-detail text-danger" type="submit"><i class="bi bi-trash"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+          {% endfor %}
+
+
+  {% csrf_token %}
+        <div class="card">
+          <div class="card-body">
+            {{ orderForm|bootstrap }}
+          </div>
+        </div>
+     <button class="btn btn-outline-primary my-2" type="submit">Зберегти</button>
+
+      </div>
+    </div>
+  </div>
+</section>
+ </form>
+{% endblock %}

@@ -6,10 +6,18 @@ from django.utils import timezone
 from django.db.models import Max, Q
 
 
+class ChildSupplyFilter(django_filters.FilterSet):
+    name = CharFilter(field_name='general_supply__name', lookup_expr='icontains', label='Назва товару')
+    ref = CharFilter(field_name='general_supply__ref', lookup_expr='icontains', label='REF')
+    class Meta:
+        model = Supply
+        fields = ['category', 'ref', 'supplyLot', 'id' , 'name']
+
+
 class SupplyFilter(django_filters.FilterSet):
 
     CHOICES = (
-        ('dateCreated', 'По даті оновлення'), ('', '')
+        ('onlyExistChild', 'В наявності'), ('onlyNotExistChild', 'Немає в наявності')
     )
     name = CharFilter(field_name='name', lookup_expr='icontains', label='Назва товару')
     ref = CharFilter(field_name='ref', lookup_expr='icontains', label='REF')
@@ -18,7 +26,7 @@ class SupplyFilter(django_filters.FilterSet):
 
     class Meta:
         model = GeneralSupply
-        fields = ['name', 'category', 'ref']
+        fields = ['name', 'category', 'ref', 'ordering', 'id']
 
     def __init__(self, *args, **kwargs):
         super(SupplyFilter, self).__init__(*args, **kwargs)
@@ -26,21 +34,15 @@ class SupplyFilter(django_filters.FilterSet):
             {'empty_label': 'A-Z'})
         self.filters['category'].extra.update(
             {'empty_label': 'Всі'})
+        self.filters['category'].label = "Категорія"
 
 
     def filter_by_order(self, queryset, name, value):
 
-        if value == 'dateCreated':
-            return  queryset.annotate(max_date=Max('general__dateCreated')).order_by('-max_date')
-        # elif value =='dateGood':
-        #     # suppies = GeneralSupply.objects.prefetch_related(
-        #     #     Prefetch('general', queryset=Supply.objects.filter(expiredDate__gte=timezone.now().date())))
-        #     retSupp = queryset.annotate(date_expred=Q('general__expiredDate')).filter(date_expred__gte=timezone.now().date())
-        #     return retSupp.order_by('name')
-        # elif value =='dateExpired':
-        #     suppies = GeneralSupply.objects.prefetch_related(Prefetch('general', queryset=Supply.objects.filter(expiredDate__lt=timezone.now().date())))
-        #     retSupp = suppies.distinct().filter(general__expiredDate__lt=timezone.now().date())
-        #     return retSupp.order_by('name')
+        if value == 'onlyExistChild':
+            return  queryset.filter(general__isnull=False).distinct()
+        elif value =='onlyNotExistChild':
+            return queryset.filter(general__isnull=True).distinct()
 
 
 class ServiceNotesFilter(django_filters.FilterSet):

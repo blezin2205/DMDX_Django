@@ -11,6 +11,17 @@ class GeneralSupplyForm(ModelForm):
         model = GeneralSupply
         fields = '__all__'
 
+class ClientForm(ModelForm):
+    class Meta:
+        model = Place
+        fields = '__all__'
+
+
+class WorkerForm(ModelForm):
+    class Meta:
+        model = Workers
+        exclude = ['for_place']
+
 
 class CreateUserForm(UserCreationForm):
     class Meta:
@@ -45,3 +56,8 @@ class NewSupplyForm(ModelForm):
     class Meta:
         model = Supply
         fields = ['supplyLot', 'count', 'expiredDate', 'name', 'ref', 'category']
+
+class OrderInCartForm(ModelForm):
+    class Meta:
+        model = OrderInCart
+        fields = ['place', 'comment', 'isComplete']

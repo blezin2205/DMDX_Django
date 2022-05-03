@@ -5,10 +5,8 @@
 {% endblock %}
 
 {% block content %}
-
-    <button class="battonTest" id="battonTest" type="submit">SUBMIT</button>
     <div class="btn-group pb-3">
-  <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+  <a href="/" class="btn btn-primary mx-2 {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
   <a href="/onlyGood" class="btn btn-primary {% if isGood %} active {% endif %}">Придатні</a>
   <a href="/onlyExpired" class="btn btn-primary {% if isExpired %} active {% endif %}">Прострочені</a>
 </div>
@@ -16,7 +14,8 @@
      <form method="get" class="form-inline justify-content-center">
          <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
              <div class="hstack gap-2">
-{#                 {{ suppFilter.form.ordering|bootstrap }}#}
+                 {{ suppFilter.form.id|bootstrap }}
+                 {{ suppFilter.form.ordering|bootstrap }}
                  {{ suppFilter.form.category|bootstrap }}
                  {{ suppFilter.form.ref|bootstrap }}
                  {{ suppFilter.form.name|bootstrap }}
@@ -30,11 +29,11 @@
     <table class="table centred mt-5">
   <thead class="thead-dark">
     <tr>
-      <th scope="col">{{supplies|length}}</th>
+      <th scope="col">ID/({{supplies|length}})</th>
       <th scope="col" class="textAlignLeft">Назва товару</th>
         <th scope="col">Категорія</th>
         <th scope="col">REF</th>
-        <th scope="col">LOT / Кількість / Строк</th>
+        <th scope="col">LOT / Кількість / Строк придатності</th>
 {#        <th scope="col"></th>#}
     </tr>
   </thead>
@@ -42,7 +41,7 @@
     {% for el in supplies %}
 
      <tr>
-      <th scope="row">{{forloop.counter}}</th>
+      <th scope="row">{{el.id}}</th>
       <td style="text-align: left;">{{ el.name }}</td>
       <td>{{ el.category.name }}</td>
       <td style="text-align: left;">
@@ -59,19 +58,30 @@
    {% for supp in el.general.all %}
     <tr>
 
-      <td style="width: 150px">{% if supp.supplyLot is not none %} {{ supp.supplyLot }} {% endif %}</td>
-      <td style="width: 50px">{{ supp.count }}</td>
-      <td style="width: 150px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.expiredDate|date:"d.m.Y" }}
+      <td class="p-0" style="width: 150px">{% if supp.supplyLot is not none %} {{ supp.supplyLot }} {% endif %}</td>
+      <td class="p-0"><p><span style="width: 50px">{{ supp.count }}</span>  {% if supp.countOnHold %}  <span style="width: 50px; background-color: orange" class="px-2 rounded-2">{{ supp.countOnHold }}</span> {% endif %} </p> </td>
+      <td class="p-0" style="width: 150px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.expiredDate|date:"d.m.Y" }}
 
                             </div></td>
 
-    <td style="width: 20px"><a href="{% url 'updateSupply' supp.id %}"><i class="bi mx-3 bi-pencil"></i></a></td>
-    <td style="width: 20px">
-        <button data-product={{ supp.id }} data-action="add" class="btn btn-sm add-btn update-cart"><i class="bi bi-cart-plus"></i></button>
+
+    <td class="p-0" style="width: 20px"><a href="{% url 'updateSupply' supp.id %}" class="btn btn-sm btn-warning" role="button"><i class="bi bi-pencil"></i></a>
+
+    </td>
+    <td class="p-0" style="width: 20px">
+        <div class="px-2">
+            {% if not supp.isInCart %}
+                <button data-product={{ supp.id }} data-action="add" class="btn btn-sm btn-primary add-btn update-cart" type="submit"><i class="bi bi-cart-plus"></i></button>
+            {% else %}
+                <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
+            {% endif %}
+
+        </div>
+
     </td>
 
-    <td style="width: 20px">
-        <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm add-btn delete-supp-button"><i class="bi bi-trash"></i></button>
+    <td class="p-0" style="width: 20px">
+        <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-supp-button"><i class="bi bi-trash"></i></button>
     </td>
 
     </tr>
@@ -120,6 +130,7 @@
         <i class="bi bi-trash"></i>
     </button>
 </form>
+            <a href="{% url 'updateGeneralSupply' el.id %}" class="btn btn-sm btn-warning" role="button"><i class="bi bi-pencil"></i></a>
 <script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
             </td>
 

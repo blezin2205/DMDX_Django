@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'django_filters',
     'bootstrapform',
     'bootstrap_modal_forms',
+    'mathfilters'
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,73 @@
+{% extends 'supplies/base.html' %}
+{% load bootstrap %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+
+     <div class="btn-group pb-3">
+  <a href="/" class="btn btn-primary mx-2 {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+  <a href="/onlyGood" class="btn btn-primary {% if isGood %} active {% endif %}">Придатні</a>
+  <a href="/onlyExpired" class="btn btn-primary {% if isExpired %} active {% endif %}">Прострочені</a>
+</div>
+
+    <form method="get" class="form-inline justify-content-center">
+         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
+             <div class="hstack gap-2">
+                 {{ suppFilter.form.id|bootstrap }}
+                 {{ suppFilter.form.supplyLot|bootstrap }}
+                 {{ suppFilter.form.category|bootstrap }}
+                 {{ suppFilter.form.ref|bootstrap }}
+                 {{ suppFilter.form.name|bootstrap }}
+
+             </div>
+             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
+
+</div>
+        </form>
+
+        <table class="table centred mt-5">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">{{supplies|length}}</th>
+      <th scope="col" class="textAlignLeft">Название товара</th>
+        <th scope="col">REF</th>
+        <th scope="col">LOT</th>
+        <th scope="col">Кол-во ()</th>
+        <th scope="col">Назначение</th>
+        <th scope="col">Срок годности</th>
+        <th scope="col">Обновлено</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for el in supplies %}
+
+     <tr>
+      <th scope="row">{{el.id}}</th>
+      <td style="text-align: left;">{{ el.general_supply.name }}</td>
+      <td style="text-align: left;">
+
+          {% if el.general_supply.ref is not none %}
+                        {{ el.general_supply.ref }}
+                {% endif %}
+      </td>
+
+         <td class="supplyRow">
+                    {% if el.supplyLot is not none %}
+                        {{ el.supplyLot }}
+                {% endif %}
+                    </td>
+
+            <td>{{ el.count }}</td>
+            <td>{{ el.general_supply.category.name }}</td>
+            <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.expiredDate|date:"d.m.Y" }}
+
+                            </div></td>
+            <td>{{ el.dateCreated|date:"d.m.Y" }}</td>
+    </tr>
+   {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

@@ -10,21 +10,23 @@
 
     <div class="allSupply">
 <h3>
-  <small class="text-muted">Заказ №: {{order.id}}</small>
-</h3>
-<h3>
   <small class="text-muted">Для: {{order.place.name}}, {{order.place.city}}</small>
 </h3>
-{#{{#if order.comment}}#}
-{#<h4>#}
-{#  <small class="text-muted">Комментарий: {{order.comment}}</small>#}
-{#</h4>#}
-
+{% if order.comment %}
+<h4>
+  <small class="text-muted">Комментарий: {{order.comment}}</small>
+</h4>
+{% endif %}
+<h5>
+  <small class="text-muted">Cтворив: {{order.userCreated.last_name}}</small>
+</h5>
 {% if order.isComplete %}
-        <p class="mb-2"><span>Статус:</span> <span class="complete">Отправлен</span> <span>{{order.dateSent}}</span></p>
+        <p class="mb-2"><span>Статус:</span> <span class="complete">Отправлен</span> <span>{{order.dateSent|date:"d.m.Y" }}</span></p>
         {% else %}
         <p class="mb-2"><span>Статус:</span> <span class="waiting">В ожидании</span></p>
         {%  endif %}
+
+
 </div>
 
     <table class="table centred mt-5">

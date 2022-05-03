@@ -6,7 +6,9 @@
 {% block content %}
     {% for order in orders %}
 <div class="listOrders">
-      <a href="{% url 'orderDetail' order.id %}" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" style="border-radius: 1rem;">
+<div class="hstack gap-3">
+
+ <a href="{% url 'orderDetail' order.id %}" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" style="border-radius: 1rem;">
     <div class="d-flex gap-2 w-100 justify-content-between">
       <div>
         <h6 class="mb-1">Заказ №: {{order.id}}</h6>
@@ -18,9 +20,9 @@
         <p class="mb-2"><span>Статус:</span> <span class="waiting">В очікуванні</span></p>
         {% endif %}
 
-{#        {%  %}#}
-{#        <p class="mb-0">Комментарий: {{comment}}</p>#}
-{#        {{/if}}#}
+        {% if order.comment %}
+            <p class="mb-0"> <span class="text-muted">Комментарiй:</span> {{order.comment}}</p>
+        {% endif %}
 
       </div>
       <div>
@@ -32,6 +34,15 @@
 
     </div>
   </a>
+
+{% if not order.isComplete %}
+<button data-product="{{ order.id }}" data-action="update" class="btn btn-primary btn-lg add-btn update-order-status" type="submit"><i class="bi bi-send"></i></button>
+{% endif %}
+    <form action="" onsubmit="window.mytest()">
+        <button data-product="{{ order.id }}" data-action="delete" class="btn btn-danger btn-lg add-btn update-order-status" type="submit""><i class="bi bi-trash"></i></button>
+    </form>
   </div>
+        </div>
     {% endfor %}
+<script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
 {% endblock %}

@@ -11,7 +11,7 @@ from rest_framework import renderers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from datetime import datetime
+from django.utils import timezone
 from .filters import *
 from django.urls import reverse_lazy
 from django.http import Http404
@@ -20,6 +20,7 @@ from django.contrib.auth.decorators import login_required
 from bootstrap_modal_forms.generic import BSModalCreateView
 from django.http import JsonResponse
 import json
+from django.forms import formset_factory, modelformset_factory, inlineformset_factory
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
@@ -47,25 +48,61 @@ def updateItem(request):
 
     user = request.user
     supply = Supply.objects.get(id=prodId)
-    order, created = Order.objects.get_or_create(userCreated=user, isComplete=False)
-    orderItem, created = SupplyInOrder.objects.get_or_create(count_in_order=0,
-                                                             general_supply=supply.general_supply,
-                                                             supply_for_order=order,
-                                                             lot=supply.supplyLot,
-                                                             date_expired=supply.expiredDate,
-                                                             date_created=supply.dateCreated)
+    order, created = OrderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+
+    try:
+      suppInCart = SupplyInOrderInCart.objects.get(supply=supply, supply_for_order=order, lot=supply.supplyLot, date_expired=supply.expiredDate)
+    except:
+      suppInCart = SupplyInOrderInCart(
+                                        supply=supply,
+                                        supply_for_order=order,
+                                        lot=supply.supplyLot,
+                                        date_expired=supply.expiredDate,
+                                        date_created=supply.dateCreated)
+
     if action == 'add':
-        orderItem.count_in_order = (orderItem.count_in_order + 1)
+        suppInCart.count_in_order = (suppInCart.count_in_order + 1)
     elif action == 'remove':
-        orderItem.count_in_order = (orderItem.count_in_order - 1)
+        suppInCart.count_in_order = (suppInCart.count_in_order - 1)
 
-    orderItem.save()
+    suppInCart.save()
 
-    if orderItem.count_in_order <= 0:
-        orderItem.delete()
+    if suppInCart.count_in_order <= 0:
+        suppInCart.delete()
 
 
     return  JsonResponse('Item was added', safe=False)
+
+
+def updateCartItem(request):
+    data = json.loads(request.body)
+    prodId = data['productId']
+    action = data['action']
+
+    print('Action', action)
+    print('id', prodId)
+
+    user = request.user
+    suppInCart = SupplyInOrderInCart.objects.get(id=prodId)
+    order, created = OrderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+
+    if action == 'add':
+        suppInCart.count_in_order = (suppInCart.count_in_order + 1)
+        suppInCart.save()
+    elif action == 'remove':
+        suppInCart.count_in_order = (suppInCart.count_in_order - 1)
+        suppInCart.save()
+    elif action == 'delete':
+        suppInCart.delete()
+        if SupplyInOrderInCart.objects.all().count() == 0:
+            redirect('/')
+
+    if suppInCart.count_in_order <= 0:
+        suppInCart.delete()
+
+
+    return  JsonResponse('Item was added', safe=False)
+
 
 def registerPage(request):
     if request.user.is_authenticated:
@@ -101,64 +138,163 @@ def logoutUser(request):
 @login_required(login_url='login')
 def home(request):
 
-    if request.user.is_staff:
-        supplies = GeneralSupply.objects.all().order_by('name')
-
-
-    else:
-        supplies = GeneralSupply.objects.all().exclude(general__count__exact=0).order_by('name')
+    supplies = GeneralSupply.objects.all().order_by('name')
+    #
+    # for gen in supplies:
+    #    for sup in gen.general.all():
+    #        sup.name = gen.name
+    #        sup.ref = gen.ref
+    #        sup.save(update_fields=['name', 'ref'])
 
 
     suppFilter = SupplyFilter(request.GET, queryset=supplies)
     supplies = suppFilter.qs
 
+    try:
+        orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
+        cart_items = orderInCart.get_cart_items
+    except:
+        orderInCart = None
+        cart_items = 0
+
     if request.method == 'POST':
         supp = supplies.get(id=request.POST.get('supp_id'))
         supp.delete()
 
-    return render(request, 'supplies/home.html', {'title': 'Всі товари', 'supplies': supplies,'suppFilter': suppFilter, 'isHome': True, 'isAll': True})
+
+    return render(request, 'supplies/home.html', {'title': 'Всі товари', 'cart_items': cart_items, 'supplies': supplies,'suppFilter': suppFilter, 'isHome': True, 'isAll': True})
+
+
+@login_required(login_url='login')
+def cartDetail(request):
+
+    orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
+    cart_items = orderInCart.get_cart_items
+    supplies = orderInCart.supplyinorderincart_set.all()
+    orderForm = OrderInCartForm(request.POST or None)
+
+
+
+
+    if request.method == 'POST':
+
+        countList = request.POST.getlist('count_list')
+        countListId = request.POST.getlist('count_list_id')
+
+        if orderForm.is_valid():
+            place = orderForm.cleaned_data['place']
+            comment = orderForm.cleaned_data['comment']
+            isComplete = orderForm.cleaned_data['isComplete']
+            if isComplete:
+                dateSent = timezone.now().date()
+            else:
+                dateSent = None
+            order = Order(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent, isComplete=isComplete, comment=comment)
+            order.save()
+
+            for index, sup in enumerate(supplies):
+                suppInOrder = SupplyInOrder(count_in_order=countList[index], supply=sup.supply, generalSupply=sup.supply.general_supply, supply_for_order=order, lot=sup.lot, date_created=sup.date_created, date_expired=sup.date_expired)
+                suppInOrder.save()
+                supply = suppInOrder.supply
+                try:
+                 countOnHold = int(supply.countOnHold)
+                except:
+                 countOnHold = 0
+                countInOrder = int(suppInOrder.count_in_order)
+                supply.countOnHold = countOnHold + countInOrder
+                supply.save(update_fields=['countOnHold'])
+        orderInCart.delete()
+
+        return redirect('/orders')
+
+
+    return render(request, 'supplies/cart.html',
+                  {'title': 'Корзина', 'order': orderInCart, 'cart_items': cart_items, 'supplies': supplies, 'orderForm': orderForm
+                   })
 
 
 
 @login_required(login_url='login')
 def onlyGood(request):
-    supplies = GeneralSupply.objects.prefetch_related(
-        Prefetch('general', queryset=Supply.objects.filter(expiredDate__gte=timezone.now().date()).exclude(count__exact=0)))
-    retSupp = supplies.distinct().filter(general__expiredDate__gte=timezone.now().date()).exclude(general__count__exact=0).order_by('name')
+    supplies = Supply.objects.filter(expiredDate__gte=timezone.now().date()).order_by('expiredDate')
+    suppFilter = ChildSupplyFilter(request.GET, queryset=supplies)
+    supplies = suppFilter.qs
 
-    suppFilter = SupplyFilter(request.GET, queryset=retSupp)
-    retSupp = suppFilter.qs
+    try:
+        orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
+        cart_items = orderInCart.get_cart_items
+    except:
+        orderInCart = None
+        cart_items = 0
 
-    if request.method == 'POST':
-        supp = supplies.get(id=request.POST.get('supp_id'))
-        supp.delete()
-
-    return render(request, 'supplies/home.html',
-                  {'title': 'Всі товари', 'supplies': retSupp, 'suppFilter': suppFilter, 'isHome': True, 'isGood': True})
+    return render(request, 'supplies/homeChild.html',
+                  {'title': 'Тільки придатні', 'supplies': supplies,  'cart_items': cart_items, 'suppFilter': suppFilter, 'isHome': True, 'isGood': True})
 
 
 @login_required(login_url='login')
 def onlyExpired(request):
-    supplies = GeneralSupply.objects.prefetch_related(
-        Prefetch('general', queryset=Supply.objects.filter(expiredDate__lt=timezone.now().date()).exclude(count__exact=0)))
-    retSupp = supplies.distinct().filter(general__expiredDate__lt=timezone.now().date()).exclude(general__count__exact=0).order_by('name')
 
-    suppFilter = SupplyFilter(request.GET, queryset=retSupp)
-    retSupp = suppFilter.qs
+    try:
+        orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
+        cart_items = orderInCart.get_cart_items
+    except:
+        orderInCart = None
+        cart_items = 0
 
-    if request.method == 'POST':
-        supp = supplies.get(id=request.POST.get('supp_id'))
-        supp.delete()
+    supplies = Supply.objects.filter(expiredDate__lt=timezone.now().date()).order_by('-expiredDate')
+    suppFilter = ChildSupplyFilter(request.GET, queryset=supplies)
+    supplies = suppFilter.qs
 
-    return render(request, 'supplies/home.html',
-                  {'title': 'Всі товари', 'supplies': retSupp, 'suppFilter': suppFilter, 'isHome': True, 'isExpired': True})
+    return render(request, 'supplies/homeChild.html',
+                  {'title': 'Тільки придатні', 'supplies': supplies,  'cart_items': cart_items, 'suppFilter': suppFilter, 'isHome': True, 'isExpired': True})
 
 
 
 @login_required(login_url='login')
 def orders(request):
+
+    try:
+        orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
+        cart_items = orderInCart.get_cart_items
+    except:
+        orderInCart = None
+        cart_items = 0
+
     orders = Order.objects.all().order_by('-id')
-    return render(request, 'supplies/orders.html', {'title': 'Всі замовлення', 'orders': orders, 'isOrders': True})
+    return render(request, 'supplies/orders.html', {'title': 'Всі замовлення', 'orders': orders, 'cart_items': cart_items, 'isOrders': True})
+
+@login_required(login_url='login')
+def orderUpdateStatus(request):
+    data = json.loads(request.body)
+    prodId = data['productId']
+    action = data['action']
+    order = Order.objects.get(id=prodId)
+    if action == 'update':
+      supps = order.supplyinorder_set.all()
+      for el in supps:
+          countInOrder = el.count_in_order
+          supp = el.supply
+          supp.countOnHold -= countInOrder
+          supp.count -= countInOrder
+          supp.save(update_fields=['countOnHold', 'count'])
+          if supp.count == 0:
+              supp.delete()
+
+      order.isComplete = True
+      order.dateSent = timezone.now().date()
+      order.save()
+
+    elif action == 'delete':
+        if not order.isComplete:
+          supps = order.supplyinorder_set.all()
+          for el in supps:
+             countInOrder = el.count_in_order
+             supp = el.supply
+             supp.countOnHold -= countInOrder
+             supp.save(update_fields=['countOnHold'])
+        order.delete()
+
+    return JsonResponse('Item was added', safe=False)
 
 
 @login_required(login_url='login')
@@ -237,6 +373,22 @@ def updateSupply(request, supp_id):
                   {'title': f'Редагувати запис №{supp_id}', 'form': form})
 
 
+def updateGeneralSupply(request, supp_id):
+    supp = GeneralSupply.objects.get(id=supp_id)
+    form = GeneralSupplyForm(instance=supp)
+    if request.method == 'POST':
+        form = GeneralSupplyForm(request.POST, instance=supp)
+        if form.is_valid():
+            # obj = form.save(commit=False)
+            # obj.from_user = User.objects.get(pk=request.user.id)
+            form.save()
+            return redirect('/')
+
+    return render(request, 'supplies/createSupply.html',
+                  {'title': f'Редагувати запис №{supp_id}', 'form': form})
+
+
+
 def addNewLotforSupply(request, supp_id):
     generalSupp = GeneralSupply.objects.get(id=supp_id)
     form = SupplyForm()
@@ -260,9 +412,9 @@ def addgeneralSupply(request):
         form = NewSupplyForm(request.POST)
         if form.is_valid():
             try:
-                genSupp = GeneralSupply.objects.get(name=form.cleaned_data['name'])
+                genSupp = GeneralSupply.objects.get(name=form.cleaned_data['name'].strip())
             except:
-                genSupp = GeneralSupply(name=form.cleaned_data['name'], ref=form.cleaned_data['ref'], category=form.cleaned_data['category'])
+                genSupp = GeneralSupply(name=form.cleaned_data['name'].strip(), ref=form.cleaned_data['ref'].strip(), category=form.cleaned_data['category'])
             genSupp.save()
             obj = form.save(commit=False)
             obj.general_supply = genSupp
@@ -272,6 +424,33 @@ def addgeneralSupply(request):
 
     return render(request, 'supplies/createSupply.html',
                   {'title': f'Додати новий товар (назву)', 'form': form})
+
+
+
+def addNewClient(request):
+    form = ClientForm()
+    if request.method == 'POST':
+        form = ClientForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('/clientsInfo')
+    return render(request, 'supplies/createSupply.html',
+                  {'title': f'Додати нового клієнта', 'form': form})
+
+
+def addNewWorkerForClient(request, place_id):
+    form = WorkerForm()
+    place = Place.objects.get(id=place_id)
+    if request.method == 'POST':
+        form = WorkerForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.for_place = place
+            obj.save()
+            return redirect('/clientsInfo')
+    return render(request, 'supplies/createSupply.html',
+                  {'title': f'Додати нового працівника для {place.name}, {place.city}', 'form': form})
+
 
 
 
@@ -319,117 +498,3 @@ def serviceNotes(request):
     return render(request, 'supplies/serviceNotes.html',
                    {'title': f'Сервiсні записи', 'serviceNotes': serviceNotes, 'form': form, 'serviceFilters': serviceFilters, 'isService': True})
 
-
-
-class NoteCreateView(BSModalCreateView):
-    template_name = 'supplies/createNote.html'
-    form_class = ServiceNoteForm
-    success_message = 'Success: Book was created.'
-    success_url = reverse_lazy('supplies/serviceNotes.html')
-
-
-class SuppliesApiView(APIView):
-
-
-     def get(self, request):
-         supplies = Supply.objects.all()
-         suppliesSerializer = SupplySerializer(instance=supplies, many=True)
-         return Response(suppliesSerializer.data)
-
-     def post(self, request):
-         serializer = SupplySerializer(data=request.data)
-         if serializer.is_valid():
-             serializer.save()
-             return Response(serializer.data, status=status.HTTP_201_CREATED)
-         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class SupplyDetailView(APIView):
-
-    def get_object(self, pk):
-        try:
-            return Supply.objects.get(pk=pk)
-        except Supply.DoesNotExist:
-            raise Http404
-
-    def put(self, request, pk, format=None):
-        supply = self.get_object(pk)
-        serializer = SupplySerializer(supply, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class SuppliesInOrderView(APIView):
-    def get(self, request, order_id):
-        order = Order.objects.get(id=order_id)
-        suppInOrder = order.supplies
-        suppInOrderSerializer = SupplyInOrderSerializer(instance=suppInOrder, many=True)
-        return Response(suppInOrderSerializer.data)
-
-
-class OrdersApiView(APIView):
-    def get(self, request):
-        orders = Order.objects.all()
-        ordersSerializer = OrderSerializer(instance=orders, many=True)
-        return Response(ordersSerializer.data)
-
-
-class PlacesApiView(APIView):
-    def get(self, request):
-        places = Place.objects.all()
-        placesSerializer = PlaceSerializer(instance=places, many=True)
-        return Response(placesSerializer.data)
-
-    def post(self, request):
-        serializer = PlaceSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-class RegistrationAPIView(APIView):
-    """
-    Registers a new user.
-    """
-    permission_classes = [AllowAny]
-    serializer_class = RegistrationSerializer
-
-    def post(self, request):
-        """
-        Creates a new User object.
-        Username, email, and password are required.
-        Returns a JSON web token.
-        """
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(
-            {
-                'token': serializer.data.get('token', None),
-            },
-            status=status.HTTP_201_CREATED,
-        )
-
-
-class LoginAPIView(APIView):
-    """
-    Logs in an existing user.
-    """
-    permission_classes = [AllowAny]
-    serializer_class = LoginSerializer
-
-    def post(self, request):
-        """
-        Checks is user exists.
-        Email and password are required.
-        Returns a JSON web token.
-        """
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
