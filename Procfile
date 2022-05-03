@@ -1,2 +1,2 @@
 
-web: gunicorn DMDX_Django.wsgi
+web: gunicorn DMDX_Django.wsgi --log-file -
