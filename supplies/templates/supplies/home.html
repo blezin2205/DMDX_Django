@@ -53,8 +53,8 @@
 
          <td class="supplyRow">
 
-<table class="table table-bordered mb-0>
-  <tbody class="">
+<table class="table table-borderless mb-0">
+  <tbody>
    {% for supp in el.general.all %}
     <tr>
 
@@ -85,7 +85,6 @@
   </tbody>
 </table>
 
-                    </td>
 {% if request.user.is_staff %}
             <td>
             <div class="hstack gap-2">
