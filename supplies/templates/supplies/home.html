@@ -65,7 +65,7 @@
 
 
     {% if request.user.is_staff %}
-        <td class="p-0" style="width: 20px">
+        <td class="p-0" style="width: 50px">
             {% if not supp.isInCart %}
                 <button data-product={{ supp.id }} data-action="add" class="btn btn-sm btn-primary add-btn update-cart me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
             {% else %}
@@ -73,13 +73,13 @@
             {% endif %}
     </td>
     {% if uncompleteOrdersExist %}
-    <td class="p-0" style="width: 20px">
+    <td class="p-0" style="width: 50px">
     <a href="{% url 'addSupplyToExistOrder' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button"><i class="bi bi-bag-plus"></i></a>
     </td>
-    <td class="p-0" style="width: 20px"><a href="{% url 'updateSupply' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning me-2" role="button"><i class="bi bi-pencil"></i></a></td>
             {% endif %}
+    <td class="p-0" style="width: 50px"><a href="{% url 'updateSupply' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning me-2" role="button"><i class="bi bi-pencil"></i></a></td>
 
-    <td class="p-0" style="width: 20px">
+    <td class="p-0" style="width: 50px">
     <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-supp-button"><i class="bi bi-trash"></i></button>
     </td>
 
