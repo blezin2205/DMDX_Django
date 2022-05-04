@@ -44,7 +44,7 @@
       <th scope="row">{{el.id}}</th>
       <td style="text-align: left;">{{ el.name }}</td>
       <td>{{ el.category.name }}</td>
-      <td style="text-align: left;">
+      <td>
 
           {% if el.ref is not none %}
                         {{ el.ref }}
@@ -53,37 +53,33 @@
 
          <td class="supplyRow">
 
-<table class="table table-borderless mb-0">
-  <tbody>
+<table class="table table-bordered mb-0>
+  <tbody class="">
    {% for supp in el.general.all %}
     <tr>
 
-      <td class="p-0" style="width: 150px">{% if supp.supplyLot is not none %} {{ supp.supplyLot }} {% endif %}</td>
-      <td class="p-0" style="display: inline; width: 150px"><p><span>{{ supp.count }}</span>  {% if supp.countOnHold %}  <span style="background-color: orange" class="px-2 rounded-2">{{ supp.countOnHold }}</span> {% endif %} </p> </td>
-      <td class="p-0" style="width: 150px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.expiredDate|date:"d.m.Y" }}
-                            </div></td>
-
-
-    {% if request.user.is_staff %}
-        <td class="p-0" style="width: 50px">
+      <td class="p-0" style="width: 120px">{% if supp.supplyLot is not none %} {{ supp.supplyLot }} {% endif %}</td>
+      <td class="p-0" style="width: 100px"><p><span>{{ supp.count }}</span>  {% if supp.countOnHold %}  <span style="background-color: orange" class="px-2 rounded-2">{{ supp.countOnHold }}</span> {% endif %} </p> </td>
+      <td class="p-0" style="width: 100px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.expiredDate|date:"d.m.Y" }}
+ </div>
+      </td>
+    <td><div class="hstack gap-1 justify-content-end" style="align-content: end">
+        {% if request.user.is_staff %}
             {% if not supp.isInCart %}
                 <button data-product={{ supp.id }} data-action="add" class="btn btn-sm btn-primary add-btn update-cart me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
             {% else %}
                 <button class="btn btn-sm btn-success disabled me-2" type="button"><i class="bi bi-cart-check"></i></button>
             {% endif %}
-    </td>
     {% if uncompleteOrdersExist %}
-    <td class="p-0" style="width: 50px">
     <a href="{% url 'addSupplyToExistOrder' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button"><i class="bi bi-bag-plus"></i></a>
-    </td>
-            {% endif %}
-    <td class="p-0" style="width: 50px"><a href="{% url 'updateSupply' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning me-2" role="button"><i class="bi bi-pencil"></i></a></td>
 
-    <td class="p-0" style="width: 50px">
+            {% endif %}
+    <a href="{% url 'updateSupply' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning me-2" role="button"><i class="bi bi-pencil"></i></a>
+
     <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-supp-button"><i class="bi bi-trash"></i></button>
-    </td>
 
    {% endif %}
+    </div></td>
     </tr>
      {% endfor %}
   </tbody>
