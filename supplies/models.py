@@ -147,8 +147,13 @@ class SupplyInOrder(models.Model):
         except:
             name = 'No Name'
 
+        try:
+            supname = self.supply.name
+        except:
+            supname = 'No Name'
 
-        return f'ID order: {orderId} | name: {name} '
+
+        return f'ID order: {orderId} | name: {name}'
 
     class Meta:
         verbose_name = 'Товар в замовленні'
