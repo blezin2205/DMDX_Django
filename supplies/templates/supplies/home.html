@@ -59,7 +59,7 @@
     <tr>
 
       <td class="p-0" style="width: 150px">{% if supp.supplyLot is not none %} {{ supp.supplyLot }} {% endif %}</td>
-      <td class="p-0"><p><span style="width: 50px">{{ supp.count }}</span>  {% if supp.countOnHold %}  <span style="width: 50px; background-color: orange" class="px-2 rounded-2">{{ supp.countOnHold }}</span> {% endif %} </p> </td>
+      <td class="p-0" style="display: inline"><p><span style="width: 50px">{{ supp.count }}</span>  {% if supp.countOnHold %}  <span style="width: 50px; background-color: orange" class="px-2 rounded-2">{{ supp.countOnHold }}</span> {% endif %} </p> </td>
       <td class="p-0" style="width: 150px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.expiredDate|date:"d.m.Y" }}
 
                             </div></td>
@@ -78,7 +78,7 @@
     </td>
     {% if uncompleteOrdersExist %}
     <td class="p-0" style="width: 20px">
-    <a href="{% url 'addSupplyToExistOrder' supp.id %}" class="btn btn-sm btn-primary me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button"><i class="bi bi-bag-plus"></i></a>
+    <a href="{% url 'addSupplyToExistOrder' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button"><i class="bi bi-bag-plus"></i></a>
     </td>
 
             {% endif %}
@@ -96,6 +96,7 @@
                     </td>
 {% if request.user.is_staff %}
             <td>
+            <div class="hstack gap-2">
                 <a href="{% url 'addNewLot' el.id %}?next={{ request.get_full_path|urlencode }}"><i class="bi bi-plus"></i> LOT</a>
 
             <form action="{% url 'home' %}"
@@ -109,6 +110,7 @@
 </form>
             <a href="{% url 'updateGeneralSupply' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button"><i class="bi bi-pencil"></i></a>
 <script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
+            </div>
             </td>
 
 {% endif %}

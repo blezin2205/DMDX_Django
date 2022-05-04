@@ -428,6 +428,8 @@ def addSupplyToExistOrder(request, supp_id):
             suppInOrder.save()
             supp.countOnHold += count
             supp.save(update_fields=['countOnHold'])
+            next = request.POST.get('next')
+            return HttpResponseRedirect(next)
 
 
     return render(request, 'supplies/cart.html',

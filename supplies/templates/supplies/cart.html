@@ -63,6 +63,7 @@
             {{ orderForm|bootstrap }}
           </div>
         </div>
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
      <button class="btn btn-outline-primary my-2" type="submit">Зберегти</button>
 
       </div>
