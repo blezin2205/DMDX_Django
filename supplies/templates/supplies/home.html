@@ -63,8 +63,9 @@
       <td style="width: 100px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.expiredDate|date:"d.m.Y" }}
  </div>
       </td>
+    {% if request.user.is_staff %}
     <td ><div class="hstack gap-1 justify-content-end">
-        {% if request.user.is_staff %}
+
             {% if not supp.isInCart %}
                 <button data-product={{ supp.id }} data-action="add" class="btn btn-sm btn-primary add-btn update-cart me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
             {% else %}
@@ -78,8 +79,9 @@
 
     <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-supp-button"><i class="bi bi-trash"></i></button>
 
-   {% endif %}
+
     </div></td>
+    {% endif %}
     </tr>
      {% endfor %}
   </tbody>
