@@ -97,7 +97,7 @@ WSGI_APPLICATION = 'DMDX_Django.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'dbdata.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 

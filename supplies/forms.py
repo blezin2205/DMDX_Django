@@ -61,3 +61,7 @@ class OrderInCartForm(ModelForm):
     class Meta:
         model = OrderInCart
         fields = ['place', 'comment', 'isComplete']
+
+
+class OrderForm(forms.Form):
+    order = forms.ModelChoiceField(queryset=Order.objects.filter(isComplete=False))

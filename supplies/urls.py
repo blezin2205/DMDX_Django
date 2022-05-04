@@ -7,12 +7,12 @@ urlpatterns = [
     path('cart/', views.cartDetail, name='cart'),
 
     path('', views.home, name='home'),
-    path('onlyGood', views.onlyGood, name='onlyGood'),
-    path('onlyExpired', views.onlyExpired, name='onlyExpired'),
+    path('childSupply', views.childSupply, name='childSupply'),
 
     path('update_item/', views.updateItem, name='update_item'),
     path('cart/update_item/', views.updateCartItem, name='update_item_detail'),
     path('delete_supply/', views.deleteSupply, name='delete_supply'),
+    path('delete_supply_in_order/', views.deleteSupplyInOrder, name='delete_supply_in_order'),
 
 
 
@@ -23,6 +23,7 @@ urlpatterns = [
 
     path('update/<int:supp_id>', views.updateSupply, name='updateSupply'),
     path('update_general/<int:supp_id>', views.updateGeneralSupply, name='updateGeneralSupply'),
+    path('addSupplyToExistOrder/<int:supp_id>', views.addSupplyToExistOrder, name='addSupplyToExistOrder'),
 
 
     # path('auth', views.registerPage, name='auth'),
@@ -36,6 +37,9 @@ urlpatterns = [
     path('clientsInfo/<int:client_id>/orders', views.ordersForClient, name='ordersForClient'),
     path('clientsInfo/<int:place_id>/add-new-worker', views.addNewWorkerForClient, name='newWorkerForPlace'),
     path('clientsInfo/<int:client_id>/serviceNotes', views.serviceNotesForClient, name='serviceNotesForClient'),
+    path('clientsInfo/<int:client_id>/editInfo', views.editClientInfo, name='editClientInfo'),
+
+
 
 
     path('serviceNotes', views.serviceNotes, name='clientsInfo'),

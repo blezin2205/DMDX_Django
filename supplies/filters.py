@@ -7,11 +7,32 @@ from django.db.models import Max, Q
 
 
 class ChildSupplyFilter(django_filters.FilterSet):
+    CHOICES = (
+        ('onlyExpired', 'Прострочені'), ('onlyGood', 'Придатні'), ('dateCreated', 'Оновлено')
+    )
+
+    id = CharFilter(field_name='general_supply__id', lookup_expr='icontains', label='ID Parent')
     name = CharFilter(field_name='general_supply__name', lookup_expr='icontains', label='Назва товару')
     ref = CharFilter(field_name='general_supply__ref', lookup_expr='icontains', label='REF')
+    ordering = ChoiceFilter(label='Сортування', choices=CHOICES, method='filter_by_order')
+
     class Meta:
         model = Supply
-        fields = ['category', 'ref', 'supplyLot', 'id' , 'name']
+        fields = ['category', 'ref', 'supplyLot', 'id' , 'name', 'ordering']
+
+    def __init__(self, *args, **kwargs):
+        super(ChildSupplyFilter, self).__init__(*args, **kwargs)
+        self.filters['ordering'].extra.update(
+            {'empty_label': 'Всі'})
+
+    def filter_by_order(self, queryset, name, value):
+
+        if value == 'onlyGood':
+            return  queryset.filter(expiredDate__gte=timezone.now().date()).order_by('expiredDate').distinct()
+        elif value =='onlyExpired':
+            return queryset.filter(expiredDate__lt=timezone.now().date()).order_by('-expiredDate').distinct()
+        elif value =='dateCreated':
+            return queryset.order_by('-dateCreated').distinct()
 
 
 class SupplyFilter(django_filters.FilterSet):
@@ -45,7 +66,10 @@ class SupplyFilter(django_filters.FilterSet):
             return queryset.filter(general__isnull=True).distinct()
 
 
+
+
 class ServiceNotesFilter(django_filters.FilterSet):
+    from_user = ModelChoiceFilter(queryset=User.objects.filter(groups__name='engineer'))
     class Meta:
         model = ServiceNote
         fields = ['for_place', 'from_user']

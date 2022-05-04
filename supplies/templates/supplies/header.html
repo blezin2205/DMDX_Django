@@ -3,7 +3,7 @@
 
 <nav class="navbar navbar-expand-md navbar-light bg-light shadow p-3 mb-5 bg-white rounded">
     <div class="container-fluid">
-        <a class="navbar-brand abs" href="#">DMDX-Storage</a>
+        <a class="navbar-brand abs" href="/">DMDX-Storage</a>
         <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNavbar">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -17,7 +17,8 @@
 
             <li class="nav-item"><a href="/serviceNotes" class="btn btn-outline-primary{% if isService %} active {% endif %}" aria-current="page">Сервісні записи</a></li>
 
-              <li class="nav-item dropdown mx-4">
+            {% if request.user.is_staff %}
+                <li class="nav-item dropdown mx-4">
                             <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Додати</a>
                             <div class="dropdown-menu">
                               <a class="dropdown-item" href="{% url 'create_note' %}">Сервісну замітку</a>
@@ -27,6 +28,8 @@
                               <a class="dropdown-item" href="#">Separated link</a>
                             </div>
                         </li>
+            {% endif %}
+
 
             </ul>
             <ul class="navbar-nav ms-auto">

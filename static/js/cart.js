@@ -2,7 +2,7 @@ var updateBtns = document.getElementsByClassName('update-cart')
 var updateDetailBtns = document.getElementsByClassName('update-cart-detail')
 var updateOrderStatusBtns = document.getElementsByClassName('update-order-status')
 var deleteBtns = document.getElementsByClassName('delete-supp-button')
-var battonTest = document.getElementById('battonTest')
+var deleteSuppInOrderBtns = document.getElementsByClassName('delete-suppinorder-button')
 
 
 for(var a = 0; a < deleteBtns.length; a++) {
@@ -11,6 +11,18 @@ for(var a = 0; a < deleteBtns.length; a++) {
         var action = this.dataset.action
 
         var url = 'delete_supply/'
+        senadAction(productId, action, url)
+
+    })
+}
+
+for(var a = 0; a < deleteSuppInOrderBtns.length; a++) {
+    deleteSuppInOrderBtns[a].addEventListener('click', function () {
+        var productId = this.dataset.product
+        var action = this.dataset.action
+        console.log('Prinet delete action')
+
+        var url = '/delete_supply_in_order/'
         senadAction(productId, action, url)
 
     })

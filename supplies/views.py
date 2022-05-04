@@ -27,6 +27,8 @@ firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def deleteSupply(request):
     data = json.loads(request.body)
     prodId = data['productId']
@@ -35,9 +37,33 @@ def deleteSupply(request):
     if action == 'delete':
       supp = Supply.objects.get(id=prodId)
       supp.delete()
+
+    elif action =='delete_general_supply':
+      genSupp = GeneralSupply.objects.get(id=prodId)
+      genSupp.delete()
+
     return JsonResponse('Item was added', safe=False)
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def deleteSupplyInOrder(request):
+    data = json.loads(request.body)
+    prodId = data['productId']
+    action = data['action']
+
+    if action == 'delete':
+        suppInOrder = SupplyInOrder.objects.get(id=prodId)
+        if suppInOrder.hasSupply():
+            supp_for_supp_in_order = suppInOrder.supply
+            supp_for_supp_in_order.countOnHold -= suppInOrder.count_in_order
+            supp_for_supp_in_order.save(update_fields=['countOnHold'])
+        suppInOrder.delete()
+        return JsonResponse('Item was added', safe=False)
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def updateItem(request):
     data = json.loads(request.body)
     prodId = data['productId']
@@ -74,6 +100,8 @@ def updateItem(request):
     return  JsonResponse('Item was added', safe=False)
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def updateCartItem(request):
     data = json.loads(request.body)
     prodId = data['productId']
@@ -117,6 +145,7 @@ def registerPage(request):
         context = {'form': form}
     return render(request, 'auth/register.html', context)
 
+
 @unauthenticated_user
 def loginPage(request):
         if request.method == 'POST':
@@ -129,6 +158,7 @@ def loginPage(request):
 
         return render(request, 'auth/login.html')
 
+
 @login_required(login_url='login')
 def logoutUser(request):
     logout(request)
@@ -139,6 +169,7 @@ def logoutUser(request):
 def home(request):
 
     supplies = GeneralSupply.objects.all().order_by('name')
+    uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
     #
     # for gen in supplies:
     #    for sup in gen.general.all():
@@ -161,21 +192,17 @@ def home(request):
         supp = supplies.get(id=request.POST.get('supp_id'))
         supp.delete()
 
-
-    return render(request, 'supplies/home.html', {'title': 'Всі товари', 'cart_items': cart_items, 'supplies': supplies,'suppFilter': suppFilter, 'isHome': True, 'isAll': True})
+    return render(request, 'supplies/home.html', {'title': 'Всі товари', 'cart_items': cart_items, 'supplies': supplies,'suppFilter': suppFilter, 'isHome': True, 'isAll': True, 'uncompleteOrdersExist': uncompleteOrdersExist})
 
 
 @login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def cartDetail(request):
 
     orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
     cart_items = orderInCart.get_cart_items
     supplies = orderInCart.supplyinorderincart_set.all()
     orderForm = OrderInCartForm(request.POST or None)
-
-
-
-
     if request.method == 'POST':
 
         countList = request.POST.getlist('count_list')
@@ -193,7 +220,14 @@ def cartDetail(request):
             order.save()
 
             for index, sup in enumerate(supplies):
-                suppInOrder = SupplyInOrder(count_in_order=countList[index], supply=sup.supply, generalSupply=sup.supply.general_supply, supply_for_order=order, lot=sup.lot, date_created=sup.date_created, date_expired=sup.date_expired)
+                suppInOrder = SupplyInOrder(count_in_order=countList[index],
+                                            supply=sup.supply,
+                                            generalSupply=sup.supply.general_supply,
+                                            supply_for_order=order, lot=sup.lot,
+                                            date_created=sup.date_created,
+                                            date_expired=sup.date_expired,
+                                            internalName=sup.supply.general_supply.name,
+                                            internalRef=sup.supply.general_supply.ref)
                 suppInOrder.save()
                 supply = suppInOrder.supply
                 try:
@@ -201,8 +235,12 @@ def cartDetail(request):
                 except:
                  countOnHold = 0
                 countInOrder = int(suppInOrder.count_in_order)
-                supply.countOnHold = countOnHold + countInOrder
-                supply.save(update_fields=['countOnHold'])
+                if isComplete:
+                    supply.count -= countInOrder
+                    supply.save(update_fields=['count'])
+                else:
+                    supply.countOnHold = countOnHold + countInOrder
+                    supply.save(update_fields=['countOnHold'])
         orderInCart.delete()
 
         return redirect('/orders')
@@ -215,8 +253,8 @@ def cartDetail(request):
 
 
 @login_required(login_url='login')
-def onlyGood(request):
-    supplies = Supply.objects.filter(expiredDate__gte=timezone.now().date()).order_by('expiredDate')
+def childSupply(request):
+    supplies = Supply.objects.all().order_by('name')
     suppFilter = ChildSupplyFilter(request.GET, queryset=supplies)
     supplies = suppFilter.qs
 
@@ -228,26 +266,7 @@ def onlyGood(request):
         cart_items = 0
 
     return render(request, 'supplies/homeChild.html',
-                  {'title': 'Тільки придатні', 'supplies': supplies,  'cart_items': cart_items, 'suppFilter': suppFilter, 'isHome': True, 'isGood': True})
-
-
-@login_required(login_url='login')
-def onlyExpired(request):
-
-    try:
-        orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
-        cart_items = orderInCart.get_cart_items
-    except:
-        orderInCart = None
-        cart_items = 0
-
-    supplies = Supply.objects.filter(expiredDate__lt=timezone.now().date()).order_by('-expiredDate')
-    suppFilter = ChildSupplyFilter(request.GET, queryset=supplies)
-    supplies = suppFilter.qs
-
-    return render(request, 'supplies/homeChild.html',
-                  {'title': 'Тільки придатні', 'supplies': supplies,  'cart_items': cart_items, 'suppFilter': suppFilter, 'isHome': True, 'isExpired': True})
-
+                  {'title': 'Дочерні товари', 'supplies': supplies,  'cart_items': cart_items, 'suppFilter': suppFilter, 'isHome': True, 'isChild': True})
 
 
 @login_required(login_url='login')
@@ -263,7 +282,9 @@ def orders(request):
     orders = Order.objects.all().order_by('-id')
     return render(request, 'supplies/orders.html', {'title': 'Всі замовлення', 'orders': orders, 'cart_items': cart_items, 'isOrders': True})
 
+
 @login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def orderUpdateStatus(request):
     data = json.loads(request.body)
     prodId = data['productId']
@@ -288,10 +309,11 @@ def orderUpdateStatus(request):
         if not order.isComplete:
           supps = order.supplyinorder_set.all()
           for el in supps:
-             countInOrder = el.count_in_order
-             supp = el.supply
-             supp.countOnHold -= countInOrder
-             supp.save(update_fields=['countOnHold'])
+             if el.hasSupply():
+               countInOrder = el.count_in_order
+               supp = el.supply
+               supp.countOnHold -= countInOrder
+               supp.save(update_fields=['countOnHold'])
         order.delete()
 
     return JsonResponse('Item was added', safe=False)
@@ -306,6 +328,7 @@ def ordersForClient(request, client_id):
         title = f'В клієнта "{place.name}, {place.city}" ще немає замовлень'
 
     return render(request, 'supplies/orders.html', {'title': title, 'orders': orders, 'isClients': True})
+
 
 
 @login_required(login_url='login')
@@ -327,6 +350,8 @@ def serviceNotesForClient(request, client_id):
 
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def createNote(request):
     form = ServiceNoteForm()
     if request.method == 'POST':
@@ -342,6 +367,8 @@ def createNote(request):
                    'isService': True})
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def updateNote(request, note_id):
     note = ServiceNote.objects.get(id=note_id)
     form = ServiceNoteForm(instance=note)
@@ -358,6 +385,8 @@ def updateNote(request, note_id):
                     'isService': True})
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def updateSupply(request, supp_id):
     note = Supply.objects.get(id=supp_id)
     form = SupplyForm(instance=note)
@@ -367,12 +396,49 @@ def updateSupply(request, supp_id):
             # obj = form.save(commit=False)
             # obj.from_user = User.objects.get(pk=request.user.id)
             form.save()
-            return redirect('/')
+            next = request.POST.get('next')
+            return HttpResponseRedirect(next)
 
     return render(request, 'supplies/createSupply.html',
                   {'title': f'Редагувати запис №{supp_id}', 'form': form})
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def addSupplyToExistOrder(request, supp_id):
+    supp = Supply.objects.get(id=supp_id)
+    orderForm = OrderForm(request.POST or None)
+    supply = SupplyInOrderInCart(count_in_order=1, supply=supp, lot=supp.supplyLot, date_expired=supp.expiredDate)
+
+    if request.method == 'POST':
+
+        count = int(request.POST.get('count_list'))
+        if orderForm.is_valid():
+            order = orderForm.cleaned_data['order']
+
+            try:
+                suppInOrder = SupplyInOrder.objects.get(supply=supp, generalSupply=supp.general_supply, supply_for_order=order, lot=supp.supplyLot, date_created=supp.dateCreated, date_expired=supp.expiredDate)
+                suppInOrder.count_in_order += count
+            except:
+                suppInOrder = SupplyInOrder(count_in_order=count, supply=supp,
+                                        generalSupply=supp.general_supply, supply_for_order=order, lot=supp.supplyLot,
+                                        date_created=supp.dateCreated, date_expired=supp.expiredDate,
+                                            internalName=supp.general_supply.name,
+                                            internalRef=supp.general_supply.ref)
+            suppInOrder.save()
+            supp.countOnHold += count
+            supp.save(update_fields=['countOnHold'])
+
+
+    return render(request, 'supplies/cart.html',
+                  {'title': 'Додати до замовлення',
+                   'orderForm': orderForm, 'supplies': [supply],
+                   })
+
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def updateGeneralSupply(request, supp_id):
     supp = GeneralSupply.objects.get(id=supp_id)
     form = GeneralSupplyForm(instance=supp)
@@ -382,13 +448,15 @@ def updateGeneralSupply(request, supp_id):
             # obj = form.save(commit=False)
             # obj.from_user = User.objects.get(pk=request.user.id)
             form.save()
-            return redirect('/')
+            next = request.POST.get('next')
+            return HttpResponseRedirect(next)
 
     return render(request, 'supplies/createSupply.html',
                   {'title': f'Редагувати запис №{supp_id}', 'form': form})
 
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def addNewLotforSupply(request, supp_id):
     generalSupp = GeneralSupply.objects.get(id=supp_id)
     form = SupplyForm()
@@ -399,13 +467,15 @@ def addNewLotforSupply(request, supp_id):
             obj.general_supply = generalSupp
             obj.category = generalSupp.category
             obj.save()
-            return redirect('/')
+            next = request.POST.get('next')
+            return HttpResponseRedirect(next)
 
     return render(request, 'supplies/createSupply.html',
                   {'title': f'Додати новий LOT для {generalSupp.name}', 'form': form})
 
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def addgeneralSupply(request):
     form = NewSupplyForm()
     if request.method == 'POST':
@@ -426,7 +496,7 @@ def addgeneralSupply(request):
                   {'title': f'Додати новий товар (назву)', 'form': form})
 
 
-
+@login_required(login_url='login')
 def addNewClient(request):
     form = ClientForm()
     if request.method == 'POST':
@@ -438,6 +508,19 @@ def addNewClient(request):
                   {'title': f'Додати нового клієнта', 'form': form})
 
 
+@login_required(login_url='login')
+def editClientInfo(request, client_id):
+    client = Place.objects.get(id=client_id)
+    form = ClientForm(request.POST or None, instance=client)
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            return redirect('/clientsInfo')
+
+    return render(request, 'supplies/createSupply.html',
+                  {'title': f'Редагувати клієнта: {client.name}, {client.city}', 'form': form})
+
+@login_required(login_url='login')
 def addNewWorkerForClient(request, place_id):
     form = WorkerForm()
     place = Place.objects.get(id=place_id)
@@ -452,8 +535,8 @@ def addNewWorkerForClient(request, place_id):
                   {'title': f'Додати нового працівника для {place.name}, {place.city}', 'form': form})
 
 
-
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def deleteServiceNote(request, note_id):
     note = ServiceNote.objects.get(id=note_id)
     if request.method == 'POST':

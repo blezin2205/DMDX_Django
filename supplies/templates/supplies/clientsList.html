@@ -8,7 +8,16 @@
     {% for client in clients %}
     <div class="col">
       <div class="p-3 border bg-light rounded-3">
-      <h4>{{client.name}}, {{client.city}}.</h4>
+
+
+      <div class="hstack gap-2 justify-content-between">
+          <h4>{{client.name}}, {{client.city}}.</h4>
+          <a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-default" role="button"><i class="bi bi-pencil"></i></a>
+      </div>
+
+
+
+
 
         {% if client.servicenote_set.count > 0 %}
             <a href="{% url 'serviceNotesForClient' client.id %}" class="icon-link me-3">
@@ -21,11 +30,6 @@
           Замовлення клієнта ({{ client.order_set.count }})
         </a>
             {% endif %}
-      <a href="{% url 'newWorkerForPlace' client.id %}" class="btn-default mx-3">
-          Додати новий контакт
-        </a>
-
-
       <div class="vstack">
           {% if client.address %}
 
@@ -54,9 +58,7 @@
     {% for worker in client.workers_set.all %}
             <div class="hstack">
             <p class="start-0 mb-0">
-
                 {{ worker.name }}
-
                 </p>
                 <div class="ms-auto me-2">
                     {{ worker.position }}
@@ -73,10 +75,19 @@
 </div>
         {% endif %}
 
+<a href="{% url 'newWorkerForPlace' client.id %}" class="btn-default">
+          Додати контакт
+        </a>
 
+      <a href="{% url 'newWorkerForPlace' client.id %}" class="btn-default mx-2">
+          Додати прилад
+        </a>
       </div>
+
     </div>
+
     {% endfor %}
+
   </div>
 {% endblock %}
 

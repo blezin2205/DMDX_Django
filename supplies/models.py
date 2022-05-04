@@ -136,6 +136,10 @@ class SupplyInOrder(models.Model):
     internalName = models.CharField(max_length=50, null=True, blank=True)
     internalRef = models.CharField(max_length=30, null=True, blank=True)
 
+
+    def hasSupply(self):
+        return self.supply.inSupply.exists()
+
     def __str__(self):
         try:
             orderId = self.supply_for_order.id

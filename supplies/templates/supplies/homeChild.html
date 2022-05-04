@@ -8,14 +8,14 @@
 
      <div class="btn-group pb-3">
   <a href="/" class="btn btn-primary mx-2 {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
-  <a href="/onlyGood" class="btn btn-primary {% if isGood %} active {% endif %}">Придатні</a>
-  <a href="/onlyExpired" class="btn btn-primary {% if isExpired %} active {% endif %}">Прострочені</a>
+  <a href="/childSupply" class="btn btn-primary {% if isChild %} active {% endif %}">Список товарів</a>
 </div>
 
     <form method="get" class="form-inline justify-content-center">
          <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
              <div class="hstack gap-2">
                  {{ suppFilter.form.id|bootstrap }}
+                 {{ suppFilter.form.ordering|bootstrap }}
                  {{ suppFilter.form.supplyLot|bootstrap }}
                  {{ suppFilter.form.category|bootstrap }}
                  {{ suppFilter.form.ref|bootstrap }}
@@ -31,13 +31,13 @@
   <thead class="thead-dark">
     <tr>
       <th scope="col">{{supplies|length}}</th>
-      <th scope="col" class="textAlignLeft">Название товара</th>
+      <th scope="col" class="textAlignLeft">Назва товару</th>
         <th scope="col">REF</th>
         <th scope="col">LOT</th>
-        <th scope="col">Кол-во ()</th>
-        <th scope="col">Назначение</th>
-        <th scope="col">Срок годности</th>
-        <th scope="col">Обновлено</th>
+        <th scope="col">Кількість</th>
+        <th scope="col">Категорія</th>
+        <th scope="col">Строк придатнотсі</th>
+        <th scope="col">Оновлено</th>
     </tr>
   </thead>
   <tbody>
