@@ -34,8 +34,13 @@
       <th scope="col" class="textAlignLeft">Назва товару</th>
         <th scope="col">Категорія</th>
         <th scope="col">REF</th>
-        <th scope="col">LOT / Кількість / Строк придатності</th>
-{#        <th scope="col"></th>#}
+        <th scope="col" >
+            <div class="d-flex {% if not request.user.is_staff %} justify-content-around {% endif %} ">
+                <div style="width: 110px;">LOT</div>
+            <div style="width: 110px;">Кількість</div>
+            <div style="width: 110px;">Строк</div>
+            </div>
+        </th>
     </tr>
   </thead>
   <tbody>
@@ -87,7 +92,7 @@
      {% endfor %}
   </tbody>
 </table>
-
+</td>
 {% if request.user.is_staff %}
             <td>
             <div class="hstack gap-2">
