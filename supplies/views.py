@@ -20,7 +20,7 @@ from django.contrib.auth.decorators import login_required
 from bootstrap_modal_forms.generic import BSModalCreateView
 from django.http import JsonResponse
 import json
-from django.forms import formset_factory, modelformset_factory, inlineformset_factory
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
@@ -178,8 +178,15 @@ def home(request):
     #        sup.save(update_fields=['name', 'ref'])
 
 
+
+
     suppFilter = SupplyFilter(request.GET, queryset=supplies)
     supplies = suppFilter.qs
+
+    paginator = Paginator(supplies, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
 
     try:
         orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
@@ -192,7 +199,7 @@ def home(request):
         supp = supplies.get(id=request.POST.get('supp_id'))
         supp.delete()
 
-    return render(request, 'supplies/home.html', {'title': 'Всі товари', 'cart_items': cart_items, 'supplies': supplies,'suppFilter': suppFilter, 'isHome': True, 'isAll': True, 'uncompleteOrdersExist': uncompleteOrdersExist})
+    return render(request, 'supplies/home.html', {'title': 'Всі товари', 'cart_items': cart_items, 'supplies': page_obj,'suppFilter': suppFilter, 'isHome': True, 'isAll': True, 'uncompleteOrdersExist': uncompleteOrdersExist})
 
 
 @login_required(login_url='login')
