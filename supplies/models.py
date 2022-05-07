@@ -67,9 +67,9 @@ class Supply(models.Model):
 
 
 class Place(models.Model):
-    name = models.CharField(max_length=30)
-    city = models.CharField(max_length=20)
-    address = models.CharField(max_length=50, null=True, blank=True)
+    name = models.CharField(max_length=200)
+    city = models.CharField(max_length=100)
+    address = models.CharField(max_length=100, null=True, blank=True)
     link = models.CharField(max_length=300, null=True, blank=True)
 
     def __str__(self):
