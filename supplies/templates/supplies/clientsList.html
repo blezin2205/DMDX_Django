@@ -21,7 +21,7 @@
         {% endif %}
 
             {% if client.order_set.count > 0 %}
-                <a href="{% url 'ordersForClient' client.id %}">
+                <a href="{% url 'ordersForClient' client.id %} " class="icon-link me-3">
           Замовлення ({{ client.order_set.count }})
         </a>
             {% endif %}

@@ -39,7 +39,7 @@
     <tr>
       <th scope="row">{{ device.id }}</th>
       <td>{{ device.general_device.name }}</td>
-      <td>{{ device.serial_number }}</td>
+      <td>{% if device.serial_number  %}{{ device.serial_number }}{% endif %}</td>
          {% if isDevices %}
             <td>{{ device.in_place.name }}, {{ device.in_place.city }}</td>
         {% endif %}
