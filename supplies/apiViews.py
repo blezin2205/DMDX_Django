@@ -11,6 +11,13 @@ from .forms import *
 
 
 
+class GeneralSuppliesApiView(APIView):
+
+    def get(self, request):
+        supplies = GeneralSupply.objects.all()
+        suppliesSerializer = GeneralSupplySerializer(instance=supplies, many=True)
+        return Response(suppliesSerializer.data)
+
 
 class SuppliesApiView(APIView):
 

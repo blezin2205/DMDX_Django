@@ -65,3 +65,9 @@ class OrderInCartForm(ModelForm):
 
 class OrderForm(forms.Form):
     order = forms.ModelChoiceField(queryset=Order.objects.filter(isComplete=False))
+
+
+class DeviceForm(ModelForm):
+    class Meta:
+        model = Device
+        exclude = ['in_place']

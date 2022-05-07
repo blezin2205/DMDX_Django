@@ -337,6 +337,26 @@ def ordersForClient(request, client_id):
     return render(request, 'supplies/orders.html', {'title': title, 'orders': orders, 'isClients': True})
 
 
+@login_required(login_url='login')
+def devicesForClient(request, client_id):
+    place = get_object_or_404(Place, pk=client_id)
+    devices = place.device_set.all()
+    title = f'Всі прилади для клієнта: \n {place.name}, {place.city}'
+    if not devices:
+        title = f'В клієнта "{place.name}, {place.city}" ще немає замовлень'
+
+    return render(request, 'supplies/devices.html', {'title': title, 'devices': devices, 'isClients': True})
+
+
+def devicesList(request):
+    devices = Device.objects.all().order_by('general_device__name')
+    devFilters = DeviceFilter(request.GET, queryset=devices)
+    devices = devFilters.qs
+    title = f'Вcі прилади'
+    return render(request, 'supplies/devices.html', {'title': title, 'devices': devices, 'filter': devFilters, 'isDevices': True})
+
+
+
 
 @login_required(login_url='login')
 def serviceNotesForClient(request, client_id):
@@ -515,6 +535,24 @@ def addNewClient(request):
             return redirect('/clientsInfo')
     return render(request, 'supplies/createSupply.html',
                   {'title': f'Додати нового клієнта', 'form': form})
+
+
+
+@login_required(login_url='login')
+def addNewDeviceForClient(request, client_id):
+    client = Place.objects.get(id=client_id)
+    form = DeviceForm(request.POST or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            device = Device(general_device=form.cleaned_data['general_device'],
+                            serial_number=form.cleaned_data['serial_number'],
+                            date_installed=form.cleaned_data['date_installed'],
+                            in_place=client)
+            device.save()
+            return redirect('/clientsInfo')
+
+    return render(request, 'supplies/createSupply.html',
+                  {'title': f'Додати прилад для: \n {client.name}, {client.city}', 'form': form})
 
 
 @login_required(login_url='login')

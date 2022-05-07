@@ -14,11 +14,6 @@
           <h4>{{client.name}}, {{client.city}}.</h4>
           <a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-default" role="button"><i class="bi bi-pencil"></i></a>
       </div>
-
-
-
-
-
         {% if client.servicenote_set.count > 0 %}
             <a href="{% url 'serviceNotesForClient' client.id %}" class="icon-link me-3">
           Cервісні записи ({{ client.servicenote_set.count }})
@@ -27,9 +22,17 @@
 
             {% if client.order_set.count > 0 %}
                 <a href="{% url 'ordersForClient' client.id %}">
-          Замовлення клієнта ({{ client.order_set.count }})
+          Замовлення ({{ client.order_set.count }})
         </a>
             {% endif %}
+
+      {% if client.device_set.count > 0 %}
+                <a href="{% url 'devicesForClient' client.id %}">
+          Прилади ({{ client.device_set.count }})
+        </a>
+            {% endif %}
+
+
       <div class="vstack">
           {% if client.address %}
 
@@ -79,7 +82,7 @@
           Додати контакт
         </a>
 
-      <a href="{% url 'newWorkerForPlace' client.id %}" class="btn-default mx-2">
+      <a href="{% url 'addNewDeviceForClient' client.id %}" class="btn-default mx-2">
           Додати прилад
         </a>
       </div>

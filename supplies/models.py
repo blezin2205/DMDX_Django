@@ -201,3 +201,28 @@ class SupplyInOrderInCart(models.Model):
     class Meta:
         verbose_name = 'Товар в замовленні в корзині'
         verbose_name_plural = 'Товари в замовленні в коризні'
+
+
+class GeneralDevice(models.Model):
+    name = models.CharField(max_length=50, null=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Прилад (назва)'
+        verbose_name_plural = 'Прилади (назва)'
+
+
+class Device(models.Model):
+    general_device = models.ForeignKey(GeneralDevice, on_delete=models.CASCADE, null=True)
+    serial_number = models.CharField(max_length=50, null=True, blank=True)
+    in_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
+    date_installed = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.general_device.name} in {self.in_place.name}, {self.in_place.city}'
+
+    class Meta:
+        verbose_name = 'Прилад'
+        verbose_name_plural = 'Прилади'

@@ -1,0 +1,52 @@
+{% extends 'supplies/base.html' %}
+{% load static %}
+{% load bootstrap %}
+
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+
+    {% if isDevices %}
+     <form method="get" class="form-inline justify-content-center">
+         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
+             <div class="hstack gap-2">
+                 {{ filter.form.in_place|bootstrap }}
+                 {{ filter.form.general_device|bootstrap }}
+                 {{ filter.form.serial_number|bootstrap }}
+             </div>
+             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
+
+</div>
+        </form>
+    {% endif %}
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th scope="col">ID ({{ devices|length }})</th>
+      <th scope="col">Прилад</th>
+      <th scope="col">Серійний номер</th>
+        {% if isDevices %}
+            <th scope="col">Клієнт</th>
+        {% endif %}
+      <th scope="col">Дата інсталяції</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for device in devices %}
+    <tr>
+      <th scope="row">{{ device.id }}</th>
+      <td>{{ device.general_device.name }}</td>
+      <td>{{ device.serial_number }}</td>
+         {% if isDevices %}
+            <td>{{ device.in_place.name }}, {{ device.in_place.city }}</td>
+        {% endif %}
+      <td>{{ device.date_installed|date:"d.m.Y" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

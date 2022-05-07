@@ -14,7 +14,7 @@ urlpatterns = [
     path('delete_supply/', views.deleteSupply, name='delete_supply'),
     path('delete_supply_in_order/', views.deleteSupplyInOrder, name='delete_supply_in_order'),
 
-
+    path('allDevices/', views.devicesList, name='allDevices'),
 
 
     path('add-general-supply', views.addgeneralSupply, name='addGeneralSupply'),
@@ -35,9 +35,11 @@ urlpatterns = [
 
     path('clientsInfo', views.clientsInfo, name='clientsInfo'),
     path('clientsInfo/<int:client_id>/orders', views.ordersForClient, name='ordersForClient'),
+    path('clientsInfo/<int:client_id>/devices', views.devicesForClient, name='devicesForClient'),
     path('clientsInfo/<int:place_id>/add-new-worker', views.addNewWorkerForClient, name='newWorkerForPlace'),
     path('clientsInfo/<int:client_id>/serviceNotes', views.serviceNotesForClient, name='serviceNotesForClient'),
     path('clientsInfo/<int:client_id>/editInfo', views.editClientInfo, name='editClientInfo'),
+    path('clientsInfo/<int:client_id>/add-new-device', views.addNewDeviceForClient, name='addNewDeviceForClient'),
 
 
 
@@ -50,7 +52,8 @@ urlpatterns = [
     path('orders/<int:order_id>', views.orderDetail, name='orderDetail'),
 
 
-    path('api', apiViews.SuppliesApiView.as_view()),
+    path('api/supplies', apiViews.SuppliesApiView.as_view()),
+    path('api/general-supplies', apiViews.GeneralSuppliesApiView.as_view()),
     path('api/<int:pk>/', apiViews.SupplyDetailView.as_view()),
 
     path('api/orders', apiViews.OrdersApiView.as_view()),

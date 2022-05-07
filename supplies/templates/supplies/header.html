@@ -7,7 +7,7 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="navbar-collapse collapse" id="collapseNavbar">
-            <ul class="navbar-nav gap-3">
+            <ul class="navbar-nav gap-2">
                      <li class="nav-item"><a href="/" class="btn btn-outline-primary{% if isHome %} active {% endif %}" aria-current="page">Склад</a></li>
 
                    <li class="nav-item"><a href="/orders" class="btn btn-outline-primary{% if isOrders %} active {% endif %}" aria-current="page">Замовлення</a></li>
@@ -15,6 +15,7 @@
                     <li class="nav-item"><a href="/clientsInfo" class="btn btn-outline-primary{% if isClients %} active {% endif %}" aria-current="page">Клієнти</a></li>
 
             <li class="nav-item"><a href="/serviceNotes" class="btn btn-outline-primary{% if isService %} active {% endif %}" aria-current="page">Сервісні записи</a></li>
+            <li class="nav-item"><a href="/allDevices" class="btn btn-outline-primary{% if isDevices %} active {% endif %}" aria-current="page">Прилади</a></li>
 
             {% if request.user.is_staff %}
                 <li class="nav-item dropdown mx-4">

@@ -83,3 +83,18 @@ class ServiceNotesFilter(django_filters.FilterSet):
         self.filters['from_user'].label = "Інженер"
         self.filters['for_place'].label = "Клієнт"
 
+
+class DeviceFilter(django_filters.FilterSet):
+    serial_number = CharFilter(field_name='serial_number', lookup_expr='icontains', label='Серійний номер')
+    class Meta:
+        model = Device
+        exclude = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(DeviceFilter, self).__init__(*args, **kwargs)
+        self.filters['in_place'].extra.update(
+            {'empty_label': 'Всі'})
+        self.filters['general_device'].extra.update(
+            {'empty_label': 'Всі'})
+        self.filters['in_place'].label = "Клієнт"
+        self.filters['general_device'].label = "Прилад"
