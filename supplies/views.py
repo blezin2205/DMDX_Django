@@ -681,9 +681,10 @@ def render_to_xls(request, order_id):
         format = wb.add_format()
         format.set_font_size(14)
         ws.write(1, 0, f'Коммент.: {order.comment}', format)
+        ws.write(2, 0, f'Всього: {supplies_in_order.count()} шт.', format)
 
     format = wb.add_format()
-    format.set_font_size(14)
+    format.set_font_size(12)
 
     rows = supplies_in_order.values_list('generalSupply__name', 'generalSupply__ref', 'lot', 'count_in_order', 'date_expired')
 
@@ -694,11 +695,11 @@ def render_to_xls(request, order_id):
             ws.write(row_num, 0, row_num - 3)
             ws.write(row_num, col_num + 1, str(row[col_num]), format)
 
-    ws.set_column(0, 0, 2)
-    ws.set_column(1, 1, 32)
-    ws.set_column(2, 3, 13)
-    ws.set_column(4, 4, 5)
-    ws.set_column(5, 5, 11)
+    ws.set_column(0, 0, 3)
+    ws.set_column(1, 1, 34)
+    ws.set_column(2, 3, 12)
+    ws.set_column(4, 4, 4)
+    ws.set_column(5, 5, 10)
 
     ws.add_table(3, 0, supplies_in_order.count() + 3, len(columns_table) - 1, {'columns': columns_table})
     wb.close()
