@@ -676,7 +676,7 @@ def render_to_xls(request, order_id):
      {'header': 'Тер.прид.'},
      ]
 
-    ws.write(0, 0, f'Замов. №{order_id} для {order.place.name}, {order.place.city} від {order.dateCreated}', format)
+    ws.write(0, 0, f'Замов. №{order_id} для {order.place.name}, {order.place.city} від {order.dateCreated.strftime("%d-%m-%Y")}', format)
     if order.comment:
         format = wb.add_format()
         format.set_font_size(14)
@@ -686,14 +686,15 @@ def render_to_xls(request, order_id):
     format = wb.add_format()
     format.set_font_size(12)
 
-    rows = supplies_in_order.values_list('generalSupply__name', 'generalSupply__ref', 'lot', 'count_in_order', 'date_expired')
+    # rows = supplies_in_order.values_list('generalSupply__name', 'generalSupply__ref', 'lot', 'count_in_order', 'date_expired')
 
-    for row in rows:
+    for row in supplies_in_order:
         row_num += 1
+        val_row = [row.generalSupply.name, row.generalSupply.ref, row.lot, row.count_in_order, row.date_expired.strftime("%d-%m-%Y")]
 
-        for col_num in range(len(row)):
+        for col_num in range(len(val_row)):
             ws.write(row_num, 0, row_num - 3)
-            ws.write(row_num, col_num + 1, str(row[col_num]), format)
+            ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
 
     ws.set_column(0, 0, 3)
     ws.set_column(1, 1, 34)
