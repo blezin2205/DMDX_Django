@@ -50,6 +50,7 @@ urlpatterns = [
     path('serviceNotes/update/<int:note_id>', views.updateNote, name='updateNote'),
 
     path('orders/<int:order_id>', views.orderDetail, name='orderDetail'),
+    path('order-detail-pdf/<int:order_id>', views.orderDetail_pdf, name='orderDetailPdf'),
 
 
     path('api/supplies', apiViews.SuppliesApiView.as_view()),

@@ -1,5 +1,12 @@
+import csv
+
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse, FileResponse
+from django.template.loader import get_template, render_to_string
+from django.views import View
+
+from xhtml2pdf import pisa
+
 from .decorators import unauthenticated_user, allowed_users
 from .models import *
 from .serializers import *
@@ -7,20 +14,19 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from django.contrib.auth import authenticate, login, logout
-from rest_framework import renderers, status
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from django.utils import timezone
 from .filters import *
-from django.urls import reverse_lazy
-from django.http import Http404
 from .forms import *
 from django.contrib.auth.decorators import login_required
-from bootstrap_modal_forms.generic import BSModalCreateView
 from django.http import JsonResponse
 import json
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.paginator import Paginator
+
+from io import BytesIO
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+import os
+
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
@@ -589,6 +595,43 @@ def deleteServiceNote(request, note_id):
     if request.method == 'POST':
         note.delete()
     return redirect('/serviceNotes')
+
+
+def orderDetail_pdf(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+    supplies_in_order = order.supplyinorder_set.all()
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename=orderDetail' + \
+        str(order.id) + str(order.place.name) + str(order.place.city) + '.pdf'
+    template = get_template('supplies/orderdetail-pdf.html')
+    pisa_status = render_to_pdf(supplies_in_order)
+    return HttpResponse(pisa_status, content_type='application/pdf')
+
+
+def fetch_resources(uri, rel):
+    path = os.path.join(uri.replace(settings.STATIC_URL, ""))
+    return path
+
+def render_to_pdf(supplies_in_order):
+    template = get_template('supplies/orderdetail-pdf.html')
+    html = template.render({'supps': supplies_in_order})
+    result = BytesIO()
+    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result, link_callback=fetch_resources)
+    if not pdf.err:
+        return HttpResponse(result.getvalue(), content_type='application/pdf')
+    return None
+
+
+def orderDetail_csv(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+    supplies_in_order = order.supplyinorder_set.all()
+
+
+    pdf = render_to_pdf('firstapp/payment/invoice.html', supplies_in_order)
+
+
+
 
 
 
