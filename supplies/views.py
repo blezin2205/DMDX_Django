@@ -663,7 +663,7 @@ def render_to_xls(request, order_id):
     row_num = 3
 
     wb = Workbook(response, {'in_memory': True})
-    ws = wb.add_worksheet('test')
+    ws = wb.add_worksheet(f'№{order_id}, {order.place.name}, {order.place.city}')
     format = wb.add_format({'bold': True})
     format.set_font_size(16)
 
@@ -673,10 +673,10 @@ def render_to_xls(request, order_id):
      {'header': 'REF'},
      {'header': 'LOT'},
      {'header': 'К-ть'},
-     {'header': 'Строк'},
+     {'header': 'Тер.прид.'},
      ]
 
-    ws.write(0, 0, f'Замов. №{order_id} для {order.place.name}, {order.place.city}', format)
+    ws.write(0, 0, f'Замов. №{order_id} для {order.place.name}, {order.place.city} від {order.dateCreated}', format)
     if order.comment:
         format = wb.add_format()
         format.set_font_size(14)
