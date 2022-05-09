@@ -254,8 +254,16 @@ def cartDetail(request):
                     supply.count -= countInOrder
                     supply.save(update_fields=['count'])
                 else:
-                    supply.countOnHold = countOnHold + countInOrder
-                    supply.save(update_fields=['countOnHold'])
+                    if supply.countOnHold:
+                         supply.countOnHold = countOnHold + countInOrder
+                         supply.save(update_fields=['countOnHold'])
+                    else:
+                        supply.countOnHold = 0
+                        supply.save(update_fields=['countOnHold'])
+                        supply.countOnHold = countOnHold + countInOrder
+                        supply.save(update_fields=['countOnHold'])
+
+
         orderInCart.delete()
 
         return redirect('/orders')
