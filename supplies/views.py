@@ -686,11 +686,19 @@ def render_to_xls(request, order_id):
     format = wb.add_format()
     format.set_font_size(12)
 
-    # rows = supplies_in_order.values_list('generalSupply__name', 'generalSupply__ref', 'lot', 'count_in_order', 'date_expired')
-
     for row in supplies_in_order:
         row_num += 1
-        val_row = [row.generalSupply.name, row.generalSupply.ref, row.lot, row.count_in_order, row.date_expired.strftime("%d-%m-%Y")]
+        name = row.generalSupply.name
+        ref = ''
+        if row.generalSupply.ref:
+           ref = row.generalSupply.ref
+        lot = ''
+        if row.lot:
+            lot = row.lot
+        count = row.count_in_order
+        date_expired = row.date_expired.strftime("%d-%m-%Y")
+
+        val_row = [name, ref, lot, count, date_expired]
 
         for col_num in range(len(val_row)):
             ws.write(row_num, 0, row_num - 3)
