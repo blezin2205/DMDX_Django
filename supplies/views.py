@@ -28,7 +28,7 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 import os
 from wkhtmltopdf.views import PDFTemplateView, PDFTemplateResponse
-import xlsxwriter
+from xlsxwriter.workbook import Workbook
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
@@ -658,44 +658,50 @@ def render_to_xls(request, order_id):
     supplies_in_order = order.supplyinorder_set.all()
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f"attachment; filename=Order-{order_id}.xls"
-    wb = xlwt.Workbook(encoding='utf-8')
-    ws = wb.add_sheet(f'Order#{order.id}')
+    response['Content-Disposition'] = f"attachment; filename=Order-{order_id}.xlsx"
+
     row_num = 3
-    font_style = xlwt.XFStyle()
-    font_style.font.bold = True
-    font_style.font.height = 20*14
 
-    columns = ['Назва товару', 'Категорія', 'REF', 'LOT', 'К-ть', 'Строк']
+    wb = Workbook(response, {'in_memory': True})
+    ws = wb.add_worksheet('test')
+    format = wb.add_format({'bold': True})
+    format.set_font_size(16)
 
-    ws.write(0, 0, f'Замов. №{order_id} для {order.place.name}, {order.place.city}', font_style)
+
+    columns_table = [ {'header': '№'},
+        {'header': 'Назва товару'},
+     {'header': 'REF'},
+     {'header': 'LOT'},
+     {'header': 'К-ть'},
+     {'header': 'Строк'},
+     ]
+
+    ws.write(0, 0, f'Замов. №{order_id} для {order.place.name}, {order.place.city}', format)
     if order.comment:
-        font_style = xlwt.XFStyle()
-        font_style.font.height = 20 * 13
-        ws.write(1, 0, f'Коммент.: {order.comment}', font_style)
+        format = wb.add_format()
+        format.set_font_size(14)
+        ws.write(1, 0, f'Коммент.: {order.comment}', format)
 
+    format = wb.add_format()
+    format.set_font_size(14)
 
-    font_style = xlwt.XFStyle()
-    font_style.font.bold = True
-    for col_num in range(len(columns)):
-        ws.write(row_num, col_num, columns[col_num], font_style)
-
-    font_style = xlwt.XFStyle()
-    font_style.font.height = 20 * 12
-
-    rows = supplies_in_order.values_list('generalSupply__general__name', 'generalSupply__category__name', 'generalSupply__general__ref', 'lot', 'count_in_order', 'date_expired')
+    rows = supplies_in_order.values_list('generalSupply__name', 'generalSupply__ref', 'lot', 'count_in_order', 'date_expired')
 
     for row in rows:
         row_num += 1
 
         for col_num in range(len(row)):
-            ws.write(row_num, col_num, str(row[col_num]), font_style)
+            ws.write(row_num, 0, row_num - 3)
+            ws.write(row_num, col_num + 1, str(row[col_num]), format)
 
-    first_clm = ws.col(0)
-    count_clm = ws.col(4)
-    first_clm.width = 256 * 30
-    count_clm.width = 256 * 5
-    wb.save(response)
+    ws.set_column(0, 0, 2)
+    ws.set_column(1, 1, 32)
+    ws.set_column(2, 3, 13)
+    ws.set_column(4, 4, 5)
+    ws.set_column(5, 5, 11)
+
+    ws.add_table(3, 0, supplies_in_order.count() + 3, len(columns_table) - 1, {'columns': columns_table})
+    wb.close()
 
     return response
 
