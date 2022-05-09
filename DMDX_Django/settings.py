@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'django_filters',
     'bootstrapform',
     'bootstrap_modal_forms',
-    'mathfilters'
+    'mathfilters',
+    'wkhtmltopdf'
 ]
 
 MIDDLEWARE = [
@@ -65,6 +66,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+WKHTMLTOPDF_CMD = '/usr/local/bin/wkhtmltopdf'
+WKHTMLTOPDF_CMD_OPTIONS = {
+    'quiet': True,
+    'enable-local-file-access': True
+}
 
 STATIC_URL = '/static/'
 

@@ -51,6 +51,7 @@ urlpatterns = [
 
     path('orders/<int:order_id>', views.orderDetail, name='orderDetail'),
     path('order-detail-pdf/<int:order_id>', views.orderDetail_pdf, name='orderDetailPdf'),
+    path('order-detail-csv/<int:order_id>', views.render_to_xls, name='orderDetailCsv'),
 
 
     path('api/supplies', apiViews.SuppliesApiView.as_view()),

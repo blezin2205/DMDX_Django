@@ -60,31 +60,38 @@ table td.grand {
   border-top: 1px solid #5D6975;;
 }
 
+@font-face {
+   font-family: "DejaVu Sans Mono";
+   src: url('{% static 'fonts/DejaVuSansMono.ttf' %}');
+}
 
+body {
+    font-family: "DejaVu Sans Mono";
+}
 
-@font-face { font-family: Arsenal; src: url("{% static 'fonts/alpha_echo.ttf' %}"); }
-        body {
-            font-family: Arsenal;
-        font-size: 14px
-        }
+.arsenal_method {
+    font-family: "DejaVu Sans Mono";
+    {#font-size: 30px;#}
+}
         @page  {
             size: A4;
             padding: 1.5cm;
 
         }
 
-.arsenal_method {
-    font-family: "Arsenal";
-    font-size: 30px;
-}
+
 </style>
 </head>
 <body>
+
+<h1> Hello   </h1>
+
+
         <table class="table">
   <thead class="thead">
     <tr>
       <th>{{supps|length}}</th>
-      <th class="arsenal_method">Name</th>
+      <th class="arsenal_method">Назва</th>
         <th>REF</th>
         <th>LOT</th>
         <th>Кількість</th>
@@ -98,7 +105,7 @@ table td.grand {
 
      <tr>
       <th scope="row">{{el.id}}</th>
-      <td style="text-align: left;">{{ el.generalSupply.name }}</td>
+      <td style="text-align: left;" class="arsenal_method">{{ el.generalSupply.name }}</td>
       <td>
 
           {% if el.generalSupply.ref is not none %}

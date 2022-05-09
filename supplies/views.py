@@ -1,9 +1,10 @@
 import csv
 
+import xlwt as xlwt
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse
 from django.template.loader import get_template, render_to_string
-from django.views import View
+from django.views.generic.base import View
 
 from xhtml2pdf import pisa
 
@@ -26,7 +27,8 @@ from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 import os
-
+from wkhtmltopdf.views import PDFTemplateView, PDFTemplateResponse
+import xlsxwriter
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
@@ -617,23 +619,77 @@ def render_to_pdf(supplies_in_order):
     template = get_template('supplies/orderdetail-pdf.html')
     html = template.render({'supps': supplies_in_order})
     result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result, link_callback=fetch_resources)
+    pdf = pisa.pisaDocument(BytesIO(html.encode('utf-8')), result, link_callback=fetch_resources, encoding='utf-8')
     if not pdf.err:
         return HttpResponse(result.getvalue(), content_type='application/pdf')
     return None
 
 
-def orderDetail_csv(request, order_id):
+def render_to_csv(request, order_id):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=venues.csv'
+
+    # Create a csv writer
+    writer = csv.writer(response)
+
+    # Designate The Model
     order = get_object_or_404(Order, pk=order_id)
     supplies_in_order = order.supplyinorder_set.all()
 
+    # Add column headings to the csv file
+    writer.writerow(['Назва товару', 'Категорія', 'REF', 'LOT', 'Кількість', 'Строк придатності'])
 
-    pdf = render_to_pdf('firstapp/payment/invoice.html', supplies_in_order)
+    # Loop Thu and output
+    for supp in supplies_in_order:
+        writer.writerow([supp.generalSupply.name, supp.generalSupply.category.name, supp.generalSupply.ref, supp.lot, supp.date_expired])
+
+    return response
+
+def render_to_xls(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+    supplies_in_order = order.supplyinorder_set.all()
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f"attachment; filename=Order-{order_id}.xls"
+    wb = xlwt.Workbook(encoding='utf-8')
+    ws = wb.add_sheet(f'Order#{order.id}')
+    row_num = 3
+    font_style = xlwt.XFStyle()
+    font_style.font.bold = True
+    font_style.font.height = 20*14
+
+    columns = ['Назва товару', 'Категорія', 'REF', 'LOT', 'К-ть', 'Строк']
+
+    ws.write(0, 0, f'Замов. №{order_id} для {order.place.name}, {order.place.city}', font_style)
+    if order.comment:
+        font_style = xlwt.XFStyle()
+        font_style.font.height = 20 * 13
+        ws.write(1, 0, f'Коммент.: {order.comment}', font_style)
 
 
+    font_style = xlwt.XFStyle()
+    font_style.font.bold = True
+    for col_num in range(len(columns)):
+        ws.write(row_num, col_num, columns[col_num], font_style)
 
+    font_style = xlwt.XFStyle()
+    font_style.font.height = 20 * 12
 
+    rows = supplies_in_order.values_list('generalSupply__general__name', 'generalSupply__category__name', 'generalSupply__general__ref', 'lot', 'count_in_order', 'date_expired')
 
+    for row in rows:
+        row_num += 1
+
+        for col_num in range(len(row)):
+            ws.write(row_num, col_num, str(row[col_num]), font_style)
+
+    first_clm = ws.col(0)
+    count_clm = ws.col(4)
+    first_clm.width = 256 * 30
+    count_clm.width = 256 * 5
+    wb.save(response)
+
+    return response
 
 
 @login_required(login_url='login')
