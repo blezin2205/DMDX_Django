@@ -35,6 +35,19 @@ firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 
+
+def countOnHoldMake(request):
+    supps = Supply.objects.all()
+
+    for supp in supps:
+        if not supp.countOnHold:
+            supp.countOnHold = 0
+            supp.save(update_fields=['countOnHold'])
+
+    return redirect('/')
+
+
+
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def deleteSupply(request):
@@ -185,9 +198,6 @@ def home(request):
     #        sup.ref = gen.ref
     #        sup.save(update_fields=['name', 'ref'])
 
-
-
-
     suppFilter = SupplyFilter(request.GET, queryset=supplies)
     supplies = suppFilter.qs
 
@@ -287,6 +297,70 @@ def childSupply(request):
     except:
         orderInCart = None
         cart_items = 0
+
+    if request.GET.get('xls_button'):
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f"attachment; filename=Supply_List.xlsx"
+
+        row_num = 3
+
+        wb = Workbook(response, {'in_memory': True})
+        ws = wb.add_worksheet('Supply-List')
+        format = wb.add_format({'bold': True})
+        format.set_font_size(16)
+
+        columns_table = [{'header': '№'},
+                         {'header': 'Назва товару'},
+                         {'header': 'REF'},
+                         {'header': 'LOT'},
+                         {'header': 'К-ть'},
+                         {'header': 'Тер.прид.'},
+                         {'header': 'Категорія'},
+                         ]
+
+        ws.write(0, 0,
+                 f'Загальний список товарів',
+                 format)
+
+        format = wb.add_format()
+        format.set_font_size(12)
+
+        for row in supplies:
+            row_num += 1
+            name = row.general_supply.name
+            ref = ''
+            if row.general_supply.ref:
+                ref = row.general_supply.ref
+            lot = ''
+            if row.supplyLot:
+                lot = row.supplyLot
+            count = row.count
+            date_expired = row.expiredDate.strftime("%d-%m-%Y")
+            category = row.general_supply.category.name
+
+            val_row = [name, ref, lot, count, date_expired, category]
+
+            for col_num in range(len(val_row)):
+                ws.write(row_num, 0, row_num - 3)
+                ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
+
+        ws.set_column(0, 0, 5)
+        ws.set_column(1, 1, 35)
+        ws.set_column(2, 3, 15)
+        ws.set_column(4, 4, 10)
+        ws.set_column(5, 5, 10)
+        ws.set_column(6, 6, 12)
+
+        ws.add_table(3, 0, suppFilter.qs.count() + 3, len(columns_table) - 1, {'columns': columns_table})
+        wb.close()
+        return response
+
+
+
+
+
+
 
     return render(request, 'supplies/homeChild.html',
                   {'title': 'Дочерні товари', 'supplies': supplies,  'cart_items': cart_items, 'suppFilter': suppFilter, 'isHome': True, 'isChild': True})

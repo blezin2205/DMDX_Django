@@ -9,6 +9,8 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('childSupply', views.childSupply, name='childSupply'),
 
+     path('count-on-hold-make', views.countOnHoldMake, name='countOnHoldMake'),
+
     path('update_item/', views.updateItem, name='update_item'),
     path('cart/update_item/', views.updateCartItem, name='update_item_detail'),
     path('delete_supply/', views.deleteSupply, name='delete_supply'),

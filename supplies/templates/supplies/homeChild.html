@@ -25,7 +25,23 @@
              <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
 
 </div>
+
+{#    <input type="hidden" name="xls_button"#}
+{#        value="{{ supplies }}" />#}
+{#    <button type="submit" class="btn btn-outline">#}
+{#        Export to Excel#}
+{#    </button>#}
         </form>
+    <form method="GET">
+    {% csrf_token %}
+    <input type="hidden" name="xls_button"
+        value="{{ suppFilter }}" />
+    <button type="submit" class="btn btn-outline">
+        Export to Excel
+    </button>
+
+    </form>
+
 
         <table class="table centred mt-5">
   <thead class="thead-dark">
