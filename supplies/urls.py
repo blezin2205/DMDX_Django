@@ -12,6 +12,7 @@ urlpatterns = [
      path('count-on-hold-make', views.countOnHoldMake, name='countOnHoldMake'),
 
     path('update_item/', views.updateItem, name='update_item'),
+    path('update_order_count/', views.update_order_count, name='update_order_count'),
     path('cart/update_item/', views.updateCartItem, name='update_item_detail'),
     path('delete_supply/', views.deleteSupply, name='delete_supply'),
     path('delete_supply_in_order/', views.deleteSupplyInOrder, name='delete_supply_in_order'),

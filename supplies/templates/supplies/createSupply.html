@@ -10,6 +10,25 @@
   {% csrf_token %}
 
 {{ form|bootstrap }}
+
+{#    {% if workersForm %}#}
+{#<section class="h-100" style="background-color: #eee;">#}
+{#  <div class="container h-100 py-3">#}
+{#      {% for workerForm in workersForm %}#}
+{#            <div class="card rounded-5 mb-4">#}
+{#          <div class="card-body px-4">#}
+{#            {{ workerForm|bootstrap_horizontal }}#}
+{#            </div>#}
+{#          </div>#}
+{##}
+{#        {% endfor %}#}
+{##}
+{#      </div>#}
+{#        </section>#}
+{##}
+{#    {% endif %}#}
+
+
 <input type="hidden" name="next" value="{{ request.GET.next }}">
 <button class="btn btn-outline-primary my-5" type="submit">Зберегти</button>
 </form>

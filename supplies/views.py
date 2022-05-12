@@ -21,6 +21,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 import json
 from django.core.paginator import Paginator
+from django.forms import formset_factory, modelformset_factory
 
 from io import BytesIO
 from django.http import HttpResponse
@@ -116,6 +117,34 @@ def updateItem(request):
 
     if suppInCart.count_in_order <= 0:
         suppInCart.delete()
+
+
+    return  JsonResponse('Item was added', safe=False)
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def update_order_count(request):
+    data = json.loads(request.body)
+    prodId = data['productId']
+    action = data['action']
+
+    print('Action', action)
+    print('id', prodId)
+
+    supply = SupplyInOrder.objects.get(id=prodId)
+
+    if action == 'add':
+        supply.count_in_order = (supply.count_in_order + 1)
+        supply.supply.countOnHold += 1
+    elif action == 'remove':
+        supply.count_in_order = (supply.count_in_order - 1)
+        supply.supply.countOnHold -= 1
+
+    supply.supply.save()
+    supply.save()
+
+    if supply.count_in_order <= 0:
+        supply.delete()
 
 
     return  JsonResponse('Item was added', safe=False)

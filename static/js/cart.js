@@ -3,6 +3,7 @@ var updateDetailBtns = document.getElementsByClassName('update-cart-detail')
 var updateOrderStatusBtns = document.getElementsByClassName('update-order-status')
 var deleteBtns = document.getElementsByClassName('delete-supp-button')
 var deleteSuppInOrderBtns = document.getElementsByClassName('delete-suppinorder-button')
+var update_count_in_order = document.getElementsByClassName('update-order-count')
 
 
 for(var a = 0; a < deleteBtns.length; a++) {
@@ -11,6 +12,17 @@ for(var a = 0; a < deleteBtns.length; a++) {
         var action = this.dataset.action
 
         var url = 'delete_supply/'
+        senadAction(productId, action, url)
+
+    })
+}
+
+for(var a = 0; a < update_count_in_order.length; a++) {
+    update_count_in_order[a].addEventListener('click', function () {
+        var productId = this.dataset.product
+        var action = this.dataset.action
+
+        var url = '/update_order_count/'
         senadAction(productId, action, url)
 
     })

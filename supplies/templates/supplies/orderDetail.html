@@ -14,16 +14,16 @@
 </h3>
 {% if order.comment %}
 <h4>
-  <small class="text-muted">Комментарий: {{order.comment}}</small>
+  <small class="text-muted">Комментарій: {{order.comment}}</small>
 </h4>
 {% endif %}
 <h5>
   <small class="text-muted">Cтворив: {{order.userCreated.last_name}}</small>
 </h5>
 {% if order.isComplete %}
-        <p class="mb-2"><span>Статус:</span> <span class="complete">Отправлен</span> <span>{{order.dateSent|date:"d.m.Y" }}</span></p>
+        <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span> <span>{{order.dateSent|date:"d.m.Y" }}</span></p>
         {% else %}
-        <p class="mb-2"><span>Статус:</span> <span class="waiting">В ожидании</span></p>
+        <p class="mb-2"><span>Статус:</span> <span class="waiting">В очікуванні</span></p>
         {%  endif %}
 
 
@@ -40,7 +40,7 @@
         <th scope="col">LOT</th>
         <th scope="col">Кількість</th>
         <th scope="col">Призначення</th>
-        <th scope="col">Строк придатності</th>
+        <th scope="col">Термін придатності</th>
         <th scope="col">Оновлено</th>
         {% if not order.isComplete and request.user.is_staff %}
         <th scope="col">Action</th>
@@ -65,7 +65,18 @@
                 {% endif %}
                     </td>
 
-            <td>{{ el.count_in_order }}</td>
+            <td>
+                <div class="hstack gap-2 justify-content-center">
+                    {% if not order.isComplete and request.user.is_staff %}
+                    <button data-product="{{ el.id }}" data-action="remove" class="btn btn-lg update-order-count text-primary" type="submit"><i class="bi bi-dash"></i></button>
+                    {% endif %}
+                    {{ el.count_in_order }}
+                {% if not order.isComplete and request.user.is_staff %}
+                    <button data-product="{{ el.id }}" data-action="add" class="btn btn-lg update-order-count text-primary" type="submit"><i class="bi bi-plus"></i></button>
+                {% endif %}
+
+                </div>
+            </td>
             <td>{{ el.generalSupply.category.name }}</td>
             <td>{{ el.date_expired|date:"d.m.Y" }}</td>
             <td>{{ el.date_created|date:"d.m.Y" }}</td>
