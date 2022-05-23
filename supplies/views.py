@@ -1,4 +1,5 @@
 import csv
+import socket
 
 import xlwt as xlwt
 from django.shortcuts import render, get_object_or_404, redirect
@@ -30,11 +31,27 @@ from xhtml2pdf import pisa
 import os
 from wkhtmltopdf.views import PDFTemplateView, PDFTemplateResponse
 from xlsxwriter.workbook import Workbook
+import aiohttp
+import requests
+import asyncio
+
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
+
+
+async def httpRequest(request):
+
+        param = {'apiKey': '99f738524ca3320ece4b43b10f4181b1',
+                'modelName': 'Counterparty',
+             'calledMethod': 'getCounterpartyContactPersons',
+             'methodProperties': {'Ref': '3b0e7317-2a6b-11eb-8513-b88303659df5'}}
+
+        data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(param)).json()
+
+        return  render(request, "supplies/http_response.html", {'data': data})
 
 
 def countOnHoldMake(request):
@@ -817,6 +834,69 @@ def render_to_xls(request, order_id):
     wb.close()
 
     return response
+
+
+@login_required(login_url='login')
+def devices_render_to_xls(request):
+    devices = Device.objects.all()
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f"attachment; filename=Devices-List.xlsx"
+
+    row_num = 3
+
+    wb = Workbook(response, {'in_memory': True})
+    ws = wb.add_worksheet('Devices-List')
+    format = wb.add_format({'bold': True})
+    format.set_font_size(24)
+
+    columns_table = [{'header': '№'},
+                     {'header': 'Name'},
+                     {'header': 'S/N'},
+                     {'header': 'Customer City'},
+                     {'header': 'Customer Name'},
+                     {'header': 'Date Installed'}
+                     ]
+
+    ws.write(0, 0,
+             'Devices List DIAMEDIX Ukraine',
+             format)
+
+    format = wb.add_format()
+    format.set_font_size(22)
+    for row in devices:
+        row_num += 1
+        name = row.general_device.name
+        customer = row.in_place.name
+        customer_city = row.in_place.city
+        serial_number = ''
+        if row.serial_number:
+            serial_number = row.serial_number
+        date_installed = ''
+        if row.date_installed:
+            date_installed = row.date_installed.strftime("%d-%m-%Y")
+
+        val_row = [name, serial_number, customer_city, customer, date_installed]
+
+        for col_num in range(len(val_row)):
+            ws.write(row_num, 0, row_num - 3, format)
+            ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
+
+    ws.set_column(0, 0, 5)
+    ws.set_column(1, 1, 30)
+    ws.set_column(2, 2, 20)
+    ws.set_column(3, 3, 25)
+    ws.set_column(4, 4, 65)
+    ws.set_column(5, 5, 20)
+
+    ws.add_table(3, 0, devices.count() + 3, len(columns_table) - 1, {'columns': columns_table})
+    wb.close()
+
+    return response
+
+
+
+
 
 
 @login_required(login_url='login')

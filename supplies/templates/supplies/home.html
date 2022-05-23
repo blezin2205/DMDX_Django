@@ -7,6 +7,24 @@
 {% endblock %}
 
 {% block content %}
+
+    <label>Choose an ice cream flavor:
+
+  <select class="ice-cream" name="ice-cream">
+  <option value="">Select One …</option>
+      {% for contact in contacts %}
+
+            <option value="{{ contact }}">{{ contact }}</option>
+        {% endfor %}
+
+
+    <option value="sardine">Sardine</option>
+    <option value="vanilla">Vanilla</option>
+  </select>
+</label>
+
+<div class="result"></div>
+
   <div class="btn-group pb-3">
   <a href="/" class="btn btn-primary mx-2 {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
   <a href="/childSupply" class="btn btn-primary {% if isChild %} active {% endif %}">Список товарів</a>

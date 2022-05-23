@@ -18,6 +18,8 @@ urlpatterns = [
     path('delete_supply_in_order/', views.deleteSupplyInOrder, name='delete_supply_in_order'),
 
     path('allDevices/', views.devicesList, name='allDevices'),
+    path('allDevices/export-to-xls', views.devices_render_to_xls, name='devices_render_to_xls'),
+
 
 
     path('add-general-supply', views.addgeneralSupply, name='addGeneralSupply'),
@@ -67,6 +69,9 @@ urlpatterns = [
 
     # path('api/auth', views.RegistrationAPIView.as_view()),
     # path('api/login', views.LoginAPIView.as_view()),
+
+
+    path('http-response', views.httpRequest),
 
 
 
