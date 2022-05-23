@@ -1,13 +1,6 @@
 import csv
-import socket
-
-import xlwt as xlwt
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse
-from django.template.loader import get_template, render_to_string
-from django.views.generic.base import View
-
-from xhtml2pdf import pisa
 
 from .decorators import unauthenticated_user, allowed_users
 from .models import *
@@ -22,24 +15,19 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 import json
 from django.core.paginator import Paginator
-from django.forms import formset_factory, modelformset_factory
 
 from io import BytesIO
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 import os
-from wkhtmltopdf.views import PDFTemplateView, PDFTemplateResponse
 from xlsxwriter.workbook import Workbook
-import aiohttp
 import requests
-import asyncio
 
 
 cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
-
 
 
 async def httpRequest(request):
