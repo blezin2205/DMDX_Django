@@ -4,13 +4,6 @@ var updateOrderStatusBtns = document.getElementsByClassName('update-order-status
 var deleteBtns = document.getElementsByClassName('delete-supp-button')
 var deleteSuppInOrderBtns = document.getElementsByClassName('delete-suppinorder-button')
 var update_count_in_order = document.getElementsByClassName('update-order-count')
-const selectElement = document.querySelector('.ice-cream');
-
-selectElement.addEventListener('change', (event) => {
-  const result = document.querySelector('.result');
-  result.textContent = `You like ${event.target.value}`;
-});
-
 
 for(var a = 0; a < deleteBtns.length; a++) {
     deleteBtns[a].addEventListener('click', function () {

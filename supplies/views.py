@@ -850,7 +850,7 @@ def devices_render_to_xls(request):
              'Devices List DIAMEDIX Ukraine',
              format)
 
-    format = wb.add_format()
+    format = wb.add_format({'text_wrap': True})
     format.set_font_size(22)
     for row in devices:
         row_num += 1
