@@ -357,7 +357,7 @@ def childSupply(request):
                  f'Загальний список товарів',
                  format)
 
-        format = wb.add_format()
+        format = wb.add_format({'num_format': 'dd.mm.yyyy'})
         format.set_font_size(12)
 
         for row in supplies:
@@ -370,7 +370,7 @@ def childSupply(request):
             if row.supplyLot:
                 lot = row.supplyLot
             count = row.count
-            date_expired = row.expiredDate.strftime("%d/%m/%Y")
+            date_expired = row.expiredDate.strftime("%d.%m.%Y")
             category = row.general_supply.category.name
 
             val_row = [name, ref, lot, count, date_expired, category]
