@@ -370,7 +370,7 @@ def childSupply(request):
             if row.supplyLot:
                 lot = row.supplyLot
             count = row.count
-            date_expired = row.expiredDate.strftime("%d-%m-%Y")
+            date_expired = row.expiredDate.strftime("%d/%m/%Y")
             category = row.general_supply.category.name
 
             val_row = [name, ref, lot, count, date_expired, category]
