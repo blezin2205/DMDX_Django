@@ -1,9 +1,21 @@
 {% extends 'supplies/base.html' %}
+{% load bootstrap %}
     {% block title %}
 {{ title }}
 {% endblock %}
 
 {% block content %}
+
+    <form method="get" class="form-inline justify-content-center">
+         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
+             <div class="hstack gap-2">
+                 {{ placeFilter.form.city_ref|bootstrap }}
+             </div>
+             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
+
+</div>
+        </form>
+
 <div class="row row-cols-2 row-cols-lg-2 g-2 g-lg-3">
     {% for client in clients %}
     <div class="col">
@@ -11,7 +23,7 @@
 
 
       <div class="hstack gap-2 justify-content-between">
-          <h4>{{client.name}}, {{client.city}}.</h4>
+          <h4>{{client.name}}, {{client.city_ref.name}}.</h4>
           <a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-default" role="button"><i class="bi bi-pencil"></i></a>
       </div>
         {% if client.servicenote_set.count > 0 %}

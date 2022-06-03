@@ -9,6 +9,17 @@ def get_last_name(self):
 User.add_to_class("__str__", get_last_name)
 
 
+class City(models.Model):
+    name = models.CharField(max_length=50, null=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Місто'
+        verbose_name_plural = 'Міста'
+
+
 class Category(models.Model):
     name = models.CharField(max_length=50, null=True)
 
@@ -68,12 +79,13 @@ class Supply(models.Model):
 
 class Place(models.Model):
     name = models.CharField(max_length=200)
+    city_ref = models.ForeignKey(City, on_delete=models.SET_NULL, null=True)
     city = models.CharField(max_length=100)
     address = models.CharField(max_length=100, null=True, blank=True)
     link = models.CharField(max_length=300, null=True, blank=True)
 
     def __str__(self):
-        return f'{self.name}, {self.city}'
+        return f'{self.name}, {self.city_ref.name}'
 
     class Meta:
         verbose_name = 'Організація'

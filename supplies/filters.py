@@ -98,3 +98,13 @@ class DeviceFilter(django_filters.FilterSet):
             {'empty_label': 'Всі'})
         self.filters['in_place'].label = "Клієнт"
         self.filters['general_device'].label = "Прилад"
+
+
+class PlaceFilter(django_filters.FilterSet):
+    class Meta:
+        model = Place
+        fields =  '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(PlaceFilter, self).__init__(*args, **kwargs)
+        self.filters['city_ref'].label = "Місто"

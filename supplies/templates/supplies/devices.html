@@ -43,7 +43,7 @@
       <td>{{ device.general_device.name }}</td>
       <td>{% if device.serial_number  %}{{ device.serial_number }}{% endif %}</td>
          {% if isDevices %}
-            <td>{{ device.in_place.name }}, {{ device.in_place.city }}</td>
+            <td>{{ device.in_place.name }}, {{ device.in_place.city_ref.name }}</td>
         {% endif %}
       <td>{{ device.date_installed|date:"d.m.Y" }}</td>
     </tr>

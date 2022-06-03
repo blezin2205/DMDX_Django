@@ -48,7 +48,7 @@
          <td style="text-align: left; white-space: pre-line">{{ note.description }}</td>
          <td>{{ note.from_user.last_name }}</td>
          {% if isService %}
-             <td>{{ note.for_place.name }}, {{ note.for_place.city }}</td>
+             <td>{{ note.for_place.name }}, {{ note.for_place.city_ref.name }}</td>
          {% endif %}
 
          <td>{{ note.dateCreated|date:"d.m.Y" }}</td>

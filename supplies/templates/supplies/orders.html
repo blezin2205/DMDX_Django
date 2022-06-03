@@ -12,7 +12,7 @@
     <div class="d-flex gap-2 w-100 justify-content-between">
       <div>
         <h6 class="mb-1">Заказ №: {{order.id}}</h6>
-        <p class="mb-1">Для: {{order.place.name}}, {{order.place.city}}</p>
+        <p class="mb-1">Для: {{order.place.name}}, {{order.place.city_ref.name}}</p>
 
         {% if order.isComplete %}
         <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span></p>

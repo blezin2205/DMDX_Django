@@ -14,7 +14,7 @@ class GeneralSupplyForm(ModelForm):
 class ClientForm(ModelForm):
     class Meta:
         model = Place
-        fields = '__all__'
+        exclude = ['city']
 
 
 class WorkerForm(ModelForm):

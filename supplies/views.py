@@ -239,7 +239,6 @@ def home(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-
     try:
         orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
         cart_items = orderInCart.get_cart_items
@@ -454,9 +453,9 @@ def orderUpdateStatus(request):
 def ordersForClient(request, client_id):
     place = get_object_or_404(Place, pk=client_id)
     orders = place.order_set.all()
-    title = f'Всі замовлення для клієнта: \n {place.name}, {place.city}'
+    title = f'Всі замовлення для клієнта: \n {place.name}, {place.city_ref.name}'
     if not orders:
-        title = f'В клієнта "{place.name}, {place.city}" ще немає замовлень'
+        title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
 
     return render(request, 'supplies/orders.html', {'title': title, 'orders': orders, 'isClients': True})
 
@@ -465,9 +464,9 @@ def ordersForClient(request, client_id):
 def devicesForClient(request, client_id):
     place = get_object_or_404(Place, pk=client_id)
     devices = place.device_set.all()
-    title = f'Всі прилади для клієнта: \n {place.name}, {place.city}'
+    title = f'Всі прилади для клієнта: \n {place.name}, {place.city_ref.name}'
     if not devices:
-        title = f'В клієнта "{place.name}, {place.city}" ще немає замовлень'
+        title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
 
     return render(request, 'supplies/devices.html', {'title': title, 'devices': devices, 'isClients': True})
 
@@ -899,13 +898,14 @@ def orderDetail(request, order_id):
 @login_required(login_url='login')
 def clientsInfo(request):
     place = Place.objects.all().order_by('-id')
+    placeFilter = PlaceFilter(request.GET, queryset=place)
+    place = placeFilter.qs
     return render(request, 'supplies/clientsList.html',
-                  {'title': f'Клієнти', 'clients': place, 'isClients': True})
+                  {'title': f'Клієнти', 'clients': place, 'placeFilter': placeFilter, 'isClients': True})
 
 
 @login_required(login_url='login')
 def serviceNotes(request):
-
     form = ServiceNoteForm()
     if request.method == 'POST':
         form = ServiceNoteForm(request.POST)
