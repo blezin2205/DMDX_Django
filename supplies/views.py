@@ -23,7 +23,6 @@ from xhtml2pdf import pisa
 import os
 from xlsxwriter.workbook import Workbook
 import requests
-from .telegram_bot import bot
 
 
 async def httpRequest(request):
@@ -142,7 +141,6 @@ def updateItem(request):
             suppInCart.count_in_order = (suppInCart.count_in_order - 1)
 
         suppInCart.save()
-        bot.send_message('480836930', f'{suppInCart.supply.name} added to Preorder {preorder.id}')
 
         if suppInCart.count_in_order <= 0:
             suppInCart.delete()
