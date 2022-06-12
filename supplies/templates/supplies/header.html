@@ -1,5 +1,5 @@
 
-
+{% load myapp_extras %}
 
 <nav class="navbar navbar-expand-md navbar-light bg-light shadow p-3 mb-5 bg-white rounded">
     <div class="container-fluid">
@@ -12,11 +12,14 @@
 
                    <li class="nav-item"><a href="/orders" class="btn btn-outline-primary{% if isOrders %} active {% endif %}" aria-current="page">Замовлення</a></li>
 
+            {% if request.user|has_group:"empl" or request.user.is_staff %}
+
                     <li class="nav-item"><a href="/clientsInfo" class="btn btn-outline-primary{% if isClients %} active {% endif %}" aria-current="page">Клієнти</a></li>
 
             <li class="nav-item"><a href="/serviceNotes" class="btn btn-outline-primary{% if isService %} active {% endif %}" aria-current="page">Сервісні записи</a></li>
             <li class="nav-item"><a href="/allDevices" class="btn btn-outline-primary{% if isDevices %} active {% endif %}" aria-current="page">Прилади</a></li>
 
+            {% endif %}
             {% if request.user.is_staff %}
                 <li class="nav-item dropdown mx-4">
                             <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Додати</a>
@@ -29,6 +32,7 @@
                             </div>
                         </li>
             {% endif %}
+
 
 
             </ul>

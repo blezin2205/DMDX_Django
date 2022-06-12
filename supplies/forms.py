@@ -1,3 +1,5 @@
+import requests
+
 from .models import *
 from django.forms import ModelForm
 from django import forms
@@ -56,6 +58,7 @@ class NewSupplyForm(ModelForm):
     class Meta:
         model = Supply
         fields = ['supplyLot', 'count', 'expiredDate', 'name', 'ref', 'category']
+
 
 class OrderInCartForm(ModelForm):
     class Meta:

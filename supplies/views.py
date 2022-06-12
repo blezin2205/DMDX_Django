@@ -23,11 +23,7 @@ from xhtml2pdf import pisa
 import os
 from xlsxwriter.workbook import Workbook
 import requests
-
-
-cred = credentials.Certificate("serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+from .telegram_bot import bot
 
 
 async def httpRequest(request):
@@ -90,7 +86,6 @@ def deleteSupplyInOrder(request):
 
 
 @login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
 def updateItem(request):
     data = json.loads(request.body)
     prodId = data['productId']
@@ -101,30 +96,59 @@ def updateItem(request):
 
     user = request.user
     supply = Supply.objects.get(id=prodId)
-    order, created = OrderInCart.objects.get_or_create(userCreated=user, isComplete=False)
 
-    try:
-      suppInCart = SupplyInOrderInCart.objects.get(supply=supply, supply_for_order=order, lot=supply.supplyLot, date_expired=supply.expiredDate)
-    except:
-      suppInCart = SupplyInOrderInCart(
-                                        supply=supply,
-                                        supply_for_order=order,
-                                        lot=supply.supplyLot,
-                                        date_expired=supply.expiredDate,
-                                        date_created=supply.dateCreated)
+    if user.is_staff:
+        order, created = OrderInCart.objects.get_or_create(userCreated=user, isComplete=False)
 
-    if action == 'add':
-        suppInCart.count_in_order = (suppInCart.count_in_order + 1)
-    elif action == 'remove':
-        suppInCart.count_in_order = (suppInCart.count_in_order - 1)
+        try:
+            suppInCart = SupplyInOrderInCart.objects.get(supply=supply, supply_for_order=order, lot=supply.supplyLot,
+                                                         date_expired=supply.expiredDate)
+        except:
+            suppInCart = SupplyInOrderInCart(
+                supply=supply,
+                supply_for_order=order,
+                lot=supply.supplyLot,
+                date_expired=supply.expiredDate,
+                date_created=supply.dateCreated)
 
-    suppInCart.save()
+        if action == 'add':
+            suppInCart.count_in_order = (suppInCart.count_in_order + 1)
+        elif action == 'remove':
+            suppInCart.count_in_order = (suppInCart.count_in_order - 1)
 
-    if suppInCart.count_in_order <= 0:
-        suppInCart.delete()
+        suppInCart.save()
 
+        if suppInCart.count_in_order <= 0:
+            suppInCart.delete()
 
-    return  JsonResponse('Item was added', safe=False)
+    else:
+        print('Helloooooo')
+
+        preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+        try:
+            suppInCart = SupplyInPreorderInCart.objects.get(supply=supply, supply_for_order=preorder, lot=supply.supplyLot,
+                                                         date_expired=supply.expiredDate, date_created=supply.dateCreated)
+        except:
+            suppInCart = SupplyInPreorderInCart(
+                supply=supply,
+                supply_for_order=preorder,
+                lot=supply.supplyLot,
+                date_expired=supply.expiredDate,
+                date_created=supply.dateCreated)
+
+        if action == 'add':
+            suppInCart.count_in_order = (suppInCart.count_in_order + 1)
+        elif action == 'remove':
+            suppInCart.count_in_order = (suppInCart.count_in_order - 1)
+
+        suppInCart.save()
+        bot.send_message('480836930', f'{suppInCart.supply.name} added to Preorder {preorder.id}')
+
+        if suppInCart.count_in_order <= 0:
+            suppInCart.delete()
+
+    return JsonResponse('Item was added', safe=False)
+
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -156,7 +180,6 @@ def update_order_count(request):
 
 
 @login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
 def updateCartItem(request):
     data = json.loads(request.body)
     prodId = data['productId']
@@ -211,12 +234,15 @@ def loginPage(request):
              login(request, user)
              return redirect('/')
 
+        UserSession.objects.all().delete()
+        user_logged_in.connect(user_logged_in_handler)
         return render(request, 'auth/login.html')
 
 
 @login_required(login_url='login')
 def logoutUser(request):
     logout(request)
+    UserSession.objects.all().delete()
     return redirect('login')
 
 
@@ -253,8 +279,110 @@ def home(request):
     return render(request, 'supplies/home.html', {'title': 'Всі товари', 'cart_items': cart_items, 'supplies': page_obj,'suppFilter': suppFilter, 'isHome': True, 'isAll': True, 'uncompleteOrdersExist': uncompleteOrdersExist})
 
 
+def cartDetailForClient(request):
+    orderInCart = PreorderInCart.objects.get(userCreated=request.user, isComplete=False)
+    cart_items = orderInCart.get_cart_items
+    supplies = orderInCart.supplyinpreorderincart_set.all()
+    orderForm = OrderInCartForm(request.POST or None)
+
+    isClient = request.user.groups.filter(name='client').exists()
+    if isClient:
+        orderForm.fields['place'].queryset = Place.objects.filter(user=request.user)
+
+    if request.method == 'POST':
+
+        countList = request.POST.getlist('count_list')
+        countListId = request.POST.getlist('count_list_id')
+
+        if orderForm.is_valid():
+            place = orderForm.cleaned_data['place']
+            comment = orderForm.cleaned_data['comment']
+            isComplete = orderForm.cleaned_data['isComplete']
+            if isComplete:
+                dateSent = timezone.now().date()
+            else:
+                dateSent = None
+            order = PreOrder(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent, isComplete=isComplete, comment=comment)
+            order.save()
+
+            for index, sup in enumerate(supplies):
+                suppInOrder = SupplyInPreorder(count_in_order=countList[index],
+                                            supply=sup.supply,
+                                            generalSupply=sup.supply.general_supply,
+                                            supply_for_order=order, lot=sup.lot,
+                                            date_created=sup.date_created,
+                                            date_expired=sup.date_expired)
+                suppInOrder.save()
+
+        return redirect('/orders')
+
+    return render(request, 'supplies/cart.html',
+                  {'title': 'Корзина', 'order': orderInCart, 'cart_items': cart_items, 'supplies': supplies,
+                   'orderForm': orderForm
+                   })
+
 @login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
+def carDetailForStaff(request):
+    orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
+    cart_items = orderInCart.get_cart_items
+    supplies = orderInCart.supplyinorderincart_set.all()
+    orderForm = OrderInCartForm(request.POST or None)
+    if request.method == 'POST':
+
+        countList = request.POST.getlist('count_list')
+        countListId = request.POST.getlist('count_list_id')
+
+        if orderForm.is_valid():
+            place = orderForm.cleaned_data['place']
+            comment = orderForm.cleaned_data['comment']
+            isComplete = orderForm.cleaned_data['isComplete']
+            if isComplete:
+                dateSent = timezone.now().date()
+            else:
+                dateSent = None
+            order = Order(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent, isComplete=isComplete,
+                          comment=comment)
+            order.save()
+
+            for index, sup in enumerate(supplies):
+                suppInOrder = SupplyInOrder(count_in_order=countList[index],
+                                            supply=sup.supply,
+                                            generalSupply=sup.supply.general_supply,
+                                            supply_for_order=order, lot=sup.lot,
+                                            date_created=sup.date_created,
+                                            date_expired=sup.date_expired,
+                                            internalName=sup.supply.general_supply.name,
+                                            internalRef=sup.supply.general_supply.ref)
+                suppInOrder.save()
+                supply = suppInOrder.supply
+                try:
+                    countOnHold = int(supply.countOnHold)
+                except:
+                    countOnHold = 0
+                countInOrder = int(suppInOrder.count_in_order)
+                if isComplete:
+                    supply.count -= countInOrder
+                    supply.save(update_fields=['count'])
+                else:
+                    if supply.countOnHold:
+                        supply.countOnHold = countOnHold + countInOrder
+                        supply.save(update_fields=['countOnHold'])
+                    else:
+                        supply.countOnHold = 0
+                        supply.save(update_fields=['countOnHold'])
+                        supply.countOnHold = countOnHold + countInOrder
+                        supply.save(update_fields=['countOnHold'])
+
+        orderInCart.delete()
+
+        return redirect('/orders')
+
+    return render(request, 'supplies/cart.html',
+                  {'title': 'Корзина', 'order': orderInCart, 'cart_items': cart_items, 'supplies': supplies,
+                   'orderForm': orderForm
+                   })
+
+@login_required(login_url='login')
 def cartDetail(request):
 
     orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
@@ -315,7 +443,6 @@ def cartDetail(request):
     return render(request, 'supplies/cart.html',
                   {'title': 'Корзина', 'order': orderInCart, 'cart_items': cart_items, 'supplies': supplies, 'orderForm': orderForm
                    })
-
 
 
 @login_required(login_url='login')

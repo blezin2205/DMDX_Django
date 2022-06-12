@@ -1,6 +1,18 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.conf import settings
+from django.contrib.sessions.models import Session
+from django.contrib.auth.signals import user_logged_in
+
+
+def user_logged_in_handler(sender, request, user, **kwargs):
+    UserSession.objects.get_or_create(user=user, session_id=request.session.session_key)
+
+
+class UserSession(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    session = models.ForeignKey(Session, on_delete=models.SET_NULL, null=True)
 
 
 def get_last_name(self):
@@ -44,7 +56,6 @@ class GeneralSupply(models.Model):
         verbose_name_plural = 'Товари (назва)'
 
 
-
 class Supply(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=50, null=True, blank=True)
@@ -69,6 +80,9 @@ class Supply(models.Model):
     def isInCart(self):
         return SupplyInOrderInCart.objects.filter(supply_id=self.id).exists()
 
+    def isInPreorderCart(self):
+        return SupplyInPreorderInCart.objects.filter(supply_id=self.id).exists()
+
     def __str__(self):
         return f'{self.id} - {self.general_supply.name}'
 
@@ -83,6 +97,7 @@ class Place(models.Model):
     city = models.CharField(max_length=100)
     address = models.CharField(max_length=100, null=True, blank=True)
     link = models.CharField(max_length=300, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return f'{self.name}, {self.city_ref.name}'
@@ -135,6 +150,37 @@ class Order(models.Model):
     class Meta:
         verbose_name = 'Замовлення'
         verbose_name_plural = 'Замовлення'
+
+
+class PreOrder(models.Model):
+    userCreated = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
+    dateCreated = models.DateField(auto_now_add=True, null=True)
+    dateSent = models.DateField(null=True, blank=True)
+    isComplete = models.BooleanField(default=False)
+    comment = models.CharField(max_length=300, null=True, blank=True)
+
+    def __str__(self):
+        return f'презаказ № {self.id}, для {self.place.name}, от {self.dateSent}'
+
+    class Meta:
+        verbose_name = 'Передзамовлення'
+        verbose_name_plural = 'Передзамовлення'
+
+
+class SupplyInPreorder(models.Model):
+    count_in_order = models.PositiveIntegerField(null=True, blank=True)
+    generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.SET_NULL, null=True, blank=True)
+    supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True)
+    supply_for_order = models.ForeignKey(PreOrder, on_delete=models.CASCADE, null=True)
+    lot = models.CharField(max_length=20, null=True, blank=True)
+    date_expired = models.DateField(null=True)
+    date_created = models.DateField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Товар в Передзамовленні'
+        verbose_name_plural = 'Товари в Передзамовленнях'
+
 
 
 class SupplyInOrder(models.Model):
@@ -213,6 +259,44 @@ class SupplyInOrderInCart(models.Model):
     class Meta:
         verbose_name = 'Товар в замовленні в корзині'
         verbose_name_plural = 'Товари в замовленні в коризні'
+
+class PreorderInCart(models.Model):
+    userCreated = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
+    dateCreated = models.DateField(auto_now_add=True, null=True)
+    dateSent = models.DateField(null=True, blank=True)
+    isComplete = models.BooleanField(default=False)
+    comment = models.CharField(max_length=300, null=True, blank=True)
+
+    def __str__(self):
+        return f'передЗаказ № {self.id}'
+
+    class Meta:
+        verbose_name = 'передЗамовлення в корзині'
+        verbose_name_plural = 'передЗамовлення в корзині'
+
+    @property
+    def get_cart_items(self):
+        orderitems = self.supplyinpreorderincart_set.all()
+        total = sum([item.count_in_order for item in orderitems])
+        return total
+
+
+class SupplyInPreorderInCart(models.Model):
+    count_in_order = models.PositiveIntegerField(null=True, blank=True, default=0)
+    supply = models.OneToOneField(Supply, on_delete=models.SET_NULL, null=True, blank=True)
+    supply_for_order = models.ForeignKey(PreorderInCart, on_delete=models.CASCADE, null=True)
+    lot = models.CharField(max_length=20, null=True, blank=True)
+    date_expired = models.DateField(null=True)
+    date_created = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f'Товар: для передзамовлення в коризні '
+
+
+    class Meta:
+        verbose_name = 'Товар в передзамовленні в корзині'
+        verbose_name_plural = 'Товари в передзамовленні в коризні'
 
 
 class GeneralDevice(models.Model):
