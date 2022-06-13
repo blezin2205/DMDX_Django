@@ -1,0 +1,97 @@
+{% extends 'supplies/base.html' %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+
+
+    <div class="allSupply">
+<h3>
+  <small class="text-muted">Для: {{order.place.name}}, {{order.place.city_ref.name}}</small>
+</h3>
+{% if order.comment %}
+<h4>
+  <small class="text-muted">Комментарій: {{order.comment}}</small>
+</h4>
+{% endif %}
+<h5>
+  <small class="text-muted">Cтворив: {{order.userCreated.last_name}}</small>
+</h5>
+{% if order.isComplete %}
+        <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span> <span>{{order.dateSent|date:"d.m.Y" }}</span></p>
+        {% else %}
+        <p class="mb-2"><span>Статус:</span> <span class="waiting">В очікуванні</span></p>
+        {%  endif %}
+
+
+{#        <a href="{% url 'orderDetailPdf' order.id %}">PDF</a>#}
+    <a href="{% url 'orderDetailCsv' order.id %}">Export to Excel</a>
+</div>
+
+    <table class="table centred mt-5">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">{{supplies|length}}</th>
+      <th scope="col" class="textAlignLeft">Назва товару</th>
+        <th scope="col">REF</th>
+        <th scope="col">LOT</th>
+        <th scope="col">Кількість</th>
+        <th scope="col">Призначення</th>
+        <th scope="col">Термін придатності</th>
+        <th scope="col">Оновлено</th>
+        {% if not order.isComplete and request.user.is_staff %}
+        <th scope="col">Action</th>
+         {% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for el in supplies %}
+
+     <tr>
+      <th scope="row">{{forloop.counter}}</th>
+      <td style="text-align: left;">{% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</td>
+      <td>
+          {% if el.generalSupply.ref is not none %}
+                        {% if el.generalSupply %} {{ el.generalSupply.ref }} {% else %} {{ el.internalRef }} {% endif %}
+                {% endif %}
+      </td>
+
+         <td class="supplyRow">
+                    {% if el.lot is not none %}
+                        {{ el.lot }}
+                {% endif %}
+                    </td>
+
+            <td>
+                <div class="hstack gap-2 justify-content-center">
+                    {% if not order.isComplete and request.user.is_staff %}
+                    <button data-product="{{ el.id }}" data-action="remove-preorder" class="btn btn-lg update-order-count text-primary" type="submit"><i class="bi bi-dash"></i></button>
+                    {% endif %}
+                    {{ el.count_in_order }}
+                {% if not order.isComplete and request.user.is_staff %}
+                    <button data-product="{{ el.id }}" data-action="add-preorder" class="btn btn-lg update-order-count text-primary" type="submit"><i class="bi bi-plus"></i></button>
+                {% endif %}
+
+                </div>
+            </td>
+            <td>{{ el.generalSupply.category.name }}</td>
+            <td>{{ el.date_expired|date:"d.m.Y" }}</td>
+            <td>{{ el.date_created|date:"d.m.Y" }}</td>
+     {% if not order.isComplete and request.user.is_staff %}
+     <td><button data-product={{ el.id }} data-action="delete-preorder" class="btn btn-sm btn-danger add-btn delete-suppinorder-button"><i class="bi bi-trash"></i></button></td>
+     {% endif %}
+    </tr>
+   {% endfor %}
+  </tbody>
+</table>
+
+
+</div>
+
+
+{% endblock %}
+
+

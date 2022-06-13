@@ -5,6 +5,7 @@ from . import apiViews
 urlpatterns = [
 
     path('cart/', views.cartDetail, name='cart'),
+    path('preorders-cart/', views.cartDetailForClient, name='precart'),
 
     path('', views.home, name='home'),
     path('childSupply', views.childSupply, name='childSupply'),
@@ -13,6 +14,7 @@ urlpatterns = [
 
     path('update_item/', views.updateItem, name='update_item'),
     path('update_order_count/', views.update_order_count, name='update_order_count'),
+    path('preorder_general_supp_buttons/', views.preorder_general_supp_buttons, name='preorder_general_supp_buttons'),
     path('cart/update_item/', views.updateCartItem, name='update_item_detail'),
     path('delete_supply/', views.deleteSupply, name='delete_supply'),
     path('delete_supply_in_order/', views.deleteSupplyInOrder, name='delete_supply_in_order'),
@@ -29,6 +31,8 @@ urlpatterns = [
     path('update/<int:supp_id>', views.updateSupply, name='updateSupply'),
     path('update_general/<int:supp_id>', views.updateGeneralSupply, name='updateGeneralSupply'),
     path('addSupplyToExistOrder/<int:supp_id>', views.addSupplyToExistOrder, name='addSupplyToExistOrder'),
+    path('addSupplyToExistPreOrder/<int:supp_id>', views.addSupplyToExistPreOrder, name='addSupplyToExistPreOrder'),
+    path('addSupplyToExistPreOrderGeneral/<int:supp_id>', views.addSupplyToExistPreOrderGeneral, name='addSupplyToExistPreOrderGeneral'),
 
 
     # path('auth', views.registerPage, name='auth'),
@@ -36,6 +40,7 @@ urlpatterns = [
     path('logout', views.logoutUser, name='logout'),
 
     path('orders', views.orders, name='orders'),
+    path('preorders', views.preorders, name='preorders'),
     path('orders_update_status/', views.orderUpdateStatus, name='orders_update_status'),
 
     path('clientsInfo', views.clientsInfo, name='clientsInfo'),
@@ -55,6 +60,7 @@ urlpatterns = [
     path('serviceNotes/update/<int:note_id>', views.updateNote, name='updateNote'),
 
     path('orders/<int:order_id>', views.orderDetail, name='orderDetail'),
+    path('preorders/<int:order_id>', views.preorderDetail, name='preorderDetail'),
     path('order-detail-pdf/<int:order_id>', views.orderDetail_pdf, name='orderDetailPdf'),
     path('order-detail-csv/<int:order_id>', views.render_to_xls, name='orderDetailCsv'),
 

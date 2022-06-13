@@ -10,7 +10,7 @@
             <ul class="navbar-nav gap-2">
                      <li class="nav-item"><a href="/" class="btn btn-outline-primary{% if isHome %} active {% endif %}" aria-current="page">Склад</a></li>
 
-                   <li class="nav-item"><a href="/orders" class="btn btn-outline-primary{% if isOrders %} active {% endif %}" aria-current="page">Замовлення</a></li>
+                   <li class="nav-item"><a href="/orders" class="btn btn-outline-primary{% if isOrders %} active {% endif %}" aria-current="page" data-bs-toggle="tooltip" data-bs-placement="bottom" title="В очікуванні - {{ cartCountData.orders_incomplete }} шт. Передзамовлення - {{ cartCountData.preorders_incomplete }} шт.">Замовлення {% if cartCountData.orders_incomplete > 0 %} <span class="badge bg-warning ms-2">{{ cartCountData.orders_incomplete }}</span> {% endif %} {% if cartCountData.preorders_incomplete > 0 %} <span class="badge ms-2" style="background: #5bc0de">{{ cartCountData.preorders_incomplete }}</span> {% endif %}</a></li>
 
             {% if request.user|has_group:"empl" or request.user.is_staff %}
 
@@ -40,9 +40,15 @@
                 <li class="nav-item">
                     {% if request.user %}
 
-                        {% if cart_items > 0 %}
+                        {% if cartCountData.precart_items > 0 %}
+                            <a style="background: #5bc0de" class="btn btn-default me-3" href="{% url 'precart' %}" >
+  <i class="bi bi-basket"></i> <span class="badge bg-danger ms-2">{{ cartCountData.precart_items }}</span>
+</a>
+                             {% endif %}
+
+                        {% if cartCountData.cart_items > 0 %}
             <a class="btn btn-primary me-3" href="{% url 'cart' %}">
-  <i class="bi bi-cart3"></i> <span class="badge bg-danger ms-2">{{ cart_items }}</span>
+  <i class="bi bi-cart3"></i> <span class="badge bg-danger ms-2">{{ cartCountData.cart_items }}</span>
 </a>
                             {% endif %}
             <span class="my-3">&#129409; Привіт, {{ request.user.first_name }} {{ request.user.last_name }} &#129409;</span>

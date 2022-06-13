@@ -4,6 +4,7 @@ var updateOrderStatusBtns = document.getElementsByClassName('update-order-status
 var deleteBtns = document.getElementsByClassName('delete-supp-button')
 var deleteSuppInOrderBtns = document.getElementsByClassName('delete-suppinorder-button')
 var update_count_in_order = document.getElementsByClassName('update-order-count')
+var preorder_general_supp_buttons = document.getElementsByClassName('preorder-general-supp-button')
 
 for(var a = 0; a < deleteBtns.length; a++) {
     deleteBtns[a].addEventListener('click', function () {
@@ -11,6 +12,17 @@ for(var a = 0; a < deleteBtns.length; a++) {
         var action = this.dataset.action
 
         var url = 'delete_supply/'
+        senadAction(productId, action, url)
+
+    })
+}
+
+for(var a = 0; a < preorder_general_supp_buttons.length; a++) {
+    preorder_general_supp_buttons[a].addEventListener('click', function () {
+        var productId = this.dataset.product
+        var action = this.dataset.action
+
+        var url = '/preorder_general_supp_buttons/'
         senadAction(productId, action, url)
 
     })
@@ -104,3 +116,7 @@ function senadAction(productId, action, url) {
         location.reload()
         })
 }
+
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})

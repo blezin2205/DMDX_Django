@@ -34,7 +34,37 @@ async def httpRequest(request):
 
         data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(param)).json()
 
-        return  render(request, "supplies/http_response.html", {'data': data})
+        return render(request, "supplies/http_response.html", {'data': data})
+
+
+def countCartItemsHelper(request):
+    try:
+        orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
+        cart_items = orderInCart.get_cart_items
+    except:
+        cart_items = 0
+    try:
+        precart_items = PreorderInCart.objects.get(userCreated=request.user, isComplete=False).get_cart_items
+    except:
+        precart_items = 0
+    try:
+        isClient = request.user.groups.filter(name='client').exists()
+        if isClient:
+           orders_incomplete = Order.objects.filter(isComplete=False, place__user=request.user).count()
+        else:
+           orders_incomplete = Order.objects.filter(isComplete=False).count()
+    except:
+        orders_incomplete = 0
+    try:
+        isClient = request.user.groups.filter(name='client').exists()
+        if isClient:
+            preorders_incomplete = PreOrder.objects.filter(isComplete=False, place__user=request.user).count()
+        else:
+            preorders_incomplete = PreOrder.objects.filter(isComplete=False).count()
+    except:
+        preorders_incomplete = 0
+
+    return  {'cart_items': cart_items, 'precart_items': precart_items, 'orders_incomplete': orders_incomplete, 'preorders_incomplete': preorders_incomplete}
 
 
 def countOnHoldMake(request):
@@ -81,7 +111,51 @@ def deleteSupplyInOrder(request):
             supp_for_supp_in_order.countOnHold -= suppInOrder.count_in_order
             supp_for_supp_in_order.save(update_fields=['countOnHold'])
         suppInOrder.delete()
-        return JsonResponse('Item was added', safe=False)
+
+    elif action == 'delete-preorder':
+        suppInOrder = SupplyInPreorder.objects.get(id=prodId)
+        suppInOrder.delete()
+
+
+    return JsonResponse('Item was added', safe=False)
+
+
+@login_required(login_url='login')
+def preorder_general_supp_buttons(request):
+    data = json.loads(request.body)
+    prodId = data['productId']
+    action = data['action']
+
+    print('Action', action)
+    print('id', prodId)
+
+    user = request.user
+
+    if action == 'add':
+        supply = Supply.objects.get(id=prodId)
+        preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+        suppInCart = SupplyInPreorderInCart(
+                supply=supply,
+                supply_for_order=preorder,
+                lot=supply.supplyLot,
+                date_expired=supply.expiredDate,
+                date_created=supply.dateCreated)
+
+        suppInCart.count_in_order = (suppInCart.count_in_order + 1)
+        suppInCart.save()
+
+    elif action == 'add-general':
+        general_supply = GeneralSupply.objects.get(id=prodId)
+
+        preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+        suppInCart = SupplyInPreorderInCart(
+                supply_for_order=preorder,
+                general_supply=general_supply)
+
+        suppInCart.count_in_order = (suppInCart.count_in_order + 1)
+        suppInCart.save()
+
+    return JsonResponse('Item was added', safe=False)
 
 
 @login_required(login_url='login')
@@ -96,54 +170,28 @@ def updateItem(request):
     user = request.user
     supply = Supply.objects.get(id=prodId)
 
-    if user.is_staff:
-        order, created = OrderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+    order, created = OrderInCart.objects.get_or_create(userCreated=user, isComplete=False)
 
-        try:
-            suppInCart = SupplyInOrderInCart.objects.get(supply=supply, supply_for_order=order, lot=supply.supplyLot,
-                                                         date_expired=supply.expiredDate)
-        except:
-            suppInCart = SupplyInOrderInCart(
-                supply=supply,
-                supply_for_order=order,
-                lot=supply.supplyLot,
-                date_expired=supply.expiredDate,
-                date_created=supply.dateCreated)
+    try:
+        suppInCart = SupplyInOrderInCart.objects.get(supply=supply, supply_for_order=order, lot=supply.supplyLot,
+                                                     date_expired=supply.expiredDate)
+    except:
+        suppInCart = SupplyInOrderInCart(
+            supply=supply,
+            supply_for_order=order,
+            lot=supply.supplyLot,
+            date_expired=supply.expiredDate,
+            date_created=supply.dateCreated)
 
-        if action == 'add':
-            suppInCart.count_in_order = (suppInCart.count_in_order + 1)
-        elif action == 'remove':
-            suppInCart.count_in_order = (suppInCart.count_in_order - 1)
+    if action == 'add':
+        suppInCart.count_in_order = (suppInCart.count_in_order + 1)
+    elif action == 'remove':
+        suppInCart.count_in_order = (suppInCart.count_in_order - 1)
 
-        suppInCart.save()
+    suppInCart.save()
 
-        if suppInCart.count_in_order <= 0:
-            suppInCart.delete()
-
-    else:
-        print('Helloooooo')
-
-        preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
-        try:
-            suppInCart = SupplyInPreorderInCart.objects.get(supply=supply, supply_for_order=preorder, lot=supply.supplyLot,
-                                                         date_expired=supply.expiredDate, date_created=supply.dateCreated)
-        except:
-            suppInCart = SupplyInPreorderInCart(
-                supply=supply,
-                supply_for_order=preorder,
-                lot=supply.supplyLot,
-                date_expired=supply.expiredDate,
-                date_created=supply.dateCreated)
-
-        if action == 'add':
-            suppInCart.count_in_order = (suppInCart.count_in_order + 1)
-        elif action == 'remove':
-            suppInCart.count_in_order = (suppInCart.count_in_order - 1)
-
-        suppInCart.save()
-
-        if suppInCart.count_in_order <= 0:
-            suppInCart.delete()
+    if suppInCart.count_in_order <= 0:
+        suppInCart.delete()
 
     return JsonResponse('Item was added', safe=False)
 
@@ -158,21 +206,37 @@ def update_order_count(request):
     print('Action', action)
     print('id', prodId)
 
-    supply = SupplyInOrder.objects.get(id=prodId)
-
     if action == 'add':
+        supply = SupplyInOrder.objects.get(id=prodId)
         supply.count_in_order = (supply.count_in_order + 1)
         supply.supply.countOnHold += 1
+        supply.supply.save()
+        supply.save()
+
+        if supply.count_in_order <= 0:
+            supply.delete()
     elif action == 'remove':
+        supply = SupplyInOrder.objects.get(id=prodId)
         supply.count_in_order = (supply.count_in_order - 1)
         supply.supply.countOnHold -= 1
+        supply.supply.save()
+        supply.save()
 
-    supply.supply.save()
-    supply.save()
+        if supply.count_in_order <= 0:
+            supply.delete()
+    elif action == 'add-preorder':
+        supp_preorder = SupplyInPreorder.objects.get(id=prodId)
+        supp_preorder.count_in_order = (supp_preorder.count_in_order + 1)
+        supp_preorder.save()
+        if supp_preorder.count_in_order <= 0:
+            supp_preorder.delete()
 
-    if supply.count_in_order <= 0:
-        supply.delete()
-
+    elif action == 'remove-preorder':
+        supp_preorder = SupplyInPreorder.objects.get(id=prodId)
+        supp_preorder.count_in_order = (supp_preorder.count_in_order - 1)
+        supp_preorder.save()
+        if supp_preorder.count_in_order <= 0:
+            supp_preorder.delete()
 
     return  JsonResponse('Item was added', safe=False)
 
@@ -249,6 +313,7 @@ def home(request):
 
     supplies = GeneralSupply.objects.all().order_by('name')
     uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
+    uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False).exists()
     #
     # for gen in supplies:
     #    for sup in gen.general.all():
@@ -262,24 +327,25 @@ def home(request):
     paginator = Paginator(supplies, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
-    try:
-        orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
-        cart_items = orderInCart.get_cart_items
-    except:
-        orderInCart = None
-        cart_items = 0
+    cartCountData = countCartItemsHelper(request)
 
     if request.method == 'POST':
         supp = supplies.get(id=request.POST.get('supp_id'))
         supp.delete()
 
-    return render(request, 'supplies/home.html', {'title': 'Всі товари', 'cart_items': cart_items, 'supplies': page_obj,'suppFilter': suppFilter, 'isHome': True, 'isAll': True, 'uncompleteOrdersExist': uncompleteOrdersExist})
+    return render(request, 'supplies/home.html', {'title': 'Всі товари',
+                                                  'cartCountData': cartCountData,
+                                                  'supplies': page_obj,'suppFilter': suppFilter,
+                                                  'isHome': True,
+                                                  'isAll': True,
+                                                  'uncompleteOrdersExist': uncompleteOrdersExist,
+                                                  'uncompletePreOrdersExist': uncompletePreOrdersExist})
 
 
+@login_required(login_url='login')
 def cartDetailForClient(request):
     orderInCart = PreorderInCart.objects.get(userCreated=request.user, isComplete=False)
-    cart_items = orderInCart.get_cart_items
+    cartCountData = countCartItemsHelper(request)
     supplies = orderInCart.supplyinpreorderincart_set.all()
     orderForm = OrderInCartForm(request.POST or None)
 
@@ -304,18 +370,32 @@ def cartDetailForClient(request):
             order.save()
 
             for index, sup in enumerate(supplies):
-                suppInOrder = SupplyInPreorder(count_in_order=countList[index],
-                                            supply=sup.supply,
-                                            generalSupply=sup.supply.general_supply,
-                                            supply_for_order=order, lot=sup.lot,
-                                            date_created=sup.date_created,
-                                            date_expired=sup.date_expired)
-                suppInOrder.save()
+                if sup.supply:
+                    general_sup = sup.supply.general_supply
+                    suppInOrder = SupplyInPreorder(count_in_order=countList[index],
+                                                   supply=sup.supply,
+                                                   generalSupply=general_sup,
+                                                   supply_for_order=order, lot=sup.lot,
+                                                   date_created=sup.date_created,
+                                                   date_expired=sup.date_expired)
+                    suppInOrder.save()
+                elif sup.general_supply:
+                    general_sup = sup.general_supply
+                    suppInOrder = SupplyInPreorder(count_in_order=countList[index],
+                                                   supply=sup.supply,
+                                                   generalSupply=general_sup,
+                                                   supply_for_order=order, lot=sup.lot,
+                                                   date_created=sup.date_created,
+                                                   date_expired=sup.date_expired)
+                    suppInOrder.save()
+
+
+        orderInCart.delete()
 
         return redirect('/orders')
 
     return render(request, 'supplies/cart.html',
-                  {'title': 'Корзина', 'order': orderInCart, 'cart_items': cart_items, 'supplies': supplies,
+                  {'title': 'Корзина', 'order': orderInCart, 'cartCountData': cartCountData, 'supplies': supplies,
                    'orderForm': orderForm
                    })
 
@@ -380,11 +460,17 @@ def carDetailForStaff(request):
                    'orderForm': orderForm
                    })
 
+
+# @login_required(login_url='login')
+# def preorders_cartDetail(request):
+#
+
+
 @login_required(login_url='login')
 def cartDetail(request):
 
     orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
-    cart_items = orderInCart.get_cart_items
+    cartCountData = countCartItemsHelper(request)
     supplies = orderInCart.supplyinorderincart_set.all()
     orderForm = OrderInCartForm(request.POST or None)
     if request.method == 'POST':
@@ -439,7 +525,7 @@ def cartDetail(request):
 
 
     return render(request, 'supplies/cart.html',
-                  {'title': 'Корзина', 'order': orderInCart, 'cart_items': cart_items, 'supplies': supplies, 'orderForm': orderForm
+                  {'title': 'Корзина', 'order': orderInCart, 'cartCountData': cartCountData, 'supplies': supplies, 'orderForm': orderForm
                    })
 
 
@@ -514,38 +600,50 @@ def childSupply(request):
         wb.close()
         return response
 
-
-
-
-
-
+    cartCountData = countCartItemsHelper(request)
 
     return render(request, 'supplies/homeChild.html',
-                  {'title': 'Дочерні товари', 'supplies': supplies,  'cart_items': cart_items, 'suppFilter': suppFilter, 'isHome': True, 'isChild': True})
+                  {'title': 'Дочерні товари', 'supplies': supplies,  'cartCountData': cartCountData, 'suppFilter': suppFilter, 'isHome': True, 'isChild': True})
 
 
 @login_required(login_url='login')
 def orders(request):
+    cartCountData = countCartItemsHelper(request)
 
-    try:
-        orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
-        cart_items = orderInCart.get_cart_items
-    except:
-        orderInCart = None
-        cart_items = 0
+    isClient = request.user.groups.filter(name='client').exists()
+    if isClient:
+        orders = Order.objects.filter(place__user=request.user).order_by('-id')
+        title = f'Всі замовлення для {request.user.first_name} {request.user.last_name} '
+    else:
+        orders = Order.objects.all().order_by('-id')
+        title = 'Всі замовлення'
 
-    orders = Order.objects.all().order_by('-id')
-    return render(request, 'supplies/orders.html', {'title': 'Всі замовлення', 'orders': orders, 'cart_items': cart_items, 'isOrders': True})
+    return render(request, 'supplies/orders.html', {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True, 'isOrdersTab': True})
 
 
 @login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
+def preorders(request):
+    cartCountData = countCartItemsHelper(request)
+
+    isClient = request.user.groups.filter(name='client').exists()
+    if isClient:
+        orders = PreOrder.objects.filter(place__user=request.user).order_by('-id')
+        title = f'Всі передзамовлення для {request.user.first_name} {request.user.last_name}'
+    else:
+        orders = PreOrder.objects.all().order_by('-id')
+        title = 'Всі передзамовлення'
+
+    return render(request, 'supplies/preorders.html', {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True, 'isPreordersTab': True})
+
+
+@login_required(login_url='login')
 def orderUpdateStatus(request):
     data = json.loads(request.body)
     prodId = data['productId']
     action = data['action']
-    order = Order.objects.get(id=prodId)
-    if action == 'update':
+
+    if action == 'update' and request.user.groups.filter(name='admin').exists():
+      order = Order.objects.get(id=prodId)
       supps = order.supplyinorder_set.all()
       for el in supps:
           countInOrder = el.count_in_order
@@ -560,7 +658,8 @@ def orderUpdateStatus(request):
       order.dateSent = timezone.now().date()
       order.save()
 
-    elif action == 'delete':
+    elif action == 'delete' and request.user.groups.filter(name='admin').exists():
+        order = Order.objects.get(id=prodId)
         if not order.isComplete:
           supps = order.supplyinorder_set.all()
           for el in supps:
@@ -570,6 +669,16 @@ def orderUpdateStatus(request):
                supp.countOnHold -= countInOrder
                supp.save(update_fields=['countOnHold'])
         order.delete()
+
+    elif action == 'delete-preorder':
+        order = PreOrder.objects.get(id=prodId)
+        order.delete()
+
+    elif action == 'update-preorder':
+        order = PreOrder.objects.get(id=prodId)
+        order.isComplete = True
+        order.dateSent = timezone.now().date()
+        order.save()
 
     return JsonResponse('Item was added', safe=False)
 
@@ -590,10 +699,13 @@ def devicesForClient(request, client_id):
     place = get_object_or_404(Place, pk=client_id)
     devices = place.device_set.all()
     title = f'Всі прилади для клієнта: \n {place.name}, {place.city_ref.name}'
+
+    cartCountData = countCartItemsHelper(request)
+
     if not devices:
         title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
 
-    return render(request, 'supplies/devices.html', {'title': title, 'devices': devices, 'isClients': True})
+    return render(request, 'supplies/devices.html', {'title': title, 'devices': devices, 'cartCountData': cartCountData,  'isClients': True})
 
 
 def devicesList(request):
@@ -601,7 +713,9 @@ def devicesList(request):
     devFilters = DeviceFilter(request.GET, queryset=devices)
     devices = devFilters.qs
     title = f'Вcі прилади'
-    return render(request, 'supplies/devices.html', {'title': title, 'devices': devices, 'filter': devFilters, 'isDevices': True})
+    cartCountData = countCartItemsHelper(request)
+
+    return render(request, 'supplies/devices.html', {'title': title, 'devices': devices, 'cartCountData': cartCountData, 'filter': devFilters, 'isDevices': True})
 
 
 
@@ -619,9 +733,10 @@ def serviceNotesForClient(request, client_id):
 
     place = get_object_or_404(Place, pk=client_id)
     serviceNotes = place.servicenote_set.all()
+    cartCountData = countCartItemsHelper(request)
     title = f'Всі сервісні замітки для клієнта: \n {place.name}, {place.city}'
     return render(request, 'supplies/serviceNotes.html',
-                  {'title': title, 'serviceNotes': serviceNotes, 'form': form, 'isClients': True})
+                  {'title': title, 'serviceNotes': serviceNotes, 'form': form, 'cartCountData': cartCountData, 'isClients': True})
 
 
 
@@ -637,8 +752,10 @@ def createNote(request):
             obj.save()
             return redirect('/serviceNotes')
 
+    cartCountData = countCartItemsHelper(request)
+
     return render(request, 'supplies/createNote.html',
-                  {'title': f'Створити новий запис', 'form': form,
+                  {'title': f'Створити новий запис', 'form': form, 'cartCountData': cartCountData,
                    'isService': True})
 
 
@@ -647,6 +764,9 @@ def createNote(request):
 def updateNote(request, note_id):
     note = ServiceNote.objects.get(id=note_id)
     form = ServiceNoteForm(instance=note)
+
+    cartCountData = countCartItemsHelper(request)
+
     if request.method == 'POST':
         form = ServiceNoteForm(request.POST, instance=note)
         if form.is_valid():
@@ -656,7 +776,7 @@ def updateNote(request, note_id):
             return redirect('/serviceNotes')
 
     return render(request, 'supplies/createNote.html',
-                  {'title': f'Редагувати запис №{note_id}', 'form': form,
+                  {'title': f'Редагувати запис №{note_id}', 'form': form, 'cartCountData': cartCountData,
                     'isService': True})
 
 
@@ -665,6 +785,9 @@ def updateNote(request, note_id):
 def updateSupply(request, supp_id):
     note = Supply.objects.get(id=supp_id)
     form = SupplyForm(instance=note)
+
+    cartCountData = countCartItemsHelper(request)
+
     if request.method == 'POST':
         form = SupplyForm(request.POST, instance=note)
         if form.is_valid():
@@ -675,7 +798,7 @@ def updateSupply(request, supp_id):
             return HttpResponseRedirect(next)
 
     return render(request, 'supplies/createSupply.html',
-                  {'title': f'Редагувати запис №{supp_id}', 'form': form})
+                  {'title': f'Редагувати запис №{supp_id}', 'cartCountData': cartCountData, 'form': form})
 
 
 @login_required(login_url='login')
@@ -684,6 +807,8 @@ def addSupplyToExistOrder(request, supp_id):
     supp = Supply.objects.get(id=supp_id)
     orderForm = OrderForm(request.POST or None)
     supply = SupplyInOrderInCart(count_in_order=1, supply=supp, lot=supp.supplyLot, date_expired=supp.expiredDate)
+
+    cartCountData = countCartItemsHelper(request)
 
     if request.method == 'POST':
 
@@ -709,7 +834,69 @@ def addSupplyToExistOrder(request, supp_id):
 
     return render(request, 'supplies/cart.html',
                   {'title': 'Додати до замовлення',
-                   'orderForm': orderForm, 'supplies': [supply],
+                   'orderForm': orderForm, 'supplies': [supply], 'cartCountData': cartCountData,
+                   })
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl', 'client'])
+def addSupplyToExistPreOrder(request, supp_id):
+    supp = Supply.objects.get(id=supp_id)
+    orderForm = PreOrderForm(request.POST or None)
+    supply = SupplyInOrderInCart(count_in_order=1, supply=supp, lot=supp.supplyLot, date_expired=supp.expiredDate)
+    cartCountData = countCartItemsHelper(request)
+
+    if request.method == 'POST':
+
+        count = int(request.POST.get('count_list'))
+        if orderForm.is_valid():
+            order = orderForm.cleaned_data['order']
+
+            try:
+                suppInOrder = SupplyInPreorder.objects.get(supply=supp, generalSupply=supp.general_supply, supply_for_order=order, lot=supp.supplyLot, date_created=supp.dateCreated, date_expired=supp.expiredDate)
+                suppInOrder.count_in_order += count
+            except:
+                suppInOrder = SupplyInPreorder(count_in_order=count, supply=supp,
+                                        generalSupply=supp.general_supply, supply_for_order=order, lot=supp.supplyLot,
+                                        date_created=supp.dateCreated, date_expired=supp.expiredDate)
+            suppInOrder.save()
+            next = request.POST.get('next')
+            return HttpResponseRedirect(next)
+
+
+    return render(request, 'supplies/cart.html',
+                  {'title': 'Додати до замовлення',
+                   'orderForm': orderForm, 'supplies': [supply], 'cartCountData': cartCountData,
+                   })
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl', 'client'])
+def addSupplyToExistPreOrderGeneral(request, supp_id):
+    general_supp = GeneralSupply.objects.get(id=supp_id)
+    orderForm = PreOrderForm(request.POST or None)
+    supply = SupplyInPreorderInCart(count_in_order=1, supply_for_order=None, general_supply=general_supp)
+    cartCountData = countCartItemsHelper(request)
+    if request.method == 'POST':
+
+        count = int(request.POST.get('count_list'))
+        if orderForm.is_valid():
+            order = orderForm.cleaned_data['order']
+
+            try:
+                suppInOrder = SupplyInPreorder.objects.get(generalSupply=general_supp, supply_for_order=order, date_expired=None)
+                suppInOrder.count_in_order += count
+            except:
+                suppInOrder = SupplyInPreorder(generalSupply=general_supp, supply_for_order=order, date_expired=None, count_in_order=count)
+
+            suppInOrder.save()
+            next = request.POST.get('next')
+            return redirect(f"/preorders/{order.id}")
+
+
+    return render(request, 'supplies/cart.html',
+                  {'title': 'Додати до замовлення',
+                   'orderForm': orderForm, 'supplies': [supply], 'cartCountData': cartCountData,
                    })
 
 
@@ -719,6 +906,7 @@ def addSupplyToExistOrder(request, supp_id):
 def updateGeneralSupply(request, supp_id):
     supp = GeneralSupply.objects.get(id=supp_id)
     form = GeneralSupplyForm(instance=supp)
+    cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         form = GeneralSupplyForm(request.POST, instance=supp)
         if form.is_valid():
@@ -729,7 +917,7 @@ def updateGeneralSupply(request, supp_id):
             return HttpResponseRedirect(next)
 
     return render(request, 'supplies/createSupply.html',
-                  {'title': f'Редагувати запис №{supp_id}', 'form': form})
+                  {'title': f'Редагувати запис №{supp_id}', 'form': form, 'cartCountData': cartCountData})
 
 
 @login_required(login_url='login')
@@ -737,6 +925,7 @@ def updateGeneralSupply(request, supp_id):
 def addNewLotforSupply(request, supp_id):
     generalSupp = GeneralSupply.objects.get(id=supp_id)
     form = SupplyForm()
+    cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         form = SupplyForm(request.POST)
         if form.is_valid():
@@ -748,13 +937,14 @@ def addNewLotforSupply(request, supp_id):
             return HttpResponseRedirect(next)
 
     return render(request, 'supplies/createSupply.html',
-                  {'title': f'Додати новий LOT для {generalSupp.name}', 'form': form})
+                  {'title': f'Додати новий LOT для {generalSupp.name}', 'form': form,  'cartCountData': cartCountData})
 
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def addgeneralSupply(request):
     form = NewSupplyForm()
+    cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         form = NewSupplyForm(request.POST)
         if form.is_valid():
@@ -770,19 +960,20 @@ def addgeneralSupply(request):
             return redirect('/')
 
     return render(request, 'supplies/createSupply.html',
-                  {'title': f'Додати новий товар (назву)', 'form': form})
+                  {'title': f'Додати новий товар (назву)', 'form': form,  'cartCountData': cartCountData})
 
 
 @login_required(login_url='login')
 def addNewClient(request):
     form = ClientForm()
+    cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         form = ClientForm(request.POST)
         if form.is_valid():
             form.save()
             return redirect('/clientsInfo')
     return render(request, 'supplies/createSupply.html',
-                  {'title': f'Додати нового клієнта', 'form': form})
+                  {'title': f'Додати нового клієнта', 'form': form, 'cartCountData': cartCountData})
 
 
 
@@ -790,6 +981,7 @@ def addNewClient(request):
 def addNewDeviceForClient(request, client_id):
     client = Place.objects.get(id=client_id)
     form = DeviceForm(request.POST or None)
+    cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         if form.is_valid():
             device = Device(general_device=form.cleaned_data['general_device'],
@@ -800,25 +992,27 @@ def addNewDeviceForClient(request, client_id):
             return redirect('/clientsInfo')
 
     return render(request, 'supplies/createSupply.html',
-                  {'title': f'Додати прилад для: \n {client.name}, {client.city}', 'form': form})
+                  {'title': f'Додати прилад для: \n {client.name}, {client.city}', 'form': form, 'cartCountData': cartCountData})
 
 
 @login_required(login_url='login')
 def editClientInfo(request, client_id):
     client = Place.objects.get(id=client_id)
     form = ClientForm(request.POST or None, instance=client)
+    cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         if form.is_valid():
             form.save()
             return redirect('/clientsInfo')
 
     return render(request, 'supplies/createSupply.html',
-                  {'title': f'Редагувати клієнта: {client.name}, {client.city}', 'form': form})
+                  {'title': f'Редагувати клієнта: {client.name}, {client.city}', 'form': form, 'cartCountData': cartCountData})
 
 @login_required(login_url='login')
 def addNewWorkerForClient(request, place_id):
     form = WorkerForm()
     place = Place.objects.get(id=place_id)
+    cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         form = WorkerForm(request.POST)
         if form.is_valid():
@@ -827,7 +1021,7 @@ def addNewWorkerForClient(request, place_id):
             obj.save()
             return redirect('/clientsInfo')
     return render(request, 'supplies/createSupply.html',
-                  {'title': f'Додати нового працівника для {place.name}, {place.city}', 'form': form})
+                  {'title': f'Додати нового працівника для {place.name}, {place.city}', 'form': form, 'cartCountData': cartCountData})
 
 
 @login_required(login_url='login')
@@ -1015,9 +1209,20 @@ def devices_render_to_xls(request):
 def orderDetail(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
     supplies_in_order = order.supplyinorder_set.all()
+    cartCountData = countCartItemsHelper(request)
 
     print(supplies_in_order.first())
-    return render(request, 'supplies/orderDetail.html', {'title': f'Замовлення № {order_id}', 'order': order, 'supplies': supplies_in_order, 'isOrders': True})
+    return render(request, 'supplies/orderDetail.html', {'title': f'Замовлення № {order_id}', 'order': order, 'supplies': supplies_in_order, 'cartCountData': cartCountData,  'isOrders': True})
+
+
+
+@login_required(login_url='login')
+def preorderDetail(request, order_id):
+    order = get_object_or_404(PreOrder, pk=order_id)
+    supplies_in_order = order.supplyinpreorder_set.all()
+    cartCountData = countCartItemsHelper(request)
+
+    return render(request, 'supplies/preorderDetail.html', {'title': f'Передзамовлення № {order_id}', 'order': order, 'supplies': supplies_in_order, 'cartCountData': cartCountData, 'isOrders': True})
 
 
 @login_required(login_url='login')
@@ -1025,8 +1230,9 @@ def clientsInfo(request):
     place = Place.objects.all().order_by('-id')
     placeFilter = PlaceFilter(request.GET, queryset=place)
     place = placeFilter.qs
+    cartCountData = countCartItemsHelper(request)
     return render(request, 'supplies/clientsList.html',
-                  {'title': f'Клієнти', 'clients': place, 'placeFilter': placeFilter, 'isClients': True})
+                  {'title': f'Клієнти', 'clients': place, 'placeFilter': placeFilter, 'cartCountData': cartCountData, 'isClients': True})
 
 
 @login_required(login_url='login')
@@ -1043,7 +1249,8 @@ def serviceNotes(request):
     serviceNotes = ServiceNote.objects.all().order_by('-id')
     serviceFilters = ServiceNotesFilter(request.GET, queryset=serviceNotes)
     serviceNotes = serviceFilters.qs
+    cartCountData = countCartItemsHelper(request)
 
     return render(request, 'supplies/serviceNotes.html',
-                   {'title': f'Сервiсні записи', 'serviceNotes': serviceNotes, 'form': form, 'serviceFilters': serviceFilters, 'isService': True})
+                   {'title': f'Сервiсні записи', 'serviceNotes': serviceNotes, 'cartCountData': cartCountData, 'form': form, 'serviceFilters': serviceFilters, 'isService': True})
 

@@ -48,6 +48,10 @@ class GeneralSupply(models.Model):
     ref = models.CharField(max_length=20, null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
 
+
+    def isInPreorderCart(self):
+        return SupplyInPreorderInCart.objects.filter(general_supply_id=self.id).exists()
+
     def __str__(self):
         return f'{self.id} - {self.name}'
 
@@ -81,7 +85,8 @@ class Supply(models.Model):
         return SupplyInOrderInCart.objects.filter(supply_id=self.id).exists()
 
     def isInPreorderCart(self):
-        return SupplyInPreorderInCart.objects.filter(supply_id=self.id).exists()
+        userObj = UserSession.objects.first()
+        return SupplyInPreorderInCart.objects.filter(supply_id=self.id, supply_for_order__userCreated=userObj.user).exists()
 
     def __str__(self):
         return f'{self.id} - {self.general_supply.name}'
@@ -176,6 +181,15 @@ class SupplyInPreorder(models.Model):
     lot = models.CharField(max_length=20, null=True, blank=True)
     date_expired = models.DateField(null=True)
     date_created = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        name = None
+        if self.generalSupply:
+            name = self.generalSupply.name
+        elif self.supply:
+            name = self.supply.general_supply.name
+
+        return f'ID order: {self.supply_for_order.id} | name: {name}'
 
     class Meta:
         verbose_name = 'Товар в Передзамовленні'
@@ -284,11 +298,14 @@ class PreorderInCart(models.Model):
 
 class SupplyInPreorderInCart(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True, default=0)
-    supply = models.OneToOneField(Supply, on_delete=models.SET_NULL, null=True, blank=True)
+    supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True)
     supply_for_order = models.ForeignKey(PreorderInCart, on_delete=models.CASCADE, null=True)
     lot = models.CharField(max_length=20, null=True, blank=True)
-    date_expired = models.DateField(null=True)
+    date_expired = models.DateField(null=True, blank=True)
     date_created = models.DateField(null=True, blank=True)
+
+    general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True, blank=True)
+
 
     def __str__(self):
         return f'Товар: для передзамовлення в коризні '

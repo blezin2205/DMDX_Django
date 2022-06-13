@@ -36,7 +36,7 @@
         <th scope="col">Категорія</th>
         <th scope="col">REF</th>
         <th scope="col" >
-            <div class="d-flex {% if not request.user.is_staff %} justify-content-around {% endif %} ">
+            <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %} ">
                 <div style="width: 110px;">LOT</div>
             <div style="width: 110px;">Кількість</div>
             <div style="width: 110px;">Термін</div>
@@ -71,56 +71,72 @@
  </div>
       </td>
 
-    <td ><div class="hstack gap-1 justify-content-end">
+    <td>
+        <div class="hstack gap-1 justify-content-end">
 {% if request.user.is_staff %}
             {% if not supp.isInCart %}
-                <button data-product={{ supp.id }} data-action="add" class="btn btn-sm btn-primary add-btn update-cart me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
+                <button data-product={{ supp.id }} data-action="add" class="btn btn-sm btn-primary add-btn update-cart {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" type="submit" data-toggle="tooltip" data-placement="top" title="В корзину"><i class="bi bi-cart-plus"></i></button>
             {% else %}
-                <button class="btn btn-sm btn-success disabled me-2" type="button"><i class="bi bi-cart-check"></i></button>
+                <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
             {% endif %}
-    {% else %}
-    {% if not supp.isInPreorderCart %}
-                <button data-product={{ supp.id }} data-action="add" class="btn btn-sm btn-primary add-btn update-cart me-2" type="submit"><i class="bi bi-cart-plus"></i></button>
-            {% else %}
-                <button class="btn btn-sm btn-success disabled me-2" type="button"><i class="bi bi-cart-check"></i></button>
-            {% endif %}
-        {% endif %}
+
     {% if uncompleteOrdersExist %}
-    <a href="{% url 'addSupplyToExistOrder' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button"><i class="bi bi-bag-plus"></i></a>
+    <a href="{% url 'addSupplyToExistOrder' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого замовлення"><i class="bi bi-bag-plus"></i></a>
 
             {% endif %}
-    <a href="{% url 'updateSupply' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning me-2" role="button"><i class="bi bi-pencil"></i></a>
+    <a href="{% url 'updateSupply' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button" data-toggle="tooltip" data-placement="top" title="Редагувати LOT"><i class="bi bi-pencil"></i></a>
 
-    <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-supp-button"><i class="bi bi-trash"></i></button>
+    <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-supp-button me-2" data-toggle="tooltip" data-placement="top" title="Видалити LOT"><i class="bi bi-trash"></i></button>
+{% endif %}
+    <button data-product={{ supp.id }} data-action="add" class="btn btn-sm btn-primary add-btn preorder-general-supp-button {% if supp.isInPreorderCart %} disabled {% endif %}" style="background: {% if supp.isInPreorderCart %} #1fdb80 {% else %} #5bc0de {% endif %}" data-toggle="tooltip" data-placement="top" title="В корзину LOT (Передзамовлення)"><i class="bi bi-cart-plus"></i></button>
 
+        {% if uncompletePreOrdersExist %}
+    <a href="{% url 'addSupplyToExistPreOrder' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого передзамовлення" style="background: #5bc0de"><i class="bi bi-bag-plus"></i></a>
 
-    </div></td>
+            {% endif %}
+
+    </div>
+    </td>
 
     </tr>
      {% endfor %}
   </tbody>
 </table>
 </td>
+        <td>
+        <div class="vstack gap-1 justify-content-end">
+            <div class="hstack gap-2 justify-content-between">
 {% if request.user.is_staff %}
-            <td>
-            <div class="hstack gap-2">
-                <a href="{% url 'addNewLot' el.id %}?next={{ request.get_full_path|urlencode }}"><i class="bi bi-plus"></i>LOT</a>
-                <a href="{% url 'updateGeneralSupply' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button"><i class="bi bi-pencil"></i></a>
+
+                <a href="{% url 'addNewLot' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-link" role="button" data-toggle="tooltip" data-placement="top" title="Додати LOT"> + LOT</a>
+                <a href="{% url 'updateGeneralSupply' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button" data-toggle="tooltip" data-placement="top" title="Редагувати назву"><i class="bi bi-pencil"></i></a>
+</div>
+    <div class="hstack gap-1 justify-content-end">
+
+<script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
+
+{% endif %}
+            <button data-product={{ el.id }} data-action="add-general" class="btn btn-sm btn-primary add-btn preorder-general-supp-button {% if el.isInPreorderCart %} disabled {% endif %}" style="background: {% if el.isInPreorderCart %} #1fdb80 {% else %} #5bc0de {% endif %}" data-toggle="tooltip" data-placement="top" title="В корзину передзамовлення (Назва)"><i class="bi bi-basket"></i></button>
+            {% if uncompletePreOrdersExist %}
+    <a href="{% url 'addSupplyToExistPreOrderGeneral' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого передзамовлення (Назва)" style="background: #5bc0de"><i class="bi bi-bag-plus"></i></a>
+
+            {% endif %}
+{% if request.user.is_staff %}
 
             <form action="{% url 'home' %}"
     method="POST" style="display: inline;" onsubmit="window.mytest()">
     {% csrf_token %}
     <input type="hidden" name="supp_id"
         value="{{ el.id }}" />
-    <button type="submit" class="btn btn-sm btn-danger">
+    <button type="submit" class="btn btn-sm btn-danger" data-toggle="tooltip" data-placement="top" title="Видалити (Назва)">
         <i class="bi bi-trash"></i>
     </button>
 </form>
-<script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
+            {% endif %}
             </div>
+        </div>
             </td>
 
-{% endif %}
      {% endfor %}
     </tr>
 

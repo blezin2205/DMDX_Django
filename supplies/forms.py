@@ -70,6 +70,10 @@ class OrderForm(forms.Form):
     order = forms.ModelChoiceField(queryset=Order.objects.filter(isComplete=False))
 
 
+class PreOrderForm(forms.Form):
+    order = forms.ModelChoiceField(queryset=PreOrder.objects.filter(isComplete=False))
+
+
 class DeviceForm(ModelForm):
     class Meta:
         model = Device
