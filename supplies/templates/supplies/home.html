@@ -88,7 +88,7 @@
 
     <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-supp-button me-2" data-toggle="tooltip" data-placement="top" title="Видалити LOT"><i class="bi bi-trash"></i></button>
 {% endif %}
-    <button data-product={{ supp.id }} data-action="add" class="btn btn-sm btn-primary add-btn preorder-general-supp-button {% if supp.isInPreorderCart %} disabled {% endif %}" style="background: {% if supp.isInPreorderCart %} #1fdb80 {% else %} #5bc0de {% endif %}" data-toggle="tooltip" data-placement="top" title="В корзину LOT (Передзамовлення)"><i class="bi bi-cart-plus"></i></button>
+    <button data-product={{ supp.id }} data-action="add" class="btn btn-sm btn-primary add-btn preorder-general-supp-button {% if supp.isInPreorderCart %} disabled {% endif %}" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}" data-toggle="tooltip" data-placement="top" title="В корзину LOT (Передзамовлення)"><i class="bi bi-cart-plus-fill"></i></button>
 
         {% if uncompletePreOrdersExist %}
     <a href="{% url 'addSupplyToExistPreOrder' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого передзамовлення" style="background: #5bc0de"><i class="bi bi-bag-plus"></i></a>
@@ -116,7 +116,7 @@
 <script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
 
 {% endif %}
-            <button data-product={{ el.id }} data-action="add-general" class="btn btn-sm btn-primary add-btn preorder-general-supp-button {% if el.isInPreorderCart %} disabled {% endif %}" style="background: {% if el.isInPreorderCart %} #1fdb80 {% else %} #5bc0de {% endif %}" data-toggle="tooltip" data-placement="top" title="В корзину передзамовлення (Назва)"><i class="bi bi-basket"></i></button>
+            <button data-product={{ el.id }} data-action="add-general" class="btn btn-sm btn-primary add-btn preorder-general-supp-button {% if el.isInPreorderCart %} disabled {% endif %}" style="background: {% if el.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}" data-toggle="tooltip" data-placement="top" title="В корзину передзамовлення (Назва)"><i class="bi bi-cart-plus-fill"></i></button>
             {% if uncompletePreOrdersExist %}
     <a href="{% url 'addSupplyToExistPreOrderGeneral' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого передзамовлення (Назва)" style="background: #5bc0de"><i class="bi bi-bag-plus"></i></a>
 

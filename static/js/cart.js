@@ -91,7 +91,7 @@ for(var i = 0; i < updateDetailBtns.length; i++) {
         if (user === 'AnonymousUser') {
             console.log('Not logged in')
         } else {
-            senadAction(productId, action, url)
+            sendCartAction(productId, action, url)
         }
     })
 }
@@ -112,10 +112,36 @@ function senadAction(productId, action, url) {
         })
 
     .then((data) => {
-        console.log('data:', data)
         location.reload()
         })
 }
+
+function sendCartAction(productId, action, url) {
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+        },
+        body: JSON.stringify({'productId': productId, 'action': action})
+    })
+
+     .then((response) =>{
+            return response.json()
+        })
+
+    .then((data) => {
+        console.log('data:', data)
+        console.log(data.isLastItemInCart)
+
+        if (data.isLastItemInCart) {
+            location.replace('/')
+        } else {
+            location.reload()
+        }
+        })
+}
+
 
 $(function () {
   $('[data-toggle="tooltip"]').tooltip()

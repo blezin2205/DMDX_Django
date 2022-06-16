@@ -77,4 +77,11 @@ class PreOrderForm(forms.Form):
 class DeviceForm(ModelForm):
     class Meta:
         model = Device
-        exclude = ['in_place']
+        exclude = ['in_place', 'in_city']
+
+    def __init__(self, *args, **kwargs):
+        super(DeviceForm, self).__init__(*args, **kwargs)
+        self.fields['general_device'].label = "Прилад"
+        self.fields['serial_number'].label = "Серійний номер"
+        self.fields['date_installed'].label = "Дата інсталяції"
+

@@ -332,9 +332,10 @@ class Device(models.Model):
     serial_number = models.CharField(max_length=50, null=True, blank=True)
     in_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     date_installed = models.DateField(null=True, blank=True)
+    in_city = models.ForeignKey(City, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
-        return f'{self.general_device.name} in {self.in_place.name}, {self.in_place.city}'
+        return f'{self.general_device.name} in {self.in_place.name}, {self.in_place.city_ref.name}'
 
     class Meta:
         verbose_name = 'Прилад'

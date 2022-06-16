@@ -88,7 +88,7 @@ class DeviceFilter(django_filters.FilterSet):
     serial_number = CharFilter(field_name='serial_number', lookup_expr='icontains', label='Серійний номер')
     class Meta:
         model = Device
-        exclude = '__all__'
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super(DeviceFilter, self).__init__(*args, **kwargs)
@@ -96,8 +96,11 @@ class DeviceFilter(django_filters.FilterSet):
             {'empty_label': 'Всі'})
         self.filters['general_device'].extra.update(
             {'empty_label': 'Всі'})
+        self.filters['in_city'].extra.update(
+            {'empty_label': 'Всі'})
         self.filters['in_place'].label = "Клієнт"
         self.filters['general_device'].label = "Прилад"
+        self.filters['in_city'].label = "Місто"
 
 
 class PlaceFilter(django_filters.FilterSet):
@@ -108,3 +111,13 @@ class PlaceFilter(django_filters.FilterSet):
     def __init__(self, *args, **kwargs):
         super(PlaceFilter, self).__init__(*args, **kwargs)
         self.filters['city_ref'].label = "Місто"
+
+
+class CityFilter(django_filters.FilterSet):
+    class Meta:
+        model = City
+        fields =  '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(CityFilter, self).__init__(*args, **kwargs)
+        self.filters['name'].label = "Місто"

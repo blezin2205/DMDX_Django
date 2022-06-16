@@ -5,9 +5,8 @@ from django.http import HttpResponseRedirect, HttpResponse, FileResponse
 from .decorators import unauthenticated_user, allowed_users
 from .models import *
 from .serializers import *
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
+from datetime import date
+from dateutil.relativedelta import relativedelta
 from django.contrib.auth import authenticate, login, logout
 from .filters import *
 from .forms import *
@@ -23,7 +22,6 @@ from xhtml2pdf import pisa
 import os
 from xlsxwriter.workbook import Workbook
 import requests
-
 
 async def httpRequest(request):
 
@@ -148,7 +146,7 @@ def preorder_general_supp_buttons(request):
         general_supply = GeneralSupply.objects.get(id=prodId)
 
         preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
-        suppInCart = SupplyInPreorderInCart(
+        suppInCart = SupplyInPreorderInCart(id=general_supply.id,
                 supply_for_order=preorder,
                 general_supply=general_supply)
 
@@ -249,27 +247,21 @@ def updateCartItem(request):
 
     print('Action', action)
     print('id', prodId)
-
     user = request.user
-    suppInCart = SupplyInOrderInCart.objects.get(id=prodId)
-    order, created = OrderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+    isLastItemInCart = False
 
-    if action == 'add':
-        suppInCart.count_in_order = (suppInCart.count_in_order + 1)
-        suppInCart.save()
-    elif action == 'remove':
-        suppInCart.count_in_order = (suppInCart.count_in_order - 1)
-        suppInCart.save()
+    if action == 'delete-precart':
+        order, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+        suppInCart = SupplyInPreorderInCart.objects.get(id=prodId, supply_for_order=order)
+        suppInCart.delete()
+        isLastItemInCart = SupplyInPreorderInCart.objects.count() == 0
     elif action == 'delete':
+        order, created = OrderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+        suppInCart = SupplyInOrderInCart.objects.get(id=prodId, supply_for_order=order)
         suppInCart.delete()
-        if SupplyInOrderInCart.objects.all().count() == 0:
-            redirect('/')
+        isLastItemInCart = SupplyInOrderInCart.objects.count() == 0
 
-    if suppInCart.count_in_order <= 0:
-        suppInCart.delete()
-
-
-    return  JsonResponse('Item was added', safe=False)
+    return  JsonResponse({'isLastItemInCart': isLastItemInCart}, safe=False)
 
 
 def registerPage(request):
@@ -313,13 +305,11 @@ def home(request):
 
     supplies = GeneralSupply.objects.all().order_by('name')
     uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
-    uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False).exists()
-    #
-    # for gen in supplies:
-    #    for sup in gen.general.all():
-    #        sup.name = gen.name
-    #        sup.ref = gen.ref
-    #        sup.save(update_fields=['name', 'ref'])
+    isClient = request.user.groups.filter(name='client').exists()
+    if isClient:
+       uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False, place__user=request.user).exists()
+    else:
+        uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False).exists()
 
     suppFilter = SupplyFilter(request.GET, queryset=supplies)
     supplies = suppFilter.qs
@@ -392,10 +382,10 @@ def cartDetailForClient(request):
 
         orderInCart.delete()
 
-        return redirect('/orders')
+        return redirect('/preorders')
 
-    return render(request, 'supplies/cart.html',
-                  {'title': 'Корзина', 'order': orderInCart, 'cartCountData': cartCountData, 'supplies': supplies,
+    return render(request, 'supplies/preorder-cart.html',
+                  {'title': 'Корзина передзамовлення', 'order': orderInCart, 'cartCountData': cartCountData, 'supplies': supplies,
                    'orderForm': orderForm
                    })
 
@@ -846,6 +836,10 @@ def addSupplyToExistPreOrder(request, supp_id):
     supply = SupplyInOrderInCart(count_in_order=1, supply=supp, lot=supp.supplyLot, date_expired=supp.expiredDate)
     cartCountData = countCartItemsHelper(request)
 
+    isClient = request.user.groups.filter(name='client').exists()
+    if isClient:
+        orderForm.fields['order'].queryset = PreOrder.objects.filter(isComplete=False, place__user=request.user)
+
     if request.method == 'POST':
 
         count = int(request.POST.get('count_list'))
@@ -877,6 +871,11 @@ def addSupplyToExistPreOrderGeneral(request, supp_id):
     orderForm = PreOrderForm(request.POST or None)
     supply = SupplyInPreorderInCart(count_in_order=1, supply_for_order=None, general_supply=general_supp)
     cartCountData = countCartItemsHelper(request)
+
+    isClient = request.user.groups.filter(name='client').exists()
+    if isClient:
+        orderForm.fields['order'].queryset = PreOrder.objects.filter(isComplete=False, place__user=request.user)
+
     if request.method == 'POST':
 
         count = int(request.POST.get('count_list'))
@@ -987,12 +986,13 @@ def addNewDeviceForClient(request, client_id):
             device = Device(general_device=form.cleaned_data['general_device'],
                             serial_number=form.cleaned_data['serial_number'],
                             date_installed=form.cleaned_data['date_installed'],
+                            in_city=client.city_ref,
                             in_place=client)
             device.save()
             return redirect('/clientsInfo')
 
     return render(request, 'supplies/createSupply.html',
-                  {'title': f'Додати прилад для: \n {client.name}, {client.city}', 'form': form, 'cartCountData': cartCountData})
+                  {'title': f'Додати прилад для: \n {client.name}, {client.city_ref.name}', 'form': form, 'cartCountData': cartCountData})
 
 
 @login_required(login_url='login')
@@ -1110,7 +1110,7 @@ def render_to_xls(request, order_id):
         ws.write(2, 0, f'Всього: {supplies_in_order.count()} шт.', format)
 
     format = wb.add_format()
-    format.set_font_size(12)
+    format.set_font_size(14)
 
     for row in supplies_in_order:
         row_num += 1
@@ -1130,13 +1130,137 @@ def render_to_xls(request, order_id):
             ws.write(row_num, 0, row_num - 3)
             ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
 
-    ws.set_column(0, 0, 3)
-    ws.set_column(1, 1, 34)
-    ws.set_column(2, 3, 12)
-    ws.set_column(4, 4, 4)
-    ws.set_column(5, 5, 10)
+    ws.set_column(0, 0, 5)
+    ws.set_column(1, 1, 35)
+    ws.set_column(2, 3, 20)
+    ws.set_column(4, 4, 10)
+    ws.set_column(5, 5, 15)
 
     ws.add_table(3, 0, supplies_in_order.count() + 3, len(columns_table) - 1, {'columns': columns_table})
+    wb.close()
+
+    return response
+
+
+def preorder_render_to_xls(request, order_id):
+    order = get_object_or_404(PreOrder, pk=order_id)
+    supplies_in_order = order.supplyinpreorder_set.all()
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f"attachment; filename=Preorder_{order_id}.xlsx"
+
+    row_num = 9
+
+    wb = Workbook(response, {'in_memory': True})
+    ws = wb.add_worksheet(f'№{order_id}, {order.place.name}, {order.place.city_ref.name}')
+    format = wb.add_format({'bold': True})
+    format.set_font_size(16)
+
+
+    columns_table = [ {'header': '№'},
+        {'header': 'Назва товару'},
+     {'header': 'REF'},
+     {'header': 'LOT'},
+     {'header': 'К-ть'},
+     {'header': 'Тер.прид.'},
+     ]
+
+    ws.write(0, 0, f'Замов. №{order_id} для {order.place.name[:30]}, {order.place.city_ref.name} від {order.dateCreated.strftime("%d-%m-%Y")}', format)
+    if order.comment:
+        format = wb.add_format()
+        format.set_font_size(14)
+        ws.write(1, 0, f'Коммент.: {order.comment}', format)
+        ws.write(2, 0, f'Всього: {supplies_in_order.count()} шт.', format)
+
+    format = wb.add_format({'text_wrap': True})
+    format.set_font_size(14)
+
+    supplyNotExistColor = '#fcd9d9'
+    onlyGoodColor = '#fffcad'
+    onlyGoodSixMonthColor = '#e3fad4'
+    onlyExpiredColor = '#ffe1ad'
+    six_months = timezone.now().date() + relativedelta(months=+6)
+
+    format = wb.add_format({'bg_color': supplyNotExistColor})
+    format.set_font_size(14)
+    ws.write(4, 0, 'Немає на складі', format)
+    ws.write(4, 1, '', format)
+    ws.write(4, 2, '', format)
+    ws.write(4, 3, '', format)
+
+    format = wb.add_format({'bg_color': onlyGoodColor})
+    format.set_font_size(14)
+    ws.write(5, 0, 'Товар є на складі з терміном до 6-ти місяців', format)
+    ws.write(5, 1, '', format)
+    ws.write(5, 2, '', format)
+    ws.write(5, 3, '', format)
+
+    format = wb.add_format({'bg_color': onlyGoodSixMonthColor})
+    format.set_font_size(14)
+    ws.write(6, 0, 'Товар є на складі з терміном більше 6-ти місяців', format)
+    ws.write(6, 1, '', format)
+    ws.write(6, 2, '', format)
+    ws.write(6, 3, '', format)
+
+    format = wb.add_format({'bg_color': onlyExpiredColor})
+    format.set_font_size(14)
+    ws.write(7, 0, 'Товар є на складі тільки прострочений', format)
+    ws.write(7, 1, '', format)
+    ws.write(7, 2, '', format)
+    ws.write(7, 3, '', format)
+
+    for row in supplies_in_order:
+
+        supplyNotExist = row.generalSupply.general.count() == 0
+        onlyExpired = row.generalSupply.general.filter(expiredDate__lte=timezone.now().date()).count() > 0
+        onlyGood = row.generalSupply.general.filter(expiredDate__range=[timezone.now().date(), six_months]).count() > 0
+
+        onlyGoodSixMonth = row.generalSupply.general.filter(expiredDate__gte=six_months).count() > 0
+        suppd = row.generalSupply.general.filter(expiredDate__gte=six_months)
+        good_and_expired = onlyGood and onlyExpired
+
+        format = wb.add_format({'text_wrap': True})
+        format.set_font_size(14)
+
+        if supplyNotExist:
+            format = wb.add_format({'text_wrap': True, 'bg_color': supplyNotExistColor})
+            format.set_font_size(14)
+        elif onlyGood:
+            format = wb.add_format({'text_wrap': True, 'bg_color': onlyGoodColor})
+            format.set_font_size(14)
+        elif onlyGoodSixMonth:
+            format = wb.add_format({'text_wrap': True, 'bg_color': onlyGoodSixMonthColor})
+            format.set_font_size(14)
+        elif onlyExpired:
+            format = wb.add_format({'text_wrap': True, 'bg_color': onlyExpiredColor})
+            format.set_font_size(14)
+
+        row_num += 1
+        name = row.generalSupply.name
+        ref = ''
+        if row.generalSupply.ref:
+           ref = row.generalSupply.ref
+        lot = ''
+        if row.lot:
+            lot = row.lot
+        count = row.count_in_order
+        date_expired = ''
+        if row.date_expired:
+            date_expired = row.date_expired.strftime("%d-%m-%Y")
+
+        val_row = [name, ref, lot, count, date_expired]
+
+        for col_num in range(len(val_row)):
+            ws.write(row_num, 0, row_num - 3)
+            ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
+
+    ws.set_column(0, 0, 5)
+    ws.set_column(1, 1, 35)
+    ws.set_column(2, 3, 15)
+    ws.set_column(4, 4, 6)
+    ws.set_column(5, 5, 12)
+
+    ws.add_table(9, 0, supplies_in_order.count() + 9, len(columns_table) - 1, {'columns': columns_table})
     wb.close()
 
     return response

@@ -16,6 +16,7 @@ urlpatterns = [
     path('update_order_count/', views.update_order_count, name='update_order_count'),
     path('preorder_general_supp_buttons/', views.preorder_general_supp_buttons, name='preorder_general_supp_buttons'),
     path('cart/update_item/', views.updateCartItem, name='update_item_detail'),
+    path('preorders-cart/update_item/', views.updateCartItem, name='update_item_detail'),
     path('delete_supply/', views.deleteSupply, name='delete_supply'),
     path('delete_supply_in_order/', views.deleteSupplyInOrder, name='delete_supply_in_order'),
 
@@ -63,6 +64,7 @@ urlpatterns = [
     path('preorders/<int:order_id>', views.preorderDetail, name='preorderDetail'),
     path('order-detail-pdf/<int:order_id>', views.orderDetail_pdf, name='orderDetailPdf'),
     path('order-detail-csv/<int:order_id>', views.render_to_xls, name='orderDetailCsv'),
+    path('preorder-detail-csv/<int:order_id>', views.preorder_render_to_xls, name='preorderDetailCsv'),
 
 
     path('api/supplies', apiViews.SuppliesApiView.as_view()),
