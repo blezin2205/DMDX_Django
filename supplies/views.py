@@ -1178,6 +1178,7 @@ def preorder_render_to_xls(request, order_id):
      {'header': 'LOT'},
      {'header': 'К-ть'},
      {'header': 'Тер.прид.'},
+    {'header': 'Index'}
      ]
 
     ws.write(0, 0, f'Замов. №{order_id} для {order.place.name[:30]}, {order.place.city_ref.name} від {order.dateCreated.strftime("%d-%m-%Y")}', format)
@@ -1194,6 +1195,13 @@ def preorder_render_to_xls(request, order_id):
     onlyGoodColor = '#fffcad'
     onlyGoodSixMonthColor = '#e3fad4'
     onlyExpiredColor = '#ffe1ad'
+
+    supplyNotExistColorIndex = 1
+    onlyGoodColorIndex = 2
+    onlyGoodSixMonthColorIndex = 3
+    onlyExpiredColorIndex = 4
+
+
     six_months = timezone.now().date() + relativedelta(months=+6)
 
     format = wb.add_format({'bg_color': supplyNotExistColor})
@@ -1201,28 +1209,28 @@ def preorder_render_to_xls(request, order_id):
     ws.write(4, 0, 'Немає на складі', format)
     ws.write(4, 1, '', format)
     ws.write(4, 2, '', format)
-    ws.write(4, 3, '', format)
+    ws.write(4, 3, supplyNotExistColorIndex, format)
 
     format = wb.add_format({'bg_color': onlyGoodColor})
     format.set_font_size(14)
     ws.write(5, 0, 'Товар є на складі з терміном до 6-ти місяців', format)
     ws.write(5, 1, '', format)
     ws.write(5, 2, '', format)
-    ws.write(5, 3, '', format)
+    ws.write(5, 3, onlyGoodColorIndex, format)
 
     format = wb.add_format({'bg_color': onlyGoodSixMonthColor})
     format.set_font_size(14)
     ws.write(6, 0, 'Товар є на складі з терміном більше 6-ти місяців', format)
     ws.write(6, 1, '', format)
     ws.write(6, 2, '', format)
-    ws.write(6, 3, '', format)
+    ws.write(6, 3, onlyGoodSixMonthColorIndex, format)
 
     format = wb.add_format({'bg_color': onlyExpiredColor})
     format.set_font_size(14)
     ws.write(7, 0, 'Товар є на складі тільки прострочений', format)
     ws.write(7, 1, '', format)
     ws.write(7, 2, '', format)
-    ws.write(7, 3, '', format)
+    ws.write(7, 3, onlyExpiredColorIndex, format)
 
     for row in supplies_in_order:
 
@@ -1236,19 +1244,24 @@ def preorder_render_to_xls(request, order_id):
 
         format = wb.add_format({'text_wrap': True})
         format.set_font_size(14)
+        colorIndex = 0
 
         if supplyNotExist:
             format = wb.add_format({'text_wrap': True, 'bg_color': supplyNotExistColor})
             format.set_font_size(14)
+            colorIndex = supplyNotExistColorIndex
         elif onlyGood:
             format = wb.add_format({'text_wrap': True, 'bg_color': onlyGoodColor})
             format.set_font_size(14)
+            colorIndex = onlyGoodColorIndex
         elif onlyGoodSixMonth:
             format = wb.add_format({'text_wrap': True, 'bg_color': onlyGoodSixMonthColor})
             format.set_font_size(14)
+            colorIndex = onlyGoodSixMonthColorIndex
         elif onlyExpired:
             format = wb.add_format({'text_wrap': True, 'bg_color': onlyExpiredColor})
             format.set_font_size(14)
+            colorIndex = onlyExpiredColorIndex
 
         row_num += 1
         name = row.generalSupply.name
@@ -1263,7 +1276,7 @@ def preorder_render_to_xls(request, order_id):
         if row.date_expired:
             date_expired = row.date_expired.strftime("%d-%m-%Y")
 
-        val_row = [name, ref, lot, count, date_expired]
+        val_row = [name, ref, lot, count, date_expired, colorIndex]
 
         for col_num in range(len(val_row)):
             ws.write(row_num, 0, row_num - 3)
@@ -1274,6 +1287,7 @@ def preorder_render_to_xls(request, order_id):
     ws.set_column(2, 3, 15)
     ws.set_column(4, 4, 6)
     ws.set_column(5, 5, 12)
+    ws.set_column(6, 6, 5)
 
     ws.add_table(9, 0, supplies_in_order.count() + 9, len(columns_table) - 1, {'columns': columns_table})
     wb.close()
@@ -1365,6 +1379,7 @@ def preorderDetail(request, order_id):
 
 
 @login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
 def clientsInfo(request):
     place = Place.objects.all().order_by('-id')
     placeFilter = PlaceFilter(request.GET, queryset=place)
