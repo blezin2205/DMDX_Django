@@ -6,14 +6,6 @@ from django.contrib.sessions.models import Session
 from django.contrib.auth.signals import user_logged_in
 
 
-def user_logged_in_handler(sender, request, user, **kwargs):
-    UserSession.objects.get_or_create(user=user, session_id=request.session.session_key)
-
-
-class UserSession(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    session = models.ForeignKey(Session, on_delete=models.SET_NULL, null=True)
-
 
 def get_last_name(self):
     return self.last_name
@@ -44,13 +36,10 @@ class Category(models.Model):
 
 
 class GeneralSupply(models.Model):
-    name = models.CharField(max_length=50, null=True)
-    ref = models.CharField(max_length=20, null=True, blank=True)
+    name = models.CharField(max_length=100, null=True)
+    ref = models.CharField(max_length=50, null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
 
-
-    def isInPreorderCart(self):
-        return SupplyInPreorderInCart.objects.filter(general_supply_id=self.id).exists()
 
     def __str__(self):
         return f'{self.id} - {self.name}'
@@ -62,11 +51,11 @@ class GeneralSupply(models.Model):
 
 class Supply(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=50, null=True, blank=True)
+    name = models.CharField(max_length=100, null=True, blank=True)
     general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True, related_name='general')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
-    ref = models.CharField(max_length=20, null=True, blank=True)
-    supplyLot = models.CharField(max_length=20, null=True, blank=True)
+    ref = models.CharField(max_length=50, null=True, blank=True)
+    supplyLot = models.CharField(max_length=50, null=True, blank=True)
     count = models.PositiveIntegerField(null=True, blank=True)
     countOnHold = models.PositiveIntegerField(null=True, blank=True, default=0)
     dateCreated = models.DateField(null=True, auto_now_add=True)
@@ -82,11 +71,8 @@ class Supply(models.Model):
         return self.expiredDate == timezone.now().date()
 
     def isInCart(self):
-        return SupplyInOrderInCart.objects.filter(supply_id=self.id).exists()
+        return SupplyInOrderInCart.objects.get(supply_id=self.id).exists()
 
-    def isInPreorderCart(self):
-        userObj = UserSession.objects.first()
-        return SupplyInPreorderInCart.objects.filter(supply_id=self.id, supply_for_order__userCreated=userObj.user).exists()
 
     def __str__(self):
         return f'{self.id} - {self.general_supply.name}'
@@ -113,9 +99,9 @@ class Place(models.Model):
 
 
 class Workers(models.Model):
-    name = models.CharField(max_length=50)
-    telNumber = models.CharField(max_length=20)
-    position = models.CharField(max_length=20)
+    name = models.CharField(max_length=100)
+    telNumber = models.CharField(max_length=100)
+    position = models.CharField(max_length=100)
     for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
 
     def __str__(self):

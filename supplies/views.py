@@ -37,7 +37,7 @@ async def httpRequest(request):
 
 def countCartItemsHelper(request):
     try:
-        orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
+        orderInCart = OrderInCart.objects.first()
         cart_items = orderInCart.get_cart_items
     except:
         cart_items = 0
@@ -171,10 +171,10 @@ def updateItem(request):
     order, created = OrderInCart.objects.get_or_create(userCreated=user, isComplete=False)
 
     try:
-        suppInCart = SupplyInOrderInCart.objects.get(supply=supply, supply_for_order=order, lot=supply.supplyLot,
+        suppInCart = SupplyInOrderInCart.objects.get(id=prodId,supply=supply, supply_for_order=order, lot=supply.supplyLot,
                                                      date_expired=supply.expiredDate)
     except:
-        suppInCart = SupplyInOrderInCart(
+        suppInCart = SupplyInOrderInCart(id=prodId,
             supply=supply,
             supply_for_order=order,
             lot=supply.supplyLot,
@@ -195,7 +195,6 @@ def updateItem(request):
 
 
 @login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
 def update_order_count(request):
     data = json.loads(request.body)
     prodId = data['productId']
@@ -251,17 +250,21 @@ def updateCartItem(request):
     isLastItemInCart = False
 
     if action == 'delete-precart':
-        order, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+        order = PreorderInCart.objects.get(userCreated=user, isComplete=False)
         suppInCart = SupplyInPreorderInCart.objects.get(id=prodId, supply_for_order=order)
         suppInCart.delete()
-        isLastItemInCart = SupplyInPreorderInCart.objects.count() == 0
+        isLastItemInCart = SupplyInPreorderInCart.objects.filter(supply_for_order=order).count() == 0
+        if isLastItemInCart:
+            order.delete()
     elif action == 'delete':
-        order, created = OrderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+        order = OrderInCart.objects.first()
         suppInCart = SupplyInOrderInCart.objects.get(id=prodId, supply_for_order=order)
         suppInCart.delete()
         isLastItemInCart = SupplyInOrderInCart.objects.count() == 0
+        if isLastItemInCart:
+            order.delete()
 
-    return  JsonResponse({'isLastItemInCart': isLastItemInCart}, safe=False)
+    return JsonResponse({'isLastItemInCart': isLastItemInCart}, safe=False)
 
 
 def registerPage(request):
@@ -288,15 +291,12 @@ def loginPage(request):
              login(request, user)
              return redirect('/')
 
-        UserSession.objects.all().delete()
-        user_logged_in.connect(user_logged_in_handler)
         return render(request, 'auth/login.html')
 
 
 @login_required(login_url='login')
 def logoutUser(request):
     logout(request)
-    UserSession.objects.all().delete()
     return redirect('login')
 
 
@@ -304,6 +304,7 @@ def logoutUser(request):
 def home(request):
 
     supplies = GeneralSupply.objects.all().order_by('name')
+
     uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
     isClient = request.user.groups.filter(name='client').exists()
     if isClient:
@@ -457,9 +458,10 @@ def carDetailForStaff(request):
 
 
 @login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def cartDetail(request):
 
-    orderInCart = OrderInCart.objects.get(userCreated=request.user, isComplete=False)
+    orderInCart = OrderInCart.objects.first()
     cartCountData = countCartItemsHelper(request)
     supplies = orderInCart.supplyinorderincart_set.all()
     orderForm = OrderInCartForm(request.POST or None)
@@ -959,7 +961,20 @@ def addgeneralSupply(request):
             return redirect('/')
 
     return render(request, 'supplies/createSupply.html',
-                  {'title': f'Додати новий товар (назву)', 'form': form,  'cartCountData': cartCountData})
+                  {'title': f'Додати новий товар', 'form': form,  'cartCountData': cartCountData})
+
+@login_required(login_url='login')
+def addgeneralSupplyOnly(request):
+    form = NewGeneralSupplyForm()
+    cartCountData = countCartItemsHelper(request)
+    if request.method == 'POST':
+        form = NewGeneralSupplyForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('/')
+
+    return render(request, 'supplies/createSupply.html',
+                  {'title': f'Додати нову назву товару', 'form': form,  'cartCountData': cartCountData})
 
 
 @login_required(login_url='login')

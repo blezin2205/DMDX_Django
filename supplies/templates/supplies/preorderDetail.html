@@ -23,7 +23,7 @@
 {% if order.isComplete %}
         <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span> <span>{{order.dateSent|date:"d.m.Y" }}</span></p>
         {% else %}
-        <p class="mb-2"><span>Статус:</span> <span class="waiting">В очікуванні</span></p>
+        <p class="mb-2"><span>Статус:</span> <span style="color: #5bc0de; font-weight: bold">В очікуванні</span></p>
         {%  endif %}
 
 
@@ -67,11 +67,11 @@
 
             <td>
                 <div class="hstack gap-2 justify-content-center">
-                    {% if not order.isComplete and request.user.is_staff %}
+                    {% if not order.isComplete %}
                     <button data-product="{{ el.id }}" data-action="remove-preorder" class="btn btn-lg update-order-count text-primary" type="submit"><i class="bi bi-dash"></i></button>
                     {% endif %}
                     {{ el.count_in_order }}
-                {% if not order.isComplete and request.user.is_staff %}
+                {% if not order.isComplete %}
                     <button data-product="{{ el.id }}" data-action="add-preorder" class="btn btn-lg update-order-count text-primary" type="submit"><i class="bi bi-plus"></i></button>
                 {% endif %}
 
@@ -80,7 +80,7 @@
             <td>{{ el.generalSupply.category.name }}</td>
             <td>{{ el.date_expired|date:"d.m.Y" }}</td>
             <td>{{ el.date_created|date:"d.m.Y" }}</td>
-     {% if not order.isComplete and request.user.is_staff %}
+     {% if not order.isComplete %}
      <td><button data-product={{ el.id }} data-action="delete-preorder" class="btn btn-sm btn-danger add-btn delete-suppinorder-button"><i class="bi bi-trash"></i></button></td>
      {% endif %}
     </tr>

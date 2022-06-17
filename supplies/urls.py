@@ -25,7 +25,8 @@ urlpatterns = [
 
 
 
-    path('add-general-supply', views.addgeneralSupply, name='addGeneralSupply'),
+    path('add-general-supply-with-supply', views.addgeneralSupply, name='addGeneralSupply-with-supp'),
+    path('add-general-supply', views.addgeneralSupplyOnly, name='add-general-supply'),
     path('add-client', views.addNewClient, name='addClient'),
     path('newLot/<int:supp_id>', views.addNewLotforSupply, name='addNewLot'),
 

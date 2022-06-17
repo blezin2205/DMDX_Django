@@ -59,6 +59,17 @@ class NewSupplyForm(ModelForm):
         model = Supply
         fields = ['supplyLot', 'count', 'expiredDate', 'name', 'ref', 'category']
 
+class NewGeneralSupplyForm(ModelForm):
+    class Meta:
+        model = GeneralSupply
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(NewGeneralSupplyForm, self).__init__(*args, **kwargs)
+        self.fields['name'].label = "Назва"
+        self.fields['ref'].label = "REF"
+        self.fields['category'].label = "Категорія"
+
 
 class OrderInCartForm(ModelForm):
     class Meta:

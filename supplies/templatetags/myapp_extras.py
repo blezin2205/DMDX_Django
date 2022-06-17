@@ -1,4 +1,5 @@
 from django import template
+from ..models import *
 
 register = template.Library()
 
@@ -19,3 +20,30 @@ def my_url(value, field_name, urlencode=None):
 @register.filter(name='has_group')
 def has_group(user, group_name):
     return user.groups.filter(name=group_name).exists()
+
+@register.filter(name='in_cart')
+def has_group(supId, user):
+    try:
+       sups =  SupplyInOrderInCart.objects.get(pk=supId)
+       return True
+    except:
+        return False
+
+
+@register.filter(name='in_precart')
+def has_group(supId, user):
+    try:
+       preorderInCart = PreorderInCart.objects.get(userCreated=user)
+       sups =  SupplyInPreorderInCart.objects.get(supply_id=supId, supply_for_order=preorderInCart)
+       return True
+    except:
+        return False
+
+@register.filter(name='in_precart_general')
+def has_group(supId, user):
+    try:
+       preorderInCart = PreorderInCart.objects.get(userCreated=user)
+       sups =  SupplyInPreorderInCart.objects.get(general_supply_id=supId, supply_for_order=preorderInCart)
+       return True
+    except:
+        return False
