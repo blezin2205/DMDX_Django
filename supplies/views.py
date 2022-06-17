@@ -1347,7 +1347,7 @@ def devices_render_to_xls(request):
 @login_required(login_url='login')
 def orderDetail(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
-    supplies_in_order = order.supplyinorder_set.all()
+    supplies_in_order = order.supplyinorder_set.all().order_by('id')
     cartCountData = countCartItemsHelper(request)
 
     print(supplies_in_order.first())
@@ -1358,7 +1358,7 @@ def orderDetail(request, order_id):
 @login_required(login_url='login')
 def preorderDetail(request, order_id):
     order = get_object_or_404(PreOrder, pk=order_id)
-    supplies_in_order = order.supplyinpreorder_set.all()
+    supplies_in_order = order.supplyinpreorder_set.all().order_by('id')
     cartCountData = countCartItemsHelper(request)
 
     return render(request, 'supplies/preorderDetail.html', {'title': f'Передзамовлення № {order_id}', 'order': order, 'supplies': supplies_in_order, 'cartCountData': cartCountData, 'isOrders': True})

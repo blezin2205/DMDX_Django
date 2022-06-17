@@ -26,7 +26,7 @@
                             <div class="dropdown-menu">
                                 {% if request.user.is_staff %}
                               <a class="dropdown-item" href="{% url 'create_note' %}">Сервісну замітку</a>
-                              <a class="dropdown-item" href="{% url 'addGeneralSupply-with-supp' %}>Товар</a>
+                              <a class="dropdown-item" href="{% url 'addGeneralSupply-with-supp' %}">Товар</a>
                               <a class="dropdown-item" href="{% url 'addClient' %}">Клієнта</a>
                                  {% endif %}
                                  <a class="dropdown-item" href="{% url 'add-general-supply' %}">Назву товару</a>
