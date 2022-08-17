@@ -48,6 +48,8 @@
 {% if not order.isComplete %}
 
 <button data-product="{{ order.id }}" data-action="update-preorder" class="btn btn-success btn-lg add-btn update-order-status" type="submit"><i class="bi bi-check2"></i></button>
+    {% else %}
+    <a href="{% url 'preorderDetail-generate-order' order.id %}?next={{ request.get_full_path }}" class="btn btn-primary btn-lg" role="button" data-toggle="tooltip" data-placement="top" title="Згенерувати замовлення"><i class="bi bi-cart-plus-fill"></i></a>
 {% endif %}
     <form action="" onsubmit="window.mytest()">
         <button data-product="{{ order.id }}" data-action="delete-preorder" class="btn btn-danger btn-lg add-btn update-order-status" type="submit"><i class="bi bi-trash"></i></button>

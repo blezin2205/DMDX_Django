@@ -1,0 +1,131 @@
+{% extends 'supplies/base.html' %}
+{% load mathfilters %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+
+
+    <div class="allSupply">
+<h3>
+  <small class="text-muted">Для: {{order.place.name}}, {{order.place.city_ref.name}}</small>
+</h3>
+{% if order.comment %}
+<h4>
+  <small class="text-muted">Комментарій: {{order.comment}}</small>
+</h4>
+{% endif %}
+<h5>
+  <small class="text-muted">Cтворив: {{order.userCreated.last_name}}</small>
+</h5>
+{% if order.isComplete %}
+        <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span> <span>{{order.dateSent|date:"d.m.Y" }}</span></p>
+        {% else %}
+        <p class="mb-2"><span>Статус:</span> <span style="color: #5bc0de; font-weight: bold">В очікуванні</span></p>
+        {%  endif %}
+
+
+
+{#        <a href="{% url 'orderDetailPdf' order.id %}">PDF</a>#}
+    <a href="{% url 'preorderDetailCsv' order.id %}">Export to Excel</a>
+</div>
+     <form method="POST" action="">
+    <table class="table centred mt-5">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">ID/({{supplies|length}})</th>
+      <th scope="col" class="textAlignLeft">Назва товару</th>
+        <th scope="col">Категорія</th>
+        <th scope="col">REF</th>
+        <th scope="col" >
+            <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %} ">
+                <div style="width: 110px;">LOT</div>
+            <div style="width: 110px;">Кількість</div>
+            <div style="width: 110px;">Термін</div>
+            </div>
+        </th>
+    <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+
+    {% for el in supplies %}
+
+{#     {% if el.generalSupply %}#}
+{#         #}
+{#        {% else %}#}
+{#         #}
+{#        {% endif %}#}
+         <tr>
+
+      <th scope="row">{{el.generalSupply.id}} {% if el.generalSupply %}General Supply{% else %}Supply{% endif %}</th>
+      <td style="text-align: left;">{{ el.generalSupply.name }}</td>
+      <td>{{ el.generalSupply.category.name }}</td>
+      <td>
+
+          {% if el.generalSupply.ref is not none %}
+                        {{ el.generalSupply.ref }}
+                {% endif %}
+      </td>
+
+         <td class="supplyRow">
+
+<table class="table table-borderless mb-0">
+  <tbody>
+   {% for supp in el.generalSupply.general.all %}
+    <tr>
+
+
+      <td  style="width: 120px"><div>{% if supp.supplyLot is not none %} {{ supp.supplyLot }} {% endif %}</div></td>
+      <td style="width: 110px"><div><span>{{ supp.count }}</span>  {% if supp.countOnHold %}  <span style="background-color: orange" class="px-2 rounded-2">{{ supp.countOnHold }}</span> {% endif %} </div> </td>
+      <td style="width: 100px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.expiredDate|date:"d.m.Y" }}
+ </div>
+      </td>
+
+    <td>
+        <div class="hstack gap-3 justify-content-end">
+
+<label for="form1">Доступно: <u style="font-weight: bolder">{{ supp.count|sub:supp.countOnHold }}</u></label>
+            <input id="form1" min="0" name="count_list" value="{{ item.count_in_order }}" type="number" style="width: 100px"
+                  class="form-control form-control-sm" />
+                  <input type="hidden" name="count_list_id" value="{{ item.id }}">
+
+            <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="{{ supp.id }}" id="flexCheckDefault" name="flexCheckDefault" checked>
+  <label class="form-check-label" for="flexCheckDefault">
+  </label>
+</div>
+
+    </div>
+    </td>
+
+
+     {% endfor %}
+  </tbody>
+</table>
+</td>
+        <td>
+
+            </td>
+
+     {% endfor %}
+    </tr>
+
+  </tbody>
+</table>
+
+
+            {% csrf_token %}
+            <button class="btn btn-outline-primary my-2" type="submit">Зберегти</button>
+        </form>
+
+
+</div>
+
+
+{% endblock %}
+
+

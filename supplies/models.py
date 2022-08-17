@@ -38,6 +38,7 @@ class Category(models.Model):
 class GeneralSupply(models.Model):
     name = models.CharField(max_length=100, null=True)
     ref = models.CharField(max_length=50, null=True, blank=True)
+    SMN_code = models.CharField(max_length=50, null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
 
 
@@ -289,7 +290,6 @@ class SupplyInPreorderInCart(models.Model):
     lot = models.CharField(max_length=20, null=True, blank=True)
     date_expired = models.DateField(null=True, blank=True)
     date_created = models.DateField(null=True, blank=True)
-
     general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True, blank=True)
 
 

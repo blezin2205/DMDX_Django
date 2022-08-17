@@ -63,6 +63,8 @@ urlpatterns = [
 
     path('orders/<int:order_id>', views.orderDetail, name='orderDetail'),
     path('preorders/<int:order_id>', views.preorderDetail, name='preorderDetail'),
+    path('preorders/<int:order_id>/generate-order', views.preorderDetail_generateOrder, name='preorderDetail-generate-order'),
+
     path('order-detail-pdf/<int:order_id>', views.orderDetail_pdf, name='orderDetailPdf'),
     path('order-detail-csv/<int:order_id>', views.render_to_xls, name='orderDetailCsv'),
     path('preorder-detail-csv/<int:order_id>', views.preorder_render_to_xls, name='preorderDetailCsv'),

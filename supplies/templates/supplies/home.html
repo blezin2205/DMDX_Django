@@ -34,6 +34,7 @@
       <th scope="col" class="textAlignLeft">Назва товару</th>
         <th scope="col">Категорія</th>
         <th scope="col">REF</th>
+        <th scope="col">SMN</th>
         <th scope="col" >
             <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %} ">
                 <div style="width: 110px;">LOT</div>
@@ -54,6 +55,12 @@
 
           {% if el.ref is not none %}
                         {{ el.ref }}
+                {% endif %}
+      </td>
+        <td>
+
+          {% if el.SMN_code is not none %}
+                        {{ el.SMN_code }}
                 {% endif %}
       </td>
 

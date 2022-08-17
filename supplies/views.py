@@ -365,7 +365,6 @@ def cartDetailForClient(request):
                     general_sup = sup.supply.general_supply
                     suppInOrder = SupplyInPreorder(count_in_order=countList[index],
                                                    supply=sup.supply,
-                                                   generalSupply=general_sup,
                                                    supply_for_order=order, lot=sup.lot,
                                                    date_created=sup.date_created,
                                                    date_expired=sup.date_expired)
@@ -373,7 +372,6 @@ def cartDetailForClient(request):
                 elif sup.general_supply:
                     general_sup = sup.general_supply
                     suppInOrder = SupplyInPreorder(count_in_order=countList[index],
-                                                   supply=sup.supply,
                                                    generalSupply=general_sup,
                                                    supply_for_order=order, lot=sup.lot,
                                                    date_created=sup.date_created,
@@ -1376,6 +1374,24 @@ def preorderDetail(request, order_id):
     cartCountData = countCartItemsHelper(request)
 
     return render(request, 'supplies/preorderDetail.html', {'title': f'Передзамовлення № {order_id}', 'order': order, 'supplies': supplies_in_order, 'cartCountData': cartCountData, 'isOrders': True})
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def preorderDetail_generateOrder(request, order_id):
+    order = get_object_or_404(PreOrder, pk=order_id)
+    supplies_in_order = order.supplyinpreorder_set.all().order_by('id')
+    cartCountData = countCartItemsHelper(request)
+
+    if request.method == 'POST':
+        checkBoxSuppIdList = request.POST.getlist('flexCheckDefault')
+        print("POST ---")
+        print(checkBoxSuppIdList)
+
+
+    return render(request, 'supplies/preorderDetail-generate-order.html',
+                  {'title': f'Передзамовлення № {order_id}', 'order': order, 'supplies': supplies_in_order,
+                   'cartCountData': cartCountData, 'isOrders': True})
+
 
 
 @login_required(login_url='login')
