@@ -21,6 +21,7 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 import os
 from xlsxwriter.workbook import Workbook
+from django_htmx.http import trigger_client_event
 import requests
 
 async def httpRequest(request):
@@ -157,41 +158,47 @@ def preorder_general_supp_buttons(request):
 
 
 @login_required(login_url='login')
-def updateItem(request):
-    data = json.loads(request.body)
-    prodId = data['productId']
-    action = data['action']
-
-    print('Action', action)
-    print('id', prodId)
+def updateItem(request, supp_id):
 
     user = request.user
-    supply = Supply.objects.get(id=prodId)
+    supply = Supply.objects.get(id=supp_id)
 
     order, created = OrderInCart.objects.get_or_create(userCreated=user, isComplete=False)
 
     try:
-        suppInCart = SupplyInOrderInCart.objects.get(id=prodId,supply=supply, supply_for_order=order, lot=supply.supplyLot,
+        suppInCart = SupplyInOrderInCart.objects.get(id=supp_id,supply=supply, supply_for_order=order, lot=supply.supplyLot,
                                                      date_expired=supply.expiredDate)
     except:
-        suppInCart = SupplyInOrderInCart(id=prodId,
+        suppInCart = SupplyInOrderInCart(id=supp_id,
             supply=supply,
             supply_for_order=order,
             lot=supply.supplyLot,
             date_expired=supply.expiredDate,
             date_created=supply.dateCreated)
 
-    if action == 'add':
-        suppInCart.count_in_order = (suppInCart.count_in_order + 1)
-    elif action == 'remove':
-        suppInCart.count_in_order = (suppInCart.count_in_order - 1)
-
+    suppInCart.count_in_order = (suppInCart.count_in_order + 1)
     suppInCart.save()
 
     if suppInCart.count_in_order <= 0:
         suppInCart.delete()
 
-    return JsonResponse('Item was added', safe=False)
+    try:
+        orderInCart = OrderInCart.objects.first()
+        cart_items = orderInCart.get_cart_items
+    except:
+        cart_items = 0
+
+    cartCountData = {'cart_items': cart_items}
+    deltaCountOnHold = supply.count - supply.countOnHold == 0
+    countInCart = suppInCart.count_in_order
+    deltaCountOnCart = supply.count - supply.countOnHold - countInCart == 0
+    response =  render(request, 'partials/add_cart_button.html', {'cartCountData': cartCountData, 'supp': supply, 'deltaCount': deltaCountOnHold, 'countInCart': countInCart, 'deltaCountOnCart': deltaCountOnCart})
+    trigger_client_event(response, 'subscribe', {})
+    return response
+
+def updateCartItemCount(request):
+    cartCountData = countCartItemsHelper(request)
+    return  render(request, 'partials/cart-badge.html', {'cartCountData': cartCountData})
 
 
 @login_required(login_url='login')

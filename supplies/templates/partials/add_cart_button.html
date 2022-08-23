@@ -1,0 +1,5 @@
+{% load bootstrap %}
+{% load mathfilters %}
+{% load myapp_extras %}
+
+<button style="width: 32px" hx-post="{% url 'update_item' supp.id %}" hx-target="#add_cart_button-{{supp.id}}" class="btn btn-sm btn-success add-btn {% if deltaCountOnHold or deltaCountOnCart %} disabled {% endif %}" type="submit" data-toggle="tooltip" data-placement="top" title="В корзину">{% if countInCart %}{{ countInCart }}{% else %}<i class="bi bi-cart-plus"></i>{% endif %}</button>

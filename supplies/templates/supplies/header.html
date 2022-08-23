@@ -41,24 +41,27 @@
             </ul>
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
-                    {% if request.user %}
+                <div class="hstack gap-2 justify-content-between">
 
+                    {% if request.user %}
                         {% if cartCountData.precart_items > 0 %}
                             <a style="background: #5bc0de" class="btn btn-default me-3" href="{% url 'precart' %}" >
   <i class="bi bi-basket"></i> <span class="badge bg-danger ms-2">{{ cartCountData.precart_items }}</span>
 </a>
                              {% endif %}
 
-                        {% if request.user.is_staff and cartCountData.cart_items > 0 %}
-            <a class="btn btn-primary me-3" href="{% url 'cart' %}">
-  <i class="bi bi-cart3"></i> <span class="badge bg-danger ms-2">{{ cartCountData.cart_items }}</span>
-</a>
-                            {% endif %}
+                        <div id="cart-badge" hx-get="{% url 'cart-count' %}" hx-trigger="subscribe from:body">
+                            {% include 'partials/cart-badge.html' %}
+
+                        </div>
+
+
             <span class="my-3">&#129409; Привіт, {{ request.user.first_name }} {{ request.user.last_name }} &#129409;</span>
             <span>
             <a class="btn btn-outline-primary ms-3" href="{% url 'logout' %}" role="button">Вийти</a>
             </span>
         {% endif %}
+                </div>
                 </li>
             </ul>
         </div>

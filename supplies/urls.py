@@ -7,12 +7,16 @@ urlpatterns = [
     path('cart/', views.cartDetail, name='cart'),
     path('preorders-cart/', views.cartDetailForClient, name='precart'),
 
+     path('update-cart-item-count/', views.updateCartItemCount, name='cart-count'),
+
+
+
     path('', views.home, name='home'),
     path('childSupply', views.childSupply, name='childSupply'),
 
      path('count-on-hold-make', views.countOnHoldMake, name='countOnHoldMake'),
 
-    path('update_item/', views.updateItem, name='update_item'),
+    path('update_item/<int:supp_id>', views.updateItem, name='update_item'),
     path('update_order_count/', views.update_order_count, name='update_order_count'),
     path('preorder_general_supp_buttons/', views.preorder_general_supp_buttons, name='preorder_general_supp_buttons'),
     path('cart/update_item/', views.updateCartItem, name='update_item_detail'),
