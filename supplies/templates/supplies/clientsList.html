@@ -1,5 +1,6 @@
 {% extends 'supplies/base.html' %}
 {% load bootstrap %}
+{% load static %}
     {% block title %}
 {{ title }}
 {% endblock %}
@@ -69,17 +70,17 @@
       </div>
 
         <p>
-{% if client.workers_set.count > 0 %}
+{% if client.workers.count > 0 %}
 
     <h6 class="my-0"><i class="bi bi-dot">Контакти:</i></h6>
 <div class="vstack p-1">
-    {% for worker in client.workers_set.all %}
+    {% for worker in client.workers.all %}
             <div class="hstack">
             <p class="start-0 mb-0">
-                {{ worker.name }}
+               {% if client.worker_NP == worker %} <img style="height: 20px; width: 20px" src="{% static "images/np_logo.png" %}"> {% endif %} {{ worker.name }} {{ worker.secondName }} {% if worker.middleName %} {{ worker.middleName }} {% endif %}
                 </p>
                 <div class="ms-auto me-2">
-                    {{ worker.position }}
+                   {% if worker.position %} {{ worker.position }} {% endif %}
                 </div>
 
 

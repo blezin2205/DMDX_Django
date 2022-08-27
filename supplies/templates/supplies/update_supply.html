@@ -1,0 +1,21 @@
+{% extends 'supplies/base.html' %}
+{% load static %}
+{% load bootstrap %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<form method="POST" action="">
+  {% csrf_token %}
+
+{{ form|bootstrap }}
+
+<input type="hidden" name="next" value="{{ request.GET.next }}">
+<button class="btn btn-outline-primary my-5" type="submit" name="save">Зберегти</button>
+<button class="btn btn-outline-danger my-5 mx-3" type="submit" name="delete">Видалити</button>
+
+</form>
+
+
+{% endblock %}

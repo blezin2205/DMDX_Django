@@ -1,0 +1,17 @@
+{% if cheked %}
+{% if orgRefExist %}
+    <div class="form-check">
+  <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" value="asOrganization">
+  <label class="form-check-label" for="flexRadioDefault1">
+    Додати до організації
+  </label>
+</div>
+    {% endif %}
+
+<div class="form-check">
+  <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2" value="asPrivateUser" checked>
+  <label class="form-check-label" for="flexRadioDefault2">
+    Додати, як приватна особа
+  </label>
+</div>
+{% endif %}

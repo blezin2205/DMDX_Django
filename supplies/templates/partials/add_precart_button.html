@@ -1,0 +1,1 @@
+<button hx-post="{% url 'update_item_precart' supp.id %}" hx-target="#add_precart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn" style="background: #5bc0de; width: 32px" type="submit" >{% if countInPreCart %}{{ countInPreCart }}{% else %}<i class="bi bi-cart-plus"></i>{% endif %}</button>

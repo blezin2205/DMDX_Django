@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from django.contrib.sessions.models import Session
 from django.contrib.auth.signals import user_logged_in
+from phone_field import PhoneField
 
 
 
@@ -90,6 +91,9 @@ class Place(models.Model):
     address = models.CharField(max_length=100, null=True, blank=True)
     link = models.CharField(max_length=300, null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    organization_code = models.PositiveIntegerField(null=True, blank=True)
+    ref_NP = models.CharField(max_length=100, null=True, blank=True)
+    worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'{self.name}, {self.city_ref.name}'
@@ -101,12 +105,16 @@ class Place(models.Model):
 
 class Workers(models.Model):
     name = models.CharField(max_length=100)
-    telNumber = models.CharField(max_length=100)
-    position = models.CharField(max_length=100)
-    for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
+    secondName = models.CharField(max_length=100, null=True)
+    middleName = models.CharField(max_length=100, null=True, blank=True)
+    telNumber = models.CharField(max_length=12, default='38')
+    position = models.CharField(max_length=100, null=True, blank=True)
+    for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True, related_name='workers')
+    ref_NP = models.CharField(max_length=100, null=True, blank=True)
+    ref_counterparty_NP = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
-        return f'{self.name}, працює в {self.for_place.name}, {self.for_place.city}'
+        return f'{self.name} {self.secondName}, працює в {self.for_place.name}, {self.for_place.city}'
 
     class Meta:
         verbose_name = 'Працівник'

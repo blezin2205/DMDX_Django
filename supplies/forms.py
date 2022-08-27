@@ -16,13 +16,29 @@ class GeneralSupplyForm(ModelForm):
 class ClientForm(ModelForm):
     class Meta:
         model = Place
-        exclude = ['city', 'user']
+        exclude = ['city', 'user', 'ref_NP']
+
+    def __init__(self, *args, **kwargs):
+        super(ClientForm, self).__init__(*args, **kwargs)
+        self.fields['name'].label = "Назва організації"
+        self.fields['city_ref'].label = "Місто"
+        self.fields['address'].label = "Адреса"
+        self.fields['link'].label = "Ссилка"
+        self.fields['organization_code'].label = "ЄДРПОУ (Якщо поле заповнене, організація буде додана в НП)"
 
 
 class WorkerForm(ModelForm):
     class Meta:
         model = Workers
-        exclude = ['for_place']
+        exclude = ['for_place', 'ref_NP', 'ref_counterparty_NP']
+
+    def __init__(self, *args, **kwargs):
+        super(WorkerForm, self).__init__(*args, **kwargs)
+        self.fields['name'].label = "Ім'я"
+        self.fields['secondName'].label = "Прізвище"
+        self.fields['middleName'].label = "По-батькові"
+        self.fields['telNumber'].label = "Телефон в форматі 38..."
+        self.fields['position'].label = "посада"
 
 
 class CreateUserForm(UserCreationForm):

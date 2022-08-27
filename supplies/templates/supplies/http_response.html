@@ -5,6 +5,10 @@
     <title>Title</title>
 </head>
 <body>
-{{ data }}
+<h1>{{ data }}</h1>
+
+{% for postalUser in data %}
+    <h3>{{ postalUser.LastName }} {{ postalUser.FirstName }}</h3>
+{% endfor %}
 </body>
 </html>

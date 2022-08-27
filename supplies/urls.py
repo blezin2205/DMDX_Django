@@ -1,6 +1,7 @@
 from django.urls import path
-from . import views
+from . import views, NPViews
 from . import apiViews
+from .NPModels import *
 
 urlpatterns = [
 
@@ -8,6 +9,7 @@ urlpatterns = [
     path('preorders-cart/', views.cartDetailForClient, name='precart'),
 
      path('update-cart-item-count/', views.updateCartItemCount, name='cart-count'),
+     path('update-precart-item-count/', views.updatePreCartItemCount, name='precart-count'),
 
 
 
@@ -17,11 +19,12 @@ urlpatterns = [
      path('count-on-hold-make', views.countOnHoldMake, name='countOnHoldMake'),
 
     path('update_item/<int:supp_id>', views.updateItem, name='update_item'),
+    path('update_item_precart/<int:supp_id>', views.preorder_supp_buttons, name='update_item_precart'),
     path('update_order_count/', views.update_order_count, name='update_order_count'),
     path('preorder_general_supp_buttons/', views.preorder_general_supp_buttons, name='preorder_general_supp_buttons'),
     path('cart/update_item/', views.updateCartItem, name='update_item_detail'),
     path('preorders-cart/update_item/', views.updateCartItem, name='update_item_detail'),
-    path('delete_supply/', views.deleteSupply, name='delete_supply'),
+    path('delete_supply/<int:suppId>', views.deleteSupply, name='delete_supply'),
     path('delete_supply_in_order/', views.deleteSupplyInOrder, name='delete_supply_in_order'),
 
     path('allDevices/', views.devicesList, name='allDevices'),
@@ -86,8 +89,12 @@ urlpatterns = [
     # path('api/login', views.LoginAPIView.as_view()),
 
 
-    path('http-response', views.httpRequest),
-
-
+    path('http-response', NPViews.httpRequest),
+    path('address_getCities', NPViews.address_getCities),
+    path('search-city-np', NPViews.search_city, name='search-city-np'),
+    path('choosed-city', NPViews.choosed_city, name='choosed-city'),
+    path('choosed-street', NPViews.choosed_street, name='choosed-street'),
+    path('search-street-np', NPViews.search_street, name='search-street-np'),
+    path('radioAddClientTONP', NPViews.radioAddClientTONP, name='radioAddClientTONP'),
 
 ]

@@ -1,0 +1,32 @@
+{% extends 'supplies/base.html' %}
+{% load static %}
+{% load bootstrap %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<form method="POST" action="">
+  {% csrf_token %}
+
+{{ form|bootstrap }}
+
+
+    <div class="form-check mt-5">
+  <input class="form-check-input" hx-post="{% url 'radioAddClientTONP' %}" hx-vals='{"orgRefExist": "{{ orgRefExist }}"}' hx-trigger="click" hx-target="#radioButtonsTypeGroup" type="checkbox" value="On" id="checkIfAddToNP" name="checkIfAddToNP">
+  <label class="form-check-label" for="flexCheckDefault">
+    Також зберегти для НП
+  </label>
+</div>
+
+    <div id="radioButtonsTypeGroup">
+         {% include 'partials/radioButtonsWorkerTypeGroup.html' %}
+    </div>
+
+
+<input type="hidden" name="next" value="{{ request.GET.next }}">
+<button class="btn btn-outline-primary my-5" type="submit">Зберегти</button>
+</form>
+{% endblock %}
+
+

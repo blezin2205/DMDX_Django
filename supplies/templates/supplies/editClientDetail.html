@@ -11,13 +11,13 @@
 
 {{ form|bootstrap }}
 
-{% if messages %}
-<ul class="messages my-4" style="color: red">
-    {% for message in messages %}
-    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
+<section class="card shadow-sm my-5" style="background-color: #eee;">
+  <div class="container h-100 py-3">
+      {% include 'partials/search-city.html' %}
+
+      </div>
+        </section>
+
 
 
 <input type="hidden" name="next" value="{{ request.GET.next }}">

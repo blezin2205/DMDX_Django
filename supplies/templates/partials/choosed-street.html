@@ -1,0 +1,24 @@
+<label for="exampleFormControlInput1" class="form-label">2. вулиця:</label>
+<h5>
+  <i class="bi bi-signpost"></i>  {{ streetType }} {{ streetName }}
+    <input type="hidden" name="np-streetRef"
+        value="{{ streetRef }}" />
+</h5>
+
+{# <div id="search-street-section">#}
+{#    {% csrf_token %}#}
+{#     <div class="mb-3">#}
+{#  <label for="exampleFormControlInput1" class="form-label">2. вулиця:</label>#}
+{#  <input  class="form-control" type="text"#}
+{#           id="search-street-section"#}
+{#           hx-post="{% url 'search-street-np' %}"#}
+{#           hx-target='#resultsStreet'#}
+{#           hx-trigger="keyup changed delay:1000ms"#}
+{#           name="search"#}
+{#           placeholder="Пошук вулиці...">#}
+{#</div>#}
+{##}
+{#    <div id="resultsStreet">#}
+{#        {% include 'partials/search-streets-results.html' %}#}
+{#    </div>#}
+{# </div>#}

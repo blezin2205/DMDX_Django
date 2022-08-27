@@ -1,0 +1,10 @@
+{% if results %}
+    {% csrf_token %}
+    <div style="height: 300px" class="overflow-auto">
+    {% for street in results %}
+        <a hx-post="{% url 'choosed-street' %}" hx-vals='{"streetName": "{{ street.Description }}", "streetRef": "{{ street.Ref }}", "streetType": "{{ street.StreetsType }}"}' hx-target="#search-street-section" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" aria-current="true" style="cursor: pointer">
+           {{ street.StreetsType }} {{ street.Description }}
+        </a>
+    {% endfor %}
+    </div>
+{% endif %}

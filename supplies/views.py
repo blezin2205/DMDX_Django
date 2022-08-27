@@ -22,6 +22,7 @@ from xhtml2pdf import pisa
 import os
 from xlsxwriter.workbook import Workbook
 from django_htmx.http import trigger_client_event
+from django.contrib import messages
 import requests
 
 async def httpRequest(request):
@@ -31,9 +32,30 @@ async def httpRequest(request):
              'calledMethod': 'getCounterpartyContactPersons',
              'methodProperties': {'Ref': '3b0e7317-2a6b-11eb-8513-b88303659df5'}}
 
-        data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(param)).json()
+        getListOfCitiesParams = {
+             "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+             "modelName": "Address",
+             "calledMethod": "getCities",
+             "methodProperties": {
+             "Page" : "0"
+               }
+            }
 
-        return render(request, "supplies/http_response.html", {'data': data})
+        data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(param)).json()
+        cityData = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(getListOfCitiesParams)).json()
+        cityDataCount = cityData["data"]
+        cities = []
+        for city in cityDataCount:
+            cityName = city["Description"]
+            cities.append(City(name=cityName))
+            print(cityName)
+
+        print(len(cities))
+
+
+
+
+        return render(request, "supplies/http_response.html", {'data': data["data"]})
 
 
 def countCartItemsHelper(request):
@@ -80,20 +102,15 @@ def countOnHoldMake(request):
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
-def deleteSupply(request):
-    data = json.loads(request.body)
-    prodId = data['productId']
-    action = data['action']
+def deleteSupply(request, suppId):
+    prodId = suppId
 
-    if action == 'delete':
-      supp = Supply.objects.get(id=prodId)
-      supp.delete()
+    supp = Supply.objects.get(id=prodId)
+    supp.delete()
 
-    elif action =='delete_general_supply':
-      genSupp = GeneralSupply.objects.get(id=prodId)
-      genSupp.delete()
-
-    return JsonResponse('Item was added', safe=False)
+    next = request.POST.get('nextDelete')
+    print(next)
+    return HttpResponseRedirect(next)
 
 
 @login_required(login_url='login')
@@ -158,6 +175,65 @@ def preorder_general_supp_buttons(request):
 
 
 @login_required(login_url='login')
+def preorder_general_supp_buttons(request, prodId):
+    user = request.user
+
+    supply = Supply.objects.get(id=prodId)
+    preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+    suppInCart = SupplyInPreorderInCart(
+                supply=supply,
+                supply_for_order=preorder,
+                lot=supply.supplyLot,
+                date_expired=supply.expiredDate,
+                date_created=supply.dateCreated)
+
+    suppInCart.count_in_order = (suppInCart.count_in_order + 1)
+    suppInCart.save()
+
+    # elif action == 'add-general':
+    #     general_supply = GeneralSupply.objects.get(id=prodId)
+    #
+    #     preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+    #     suppInCart = SupplyInPreorderInCart(id=general_supply.id,
+    #             supply_for_order=preorder,
+    #             general_supply=general_supply)
+    #
+    #     suppInCart.count_in_order = (suppInCart.count_in_order + 1)
+    #     suppInCart.save()
+
+    return JsonResponse('Item was added', safe=False)
+
+
+@login_required(login_url='login')
+def preorder_supp_buttons(request, supp_id):
+    user = request.user
+    print(supp_id)
+
+    supply = Supply.objects.get(id=supp_id)
+    preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+
+    try:
+        suppInCart = SupplyInPreorderInCart.objects.get(supply=supply, supply_for_order=preorder, lot=supply.supplyLot)
+
+    except:
+
+        suppInCart = SupplyInPreorderInCart(
+            supply=supply,
+            supply_for_order=preorder,
+            lot=supply.supplyLot,
+            date_expired=supply.expiredDate,
+            date_created=supply.dateCreated)
+
+    suppInCart.count_in_order = (suppInCart.count_in_order + 1)
+    suppInCart.save()
+
+    countInPreCart = suppInCart.count_in_order
+    response = render(request, 'partials/add_precart_button.html', {'countInPreCart': countInPreCart, 'supp': supply})
+    trigger_client_event(response, 'subscribe_precart', {})
+    return response
+
+
+@login_required(login_url='login')
 def updateItem(request, supp_id):
 
     user = request.user
@@ -192,13 +268,17 @@ def updateItem(request, supp_id):
     deltaCountOnHold = supply.count - supply.countOnHold == 0
     countInCart = suppInCart.count_in_order
     deltaCountOnCart = supply.count - supply.countOnHold - countInCart == 0
-    response =  render(request, 'partials/add_cart_button.html', {'cartCountData': cartCountData, 'supp': supply, 'deltaCount': deltaCountOnHold, 'countInCart': countInCart, 'deltaCountOnCart': deltaCountOnCart})
+    response = render(request, 'partials/add_cart_button.html', {'cartCountData': cartCountData, 'supp': supply, 'deltaCount': deltaCountOnHold, 'countInCart': countInCart, 'deltaCountOnCart': deltaCountOnCart})
     trigger_client_event(response, 'subscribe', {})
     return response
 
 def updateCartItemCount(request):
     cartCountData = countCartItemsHelper(request)
-    return  render(request, 'partials/cart-badge.html', {'cartCountData': cartCountData})
+    return render(request, 'partials/cart-badge.html', {'cartCountData': cartCountData})
+
+def updatePreCartItemCount(request):
+    cartCountData = countCartItemsHelper(request)
+    return render(request, 'partials/precart-badge.html', {'cartCountData': cartCountData})
 
 
 @login_required(login_url='login')
@@ -371,6 +451,7 @@ def cartDetailForClient(request):
                 if sup.supply:
                     general_sup = sup.supply.general_supply
                     suppInOrder = SupplyInPreorder(count_in_order=countList[index],
+                                                   generalSupply=sup.supply.general_supply,
                                                    supply=sup.supply,
                                                    supply_for_order=order, lot=sup.lot,
                                                    date_created=sup.date_created,
@@ -786,16 +867,21 @@ def updateSupply(request, supp_id):
     cartCountData = countCartItemsHelper(request)
 
     if request.method == 'POST':
-        form = SupplyForm(request.POST, instance=note)
-        if form.is_valid():
-            # obj = form.save(commit=False)
-            # obj.from_user = User.objects.get(pk=request.user.id)
-            form.save()
-            next = request.POST.get('next')
-            return HttpResponseRedirect(next)
+        next = request.POST.get('next')
+        if 'save' in request.POST:
+            form = SupplyForm(request.POST, instance=note)
+            if form.is_valid():
+                # obj = form.save(commit=False)
+                # obj.from_user = User.objects.get(pk=request.user.id)
+                form.save()
+        elif 'delete' in request.POST:
+            supp = Supply.objects.get(id=supp_id)
+            supp.delete()
 
-    return render(request, 'supplies/createSupply.html',
-                  {'title': f'Редагувати запис №{supp_id}', 'cartCountData': cartCountData, 'form': form})
+        return HttpResponseRedirect(next)
+
+    return render(request, 'supplies/update_supply.html',
+                  {'title': f'Редагувати запис №{supp_id}', 'cartCountData': cartCountData, 'form': form, 'suppId': supp_id})
 
 
 @login_required(login_url='login')
@@ -914,15 +1000,20 @@ def updateGeneralSupply(request, supp_id):
     form = GeneralSupplyForm(instance=supp)
     cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
-        form = GeneralSupplyForm(request.POST, instance=supp)
-        if form.is_valid():
+        next = request.POST.get('next')
+        if 'save' in request.POST:
+           form = GeneralSupplyForm(request.POST, instance=supp)
+           if form.is_valid():
             # obj = form.save(commit=False)
             # obj.from_user = User.objects.get(pk=request.user.id)
-            form.save()
-            next = request.POST.get('next')
-            return HttpResponseRedirect(next)
+              form.save()
+              next = request.POST.get('next')
 
-    return render(request, 'supplies/createSupply.html',
+        elif 'delete' in request.POST:
+           supp.delete()
+
+        return HttpResponseRedirect(next)
+    return render(request, 'supplies/update_supply.html',
                   {'title': f'Редагувати запис №{supp_id}', 'form': form, 'cartCountData': cartCountData})
 
 
@@ -986,10 +1077,46 @@ def addgeneralSupplyOnly(request):
 def addNewClient(request):
     form = ClientForm()
     cartCountData = countCartItemsHelper(request)
+
+
+
     if request.method == 'POST':
         form = ClientForm(request.POST)
         if form.is_valid():
-            form.save()
+            name = form.cleaned_data['name']
+            city_ref = form.cleaned_data['city_ref']
+            address = form.cleaned_data['address']
+            link = form.cleaned_data['link']
+            organization_code = form.cleaned_data['organization_code']
+
+            org = Place(name=name, city_ref=city_ref, address=address, link=link)
+
+            if organization_code is not None:
+                params = {
+                    "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                    "modelName": "Counterparty",
+                    "calledMethod": "save",
+                    "methodProperties": {
+                        "CounterpartyType": "Organization",
+                        "EDRPOU": f'{organization_code}',
+                        "CounterpartyProperty": "Recipient"
+                    }
+                }
+                data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+                print(data["data"])
+                if data["data"]:
+                    orgData = data["data"][0]
+                    org.organization_code = int(orgData["EDRPOU"])
+                    org.ref_NP = orgData["Ref"]
+                if data["errors"]:
+                    errors = data["errors"]
+                    print(errors)
+                    for error in errors:
+                        messages.info(request, error)
+                    return render(request, 'supplies/createSupply.html',
+                                  {'title': f'Додати нового клієнта', 'form': form, 'cartCountData': cartCountData})
+
+            org.save()
             return redirect('/clientsInfo')
     return render(request, 'supplies/createSupply.html',
                   {'title': f'Додати нового клієнта', 'form': form, 'cartCountData': cartCountData})
@@ -1019,13 +1146,14 @@ def addNewDeviceForClient(request, client_id):
 def editClientInfo(request, client_id):
     client = Place.objects.get(id=client_id)
     form = ClientForm(request.POST or None, instance=client)
+    form.fields['worker_NP'].queryset = client.workers.filter(ref_NP__isnull=False, ref_counterparty_NP__isnull=False)
     cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         if form.is_valid():
             form.save()
             return redirect('/clientsInfo')
 
-    return render(request, 'supplies/createSupply.html',
+    return render(request, 'supplies/editClientDetail.html',
                   {'title': f'Редагувати клієнта: {client.name}, {client.city}', 'form': form, 'cartCountData': cartCountData})
 
 @login_required(login_url='login')
@@ -1033,15 +1161,44 @@ def addNewWorkerForClient(request, place_id):
     form = WorkerForm()
     place = Place.objects.get(id=place_id)
     cartCountData = countCartItemsHelper(request)
+    orgRefExist = place.ref_NP is not None
+
     if request.method == 'POST':
         form = WorkerForm(request.POST)
+        radioButton = request.POST.get('flexRadioDefault')
         if form.is_valid():
+            refNP = ""
+            if radioButton == 'asOrganization':
+                refNP = place.ref_NP
+            if radioButton == 'asPrivateUser':
+                refNP = "3b13350b-2a6b-11eb-8513-b88303659df5"
+
+            params = {
+                "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                "modelName": "ContactPerson",
+                "calledMethod": "save",
+                "methodProperties": {
+                    "CounterpartyRef": refNP,
+                    "FirstName": form.cleaned_data['name'],
+                    "LastName": form.cleaned_data['secondName'],
+                    "MiddleName": form.cleaned_data['middleName'],
+                    "Phone": form.cleaned_data['telNumber']
+                }
+            }
             obj = form.save(commit=False)
+
+            if radioButton is not None:
+                data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+                userData = data["data"][0]
+                print(userData)
+                obj.ref_NP = userData['Ref']
+                obj.ref_counterparty_NP = refNP
+
             obj.for_place = place
             obj.save()
             return redirect('/clientsInfo')
-    return render(request, 'supplies/createSupply.html',
-                  {'title': f'Додати нового працівника для {place.name}, {place.city}', 'form': form, 'cartCountData': cartCountData})
+    return render(request, 'supplies/addNewWorkerForClient.html',
+                  {'title': f'Додати нового працівника для {place.name}, {place.city}', 'form': form, 'cartCountData': cartCountData, 'orgRefExist': orgRefExist})
 
 
 @login_required(login_url='login')

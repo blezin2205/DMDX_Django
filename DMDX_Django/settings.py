@@ -53,7 +53,8 @@ INSTALLED_APPS = [
     'bootstrapform',
     'bootstrap_modal_forms',
     'mathfilters',
-    'wkhtmltopdf'
+    'wkhtmltopdf',
+    'phone_field'
 ]
 
 MIDDLEWARE = [

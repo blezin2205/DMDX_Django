@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import *
+from .NPModels import *
 
 
 admin.site.register(Supply)
@@ -19,3 +20,4 @@ admin.site.register(Device)
 admin.site.register(City)
 admin.site.register(SupplyInPreorder)
 admin.site.register(PreOrder)
+admin.site.register(NPCity)

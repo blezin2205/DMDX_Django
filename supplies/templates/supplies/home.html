@@ -93,13 +93,15 @@
             {% endif %}
     <a href="{% url 'updateSupply' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button" data-toggle="tooltip" data-placement="top" title="Редагувати LOT"><i class="bi bi-pencil"></i></a>
 
-    <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-supp-button me-2" data-toggle="tooltip" data-placement="top" title="Видалити LOT"><i class="bi bi-trash"></i></button>
+{#    <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-supp-button me-2" data-toggle="tooltip" data-placement="top" title="Видалити LOT"><i class="bi bi-trash"></i></button>#}
 {% endif %}
+        <div id="add_precart_button-{{supp.id}}">
         {% if supp|in_precart:request.user %}
             <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
         {% else %}
-            <button data-product={{ supp.id }} data-action="add" class="btn btn-sm  add-btn preorder-general-supp-button btn-primary" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}" data-toggle="tooltip" data-placement="top" title="В корзину LOT (Передзамовлення)"><i class="bi bi-cart-plus"></i></button>
+            <button hx-post="{% url 'update_item_precart' supp.id %}" hx-target="#add_precart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}"  type="submit" ><i class="bi bi-cart-plus"></i></button>
         {% endif %}
+        </div>
 
 
         {% if uncompletePreOrdersExist %}
@@ -138,18 +140,6 @@
             {% if uncompletePreOrdersExist %}
     <a href="{% url 'addSupplyToExistPreOrderGeneral' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого передзамовлення (Назва)" style="background: #5bc0de"><i class="bi bi-bag-plus"></i></a>
 
-            {% endif %}
-{% if request.user.is_staff %}
-
-            <form action="{% url 'home' %}"
-    method="POST" style="display: inline;" onsubmit="window.mytest()">
-    {% csrf_token %}
-    <input type="hidden" name="supp_id"
-        value="{{ el.id }}" />
-    <button type="submit" class="btn btn-sm btn-danger" data-toggle="tooltip" data-placement="top" title="Видалити (Назва)">
-        <i class="bi bi-trash"></i>
-    </button>
-</form>
             {% endif %}
             </div>
         </div>

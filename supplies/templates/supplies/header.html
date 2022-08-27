@@ -44,15 +44,12 @@
                 <div class="hstack gap-2 justify-content-between">
 
                     {% if request.user %}
-                        {% if cartCountData.precart_items > 0 %}
-                            <a style="background: #5bc0de" class="btn btn-default me-3" href="{% url 'precart' %}" >
-  <i class="bi bi-basket"></i> <span class="badge bg-danger ms-2">{{ cartCountData.precart_items }}</span>
-</a>
-                             {% endif %}
+                        <div id="precart-badge" hx-get="{% url 'precart-count' %}" hx-trigger="subscribe_precart from:body">
+                            {% include 'partials/precart-badge.html' %}
+                        </div>
 
                         <div id="cart-badge" hx-get="{% url 'cart-count' %}" hx-trigger="subscribe from:body">
                             {% include 'partials/cart-badge.html' %}
-
                         </div>
 
 
