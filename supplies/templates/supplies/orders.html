@@ -1,4 +1,5 @@
 {% extends 'supplies/base.html' %}
+{% load static %}
     {% block title %}
 {{ title }}
 {% endblock %}
@@ -20,7 +21,10 @@
         <h6 class="mb-1">Заказ №: {{order.id}}</h6>
         <p class="mb-1">Для: {{order.place.name}}, {{order.place.city_ref.name}}</p>
 
-        {% if order.isComplete %}
+      {% if order.npdeliverycreateddetailinfo_set.exists %}
+          <div id="np_delivery_detail_info_for_order" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
+          </div>
+        {% elif order.isComplete %}
         <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span></p>
         {% else %}
         <p class="mb-2"><span>Статус:</span> <span class="waiting">В очікуванні</span></p>
@@ -42,6 +46,14 @@
   </a>
 
 {% if request.user.is_staff and not order.isComplete %}
+
+
+    {% if order.place.address_NP and order.place.worker_NP %}
+        <a href="{% url 'create_np_document_for_order' order.id %}?next={{ request.get_full_path|urlencode }}">
+        <img src="{% static 'images/np_icon.png' %}" width="50" height="50" style="border-radius: 5px">
+</a>
+        {% endif %}
+
 
 <button data-product="{{ order.id }}" data-action="update" class="btn btn-primary btn-lg add-btn update-order-status" type="submit"><i class="bi bi-send"></i></button>
     <form action="" onsubmit="window.mytest()">

@@ -696,6 +696,7 @@ def orders(request):
         orders = Order.objects.all().order_by('-id')
         title = 'Всі замовлення'
 
+
     return render(request, 'supplies/orders.html', {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True, 'isOrdersTab': True})
 
 
@@ -1146,15 +1147,62 @@ def addNewDeviceForClient(request, client_id):
 def editClientInfo(request, client_id):
     client = Place.objects.get(id=client_id)
     form = ClientForm(request.POST or None, instance=client)
-    form.fields['worker_NP'].queryset = client.workers.filter(ref_NP__isnull=False, ref_counterparty_NP__isnull=False)
+    workersSet = client.workers.filter(ref_NP__isnull=False, ref_counterparty_NP__isnull=False)
+    adressesSet = client.delivery_places
+    workersSetExist = workersSet.exists()
+    adressSetExist = adressesSet.exists()
+    form.fields['worker_NP'].queryset = workersSet
+    form.fields['address_NP'].queryset = adressesSet
     cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         if form.is_valid():
-            form.save()
-            return redirect('/clientsInfo')
+            if 'add_address_NP' in request.POST:
+                cityName = request.POST.get('cityName')
+                addressName = request.POST.get('streetName')
+                cityRef = request.POST.get('np-cityref')
+                addressRef = request.POST.get('np-streetRef')
+                streetNumber = request.POST.get('streetNumber')
+                flatNumber = request.POST.get('flatNumber')
+                comment = request.POST.get('comment')
+                recipientType = request.POST.get('recipientType')
+
+                if recipientType == 'Doors':
+                    params = {
+                        "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                        "modelName": "Address",
+                        "calledMethod": "save",
+                        "methodProperties": {
+                            "CounterpartyRef": "3b0e7317-2a6b-11eb-8513-b88303659df5",
+                            "StreetRef": addressRef,
+                            "BuildingNumber": streetNumber,
+                            "Flat": flatNumber,
+                            "Note": comment
+                        }
+                    }
+                    data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+                    list = data["data"]
+                    print(list)
+                    if list:
+                        addressRef = list[0]["Ref"]
+                        addressName = list[0]["Description"]
+                    if data["errors"]:
+                        errors = data["errors"]
+                        print(errors)
+                        for error in errors:
+                            messages.info(request, error)
+                            return render(request, 'supplies/editClientDetail.html',
+                                          {'title': f'Редагувати клієнта: {client.name}, {client.city}', 'form': form,
+                                           'cartCountData': cartCountData})
+
+                deliveryPlace = DeliveryPlace(cityName=cityName, addressName=addressName, city_ref_NP=cityRef,
+                                              address_ref_NP=addressRef, deliveryType=recipientType, for_place=client)
+                deliveryPlace.save()
+                return redirect(f'/clientsInfo/{client_id}/editInfo')
+        form.save()
+        return redirect('/clientsInfo')
 
     return render(request, 'supplies/editClientDetail.html',
-                  {'title': f'Редагувати клієнта: {client.name}, {client.city}', 'form': form, 'cartCountData': cartCountData})
+                  {'title': f'Редагувати клієнта: {client.name}, {client.city}', 'form': form, 'cartCountData': cartCountData, 'workersSetExist': workersSetExist, 'adressSetExist': adressSetExist, 'clientId': client_id})
 
 @login_required(login_url='login')
 def addNewWorkerForClient(request, place_id):
@@ -1189,11 +1237,12 @@ def addNewWorkerForClient(request, place_id):
 
             if radioButton is not None:
                 data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
-                userData = data["data"][0]
-                print(userData)
-                obj.ref_NP = userData['Ref']
-                obj.ref_counterparty_NP = refNP
+                if data["data"]:
+                    userData = data["data"][0]
+                    print(userData)
+                    obj.ref_NP = userData['Ref']
 
+            obj.ref_counterparty_NP = refNP
             obj.for_place = place
             obj.save()
             return redirect('/clientsInfo')

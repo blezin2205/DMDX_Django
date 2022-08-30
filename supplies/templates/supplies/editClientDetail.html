@@ -9,16 +9,49 @@
 <form method="POST" action="">
   {% csrf_token %}
 
-{{ form|bootstrap }}
+<section class="card shadow-sm p-4">
+    <h5 class="pb-4"><u>Основна інформація</u></h5>
+    {{ form.name|bootstrap }}
+    {{ form.city_ref|bootstrap }}
+    {{ form.address|bootstrap }}
+    {{ form.link|bootstrap }}
+</section>
 
-<section class="card shadow-sm my-5" style="background-color: #eee;">
+
+
+
+
+<section class="card shadow-sm my-5 p-4" style="background-color: #eee;">
+    <h5 class="pb-4"><u>Дані для формування накладної для НП</u></h5>
+    {{ form.organization_code|bootstrap }}
+    {% if adressSetExist %} {{ form.address_NP|bootstrap }} {% else %} <li style="color: red; margin-top: 2px"> Aдреси доставки відсутні, додайте адреси в секції нижче</li>  {% endif %}
+    {% if workersSetExist %} {{ form.worker_NP|bootstrap }} {% else %} <li style="color: red; margin-top: 2px">Контактні особи відсутні, <a href="{% url 'newWorkerForPlace' clientId %}" class="btn-default">
+          додайте нового працівника</li>
+        </a> {% endif %}
+        </section>
+
+<section class="card shadow-sm my-5 p-4" style="background-color: #eee;">
+    <h5 class="pb-4"><u>Дадати нову адресу відправки</u></h5>
+
+    <div class="btn-group pt-3" role="group" aria-label="Basic radio toggle button group" style="width: fit-content">
+  <input type="radio" class="btn-check" name="recipientType" value="Warehouse" id="btnradio1" autocomplete="off" checked>
+  <label class="btn btn-outline-primary" for="btnradio1">На відділення</label>
+
+  <input type="radio" class="btn-check" name="recipientType" value="Doors" id="btnradio2" autocomplete="off">
+  <label class="btn btn-outline-primary" for="btnradio2">Адресна доставка</label>
+</div>
   <div class="container h-100 py-3">
       {% include 'partials/search-city.html' %}
-
       </div>
         </section>
 
-
+{% if messages %}
+<ul class="messages my-4" style="color: red">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
 
 <input type="hidden" name="next" value="{{ request.GET.next }}">
 <button class="btn btn-outline-primary my-5" type="submit">Зберегти</button>

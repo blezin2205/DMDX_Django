@@ -1,0 +1,3 @@
+{% for detailInfo in objList %}
+              <p class="mb-2"><span>Статус НП:</span> <b style="color: {% if detailInfo.status_code == 9 %} green {% else %} orange {% endif %}">{{ detailInfo.status_desc }}</b>  </p>
+          {% endfor %}

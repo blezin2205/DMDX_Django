@@ -1,11 +1,56 @@
-import requests
+import datetime
 
+import requests
+from django.urls import reverse_lazy
 from .models import *
-from django.forms import ModelForm
+from django.forms import ModelForm, Form
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
-from bootstrap_modal_forms.forms import BSModalModelForm
+from crispy_forms.helper import FormHelper
+from  crispy_forms.layout import Submit
+
+
+
+class CreateNPParselForm(ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper(self)
+        self.helper.form_action = reverse_lazy('create_np_document_for_order', kwargs={'order_id': self.instance.id})
+        self.helper.form_method = 'POST'
+        self.helper.add_input(Submit('submit', 'Підтвердити'))
+
+        self.fields['payment_user_type'].label = "Хто платить за доставку"
+        self.fields['payment_money_type'].label = "Тип оплати"
+        self.fields['width'].label = "Ширина"
+        self.fields['length'].label = "Довжина"
+        self.fields['height'].label = "Висота"
+        self.fields['weight'].label = "Фактична вага"
+        self.fields['seatsAmount'].label = "Кількість місць"
+        self.fields['description'].label = "Опис"
+        self.fields['cost'].label = "Оціночна вартість"
+        self.fields['dateDelivery'].label = "Дата відправки"
+
+
+    payment_user_type = forms.ChoiceField(choices=CreateParselModel.PaymentUserType.choices)
+    payment_money_type = forms.ChoiceField(choices=CreateParselModel.PaymentMoneyType.choices)
+    dateDelivery = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'min': datetime.datetime.now().date()}))
+
+    # def clean_width(self):
+    #     width = self.cleaned_data['width']
+    #     print(f'CLEAN WIDTH {width}')
+    #     print(width < 10)
+    #     if width < 10:
+    #         print()
+    #         raise forms.ValidationError("Поле обов'язкове!")
+    #     return width
+
+
+    class Meta:
+        model = CreateParselModel
+        fields = '__all__'
+
 
 
 class GeneralSupplyForm(ModelForm):
@@ -25,6 +70,8 @@ class ClientForm(ModelForm):
         self.fields['address'].label = "Адреса"
         self.fields['link'].label = "Ссилка"
         self.fields['organization_code'].label = "ЄДРПОУ (Якщо поле заповнене, організація буде додана в НП)"
+        self.fields['address_NP'].label = "Адреса відправки"
+        self.fields['worker_NP'].label = "Контакта особа отримання відправки"
 
 
 class WorkerForm(ModelForm):

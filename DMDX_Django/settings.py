@@ -54,7 +54,8 @@ INSTALLED_APPS = [
     'bootstrap_modal_forms',
     'mathfilters',
     'wkhtmltopdf',
-    'phone_field'
+    'crispy_forms',
+    'crispy_bootstrap5'
 ]
 
 MIDDLEWARE = [
@@ -109,19 +110,21 @@ DATABASES = {
     }
 }
 
-db_from_env = dj_database_url.config(conn_max_age=500)
-DATABASES['default'].update(db_from_env)
-
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'dmdx',
+#         'NAME': 'dmdx_django',
 #         'USER': 'blezin',
 #         'PASSWORD': 'blezin',
 #         'HOST': 'localhost',
 #         'PORT': '',
 #     }
 # }
+
+db_from_env = dj_database_url.config(conn_max_age=500)
+DATABASES['default'].update(db_from_env)
+
+
 
 
 
@@ -187,3 +190,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # The URL to use when referring to static files (where they will be served from)
 STATIC_URL = '/static/'
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+
+CRISPY_TEMPLATE_PACK = "bootstrap5"

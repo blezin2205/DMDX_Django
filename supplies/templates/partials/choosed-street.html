@@ -1,24 +1,25 @@
-<label for="exampleFormControlInput1" class="form-label">2. вулиця:</label>
+<label for="exampleFormControlInput1" class="form-label">{% if street %} 2. вулиця: {% else %} 2. відділення: {% endif %}</label>
 <h5>
   <i class="bi bi-signpost"></i>  {{ streetType }} {{ streetName }}
     <input type="hidden" name="np-streetRef"
         value="{{ streetRef }}" />
+    <input type="hidden" name="streetName"
+        value="{{ streetType }} {{ streetName }}" />
 </h5>
+{% if street %}
+<div class="col-md-3">
+    <label for="validationCustom05" class="form-label">Номер вулиці</label>
+    <input type="text" class="form-control" id="validationCustom05" name="streetNumber">
+  </div>
 
-{# <div id="search-street-section">#}
-{#    {% csrf_token %}#}
-{#     <div class="mb-3">#}
-{#  <label for="exampleFormControlInput1" class="form-label">2. вулиця:</label>#}
-{#  <input  class="form-control" type="text"#}
-{#           id="search-street-section"#}
-{#           hx-post="{% url 'search-street-np' %}"#}
-{#           hx-target='#resultsStreet'#}
-{#           hx-trigger="keyup changed delay:1000ms"#}
-{#           name="search"#}
-{#           placeholder="Пошук вулиці...">#}
-{#</div>#}
-{##}
-{#    <div id="resultsStreet">#}
-{#        {% include 'partials/search-streets-results.html' %}#}
-{#    </div>#}
-{# </div>#}
+    <div class="col-md-3">
+    <label for="validationCustom05" class="form-label">Номер квартири</label>
+    <input type="text" class="form-control" id="validationCustom05" name="flatNumber">
+  </div>
+
+    <div class="mb-3">
+  <label for="exampleFormControlTextarea1" class="form-label">Комментар</label>
+  <textarea class="form-control" id="exampleFormControlTextarea1" name="comment" rows="3"></textarea>
+</div>
+{% endif %}
+<button class="btn btn-outline-primary mt-3" style="width: fit-content" type="submit" name="add_address_NP">Додати</button>

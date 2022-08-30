@@ -1,10 +1,10 @@
+import datetime
+
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
-from django.conf import settings
 from django.contrib.sessions.models import Session
-from django.contrib.auth.signals import user_logged_in
-from phone_field import PhoneField
+
 
 
 
@@ -12,6 +12,31 @@ def get_last_name(self):
     return self.last_name
 
 User.add_to_class("__str__", get_last_name)
+
+
+class CreateParselModel(models.Model):
+
+    class PaymentUserType(models.TextChoices):
+        ВІДПРАВНИК = "Sender"
+        ОТРИМУВАЧ = "Recipient"
+
+    class PaymentMoneyType(models.TextChoices):
+        ГОТІВКА = "Cash"
+        БЕЗГОТІВКОВИЙ = "NonCash"
+
+    payment_user_type = models.CharField(choices=PaymentUserType.choices, max_length=12, default=PaymentUserType.ВІДПРАВНИК)
+    payment_money_type = models.CharField(choices=PaymentMoneyType.choices, max_length=12, default=PaymentMoneyType.ГОТІВКА)
+    width = models.PositiveIntegerField()
+    length = models.PositiveIntegerField()
+    height = models.PositiveIntegerField()
+    weight = models.PositiveIntegerField()
+    seatsAmount = models.PositiveIntegerField()
+    description = models.CharField(max_length=200, default="Товари медичного призначення")
+    cost = models.PositiveIntegerField(null=True, blank=True, default=300)
+    dateDelivery = models.DateField(auto_now_add=True)
+
+
+
 
 
 class City(models.Model):
@@ -84,6 +109,9 @@ class Supply(models.Model):
         verbose_name_plural = 'Товари'
 
 
+
+
+
 class Place(models.Model):
     name = models.CharField(max_length=200)
     city_ref = models.ForeignKey(City, on_delete=models.SET_NULL, null=True)
@@ -94,6 +122,7 @@ class Place(models.Model):
     organization_code = models.PositiveIntegerField(null=True, blank=True)
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
     worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True)
+    address_NP = models.ForeignKey('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, unique=True)
 
     def __str__(self):
         return f'{self.name}, {self.city_ref.name}'
@@ -101,6 +130,23 @@ class Place(models.Model):
     class Meta:
         verbose_name = 'Організація'
         verbose_name_plural = 'Організації'
+
+
+class DeliveryPlace(models.Model):
+    cityName = models.CharField(max_length=200, blank=True)
+    addressName = models.CharField(max_length=200, blank=True)
+    city_ref_NP = models.CharField(max_length=100, blank=True)
+    address_ref_NP = models.CharField(max_length=100, blank=True)
+    deliveryType = models.CharField(max_length=20, blank=True)
+    for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True, related_name='delivery_places')
+
+
+    def __str__(self):
+        return f'{self.cityName}, {self.addressName}'
+
+    class Meta:
+        verbose_name = 'Місце доставки'
+        verbose_name_plural = 'Місця доставок для організацій'
 
 
 class Workers(models.Model):
@@ -144,12 +190,42 @@ class Order(models.Model):
     isComplete = models.BooleanField(default=False)
     comment = models.CharField(max_length=300, null=True, blank=True)
 
+
+    def get_np_DocumetsIdList(self):
+        set = self.npdeliverycreateddetailinfo_set.all()
+        list = []
+        for obj in set:
+            list.append({"DocumentNumber": obj.document_id})
+        return list
+
+
     def __str__(self):
         return f'Заказ № {self.id}, для {self.place.name}, от {self.dateSent}'
 
     class Meta:
         verbose_name = 'Замовлення'
         verbose_name_plural = 'Замовлення'
+
+
+class NPDeliveryCreatedDetailInfo(models.Model):
+    document_id = models.CharField(max_length=50)
+    ref = models.CharField(max_length=50)
+    cost_on_site = models.PositiveIntegerField()
+    estimated_time_delivery = models.CharField(max_length=12)
+    for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
+
+    def __str__(self):
+        return f'Накладна № {self.document_id}, для замовлення №{self.for_order.id}'
+
+    class Meta:
+        verbose_name = 'НП Інфо по накладним'
+        verbose_name_plural = 'НП Накладні'
+
+
+class StatusNPParselFromDoucmentID(models.Model):
+    status_code = models.CharField(max_length=50)
+    status_desc = models.CharField(max_length=200)
+    docNumber = models.CharField(max_length=50)
 
 
 class PreOrder(models.Model):
