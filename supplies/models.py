@@ -121,8 +121,8 @@ class Place(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     organization_code = models.PositiveIntegerField(null=True, blank=True, default=1)
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
-    # worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True, default=None)
-    # address_NP = models.OneToOneField('Delivery_Place', on_delete=models.SET_NULL, null=True, blank=True, default=None)
+    worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True, default=None)
+    address_NP = models.OneToOneField('Delivery_Place', on_delete=models.SET_NULL, null=True, blank=True, default=None)
 
     def __str__(self):
         return f'{self.name}, {self.city_ref.name}'
