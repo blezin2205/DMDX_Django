@@ -1148,7 +1148,7 @@ def editClientInfo(request, client_id):
     client = Place.objects.get(id=client_id)
     form = ClientForm(request.POST or None, instance=client)
     workersSet = client.workers.filter(ref_NP__isnull=False, ref_counterparty_NP__isnull=False)
-    adressesSet = client.delivery_places
+    adressesSet = client.delivery_places.all()
     workersSetExist = workersSet.exists()
     adressSetExist = adressesSet.exists()
     form.fields['worker_NP'].queryset = workersSet

@@ -122,7 +122,7 @@ class Place(models.Model):
     organization_code = models.PositiveIntegerField(null=True, blank=True, default=1)
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
     worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True, default=None)
-    address_NP = models.OneToOneField('Delivery_Place', on_delete=models.SET_NULL, null=True, blank=True, default=None)
+    address_NP = models.OneToOneField('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, default=None)
 
     def __str__(self):
         return f'{self.name}, {self.city_ref.name}'
@@ -132,7 +132,7 @@ class Place(models.Model):
         verbose_name_plural = 'Організації'
 
 
-class Delivery_Place(models.Model):
+class DeliveryPlace(models.Model):
     cityName = models.CharField(max_length=200, blank=True)
     addressName = models.CharField(max_length=200, blank=True)
     city_ref_NP = models.CharField(max_length=100, blank=True)
