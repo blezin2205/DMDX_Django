@@ -95,6 +95,9 @@ urlpatterns = [
     path('choosed-city', NPViews.choosed_city, name='choosed-city'),
     path('choosed-street', NPViews.choosed_street, name='choosed-street'),
     path('search-street-np', NPViews.search_street, name='search-street-np'),
+    path('search-warehouse-np', NPViews.search_warehouse, name='search-warehouse-np'),
     path('radioAddClientTONP', NPViews.radioAddClientTONP, name='radioAddClientTONP'),
+    path('create-np_document-for-order/<int:order_id>', NPViews.create_np_document_for_order, name='create_np_document_for_order'),
+    path('np-delivery-detail-info-for-order/<int:order_id>', NPViews.np_delivery_detail_info_for_order, name='np_delivery_detail_info_for_order')
 
 ]

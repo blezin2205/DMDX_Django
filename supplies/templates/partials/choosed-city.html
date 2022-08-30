@@ -1,8 +1,10 @@
-<label for="exampleFormControlInput1" class="form-label">1. місто:</label>
+<label for="exampleFormControlInput1" class="form-label">1. {{ cityType }}:</label>
 <h5>
-  <i class="bi bi-building"></i>  {{ cityName }}
+  <i class="bi bi-building"></i> {{ cityType }} {{ cityName }}
     <input type="hidden" name="np-cityref"
         value="{{ cityRef }}" />
+    <input type="hidden" name="cityName"
+        value="{{ cityName }}" />
 </h5>
 
  <div id="search-street-section">
