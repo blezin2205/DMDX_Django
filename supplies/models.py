@@ -119,7 +119,7 @@ class Place(models.Model):
     address = models.CharField(max_length=100, null=True, blank=True)
     link = models.CharField(max_length=300, null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    organization_code = models.PositiveIntegerField(null=True, blank=True)
+    organization_code = models.PositiveIntegerField(null=True, blank=True, default=1)
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
     # worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True, default=None)
     # address_NP = models.OneToOneField('Delivery_Place', on_delete=models.SET_NULL, null=True, blank=True, default=None)
