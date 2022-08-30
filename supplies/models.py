@@ -122,7 +122,7 @@ class Place(models.Model):
     organization_code = models.PositiveIntegerField(null=True, blank=True)
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
     worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True)
-    address_NP = models.ForeignKey('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, unique=True)
+    address_NP = models.OneToOneField('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'{self.name}, {self.city_ref.name}'
@@ -138,7 +138,7 @@ class DeliveryPlace(models.Model):
     city_ref_NP = models.CharField(max_length=100, blank=True)
     address_ref_NP = models.CharField(max_length=100, blank=True)
     deliveryType = models.CharField(max_length=20, blank=True)
-    for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True, related_name='delivery_places')
+    for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True, blank=True, related_name='delivery_places')
 
 
     def __str__(self):
