@@ -118,11 +118,11 @@ class Place(models.Model):
     city = models.CharField(max_length=100)
     address = models.CharField(max_length=100, null=True, blank=True)
     link = models.CharField(max_length=300, null=True, blank=True)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     organization_code = models.PositiveIntegerField(null=True, blank=True)
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
-    worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True)
-    address_NP = models.OneToOneField('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True)
+    worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True, default=None)
+    address_NP = models.OneToOneField('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, default=None)
 
     def __str__(self):
         return f'{self.name}, {self.city_ref.name}'
@@ -138,7 +138,7 @@ class DeliveryPlace(models.Model):
     city_ref_NP = models.CharField(max_length=100, blank=True)
     address_ref_NP = models.CharField(max_length=100, blank=True)
     deliveryType = models.CharField(max_length=20, blank=True)
-    for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True, blank=True, related_name='delivery_places')
+    for_place = models.ForeignKey(Place, on_delete=models.SET_NULL, null=True, blank=True, related_name='delivery_places')
 
 
     def __str__(self):
@@ -155,12 +155,12 @@ class Workers(models.Model):
     middleName = models.CharField(max_length=100, null=True, blank=True)
     telNumber = models.CharField(max_length=12, default='38')
     position = models.CharField(max_length=100, null=True, blank=True)
-    for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True, related_name='workers')
+    for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True, blank=True, related_name='workers')
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
     ref_counterparty_NP = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
-        return f'{self.name} {self.secondName}, працює в {self.for_place.name}, {self.for_place.city}'
+        return f'{self.name} {self.secondName}'
 
     class Meta:
         verbose_name = 'Працівник'
@@ -183,8 +183,8 @@ class ServiceNote(models.Model):
 
 
 class Order(models.Model):
-    userCreated = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
+    userCreated = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True, blank=True)
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)
     isComplete = models.BooleanField(default=False)
@@ -212,7 +212,7 @@ class NPDeliveryCreatedDetailInfo(models.Model):
     ref = models.CharField(max_length=50)
     cost_on_site = models.PositiveIntegerField()
     estimated_time_delivery = models.CharField(max_length=12)
-    for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
+    for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f'Накладна № {self.document_id}, для замовлення №{self.for_order.id}'
