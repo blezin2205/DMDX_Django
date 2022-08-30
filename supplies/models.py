@@ -3,11 +3,7 @@ import datetime
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
-from django.conf import settings
 from django.contrib.sessions.models import Session
-from django.contrib.auth.signals import user_logged_in
-from phone_field import PhoneField
-from django.core import serializers
 
 
 

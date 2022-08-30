@@ -1,17 +1,7 @@
-import csv
-import datetime
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect, HttpResponse, FileResponse
 
-from .decorators import unauthenticated_user, allowed_users
-from .models import *
 from .NPModels import *
-from .serializers import *
-from datetime import date
-from dateutil.relativedelta import relativedelta
-from django.contrib.auth import authenticate, login, logout
-from .filters import *
 from .forms import *
 import json
 from django.contrib import messages
