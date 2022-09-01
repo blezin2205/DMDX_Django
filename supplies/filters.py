@@ -69,7 +69,7 @@ class SupplyFilter(django_filters.FilterSet):
 
 
 class ServiceNotesFilter(django_filters.FilterSet):
-    from_user = ModelChoiceFilter(queryset=User.objects.filter(groups__name='engineer'))
+    from_user = ModelChoiceFilter(queryset=CustomUser.objects.filter(groups__name='engineer'))
     class Meta:
         model = ServiceNote
         fields = ['for_place', 'from_user']

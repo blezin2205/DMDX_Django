@@ -1,8 +1,13 @@
 from django.contrib import admin
 from .models import *
 from .NPModels import *
+from django.contrib.auth.admin import UserAdmin
+from .models import CustomUser
 
+class CustomUserAdmin(UserAdmin):
+    model = CustomUser
 
+admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(Supply)
 admin.site.register(Place)
 admin.site.register(Order)
@@ -23,3 +28,5 @@ admin.site.register(PreOrder)
 admin.site.register(NPCity)
 admin.site.register(DeliveryPlace)
 admin.site.register(NPDeliveryCreatedDetailInfo)
+admin.site.register(StatusNPParselFromDoucmentID)
+admin.site.register(SenderNPPlaceInfo)

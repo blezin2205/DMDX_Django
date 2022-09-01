@@ -2,16 +2,36 @@ import datetime
 
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import User
 from django.contrib.sessions.models import Session
+from django.contrib.auth.models import AbstractUser
+from django.contrib.postgres.fields import ArrayField
 
 
+class CustomUser(AbstractUser):
+    pass
+    np_contact_sender_ref = models.CharField(max_length=100, null=True)
+    mobNumber = models.CharField(max_length=100, null=True)
+    np_sender_ref = models.CharField(max_length=100, null=True)
+    np_last_choosed_delivery_place_id = models.SmallIntegerField(blank=True, null=True)
+
+    def __str__(self):
+        return self.username
+
+class SenderNPPlaceInfo(models.Model):
+    cityName = models.CharField(max_length=200, blank=True)
+    addressName = models.CharField(max_length=200, blank=True)
+    city_ref_NP = models.CharField(max_length=100, blank=True)
+    address_ref_NP = models.CharField(max_length=100, blank=True)
+    deliveryType = models.CharField(max_length=20, blank=True)
+    for_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, related_name='sender_np_places')
 
 
-def get_last_name(self):
-    return self.last_name
+    def __str__(self):
+        return f'{self.cityName}, {self.addressName}'
 
-User.add_to_class("__str__", get_last_name)
+    class Meta:
+        verbose_name = 'Місце відправки НП'
+        verbose_name_plural = 'Місця відправок НП'
 
 
 class CreateParselModel(models.Model):
@@ -21,11 +41,12 @@ class CreateParselModel(models.Model):
         ОТРИМУВАЧ = "Recipient"
 
     class PaymentMoneyType(models.TextChoices):
-        ГОТІВКА = "Cash"
         БЕЗГОТІВКОВИЙ = "NonCash"
+        ГОТІВКА = "Cash"
 
     payment_user_type = models.CharField(choices=PaymentUserType.choices, max_length=12, default=PaymentUserType.ВІДПРАВНИК)
-    payment_money_type = models.CharField(choices=PaymentMoneyType.choices, max_length=12, default=PaymentMoneyType.ГОТІВКА)
+    payment_money_type = models.CharField(choices=PaymentMoneyType.choices, max_length=12, default=PaymentMoneyType.БЕЗГОТІВКОВИЙ)
+    sender_np_place = models.ForeignKey(SenderNPPlaceInfo, on_delete=models.SET_NULL, null=True)
     width = models.PositiveIntegerField()
     length = models.PositiveIntegerField()
     height = models.PositiveIntegerField()
@@ -34,9 +55,6 @@ class CreateParselModel(models.Model):
     description = models.CharField(max_length=200, default="Товари медичного призначення")
     cost = models.PositiveIntegerField(null=True, blank=True, default=300)
     dateDelivery = models.DateField(auto_now_add=True)
-
-
-
 
 
 class City(models.Model):
@@ -62,11 +80,11 @@ class Category(models.Model):
 
 
 class GeneralSupply(models.Model):
-    name = models.CharField(max_length=100, null=True)
+    name = models.CharField(max_length=200, null=True)
     ref = models.CharField(max_length=50, null=True, blank=True)
     SMN_code = models.CharField(max_length=50, null=True, blank=True)
+    package_and_tests = models.CharField(max_length=50, null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
-
 
     def __str__(self):
         return f'{self.id} - {self.name}'
@@ -118,11 +136,14 @@ class Place(models.Model):
     city = models.CharField(max_length=100)
     address = models.CharField(max_length=100, null=True, blank=True)
     link = models.CharField(max_length=300, null=True, blank=True)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     organization_code = models.PositiveIntegerField(null=True, blank=True)
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
     worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True)
-    address_NP = models.ForeignKey('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, unique=True)
+    address_NP = models.OneToOneField('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, unique=True)
+    isAddedToNP = models.BooleanField(default=False, blank=True)
+    name_in_NP = models.CharField(max_length=200, null=True, blank=True)
+
 
     def __str__(self):
         return f'{self.name}, {self.city_ref.name}'
@@ -145,8 +166,8 @@ class DeliveryPlace(models.Model):
         return f'{self.cityName}, {self.addressName}'
 
     class Meta:
-        verbose_name = 'Місце доставки'
-        verbose_name_plural = 'Місця доставок для організацій'
+        verbose_name = 'Місце доставки НП'
+        verbose_name_plural = 'Місця доставок для організацій НП'
 
 
 class Workers(models.Model):
@@ -172,7 +193,7 @@ class ServiceNote(models.Model):
     description = models.TextField(null=True)
     dateCreated = models.DateField(null=True, blank=True, auto_now_add=True)
     for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
-    from_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    from_user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return f' №{self.id}, {self.for_place.name}, {self.for_place.city}'
@@ -183,12 +204,13 @@ class ServiceNote(models.Model):
 
 
 class Order(models.Model):
-    userCreated = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)
     isComplete = models.BooleanField(default=False)
     comment = models.CharField(max_length=300, null=True, blank=True)
+    documentsId = ArrayField(models.CharField(max_length=200), blank=True, null=True)
 
 
     def get_np_DocumetsIdList(self):
@@ -197,6 +219,9 @@ class Order(models.Model):
         for obj in set:
             list.append({"DocumentNumber": obj.document_id})
         return list
+
+    def get_parsel_delivery_status(self):
+        return int(self.statusnpparselfromdoucmentid_set.first().status_code)
 
 
     def __str__(self):
@@ -226,10 +251,12 @@ class StatusNPParselFromDoucmentID(models.Model):
     status_code = models.CharField(max_length=50)
     status_desc = models.CharField(max_length=200)
     docNumber = models.CharField(max_length=50)
+    for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
+
 
 
 class PreOrder(models.Model):
-    userCreated = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)
@@ -308,7 +335,7 @@ class SupplyInOrder(models.Model):
 
 
 class OrderInCart(models.Model):
-    userCreated = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)
@@ -346,7 +373,7 @@ class SupplyInOrderInCart(models.Model):
         verbose_name_plural = 'Товари в замовленні в коризні'
 
 class PreorderInCart(models.Model):
-    userCreated = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)

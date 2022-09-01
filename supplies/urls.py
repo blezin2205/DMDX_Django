@@ -88,6 +88,7 @@ urlpatterns = [
     # path('api/auth', views.RegistrationAPIView.as_view()),
     # path('api/login', views.LoginAPIView.as_view()),
 
+    path('add_np_sender_place', views.add_np_sender_place, name='add_np_sender_place'),
 
     path('http-response', NPViews.httpRequest),
     path('address_getCities', NPViews.address_getCities),
@@ -98,6 +99,8 @@ urlpatterns = [
     path('search-warehouse-np', NPViews.search_warehouse, name='search-warehouse-np'),
     path('radioAddClientTONP', NPViews.radioAddClientTONP, name='radioAddClientTONP'),
     path('create-np_document-for-order/<int:order_id>', NPViews.create_np_document_for_order, name='create_np_document_for_order'),
-    path('np-delivery-detail-info-for-order/<int:order_id>', NPViews.np_delivery_detail_info_for_order, name='np_delivery_detail_info_for_order')
+    path('np-delivery-detail-info-for-order/<int:order_id>', NPViews.np_delivery_detail_info_for_order, name='np_delivery_detail_info_for_order'),
+    path('np_create_ID_button_subscribe/<int:order_id>', NPViews.np_create_ID_button_subscribe, name='np_create_ID_button_subscribe'),
+    path('get_register_for_orders', NPViews.get_register_for_orders, name='get_register_for_orders')
 
 ]

@@ -24,6 +24,7 @@ from xlsxwriter.workbook import Workbook
 from django_htmx.http import trigger_client_event
 from django.contrib import messages
 import requests
+import pandas
 
 async def httpRequest(request):
 
@@ -56,6 +57,28 @@ async def httpRequest(request):
 
 
         return render(request, "supplies/http_response.html", {'data': data["data"]})
+
+def fetchxmls():
+
+    print('Hello')
+
+    # excel_data_df = pandas.read_excel('/Users/macbook/Documents/DIAMEDIX/centaur_list.xlsx', header=None, index_col=None)
+    # wb = excel_data_df
+    # vals = wb.values
+    # for obj in vals:
+    #     ref = obj[0]
+    #     smn = str(obj[2]).removesuffix('.0')
+    #     name = str(obj[3]).removeprefix('ADVIA Centaur ')
+    #     packed = obj[4]
+    #     # tests = obj[5]
+    #     # tests = obj[5]
+    #     if name != 'nan':
+    #         print(ref, smn, name, packed)
+    #         genSup = GeneralSupply(name=name, ref=ref, SMN_code=smn, package_and_tests=packed, category_id=3)
+    #         genSup.save()
+
+
+
 
 
 def countCartItemsHelper(request):
@@ -392,6 +415,9 @@ def home(request):
 
     supplies = GeneralSupply.objects.all().order_by('name')
 
+
+    fetchxmls()
+
     uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
     isClient = request.user.groups.filter(name='client').exists()
     if isClient:
@@ -538,9 +564,29 @@ def carDetailForStaff(request):
                    })
 
 
-# @login_required(login_url='login')
-# def preorders_cartDetail(request):
-#
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def add_np_sender_place(request):
+    user = request.user
+
+    if request.method == 'POST':
+        cityName = request.POST.get('cityName')
+        addressName = request.POST.get('streetName')
+        cityRef = request.POST.get('np-cityref')
+        addressRef = request.POST.get('np-streetRef')
+        streetNumber = request.POST.get('streetNumber')
+        flatNumber = request.POST.get('flatNumber')
+        comment = request.POST.get('comment')
+        recipientType = request.POST.get('recipientType')
+
+        deliveryPlace = SenderNPPlaceInfo(cityName=cityName, addressName=addressName, city_ref_NP=cityRef,
+                                      address_ref_NP=addressRef, deliveryType=recipientType, for_user=user)
+        deliveryPlace.save()
+        return redirect('/')
+
+    return  render(request, 'supplies/add_new_sender_np_place.html', {})
+
+
 
 
 @login_required(login_url='login')
@@ -696,8 +742,45 @@ def orders(request):
         orders = Order.objects.all().order_by('-id')
         title = 'Всі замовлення'
 
+    if request.method == 'POST':
+        selected_orders = request.POST.getlist('flexCheckDefault')
+        print("------ ", selected_orders, "-----------")
+        selected_ids = map(int, selected_orders)
+        fileteredOredrs = Order.objects.filter(pk__in=selected_ids)
+        documentsIdFromOrders = fileteredOredrs.values_list('npdeliverycreateddetailinfo__ref', flat=True)
+        listToStr = ','.join(map(str, documentsIdFromOrders))
+        print(listToStr)
 
-    return render(request, 'supplies/orders.html', {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True, 'isOrdersTab': True})
+        if 'print_choosed' in request.POST:
+            np_link_print = f'https://my.novaposhta.ua/orders/printMarking85x85/orders/{listToStr}/type/pdf8/apiKey/99f738524ca3320ece4b43b10f4181b1'
+            return redirect(np_link_print)
+
+        if 'add_to_register_choosed' in request.POST:
+            list_of_refs = list(map(str, documentsIdFromOrders))
+            params = {
+               "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+               "modelName": "ScanSheet",
+               "calledMethod": "insertDocuments",
+               "methodProperties": {
+                    "DocumentRefs": list_of_refs
+                           }
+                         }
+            data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+            list_data = data["data"]
+            print(list_data)
+            register_Ref = ""
+            if list_data:
+                register_Ref = list_data[0]["Ref"]
+
+            if data["errors"]:
+                errors = data["errors"]
+                print(errors)
+            np_link_print = f'//my.novaposhta.ua/scanSheet/printScanSheet/refs[]/{register_Ref}/type/pdf/apiKey/99f738524ca3320ece4b43b10f4181b1'
+            return redirect(np_link_print)
+
+
+
+    return render(request, 'supplies/orders_new.html', {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True, 'isOrdersTab': True})
 
 
 @login_required(login_url='login')
@@ -806,7 +889,7 @@ def serviceNotesForClient(request, client_id):
         form = ServiceNoteForm(request.POST)
         if form.is_valid():
             obj = form.save(commit=False)
-            obj.from_user = User.objects.get(pk=request.user.id)
+            obj.from_user = CustomUser.objects.get(pk=request.user.id)
             obj.save()
             return HttpResponseRedirect(request.path_info)
 
@@ -827,7 +910,7 @@ def createNote(request):
         form = ServiceNoteForm(request.POST)
         if form.is_valid():
             obj = form.save(commit=False)
-            obj.from_user = User.objects.get(pk=request.user.id)
+            obj.from_user = CustomUser.objects.get(pk=request.user.id)
             obj.save()
             return redirect('/serviceNotes')
 
@@ -850,7 +933,7 @@ def updateNote(request, note_id):
         form = ServiceNoteForm(request.POST, instance=note)
         if form.is_valid():
             obj = form.save(commit=False)
-            obj.from_user = User.objects.get(pk=request.user.id)
+            obj.from_user = CustomUser.objects.get(pk=request.user.id)
             obj.save()
             return redirect('/serviceNotes')
 
@@ -1076,13 +1159,11 @@ def addgeneralSupplyOnly(request):
 
 @login_required(login_url='login')
 def addNewClient(request):
-    form = ClientForm()
+    form = CreateClientForm()
     cartCountData = countCartItemsHelper(request)
 
-
-
     if request.method == 'POST':
-        form = ClientForm(request.POST)
+        form = CreateClientForm(request.POST)
         if form.is_valid():
             name = form.cleaned_data['name']
             city_ref = form.cleaned_data['city_ref']
@@ -1109,18 +1190,21 @@ def addNewClient(request):
                     orgData = data["data"][0]
                     org.organization_code = int(orgData["EDRPOU"])
                     org.ref_NP = orgData["Ref"]
+                    org.isAddedToNP = data["success"]
+                    org.name_in_NP = orgData["Description"]
+
                 if data["errors"]:
                     errors = data["errors"]
                     print(errors)
                     for error in errors:
-                        messages.info(request, error)
-                    return render(request, 'supplies/createSupply.html',
-                                  {'title': f'Додати нового клієнта', 'form': form, 'cartCountData': cartCountData})
+                        messages.error(request, error)
+                    return render(request, 'supplies/create_np_order_doucment.html',
+                                  {'title': f'Додати нового клієнта', 'inputForm': form, 'cartCountData': cartCountData})
 
             org.save()
             return redirect('/clientsInfo')
-    return render(request, 'supplies/createSupply.html',
-                  {'title': f'Додати нового клієнта', 'form': form, 'cartCountData': cartCountData})
+    return render(request, 'supplies/create_np_order_doucment.html',
+                  {'title': f'Додати нового клієнта', 'inputForm': form, 'cartCountData': cartCountData})
 
 
 
@@ -1155,54 +1239,92 @@ def editClientInfo(request, client_id):
     form.fields['address_NP'].queryset = adressesSet
     cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
-        if form.is_valid():
-            if 'add_address_NP' in request.POST:
-                cityName = request.POST.get('cityName')
-                addressName = request.POST.get('streetName')
-                cityRef = request.POST.get('np-cityref')
-                addressRef = request.POST.get('np-streetRef')
-                streetNumber = request.POST.get('streetNumber')
-                flatNumber = request.POST.get('flatNumber')
-                comment = request.POST.get('comment')
-                recipientType = request.POST.get('recipientType')
+        if 'add_address_NP' in request.POST:
+            cityName = request.POST.get('cityName')
+            addressName = request.POST.get('streetName')
+            cityRef = request.POST.get('np-cityref')
+            addressRef = request.POST.get('np-streetRef')
+            streetNumber = request.POST.get('streetNumber')
+            flatNumber = request.POST.get('flatNumber')
+            comment = request.POST.get('comment')
+            recipientType = request.POST.get('recipientType')
 
-                if recipientType == 'Doors':
+            if recipientType == 'Doors':
+                params = {
+                    "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                    "modelName": "Address",
+                    "calledMethod": "save",
+                    "methodProperties": {
+                        "CounterpartyRef": "3b0e7317-2a6b-11eb-8513-b88303659df5",
+                        "StreetRef": addressRef,
+                        "BuildingNumber": streetNumber,
+                        "Flat": flatNumber,
+                        "Note": comment
+                    }
+                }
+                data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+                list = data["data"]
+                print('------------------ add_address_NP ---------------')
+                print(list)
+                if list:
+                    addressRef = list[0]["Ref"]
+                    addressName = list[0]["Description"]
+                if data["errors"]:
+                    errors = data["errors"]
+                    print(errors)
+                    for error in errors:
+                        messages.info(request, error)
+                        return render(request, 'supplies/editClientDetail.html',
+                                      {'title': f'Редагувати клієнта: {client.name}, {client.city}', 'form': form,
+                                       'cartCountData': cartCountData})
+
+            deliveryPlace = DeliveryPlace(cityName=cityName, addressName=addressName, city_ref_NP=cityRef,
+                                          address_ref_NP=addressRef, deliveryType=recipientType, for_place=client)
+            deliveryPlace.save()
+            return redirect(f'/clientsInfo/{client_id}/editInfo')
+
+        if 'generalSave' in request.POST:
+            if form.is_valid():
+                try:
+                    organization_code = form.cleaned_data['organization_code']
+                except:
+                    organization_code = None
+
+                if organization_code is not None:
                     params = {
                         "apiKey": "99f738524ca3320ece4b43b10f4181b1",
-                        "modelName": "Address",
+                        "modelName": "Counterparty",
                         "calledMethod": "save",
                         "methodProperties": {
-                            "CounterpartyRef": "3b0e7317-2a6b-11eb-8513-b88303659df5",
-                            "StreetRef": addressRef,
-                            "BuildingNumber": streetNumber,
-                            "Flat": flatNumber,
-                            "Note": comment
+                            "CounterpartyType": "Organization",
+                            "EDRPOU": f'{organization_code}',
+                            "CounterpartyProperty": "Recipient"
                         }
                     }
                     data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
                     list = data["data"]
+                    print('------------------ generalSave ---------------')
                     print(list)
                     if list:
-                        addressRef = list[0]["Ref"]
-                        addressName = list[0]["Description"]
+                        print(data["data"])
+                        client.organization_code = data["data"][0]["EDRPOU"]
+                        client.isAddedToNP = True
+                        client.name_in_NP = data["data"][0]["Description"]
+                        client.ref_NP = data["data"][0]["Ref"]
+                        client.save()
                     if data["errors"]:
                         errors = data["errors"]
                         print(errors)
                         for error in errors:
                             messages.info(request, error)
-                            return render(request, 'supplies/editClientDetail.html',
-                                          {'title': f'Редагувати клієнта: {client.name}, {client.city}', 'form': form,
-                                           'cartCountData': cartCountData})
+                            return redirect(f'/clientsInfo/{client_id}/editInfo')
 
-                deliveryPlace = DeliveryPlace(cityName=cityName, addressName=addressName, city_ref_NP=cityRef,
-                                              address_ref_NP=addressRef, deliveryType=recipientType, for_place=client)
-                deliveryPlace.save()
-                return redirect(f'/clientsInfo/{client_id}/editInfo')
-        form.save()
-        return redirect('/clientsInfo')
+                form.save()
+                return redirect('/clientsInfo')
+
 
     return render(request, 'supplies/editClientDetail.html',
-                  {'title': f'Редагувати клієнта: {client.name}, {client.city}', 'form': form, 'cartCountData': cartCountData, 'workersSetExist': workersSetExist, 'adressSetExist': adressSetExist, 'clientId': client_id})
+                  {'title': f'Редагувати клієнта: {client.name}, {client.city}', 'place': client, 'form': form, 'cartCountData': cartCountData, 'workersSetExist': workersSetExist, 'adressSetExist': adressSetExist, 'clientId': client_id})
 
 @login_required(login_url='login')
 def addNewWorkerForClient(request, place_id):
@@ -1241,11 +1363,25 @@ def addNewWorkerForClient(request, place_id):
                     userData = data["data"][0]
                     print(userData)
                     obj.ref_NP = userData['Ref']
+                if data["errors"]:
+                    errors = data["errors"]
+                    print(errors)
+                    for error in errors:
+                        messages.info(request, error)
+                    return render(request, 'supplies/addNewWorkerForClient.html',
+                                  {'title': f'Додати нового працівника для {place.name}, {place.city}',
+                                   'form': form,
+                                   'cartCountData': cartCountData, 'orgRefExist': orgRefExist})
+
+
+
+
 
             obj.ref_counterparty_NP = refNP
             obj.for_place = place
             obj.save()
-            return redirect('/clientsInfo')
+            next = request.POST.get('next')
+            return HttpResponseRedirect(next)
     return render(request, 'supplies/addNewWorkerForClient.html',
                   {'title': f'Додати нового працівника для {place.name}, {place.city}', 'form': form, 'cartCountData': cartCountData, 'orgRefExist': orgRefExist})
 
@@ -1625,7 +1761,7 @@ def serviceNotes(request):
         form = ServiceNoteForm(request.POST)
         if form.is_valid():
             obj = form.save(commit=False)
-            obj.from_user = User.objects.get(pk=request.user.id)
+            obj.from_user = CustomUser.objects.get(pk=request.user.id)
             obj.save()
             return redirect('/serviceNotes')
 

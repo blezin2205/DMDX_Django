@@ -30,8 +30,8 @@
     <table class="table centred mt-5">
   <thead class="thead-dark">
     <tr>
-      <th scope="col">ID/({{supplies|length}})</th>
-      <th scope="col" class="textAlignLeft">Назва товару</th>
+      <th scope="col" class="textAlignLeft">({{supplies|length}}) Назва товару</th>
+      <th scope="col">Пакування / Тести</th>
         <th scope="col">Категорія</th>
         <th scope="col">REF</th>
         <th scope="col">SMN</th>
@@ -48,8 +48,8 @@
     {% for el in supplies %}
 
      <tr>
-      <th scope="row">{{el.id}}</th>
-      <td style="text-align: left;">{{ el.name }}</td>
+      <th scope="row" style="text-align: left">{{ el.name }}</th>
+      <td>{{ el.package_and_tests }}</td>
       <td>{{ el.category.name }}</td>
       <td>
 

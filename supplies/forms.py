@@ -6,10 +6,8 @@ from .models import *
 from django.forms import ModelForm, Form
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from django.contrib.auth.models import User
 from crispy_forms.helper import FormHelper
-from  crispy_forms.layout import Submit
-
+from crispy_forms.layout import Submit, Layout, MultiField, Div
 
 
 class CreateNPParselForm(ModelForm):
@@ -31,21 +29,12 @@ class CreateNPParselForm(ModelForm):
         self.fields['description'].label = "Опис"
         self.fields['cost'].label = "Оціночна вартість"
         self.fields['dateDelivery'].label = "Дата відправки"
+        self.fields['sender_np_place'].label = "Відділення відправки"
 
 
     payment_user_type = forms.ChoiceField(choices=CreateParselModel.PaymentUserType.choices)
     payment_money_type = forms.ChoiceField(choices=CreateParselModel.PaymentMoneyType.choices)
     dateDelivery = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'min': datetime.datetime.now().date()}))
-
-    # def clean_width(self):
-    #     width = self.cleaned_data['width']
-    #     print(f'CLEAN WIDTH {width}')
-    #     print(width < 10)
-    #     if width < 10:
-    #         print()
-    #         raise forms.ValidationError("Поле обов'язкове!")
-    #     return width
-
 
     class Meta:
         model = CreateParselModel
@@ -58,10 +47,36 @@ class GeneralSupplyForm(ModelForm):
         model = GeneralSupply
         fields = '__all__'
 
+
+class CreateClientForm(ModelForm):
+    class Meta:
+        model = Place
+        exclude = ['city', 'user', 'ref_NP', 'address_NP', 'worker_NP', 'isAddedToNP', 'name_in_NP']
+
+    def __init__(self, *args, **kwargs):
+        super(CreateClientForm, self).__init__(*args, **kwargs)
+        self.helper = FormHelper(self)
+        self.helper.form_action = reverse_lazy('addClient')
+        self.helper.form_method = 'POST'
+        self.helper.add_input(Submit('submit', 'Зберегти'))
+        self.fields['name'].label = "Назва організації"
+        self.fields['city_ref'].label = "Місто"
+        self.fields['address'].label = "Адреса"
+        self.fields['link'].label = "Ссилка"
+        self.fields['organization_code'].label = "ЄДРПОУ (Якщо поле заповнене, організація буде додана в НП)"
+
+
+    def clean_organization_code(self):
+        orgCode = self.cleaned_data['organization_code']
+        if orgCode and len(str(orgCode)) != 8:
+            raise forms.ValidationError("ЄДРПОУ має 8 цифр!")
+        return orgCode
+
+
 class ClientForm(ModelForm):
     class Meta:
         model = Place
-        exclude = ['city', 'user', 'ref_NP']
+        exclude = ['city', 'user', 'ref_NP', 'isAddedToNP', 'name_in_NP']
 
     def __init__(self, *args, **kwargs):
         super(ClientForm, self).__init__(*args, **kwargs)
@@ -69,7 +84,31 @@ class ClientForm(ModelForm):
         self.fields['city_ref'].label = "Місто"
         self.fields['address'].label = "Адреса"
         self.fields['link'].label = "Ссилка"
+        self.fields['address_NP'].label = "Адреса відправки"
+        self.fields['worker_NP'].label = "Контакта особа отримання відправки"
         self.fields['organization_code'].label = "ЄДРПОУ (Якщо поле заповнене, організація буде додана в НП)"
+        if self.instance.isAddedToNP:
+            self.fields.pop('organization_code')
+
+
+    def clean_organization_code(self):
+        orgCode = self.cleaned_data['organization_code']
+        if orgCode and len(str(orgCode)) != 8:
+            raise forms.ValidationError("ЄДРПОУ має 8 цифр!")
+        return orgCode
+
+
+class ClientFormExcludeOrgCode(ModelForm):
+    class Meta:
+        model = Place
+        exclude = ['city', 'user', 'ref_NP', 'isAddedToNP', 'name_in_NP', 'organization_code']
+
+    def __init__(self, *args, **kwargs):
+        super(ClientFormExcludeOrgCode, self).__init__(*args, **kwargs)
+        self.fields['name'].label = "Назва організації"
+        self.fields['city_ref'].label = "Місто"
+        self.fields['address'].label = "Адреса"
+        self.fields['link'].label = "Ссилка"
         self.fields['address_NP'].label = "Адреса відправки"
         self.fields['worker_NP'].label = "Контакта особа отримання відправки"
 
@@ -90,13 +129,13 @@ class WorkerForm(ModelForm):
 
 class CreateUserForm(UserCreationForm):
     class Meta:
-        model = User
+        model = CustomUser
         fields = ['username', 'first_name', 'last_name', 'password1', 'password2' ]
 
 
 class LoginForm(AuthenticationForm):
     class Meta:
-      model = User
+      model = CustomUser
       fields = '__all__'
 
 

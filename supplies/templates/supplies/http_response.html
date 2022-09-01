@@ -5,10 +5,27 @@
     <title>Title</title>
 </head>
 <body>
-<h1>{{ data }}</h1>
 
-{% for postalUser in data %}
-    <h3>{{ postalUser.LastName }} {{ postalUser.FirstName }}</h3>
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">name</th>
+      <th scope="col">phone</th>
+      <th scope="col">ref</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for postalUser in data %}
+    <tr>
+      <td>{{ postalUser.LastName }} {{ postalUser.FirstName }}</td>
+      <td>{{ postalUser.Phones }}</td>
+      <td><b>{{ postalUser.Ref }}</b></td>
+    </tr>
 {% endfor %}
+
+  </tbody>
+</table>
+
+
 </body>
 </html>

@@ -1,11 +1,12 @@
 
 from django.shortcuts import render, get_object_or_404, redirect
-
+from django.http import HttpResponseRedirect, HttpResponse, FileResponse
 from .NPModels import *
 from .forms import *
 import json
 from django.contrib import messages
 import requests
+from django_htmx.http import trigger_client_event
 
 
 def httpRequest(request):
@@ -23,23 +24,50 @@ def httpRequest(request):
             "Page" : "0"
         }
     }
-
+    user = request.user
     data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(param)).json()
+    #
+    # for obj in data["data"]:
+    #     if obj["Description"] == 'Степанов Олександр Вячеславович':
+    #         print(obj["Ref"], obj["Phones"])
+    #         user.np_contact_sender_ref = obj["Ref"]
+    #         user.mobNumber = obj["Phones"]
+    #         user.save()
+
     return render(request, "supplies/http_response.html", {'data': data["data"]})
+
+
+def get_register_for_orders(request):
+    cheked = False
+    if request.method == 'POST':
+        selected_orders = request.POST.getlist('flexCheckDefault')
+        cheked = len(selected_orders) > 0
+    return render(request, 'partials/register_print_orders_chekbox_buttons.html', {'cheked': cheked})
+
 
 def create_np_document_for_order(request, order_id):
 
     order = Order.objects.get(id=order_id)
+    user = request.user
     for_place = order.place
     deliveryInfo = for_place.address_NP
     deliveryType = deliveryInfo.deliveryType
+    sender_places = SenderNPPlaceInfo.objects.filter(for_user=request.user)
+    title = f'Cформувати інтернет-документ для: \n{for_place.name}, {for_place.city_ref.name}'
     inputForm = CreateNPParselForm(instance=order)
+    inputForm.fields['sender_np_place'].queryset = sender_places
+    try:
+       sendplace = sender_places.get(id=user.np_last_choosed_delivery_place_id)
+    except:
+       sendplace = None
+    inputForm.fields['sender_np_place'].initial = sendplace
 
     if request.method == 'POST':
         inputForm = CreateNPParselForm(request.POST, instance=order)
         print(inputForm.is_valid())
         if inputForm.is_valid():
             dateSend = inputForm.cleaned_data['dateDelivery'].strftime('%d.%m.%Y')
+            sender_np_place = inputForm.cleaned_data['sender_np_place']
             payment_money_type = inputForm.cleaned_data['payment_money_type']
             payment_user_type = inputForm.cleaned_data['payment_user_type']
             width = inputForm.cleaned_data['width']
@@ -49,8 +77,11 @@ def create_np_document_for_order(request, order_id):
             seatsAmount = inputForm.cleaned_data['seatsAmount']
             description = inputForm.cleaned_data['description']
             cost = inputForm.cleaned_data['cost']
+            sender_ref = "3b0e7317-2a6b-11eb-8513-b88303659df5"
 
             volumeGeneral = float(width / 100) * float(length / 100) * float(height / 100)
+
+            sender_place = inputForm.cleaned_data['sender_np_place']
 
             params = {
                 "apiKey": "99f738524ca3320ece4b43b10f4181b1",
@@ -67,11 +98,11 @@ def create_np_document_for_order(request, order_id):
                     "SeatsAmount": str(seatsAmount),
                     "Description": description,
                     "Cost": str(cost),
-                    "CitySender": "8d5a980d-391c-11dd-90d9-001a92567626",
-                    "Sender": "3b0e7317-2a6b-11eb-8513-b88303659df5",
-                    "SenderAddress": "01ae25f6-e1c2-11e3-8c4a-0050568002cf",
-                    "ContactSender": "9993e149-93e5-11ec-b0fd-b88303659df5",
-                    "SendersPhone": "380992438918",
+                    "CitySender": sender_np_place.city_ref_NP,
+                    "Sender": sender_ref,
+                    "SenderAddress": sender_np_place.address_ref_NP,
+                    "ContactSender": request.user.np_contact_sender_ref,
+                    "SendersPhone": request.user.mobNumber,
                     "CityRecipient": deliveryInfo.city_ref_NP,
                     "Recipient": for_place.worker_NP.ref_counterparty_NP,
                     "RecipientAddress": deliveryInfo.address_ref_NP,
@@ -90,18 +121,27 @@ def create_np_document_for_order(request, order_id):
                 id_number = int(list["IntDocNumber"])
                 detailInfo = NPDeliveryCreatedDetailInfo(document_id=id_number, ref=ref, cost_on_site=cost, estimated_time_delivery=estimated_date, for_order=order)
                 detailInfo.save()
+                user.np_last_choosed_delivery_place_id = sender_place.id
+                user.save()
                 print(list)
-                url = f'https://my.novaposhta.ua/orders/printMarking85x85/orders[]/{ref}/type/pdf8/apiKey/99f738524ca3320ece4b43b10f4181b1'
-                return redirect(url)
+                if 'save_and_print' in request.POST:
+                    url = f'https://my.novaposhta.ua/orders/printMarking85x85/orders[]/{ref}/type/pdf8/apiKey/99f738524ca3320ece4b43b10f4181b1'
+                    return redirect(url)
+                elif 'save_and_add' in request.POST:
+                    messages.info(request, "Add Succesfully")
+                    return redirect(f'/create-np_document-for-order/{order_id}')
+                else:
+                    next = request.POST.get('next')
+                    return redirect('/orders')
 
             elif data["success"] is False and data["errors"] is not None:
                 errors = data["errors"]
                 print(errors)
                 for error in errors:
                     messages.info(request, error)
-                return render(request, 'supplies/create_np_order_doucment.html', {'inputForm': inputForm})
+                return render(request, 'supplies/create_new_np_order_doc.html', {'inputForm': inputForm})
 
-    return render(request, 'supplies/create_np_order_doucment.html', {'inputForm': inputForm})
+    return render(request, 'supplies/create_new_np_order_doc.html', {'inputForm': inputForm, 'title': title})
 
 
 def address_getCities(request):
@@ -223,6 +263,7 @@ def radioAddClientTONP(request):
     return render(request, 'partials/radioButtonsWorkerTypeGroup.html', {'cheked': isShow, 'orgRefExist': orgExist})
 
 
+
 def np_delivery_detail_info_for_order(request, order_id):
     documentsIdList = Order.objects.get(id=order_id).npdeliverycreateddetailinfo_set.all()
     documents = []
@@ -243,13 +284,33 @@ def np_delivery_detail_info_for_order(request, order_id):
               }
     data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
     print(data)
+    status_parsel_code = 1
     if data["data"]:
-
         for obj in data["data"]:
             number = obj["Number"]
             status_code = obj["StatusCode"]
             status = obj["Status"]
-            objList.append(StatusNPParselFromDoucmentID(status_code=status_code, status_desc=status, docNumber=number))
+            status_parsel_code = int(status_code)
+            try:
+                status_parsel_model = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.get(docNumber=number, for_order_id=order_id)
+                status_parsel_model.status_desc = status
+                status_parsel_model.status_code = status_code
+                status_parsel_model.docNumber = number
+                status_parsel_model.save()
+            except:
+                status_parsel_model = StatusNPParselFromDoucmentID(status_code=status_code, status_desc=status,
+                                                                   docNumber=number, for_order_id=order_id)
+                status_parsel_model.save()
 
-    return render(request, 'partials/np_delivery_info_in_list_of_orders.html', {'objList': objList})
+    parsels_status_data = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.all()
+    response = render(request, 'partials/np_delivery_info_in_list_of_orders.html', {'parsels_status_data': parsels_status_data})
+    trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
+    return response
+
+
+def np_create_ID_button_subscribe(request, order_id):
+    print("np_create_ID_button_subscribe")
+    order = Order.objects.get(id=order_id)
+    return render(request, 'partials/np_create_ID_button.html', {'order': order})
+
 
