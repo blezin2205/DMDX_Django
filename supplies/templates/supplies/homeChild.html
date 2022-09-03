@@ -1,12 +1,12 @@
-{% extends 'supplies/base.html' %}
+{% extends 'supplies/base_for_home.html' %}
 {% load bootstrap %}
     {% block title %}
 {{ title }}
 {% endblock %}
 
 {% block content %}
-
-     <div class="btn-group pb-3">
+<div class="container py-1">
+     <div class="btn-group my-3">
   <a href="/" class="btn btn-primary mx-2 {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
   <a href="/childSupply" class="btn btn-primary {% if isChild %} active {% endif %}">Список товарів</a>
 </div>
@@ -14,7 +14,6 @@
     <form method="get" class="form-inline justify-content-center">
          <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
              <div class="hstack gap-2">
-                 {{ suppFilter.form.id|bootstrap }}
                  {{ suppFilter.form.ordering|bootstrap }}
                  {{ suppFilter.form.supplyLot|bootstrap }}
                  {{ suppFilter.form.category|bootstrap }}
@@ -25,6 +24,7 @@
              <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
 
 </div>
+
 
 {#    <input type="hidden" name="xls_button"#}
 {#        value="{{ supplies }}" />#}
@@ -42,16 +42,17 @@
 
     </form>
 
-
-        <table class="table centred mt-5">
+</div>
+        <table class="table centred mt-3 w-75 mx-auto">
   <thead class="thead-dark">
     <tr>
-      <th scope="col">{{supplies|length}}</th>
-      <th scope="col" class="textAlignLeft">Назва товару</th>
+      <th scope="col">{{supplies|length}} Назва товару</th>
+      <th scope="col">Пакування / Тести</th>
+        <th scope="col">Категорія</th>
         <th scope="col">REF</th>
+        <th scope="col">SMN</th>
         <th scope="col">LOT</th>
         <th scope="col">Кількість</th>
-        <th scope="col">Категорія</th>
         <th scope="col">Термін придатнотсі</th>
         <th scope="col">Оновлено</th>
     </tr>
@@ -60,12 +61,19 @@
     {% for el in supplies %}
 
      <tr>
-      <th scope="row">{{el.id}}</th>
-      <td style="text-align: left;">{{ el.general_supply.name }}</td>
-      <td style="text-align: left;">
+      <th scope="row" style="text-align: left">{{ el.general_supply.name }}</th>
+      <td>{{ el.general_supply.package_and_tests }}</td>
+     <td>{{ el.general_supply.category }}</td>
+      <td>
 
           {% if el.general_supply.ref is not none %}
                         {{ el.general_supply.ref }}
+                {% endif %}
+      </td>
+     <td>
+
+          {% if el.general_supply.SMN_code is not none %}
+                        {{ el.general_supply.SMN_code }}
                 {% endif %}
       </td>
 
@@ -76,7 +84,6 @@
                     </td>
 
             <td>{{ el.count }}</td>
-            <td>{{ el.general_supply.category.name }}</td>
             <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.expiredDate|date:"d.m.Y" }}
 
                             </div></td>

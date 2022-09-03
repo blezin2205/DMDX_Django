@@ -25,7 +25,7 @@
   <div class="card-header">
     <div class="hstack justify-content-between">
           <h4>{{client.name}}, {{client.city_ref.name}}.</h4>
-          <a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-default" role="button"><i class="bi bi-pencil"></i></a>
+          <a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-outline-dark" role="button"><i class="bi bi-pencil"></i></a>
       </div>
   </div>
       <div class="card-body">
@@ -76,8 +76,9 @@
 <div class="vstack p-1">
     {% for worker in client.workers.all %}
             <div class="hstack">
+            <a href="{% url 'editWorkerInfo' worker.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-default" role="button"><i class="bi bi-pencil"></i></a>
             <p class="start-0 mb-0">
-               {% if client.worker_NP == worker %} <img style="height: 20px; width: 20px" src="{% static "images/np_logo.png" %}"> {% endif %} {{ worker.name }} {{ worker.secondName }} {% if worker.middleName %} {{ worker.middleName }} {% endif %}
+               {% if client.worker_NP == worker %} <img style="height: 20px; width: 20px" src="{% static "images/np_logo.png" %}"> {% endif %}{{ worker.secondName }} {{ worker.name }}{% if worker.middleName %} {{ worker.middleName }}{% endif %}
                 </p>
                 <div class="ms-auto me-2">
                    {% if worker.position %} {{ worker.position }} {% endif %}
@@ -94,11 +95,11 @@
 </div>
         {% endif %}
 
-<a href="{% url 'newWorkerForPlace' client.id %}" class="btn-default">
+<a href="{% url 'newWorkerForPlace' client.id %}?next={{ request.get_full_path|urlencode }}" class="btn-default">
           Додати контакт
         </a>
 
-      <a href="{% url 'addNewDeviceForClient' client.id %}" class="btn-default mx-2">
+      <a href="{% url 'addNewDeviceForClient' client.id %}?next={{ request.get_full_path|urlencode }}" class="btn-default mx-2">
           Додати прилад
         </a>
       </div>
