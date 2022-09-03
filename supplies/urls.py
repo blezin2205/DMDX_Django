@@ -7,6 +7,7 @@ urlpatterns = [
 
     path('cart/', views.cartDetail, name='cart'),
     path('preorders-cart/', views.cartDetailForClient, name='precart'),
+    path('get_place_for_city_in_cart/', views.get_place_for_city_in_cart, name='get_place_for_city_in_cart'),
 
      path('update-cart-item-count/', views.updateCartItemCount, name='cart-count'),
      path('update-precart-item-count/', views.updatePreCartItemCount, name='precart-count'),
@@ -50,7 +51,7 @@ urlpatterns = [
 
     path('orders', views.orders, name='orders'),
     path('preorders', views.preorders, name='preorders'),
-    path('orders_update_status/', views.orderUpdateStatus, name='orders_update_status'),
+    path('orders_update_status/<int:order_id>', views.orderUpdateStatus, name='orders_update_status'),
 
     path('clientsInfo', views.clientsInfo, name='clientsInfo'),
     path('clientsInfo/<int:client_id>/orders', views.ordersForClient, name='ordersForClient'),
@@ -58,6 +59,7 @@ urlpatterns = [
     path('clientsInfo/<int:place_id>/add-new-worker', views.addNewWorkerForClient, name='newWorkerForPlace'),
     path('clientsInfo/<int:client_id>/serviceNotes', views.serviceNotesForClient, name='serviceNotesForClient'),
     path('clientsInfo/<int:client_id>/editInfo', views.editClientInfo, name='editClientInfo'),
+    path('clientsInfo/<int:worker_id>/editWorkerInfo', views.editWorkerInfo, name='editWorkerInfo'),
     path('clientsInfo/<int:client_id>/add-new-device', views.addNewDeviceForClient, name='addNewDeviceForClient'),
 
 
@@ -76,6 +78,8 @@ urlpatterns = [
     path('order-detail-csv/<int:order_id>', views.render_to_xls, name='orderDetailCsv'),
     path('preorder-detail-csv/<int:order_id>', views.preorder_render_to_xls, name='preorderDetailCsv'),
 
+    path('order_delete_order_previews_cell/<int:order_id>', views.order_delete, name='order_delete'),
+
 
     path('api/supplies', apiViews.SuppliesApiView.as_view()),
     path('api/general-supplies', apiViews.GeneralSuppliesApiView.as_view()),
@@ -88,6 +92,7 @@ urlpatterns = [
     # path('api/auth', views.RegistrationAPIView.as_view()),
     # path('api/login', views.LoginAPIView.as_view()),
 
+    path('add_np_sender_place', views.add_np_sender_place, name='add_np_sender_place'),
 
     path('http-response', NPViews.httpRequest),
     path('address_getCities', NPViews.address_getCities),
@@ -98,6 +103,8 @@ urlpatterns = [
     path('search-warehouse-np', NPViews.search_warehouse, name='search-warehouse-np'),
     path('radioAddClientTONP', NPViews.radioAddClientTONP, name='radioAddClientTONP'),
     path('create-np_document-for-order/<int:order_id>', NPViews.create_np_document_for_order, name='create_np_document_for_order'),
-    path('np-delivery-detail-info-for-order/<int:order_id>', NPViews.np_delivery_detail_info_for_order, name='np_delivery_detail_info_for_order')
+    path('np-delivery-detail-info-for-order/<int:order_id>', NPViews.np_delivery_detail_info_for_order, name='np_delivery_detail_info_for_order'),
+    path('np_create_ID_button_subscribe/<int:order_id>', NPViews.np_create_ID_button_subscribe, name='np_create_ID_button_subscribe'),
+    path('get_register_for_orders', NPViews.get_register_for_orders, name='get_register_for_orders')
 
 ]

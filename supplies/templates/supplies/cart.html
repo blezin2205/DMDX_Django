@@ -1,4 +1,5 @@
 {% extends 'supplies/base.html' %}
+{% load crispy_forms_filters %}
 {% load bootstrap %}
 {% load mathfilters %}
 
@@ -79,14 +80,22 @@
 
 
   {% csrf_token %}
-        <div class="card">
-          <div class="card-body">
-            {{ orderForm|bootstrap }}
-          </div>
-        </div>
-      <input type="hidden" name="next" value="{{ request.GET.next }}">
-     <button class="btn btn-outline-primary my-2" type="submit">Зберегти</button>
+      {% if not placeExist %}
+         <select class="form-select mb-3" aria-label="Default select example" name="city" hx-get="{% url 'get_place_for_city_in_cart' %}" hx-trigger="change" hx-target="#places">
+  <option selected>Вибрати місто</option>
+             {% for city in cities %}
+                 <option value="{{city.id}}">{{ city.name }}</option>
+             {% endfor %}
+</select>
+      <div id="places">
+          {% include 'partials/choose_place_in_cart.html' %}
+      </div>
+      {% endif %}
+      {{ orderForm|crispy }}
+<button class="btn btn-outline-primary my-2" type="submit" name="save">Зберегти</button>
+          <button class="btn btn-outline-danger my-5 mx-3" type="submit" name="delete">Видалити</button>
 
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
       </div>
     </div>
   </div>

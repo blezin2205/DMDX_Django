@@ -11,25 +11,6 @@
 <form method="POST" action="">
   {% csrf_token %}
 
-<section class="card shadow-sm p-4">
-    <h5 class="pb-4"><u>Основна інформація</u></h5>
-    {{ form.name|as_crispy_field }}
-    {{ form.city_ref|as_crispy_field }}
-    {{ form.address|as_crispy_field }}
-    {{ form.link|as_crispy_field }}
-    {% if not place.isAddedToNP %}{{ form.organization_code|as_crispy_field }}{% else %} <h5 class="pb-4">ЄДРПОУ: <u>{{ place.organization_code }}</u></h5>{% endif %}
-</section>
-
-
-
-
-<section class="card shadow-sm my-5 p-4" style="background-color: #eee;">
-    <h5 class="pb-4">Дані для формування накладної для НП <u>{{ place.name_in_NP }}</u></h5>
-    {% if adressSetExist %} {{ form.address_NP|as_crispy_field }} {% else %} <li style="color: red; margin-top: 2px"> Aдреси доставки відсутні, додайте адреси в секції нижче</li>  {% endif %}
-    {% if workersSetExist %} {{ form.worker_NP|as_crispy_field }} {% else %} <li style="color: red; margin-top: 2px">Контактні особи відсутні, <a href="{% url 'newWorkerForPlace' clientId %}?next={{request.get_full_path|urlencode}}" class="btn-default">
-          додайте нового працівника</a></li>
-        {% endif %}
-        </section>
 
 <section class="card shadow-sm my-5 p-4" style="background-color: #eee;">
     <h5 class="pb-4"><u>Дадати нову адресу відправки</u></h5>
