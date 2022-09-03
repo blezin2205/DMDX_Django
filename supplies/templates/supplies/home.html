@@ -1,14 +1,19 @@
-{% extends 'supplies/base.html' %}
+{% extends 'supplies/base_for_home.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
 {% load bootstrap %}
 {% load mathfilters %}
 {% load myapp_extras %}
+
     {% block title %}
 {{ title }}
 {% endblock %}
 
 {% block content %}
 
-  <div class="btn-group pb-3">
+
+<div class="container py-1">
+  <div class="btn-group my-3">
   <a href="/" class="btn btn-primary mx-2 {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
   <a href="/childSupply" class="btn btn-primary {% if isChild %} active {% endif %}">Список товарів</a>
 </div>
@@ -16,18 +21,18 @@
      <form method="get" class="form-inline justify-content-center">
          <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
              <div class="hstack gap-2">
-                 {{ suppFilter.form.id|bootstrap }}
                  {{ suppFilter.form.ordering|bootstrap }}
                  {{ suppFilter.form.category|bootstrap }}
                  {{ suppFilter.form.ref|bootstrap }}
                  {{ suppFilter.form.name|bootstrap }}
-
              </div>
              <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
 
 </div>
+
         </form>
-    <table class="table centred mt-5">
+     </div>
+    <table class="table centred mt-3 w-75 mx-auto">
   <thead class="thead-dark">
     <tr>
       <th scope="col" class="textAlignLeft">({{supplies|length}}) Назва товару</th>
@@ -36,19 +41,21 @@
         <th scope="col">REF</th>
         <th scope="col">SMN</th>
         <th scope="col" >
-            <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %} ">
-                <div style="width: 110px;">LOT</div>
-            <div style="width: 110px;">Кількість</div>
-            <div style="width: 110px;">Термін</div>
+            <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %}">
+                <div style="width: 200px;">LOT</div>
+            <div style="width: 150px;">Кількість</div>
+            <div style="width: 100px;">Термін</div>
             </div>
         </th>
+    <th>
+    </th>
     </tr>
   </thead>
   <tbody id="cart-badge">
     {% for el in supplies %}
 
      <tr>
-      <th scope="row" style="text-align: left">{{ el.name }}</th>
+      <th scope="row" style="text-align: left; max-width: 350px">{{ el.name }}</th>
       <td>{{ el.package_and_tests }}</td>
       <td>{{ el.category.name }}</td>
       <td>
@@ -66,13 +73,13 @@
 
          <td class="supplyRow">
 
-<table class="table table-borderless mb-0">
+<table class="table table-borderless mb-0" style="background: rgb(245,245,245); border-radius: 8px;">
   <tbody>
    {% for supp in el.general.all %}
     <tr>
 
-      <td  style="width: 120px"><div>{% if supp.supplyLot is not none %} {{ supp.supplyLot }} {% endif %}</div></td>
-      <td style="width: 110px"><div><span>{{ supp.count }}</span>  {% if supp.countOnHold %}  <span style="background-color: orange" class="px-2 rounded-2">{{ supp.countOnHold }}</span> {% endif %} </div> </td>
+      <td  style="width: 200px"><div>{% if supp.supplyLot is not none %} {{ supp.supplyLot }} {% endif %}</div></td>
+      <td style="width: 150px"><div><span style="font-weight: 600">{{ supp.count }}</span>  {% if supp.countOnHold %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2">{{ supp.countOnHold }}</span> {% endif %} </div> </td>
       <td style="width: 100px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.expiredDate|date:"d.m.Y" }}
  </div>
       </td>
@@ -82,7 +89,7 @@
 {% if request.user.is_staff %}
     <div id="add_cart_button-{{supp.id}}">
     {% if not supp.id|in_cart:request.user %}
-                <button hx-post="{% url 'update_item' supp.id %}" hx-target="#add_cart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" type="submit" ><i class="bi bi-cart-plus"></i></button>
+                <button hx-post="{% url 'update_item' supp.id %}" hx-target="#add_cart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" type="submit" style="border-color: black" ><i class="bi bi-cart-plus"></i></button>
             {% else %}
                 <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
             {% endif %}
@@ -118,11 +125,11 @@
 </table>
 </td>
         <td>
-        <div class="vstack gap-1 justify-content-end">
-            <div class="hstack gap-2 justify-content-between">
-{% if request.user.is_staff %}
+{#        <div class="vstack gap-1 justify-content-end">#}
 
-                <a href="{% url 'addNewLot' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-link" role="button" data-toggle="tooltip" data-placement="top" title="Додати LOT"> + LOT</a>
+{% if request.user.is_staff %}
+ <div class="hstack gap-2 justify-content-end">
+                <a href="{% url 'addNewLot' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary" role="button" data-toggle="tooltip" data-placement="top" title="Додати LOT"><i class="bi bi-plus-square"></i></a>
                 <a href="{% url 'updateGeneralSupply' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button" data-toggle="tooltip" data-placement="top" title="Редагувати назву"><i class="bi bi-pencil"></i></a>
 </div>
 
@@ -131,18 +138,18 @@
 
 {% endif %}
         <div class="hstack gap-1 justify-content-end">
-        {% if el|in_precart_general:request.user %}
-            <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
-        {% else %}
-            <button data-product={{ el.id }} data-action="add-general" class="btn btn-sm btn-primary add-btn preorder-general-supp-button" style="background: #5bc0de" data-toggle="tooltip" data-placement="top" title="В корзину передзамовлення (Назва)"><i class="bi bi-cart-plus"></i></button>
-
-        {% endif %}
+{#        {% if el|in_precart_general:request.user %}#}
+{#            <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>#}
+{#        {% else %}#}
+{#            <button data-product={{ el.id }} data-action="add-general" class="btn btn-sm btn-primary add-btn preorder-general-supp-button" style="background: #5bc0de" data-toggle="tooltip" data-placement="top" title="В корзину передзамовлення (Назва)"><i class="bi bi-cart-plus"></i></button>#}
+{##}
+{#        {% endif %}#}
             {% if uncompletePreOrdersExist %}
     <a href="{% url 'addSupplyToExistPreOrderGeneral' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого передзамовлення (Назва)" style="background: #5bc0de"><i class="bi bi-bag-plus"></i></a>
 
             {% endif %}
             </div>
-        </div>
+{#        </div>#}
             </td>
 
      {% endfor %}

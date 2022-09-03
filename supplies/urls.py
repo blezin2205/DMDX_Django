@@ -7,6 +7,7 @@ urlpatterns = [
 
     path('cart/', views.cartDetail, name='cart'),
     path('preorders-cart/', views.cartDetailForClient, name='precart'),
+    path('get_place_for_city_in_cart/', views.get_place_for_city_in_cart, name='get_place_for_city_in_cart'),
 
      path('update-cart-item-count/', views.updateCartItemCount, name='cart-count'),
      path('update-precart-item-count/', views.updatePreCartItemCount, name='precart-count'),
@@ -50,7 +51,7 @@ urlpatterns = [
 
     path('orders', views.orders, name='orders'),
     path('preorders', views.preorders, name='preorders'),
-    path('orders_update_status/', views.orderUpdateStatus, name='orders_update_status'),
+    path('orders_update_status/<int:order_id>', views.orderUpdateStatus, name='orders_update_status'),
 
     path('clientsInfo', views.clientsInfo, name='clientsInfo'),
     path('clientsInfo/<int:client_id>/orders', views.ordersForClient, name='ordersForClient'),
@@ -58,6 +59,7 @@ urlpatterns = [
     path('clientsInfo/<int:place_id>/add-new-worker', views.addNewWorkerForClient, name='newWorkerForPlace'),
     path('clientsInfo/<int:client_id>/serviceNotes', views.serviceNotesForClient, name='serviceNotesForClient'),
     path('clientsInfo/<int:client_id>/editInfo', views.editClientInfo, name='editClientInfo'),
+    path('clientsInfo/<int:worker_id>/editWorkerInfo', views.editWorkerInfo, name='editWorkerInfo'),
     path('clientsInfo/<int:client_id>/add-new-device', views.addNewDeviceForClient, name='addNewDeviceForClient'),
 
 
@@ -75,6 +77,8 @@ urlpatterns = [
     path('order-detail-pdf/<int:order_id>', views.orderDetail_pdf, name='orderDetailPdf'),
     path('order-detail-csv/<int:order_id>', views.render_to_xls, name='orderDetailCsv'),
     path('preorder-detail-csv/<int:order_id>', views.preorder_render_to_xls, name='preorderDetailCsv'),
+
+    path('order_delete_order_previews_cell/<int:order_id>', views.order_delete, name='order_delete'),
 
 
     path('api/supplies', apiViews.SuppliesApiView.as_view()),

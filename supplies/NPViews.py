@@ -94,7 +94,7 @@ def create_np_document_for_order(request, order_id):
                     "CargoType": "Parcel",
                     "VolumeGeneral": str(volumeGeneral),
                     "Weight": str(weight),
-                    "ServiceType": f'Warehouse{deliveryType}',
+                    "ServiceType": f'{sender_place.deliveryType}{deliveryType}',
                     "SeatsAmount": str(seatsAmount),
                     "Description": description,
                     "Cost": str(cost),
@@ -195,7 +195,7 @@ def search_street(request):
                "CityRef" : cityRef,
                "FindByString" : search_text.capitalize(),
                "Page" : "1",
-               "Limit" : ""
+               "Limit" : "25"
                   }
                 }
 
@@ -218,7 +218,7 @@ def search_warehouse(request):
         "methodProperties": {
             "CityRef": cityRef,
             "Page": "1",
-            "Limit": "50",
+            "Limit": "25",
             "Language": "UA",
             "WarehouseId": search_text.capitalize()
         }

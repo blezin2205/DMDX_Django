@@ -23,7 +23,6 @@
 
 
 
-
 <section class="card shadow-sm my-5 p-4" style="background-color: #eee;">
     <h5 class="pb-4">Дані для формування накладної для НП <u>{{ place.name_in_NP }}</u></h5>
     {% if adressSetExist %} {{ form.address_NP|as_crispy_field }} {% else %} <li style="color: red; margin-top: 2px"> Aдреси доставки відсутні, додайте адреси в секції нижче</li>  {% endif %}

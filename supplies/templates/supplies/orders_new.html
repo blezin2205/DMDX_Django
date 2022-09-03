@@ -21,54 +21,8 @@
 
 </div>
 
-    <div class="list-group list-group-radio d-grid gap-2 border-0 w-auto">
-
-{% for order in orders %}
-
-
-
-    <div class="hstack gap-3">
-     <a href="{% url 'orderDetail' order.id %}?next={{ request.get_full_path }}" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" style="border-radius: 1rem;">
-     <div class="d-flex gap-2 w-100 justify-content-between">
-     <div>
-    <h6 class="mb-1">Заказ №: {{order.id}}</h6>
-        <p class="mb-1">Для: {{order.place.name}}, {{order.place.city_ref.name}}</p>
-
-      {% if order.npdeliverycreateddetailinfo_set.exists %}
-          <div id="np_delivery_detail_info_for_order" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
-          {% for detailInfo in order.statusnpparselfromdoucmentid_set.all %}
-              <p class="mb-2"><span>Статус НП:</span> <b style="color: {% if detailInfo.status_code == '9' %} green {% elif detailInfo.status_code == '2' %} red {% else %} orange {% endif %}">{{ detailInfo.status_desc }}</b>  </p>
-          {% endfor %}
-          </div>
-        {% elif order.isComplete %}
-        <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span></p>
-        {% else %}
-        <p class="mb-2"><span>Статус:</span> <span class="waiting">В очікуванні</span></p>
-        {% endif %}
-
-        {% if order.comment %}
-            <p class="mb-0"> <span class="text-muted">Комментарiй:</span> {{order.comment}}</p>
-        {% endif %}
-
-  </div>
-      <div>
-         {% if order.isComplete %}
-      <p class="opacity-60 text-nowrap date">Дата відправки: {{order.dateSent|date:"d.m.Y"}}</p>
-          {% endif %}
-      <p class="opacity-60 text-nowrap date">Дата створення: {{order.dateCreated|date:"d.m.Y"}}</p>
-     </div>
-     </div>
-     </a>
-    {% if request.user.is_staff and not order.isComplete %}
-    {% if order.place.address_NP and order.place.worker_NP %}
-        <div id="np_create_ID_button_subscribe" hx-get="{% url 'np_create_ID_button_subscribe' order.id %}" hx-trigger="np_create_ID_button_subscribe{{order.id}} from:body">
-                            {% include 'partials/np_create_ID_button.html' %}
-                        </div>
-
-        {% endif %}
-    {% endif %}
-    </div>
-{% endfor %}
+    <div class="list-group list-group-radio d-grid gap-2 border-0 w-auto" id="order_delete_cell">
+        {% include 'partials/order_delete_cell.html' %}
 </div>
     </form>
 {% endblock %}

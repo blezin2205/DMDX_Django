@@ -15,7 +15,7 @@ class CustomUser(AbstractUser):
     np_last_choosed_delivery_place_id = models.SmallIntegerField(blank=True, null=True)
 
     def __str__(self):
-        return self.username
+        return f'{self.first_name} {self.last_name}'
 
 class SenderNPPlaceInfo(models.Model):
     cityName = models.CharField(max_length=200, blank=True)
@@ -51,7 +51,7 @@ class CreateParselModel(models.Model):
     length = models.PositiveIntegerField()
     height = models.PositiveIntegerField()
     weight = models.PositiveIntegerField()
-    seatsAmount = models.PositiveIntegerField()
+    seatsAmount = models.PositiveIntegerField(default=1)
     description = models.CharField(max_length=200, default="Товари медичного призначення")
     cost = models.PositiveIntegerField(null=True, blank=True, default=300)
     dateDelivery = models.DateField(auto_now_add=True)
@@ -133,11 +133,11 @@ class Supply(models.Model):
 class Place(models.Model):
     name = models.CharField(max_length=200)
     city_ref = models.ForeignKey(City, on_delete=models.SET_NULL, null=True)
-    city = models.CharField(max_length=100)
+    city = models.CharField(max_length=100, null=True, blank=True)
     address = models.CharField(max_length=100, null=True, blank=True)
     link = models.CharField(max_length=300, null=True, blank=True)
-    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
-    organization_code = models.PositiveIntegerField(null=True, blank=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
+    organization_code = models.CharField(max_length=8, null=True, blank=True)
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
     worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True)
     address_NP = models.OneToOneField('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, unique=True)
@@ -181,7 +181,11 @@ class Workers(models.Model):
     ref_counterparty_NP = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
-        return f'{self.name} {self.secondName}, працює в {self.for_place.name}, {self.for_place.city}'
+        try:
+            cityname = self.for_place.name
+        except:
+            cityname = "City NAME"
+        return f'{self.name} {self.secondName}, працює в {cityname}'
 
     class Meta:
         verbose_name = 'Працівник'

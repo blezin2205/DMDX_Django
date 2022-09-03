@@ -8,6 +8,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit, Layout, MultiField, Div
+from django.forms import formset_factory
 
 
 class CreateNPParselForm(ModelForm):
@@ -21,20 +22,20 @@ class CreateNPParselForm(ModelForm):
 
         self.fields['payment_user_type'].label = "Хто платить за доставку"
         self.fields['payment_money_type'].label = "Тип оплати"
-        self.fields['width'].label = "Ширина"
-        self.fields['length'].label = "Довжина"
-        self.fields['height'].label = "Висота"
-        self.fields['weight'].label = "Фактична вага"
+        self.fields['width'].label = "Ширина (см)"
+        self.fields['length'].label = "Довжина (см)"
+        self.fields['height'].label = "Висота (см)"
+        self.fields['weight'].label = "Фактична вага (кг)"
         self.fields['seatsAmount'].label = "Кількість місць"
         self.fields['description'].label = "Опис"
-        self.fields['cost'].label = "Оціночна вартість"
+        self.fields['cost'].label = "Оціночна вартість (грн)"
         self.fields['dateDelivery'].label = "Дата відправки"
         self.fields['sender_np_place'].label = "Відділення відправки"
 
 
     payment_user_type = forms.ChoiceField(choices=CreateParselModel.PaymentUserType.choices)
     payment_money_type = forms.ChoiceField(choices=CreateParselModel.PaymentMoneyType.choices)
-    dateDelivery = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'min': datetime.datetime.now().date()}))
+    dateDelivery = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'min': datetime.datetime.now().date()}), initial=datetime.datetime.now())
 
     class Meta:
         model = CreateParselModel
@@ -68,8 +69,11 @@ class CreateClientForm(ModelForm):
 
     def clean_organization_code(self):
         orgCode = self.cleaned_data['organization_code']
-        if orgCode and len(str(orgCode)) != 8:
+        print("---didgigs",orgCode.isdigit())
+        if orgCode and len(orgCode) != 8:
             raise forms.ValidationError("ЄДРПОУ має 8 цифр!")
+        if not orgCode.isdigit():
+            raise forms.ValidationError("Тільки цифри")
         return orgCode
 
 
@@ -90,11 +94,12 @@ class ClientForm(ModelForm):
         if self.instance.isAddedToNP:
             self.fields.pop('organization_code')
 
-
     def clean_organization_code(self):
         orgCode = self.cleaned_data['organization_code']
-        if orgCode and len(str(orgCode)) != 8:
+        if orgCode and len(orgCode) != 8:
             raise forms.ValidationError("ЄДРПОУ має 8 цифр!")
+        if orgCode and not orgCode.isdigit():
+            raise forms.ValidationError("Тільки цифри!")
         return orgCode
 
 
@@ -124,7 +129,22 @@ class WorkerForm(ModelForm):
         self.fields['secondName'].label = "Прізвище"
         self.fields['middleName'].label = "По-батькові"
         self.fields['telNumber'].label = "Телефон в форматі 38..."
-        self.fields['position'].label = "посада"
+        self.fields['position'].label = "Посада"
+
+    def clean_telNumber(self):
+        telNumber = self.cleaned_data['telNumber']
+        if telNumber and len(str(telNumber)) != 12:
+            raise forms.ValidationError("Номер телефону має бути 12 цифр!")
+        return telNumber
+
+    def clean_name(self):
+        return self.cleaned_data['name'].capitalize()
+    def clean_secondName(self):
+        return self.cleaned_data['secondName'].capitalize()
+    def clean_middleName(self):
+        if self.cleaned_data['middleName']:
+            return self.cleaned_data['middleName'].capitalize()
+
 
 
 class CreateUserForm(UserCreationForm):
@@ -176,7 +196,11 @@ class NewGeneralSupplyForm(ModelForm):
 class OrderInCartForm(ModelForm):
     class Meta:
         model = OrderInCart
-        fields = ['place', 'comment', 'isComplete']
+        fields = ['comment', 'isComplete']
+    def __init__(self, *args, **kwargs):
+        super(OrderInCartForm, self).__init__(*args, **kwargs)
+        self.fields['comment'].label = "Комментарій"
+        self.fields['isComplete'].label = "Відправлено"
 
 
 class OrderForm(forms.Form):

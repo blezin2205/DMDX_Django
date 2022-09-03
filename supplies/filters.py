@@ -3,27 +3,27 @@ from .models import *
 from django_filters import CharFilter, ChoiceFilter, ModelChoiceFilter
 from django.db.models import Exists, OuterRef, Q, Prefetch
 from django.utils import timezone
-from django.db.models import Max, Q
 
 
 class ChildSupplyFilter(django_filters.FilterSet):
     CHOICES = (
         ('onlyExpired', 'Прострочені'), ('onlyGood', 'Придатні'), ('dateCreated', 'Оновлено')
     )
-
-    id = CharFilter(field_name='general_supply__id', lookup_expr='icontains', label='ID Parent')
     name = CharFilter(field_name='general_supply__name', lookup_expr='icontains', label='Назва товару')
     ref = CharFilter(field_name='general_supply__ref', lookup_expr='icontains', label='REF')
     ordering = ChoiceFilter(label='Сортування', choices=CHOICES, method='filter_by_order')
 
     class Meta:
         model = Supply
-        fields = ['category', 'ref', 'supplyLot', 'id' , 'name', 'ordering']
+        fields = ['category', 'ref', 'supplyLot', 'name', 'ordering']
 
     def __init__(self, *args, **kwargs):
         super(ChildSupplyFilter, self).__init__(*args, **kwargs)
         self.filters['ordering'].extra.update(
             {'empty_label': 'Всі'})
+
+    def filter_by_category(self, queryset, name, value):
+          return queryset.filter(general_supply__category__name__exact=value)
 
     def filter_by_order(self, queryset, name, value):
 
@@ -37,17 +37,23 @@ class ChildSupplyFilter(django_filters.FilterSet):
 
 class SupplyFilter(django_filters.FilterSet):
 
+    class EXIST_CHOICES(models.TextChoices):
+        В_наявності = "onlyExistChild"
+        Немає_в_наявності = "onlyNotExistChild"
+        Тільки_придатні = "onlyGood"
+        Тільки_прострочені = "onlyExpired"
+
     CHOICES = (
         ('onlyExistChild', 'В наявності'), ('onlyNotExistChild', 'Немає в наявності')
     )
     name = CharFilter(field_name='name', lookup_expr='icontains', label='Назва товару')
     ref = CharFilter(field_name='ref', lookup_expr='icontains', label='REF')
-    ordering = ChoiceFilter(label='Сортування', choices=CHOICES, method='filter_by_order')
+    ordering = ChoiceFilter(label='Сортування', choices=EXIST_CHOICES.choices, method='filter_by_order')
 
 
     class Meta:
         model = GeneralSupply
-        fields = ['name', 'category', 'ref', 'ordering', 'id']
+        fields = ['name', 'category', 'ref', 'ordering']
 
     def __init__(self, *args, **kwargs):
         super(SupplyFilter, self).__init__(*args, **kwargs)
@@ -64,6 +70,19 @@ class SupplyFilter(django_filters.FilterSet):
             return  queryset.filter(general__isnull=False).distinct()
         elif value =='onlyNotExistChild':
             return queryset.filter(general__isnull=True).distinct()
+        elif value == 'onlyGood':
+            sups = Supply.objects.filter(expiredDate__gte=timezone.now().date())
+            prefetch = Prefetch('general', queryset=sups)
+            supplies = queryset.prefetch_related(prefetch).filter(general__in=sups).distinct().order_by(
+                'name')
+            return supplies
+        elif value == 'onlyExpired':
+            sups = Supply.objects.filter(expiredDate__lt=timezone.now().date())
+            prefetch = Prefetch('general', queryset=sups)
+            supplies = queryset.prefetch_related(prefetch).filter(general__in=sups).distinct().order_by(
+                'name')
+            return supplies
+
 
 
 
