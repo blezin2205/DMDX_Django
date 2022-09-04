@@ -591,6 +591,8 @@ def carDetailForStaff(request):
 @allowed_users(allowed_roles=['admin'])
 def add_np_sender_place(request):
     user = request.user
+    places = user.sender_np_places.all()
+
 
     if request.method == 'POST':
         cityName = request.POST.get('cityName')
@@ -605,9 +607,9 @@ def add_np_sender_place(request):
         deliveryPlace = SenderNPPlaceInfo(cityName=cityName, addressName=addressName, city_ref_NP=cityRef,
                                           address_ref_NP=addressRef, deliveryType=recipientType, for_user=user)
         deliveryPlace.save()
-        return redirect('/')
+        return redirect('/add_np_sender_place')
 
-    return render(request, 'supplies/add_new_sender_np_place.html', {})
+    return render(request, 'supplies/add_new_sender_np_place.html', {'places': places})
 
 
 @login_required(login_url='login')
@@ -795,6 +797,22 @@ def order_delete(request, order_id):
                 supp = el.supply
                 supp.countOnHold -= countInOrder
                 supp.save(update_fields=['countOnHold'])
+
+    if order.npdeliverycreateddetailinfo_set.exists():
+        # for delInfo in order.npdeliverycreateddetailinfo_set.all():
+        docrefs = order.npdeliverycreateddetailinfo_set.values_list('ref')
+        params = {
+              "apiKey": "[ВАШ КЛЮЧ]",
+              "modelName": "InternetDocument",
+              "calledMethod": "delete",
+              "methodProperties": {
+                    "DocumentRefs": docrefs
+                   }
+        }
+
+        data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+        print(data)
+
     order.delete()
     next = request.GET.get('next')
     return HttpResponseRedirect(next)
@@ -1870,6 +1888,21 @@ def orderDetail(request, order_id):
                         supp = el.supply
                         supp.countOnHold -= countInOrder
                         supp.save(update_fields=['countOnHold'])
+
+            if order.npdeliverycreateddetailinfo_set.exists():
+                docrefs = order.npdeliverycreateddetailinfo_set.values_list('ref')
+                for ref in docrefs:
+                    params = {
+                        "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                        "modelName": "InternetDocument",
+                        "calledMethod": "delete",
+                        "methodProperties": {
+                            "DocumentRefs": ref
+                        }
+                    }
+                    data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+                    print(data)
+
             order.delete()
             return HttpResponseRedirect(next)
 

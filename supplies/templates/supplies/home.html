@@ -56,7 +56,12 @@
 
      <tr>
       <th scope="row" style="text-align: left; max-width: 350px">{{ el.name }}</th>
-      <td>{{ el.package_and_tests }}</td>
+      <td>
+       {% if el.package_and_tests is not none %}
+                        {{ el.package_and_tests }}
+                {% endif %}
+
+      </td>
       <td>{{ el.category.name }}</td>
       <td>
 

@@ -8,12 +8,20 @@
 {% endblock %}
 
 {% block content %}
+    <div class="container">
+    <h4 style="">Ваші адреси відправки:</h4>
+    {% for place in places %}
+<li style="font-weight: 400; padding-bottom: 4px">{{ place.cityName }}, {{ place.addressName }}</li>
+    {% endfor %}
+    </div>
+
+
 <form method="POST" action="">
   {% csrf_token %}
 
 
-<section class="card shadow-sm my-5 p-4" style="background-color: #eee;">
-    <h5 class="pb-4"><u>Дадати нову адресу відправки</u></h5>
+<section class="card shadow-sm mt-4 p-4" style="background-color: #eee;">
+    <h5 class="pb-4"><u style="font-style: italic">Дoдати нову адресу відправки</u></h5>
 
     <div class="btn-group pt-3" role="group" aria-label="Basic radio toggle button group" style="width: fit-content">
   <input type="radio" class="btn-check" name="recipientType" value="Warehouse" id="btnradio1" autocomplete="off" checked>
