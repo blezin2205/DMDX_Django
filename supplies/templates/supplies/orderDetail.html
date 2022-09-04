@@ -4,14 +4,15 @@
 {% endblock %}
 
 {% block content %}
-
     <div class="container">
-
-
     <div class="allSupply">
+    <form method="POST" action="" style="display: inline;" onsubmit="window.mytest()">
+  {% csrf_token %}
 <h3>
-  <small class="text-muted">Для: {{order.place.name}}, {{order.place.city_ref.name}}</small>
+    <input type="hidden" name="next" value="{{ request.GET.next }}">
+  <small class="text-muted">Для: {{order.place.name}}, {{order.place.city_ref.name}}</small> <button class="btn btn-outline-danger mx-2" type="submit" name="delete"><i class="bi bi-trash"></i></button>
 </h3>
+    </form>
 {% if order.comment %}
 <h4>
   <small class="text-muted">Комментарій: {{order.comment}}</small>
@@ -87,10 +88,8 @@
    {% endfor %}
   </tbody>
 </table>
-
-
 </div>
-
+<script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити це замовлення ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
 
 {% endblock %}
 

@@ -40,9 +40,9 @@
                   <div class="vstack">
                   {% if item.supply %}
                       {% if item.supply.countOnHold %}
-                          <label for="form1">Доступно: {{ item.supply.count|sub:item.supply.countOnHold }}</label>
+                          <label for="form1">Доступно: <b>{{ item.supply.count|sub:item.supply.countOnHold }}</b></label>
                           {% else %}
-                          <label for="form1">Доступно: {{ item.supply.count }}</label>
+                          <label for="form1">Доступно: <b>{{ item.supply.count }}</b></label>
                       {% endif %}
                   {% elif item.general_supply %}
                       <label for="form1" style="color: #ab4302">Товар відсутній</label>

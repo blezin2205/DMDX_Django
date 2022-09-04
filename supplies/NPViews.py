@@ -265,46 +265,67 @@ def radioAddClientTONP(request):
 
 
 def np_delivery_detail_info_for_order(request, order_id):
-    documentsIdList = Order.objects.get(id=order_id).npdeliverycreateddetailinfo_set.all()
+
+    order = Order.objects.get(id=order_id)
+    userCreated = order.userCreated
+    documentsIdList = order.npdeliverycreateddetailinfo_set.all()
     documents = []
 
-    for docu in documentsIdList:
-        documents.append({'DocumentNumber': docu.document_id})
+    noMoreUpdate = False
 
-    objList = []
+    if order.statusnpparselfromdoucmentid_set.exists():
+        statusCode = int(order.statusnpparselfromdoucmentid_set.first().status_code)
+        print(statusCode)
+        noMoreUpdate = statusCode == 2 or statusCode == 9
+
+    if not noMoreUpdate:
+        for docu in documentsIdList:
+            documents.append({'DocumentNumber': docu.document_id,
+                              'Phone': userCreated.mobNumber})
+
+        objList = []
+
+        params = {
+            "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+            "modelName": "TrackingDocument",
+            "calledMethod": "getStatusDocuments",
+            "methodProperties": {
+                "Documents": documents
+            }
+        }
+        data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+        print(data)
+        status_parsel_code = 1
+        if data["data"]:
+            for obj in data["data"]:
+                number = obj["Number"]
+                status_code = obj["StatusCode"]
+                status = obj["Status"]
+                status_parsel_code = int(status_code)
+                try:
+                    status_parsel_model = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.get(
+                        docNumber=number, for_order_id=order_id)
+                    status_parsel_model.status_desc = status
+                    status_parsel_model.status_code = status_code
+                    status_parsel_model.docNumber = number
+                    status_parsel_model.save()
+                except:
+                    status_parsel_model = StatusNPParselFromDoucmentID(status_code=status_code, status_desc=status,
+                                                                       docNumber=number, for_order_id=order_id)
+                    status_parsel_model.save()
+
+        parsels_status_data = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.all()
+        response = render(request, 'partials/np_delivery_info_in_list_of_orders.html',
+                          {'parsels_status_data': parsels_status_data})
+        trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
+
+    else:
+        parsels_status_data = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.all()
+        response = render(request, 'partials/np_delivery_info_in_list_of_orders.html',
+                          {'parsels_status_data': parsels_status_data})
+        trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
 
 
-    params = {
-                  "apiKey": "99f738524ca3320ece4b43b10f4181b1",
-                  "modelName": "TrackingDocument",
-                  "calledMethod": "getStatusDocuments",
-                  "methodProperties": {
-               "Documents" : documents
-                  }
-              }
-    data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
-    print(data)
-    status_parsel_code = 1
-    if data["data"]:
-        for obj in data["data"]:
-            number = obj["Number"]
-            status_code = obj["StatusCode"]
-            status = obj["Status"]
-            status_parsel_code = int(status_code)
-            try:
-                status_parsel_model = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.get(docNumber=number, for_order_id=order_id)
-                status_parsel_model.status_desc = status
-                status_parsel_model.status_code = status_code
-                status_parsel_model.docNumber = number
-                status_parsel_model.save()
-            except:
-                status_parsel_model = StatusNPParselFromDoucmentID(status_code=status_code, status_desc=status,
-                                                                   docNumber=number, for_order_id=order_id)
-                status_parsel_model.save()
-
-    parsels_status_data = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.all()
-    response = render(request, 'partials/np_delivery_info_in_list_of_orders.html', {'parsels_status_data': parsels_status_data})
-    trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
     return response
 
 

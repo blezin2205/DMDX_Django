@@ -182,71 +182,59 @@ def deleteSupplyInOrder(request):
 
 
 @login_required(login_url='login')
-def preorder_general_supp_buttons(request):
-    data = json.loads(request.body)
-    prodId = data['productId']
-    action = data['action']
-
-    print('Action', action)
-    print('id', prodId)
-
+def add_preorder_general_to_preorder(request, prodId):
     user = request.user
+    general_supply = GeneralSupply.objects.get(id=prodId)
+    print('preorder_general_supp_buttons', prodId)
 
-    if action == 'add':
-        supply = Supply.objects.get(id=prodId)
-        preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
-        suppInCart = SupplyInPreorderInCart(
-            supply=supply,
-            supply_for_order=preorder,
-            lot=supply.supplyLot,
-            date_expired=supply.expiredDate,
-            date_created=supply.dateCreated)
+    preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
 
-        suppInCart.count_in_order = (suppInCart.count_in_order + 1)
-        suppInCart.save()
-
-    elif action == 'add-general':
-        general_supply = GeneralSupply.objects.get(id=prodId)
-
-        preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+    try:
+        suppInCart = SupplyInPreorderInCart.objects.get(id=general_supply.id,
+                                        supply_for_order=preorder,
+                                        general_supply=general_supply)
+    except:
         suppInCart = SupplyInPreorderInCart(id=general_supply.id,
                                             supply_for_order=preorder,
                                             general_supply=general_supply)
 
-        suppInCart.count_in_order = (suppInCart.count_in_order + 1)
-        suppInCart.save()
-
-    return JsonResponse('Item was added', safe=False)
-
-
-@login_required(login_url='login')
-def preorder_general_supp_buttons(request, prodId):
-    user = request.user
-
-    supply = Supply.objects.get(id=prodId)
-    preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
-    suppInCart = SupplyInPreorderInCart(
-        supply=supply,
-        supply_for_order=preorder,
-        lot=supply.supplyLot,
-        date_expired=supply.expiredDate,
-        date_created=supply.dateCreated)
 
     suppInCart.count_in_order = (suppInCart.count_in_order + 1)
     suppInCart.save()
+    countInPreorder = suppInCart.count_in_order
+    response = render(request, 'partials/add_precart_button_general.html',
+                      {'el': general_supply, 'countInPreCart': countInPreorder})
+    trigger_client_event(response, 'subscribe_precart', {})
+    return response
 
-    # elif action == 'add-general':
-    #     general_supply = GeneralSupply.objects.get(id=prodId)
-    #
-    #     preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
-    #     suppInCart = SupplyInPreorderInCart(id=general_supply.id,
-    #             supply_for_order=preorder,
-    #             general_supply=general_supply)
-    #
-    #     suppInCart.count_in_order = (suppInCart.count_in_order + 1)
-    #     suppInCart.save()
-
-    return JsonResponse('Item was added', safe=False)
+# @login_required(login_url='login')
+# def preorder_general_supp_buttons(request, prodId):
+#     user = request.user
+#
+#     supply = Supply.objects.get(id=prodId)
+#     preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+#     suppInCart = SupplyInPreorderInCart(
+#         supply=supply,
+#         supply_for_order=preorder,
+#         lot=supply.supplyLot,
+#         date_expired=supply.expiredDate,
+#         date_created=supply.dateCreated)
+#
+#     suppInCart.count_in_order = (suppInCart.count_in_order + 1)
+#     suppInCart.save()
+#
+#     # elif action == 'add-general':
+#     #     general_supply = GeneralSupply.objects.get(id=prodId)
+#     #
+#     #     preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+#     #     suppInCart = SupplyInPreorderInCart(id=general_supply.id,
+#     #             supply_for_order=preorder,
+#     #             general_supply=general_supply)
+#     #
+#     #     suppInCart.count_in_order = (suppInCart.count_in_order + 1)
+#     #     suppInCart.save()
+#
+#     return JsonResponse('Item was added', safe=False)
 
 
 @login_required(login_url='login')
@@ -678,8 +666,12 @@ def cartDetail(request):
                         countOnHold = 0
                     countInOrder = int(suppInOrder.count_in_order)
                     if isComplete:
-                        supply.count -= countInOrder
-                        supply.save(update_fields=['count'])
+                        supDeltaCount = supply.count - countInOrder
+                        if supDeltaCount == 0:
+                            supply.delete()
+                        else:
+                            supply.count -= countInOrder
+                            supply.save(update_fields=['count'])
                     else:
                         if supply.countOnHold:
                             supply.countOnHold = countOnHold + countInOrder
@@ -749,16 +741,23 @@ def childSupply(request):
 
         for row in supplies:
             row_num += 1
-            name = row.general_supply.name
+            name = ''
             ref = ''
-            if row.general_supply.ref:
-                ref = row.general_supply.ref
             lot = ''
+            category = ''
+            if row.general_supply:
+                name = row.general_supply.name
+                ref = row.general_supply.ref
+                category = row.general_supply.category.name
+
             if row.supplyLot:
                 lot = row.supplyLot
             count = row.count
             date_expired = row.expiredDate.strftime("%d.%m.%Y")
-            category = row.general_supply.category.name
+            if row.name:
+                name = row.name
+
+
 
             val_row = [name, ref, lot, count, date_expired, category]
 
@@ -797,9 +796,8 @@ def order_delete(request, order_id):
                 supp.countOnHold -= countInOrder
                 supp.save(update_fields=['countOnHold'])
     order.delete()
-    orders = Order.objects.all()
-
-    return render(request, 'partials/order_delete_cell.html', {'orders': orders})
+    next = request.GET.get('next')
+    return HttpResponseRedirect(next)
 
 
 
@@ -810,10 +808,17 @@ def orders(request):
     isClient = request.user.groups.filter(name='client').exists()
     if isClient:
         orders = Order.objects.filter(place__user=request.user).order_by('-id')
-        title = f'Всі замовлення для {request.user.first_name} {request.user.last_name} '
+        totalCount = orders.count()
+        title = f'Всі замовлення для {request.user.first_name} {request.user.last_name}. ({totalCount} шт.)'
     else:
         orders = Order.objects.all().order_by('-id')
-        title = 'Всі замовлення'
+        totalCount = orders.count()
+        title = f'Всі замовлення. ({totalCount} шт.)'
+
+
+    paginator = Paginator(orders, 20)
+    page_number = request.GET.get('page')
+    orders = paginator.get_page(page_number)
 
     if request.method == 'POST':
         selected_orders = request.POST.getlist('flexCheckDefault')
@@ -852,7 +857,7 @@ def orders(request):
             return redirect(np_link_print)
 
     return render(request, 'supplies/orders_new.html',
-                  {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True,
+                  {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True, 'totalCount': totalCount,
                    'isOrdersTab': True})
 
 
@@ -1118,7 +1123,7 @@ def addSupplyToExistPreOrder(request, supp_id):
 
     return render(request, 'supplies/cart.html',
                   {'title': 'Додати до замовлення',
-                   'orderForm': orderForm, 'supplies': [supply], 'cartCountData': cartCountData,
+                   'orderForm': orderForm, 'supplies': [supply], 'cartCountData': cartCountData, 'placeExist': True,
                    })
 
 
@@ -1194,6 +1199,8 @@ def addNewLotforSupply(request, supp_id):
             obj = form.save(commit=False)
             obj.general_supply = generalSupp
             obj.category = generalSupp.category
+            obj.name = generalSupp.name
+            obj.ref = generalSupp.ref
             obj.save()
             next = request.POST.get('next')
             return HttpResponseRedirect(next)
@@ -1849,8 +1856,23 @@ def orderDetail(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
     supplies_in_order = order.supplyinorder_set.all().order_by('id')
     cartCountData = countCartItemsHelper(request)
+    next = request.POST.get('next')
 
-    print(supplies_in_order.first())
+    if request.method == 'POST':
+
+        if 'delete' in request.POST:
+            next = request.POST.get('next')
+            if not order.isComplete:
+                supps = order.supplyinorder_set.all()
+                for el in supps:
+                    if el.hasSupply():
+                        countInOrder = el.count_in_order
+                        supp = el.supply
+                        supp.countOnHold -= countInOrder
+                        supp.save(update_fields=['countOnHold'])
+            order.delete()
+            return HttpResponseRedirect(next)
+
     return render(request, 'supplies/orderDetail.html',
                   {'title': f'Замовлення № {order_id}', 'order': order, 'supplies': supplies_in_order,
                    'cartCountData': cartCountData, 'isOrders': True})
