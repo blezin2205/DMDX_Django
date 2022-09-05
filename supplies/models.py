@@ -5,6 +5,10 @@ from django.utils import timezone
 from django.contrib.sessions.models import Session
 from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import ArrayField
+import barcode
+from barcode.writer import ImageWriter
+from io import BytesIO
+from django.core.files import File
 
 
 class CustomUser(AbstractUser):
@@ -32,6 +36,27 @@ class SenderNPPlaceInfo(models.Model):
     class Meta:
         verbose_name = 'Місце відправки НП'
         verbose_name_plural = 'Місця відправок НП'
+
+
+class RegisterNPInfo(models.Model):
+    barcode_string = models.CharField(max_length=200)
+    register_url = models.CharField(max_length=800, blank=True)
+    barcode = models.ImageField(upload_to='images/', blank=True)
+    date = models.CharField(max_length=200)
+    register_ref = models.CharField(max_length=100, blank=True)
+    documentsId = ArrayField(models.CharField(max_length=400), blank=True, null=True)
+    for_orders = ArrayField(models.CharField(max_length=400), blank=True, null=True)
+
+    def __str__(self):
+        return str(self.barcode_string)
+
+    def save(self, *args, **kwargs):
+        EAN = barcode.get_barcode_class('code128')
+        ean = EAN(f'{self.barcode_string}', writer=ImageWriter())
+        buffer = BytesIO()
+        ean.write(buffer)
+        self.barcode.save(f'{self.barcode_string}.png', File(buffer), save=False)
+        return super().save(*args, **kwargs)
 
 
 class CreateParselModel(models.Model):
