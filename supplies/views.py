@@ -843,6 +843,10 @@ def orders(request):
         print("------ ", selected_orders, "-----------")
         selected_ids = map(int, selected_orders)
         fileteredOredrs = Order.objects.filter(pk__in=selected_ids)
+        for_orders_name_list = []
+        for ordr in fileteredOredrs:
+            ordrString = f'№{ordr.id} - {ordr.place}'
+            for_orders_name_list.append(ordrString)
         documentsIdFromOrders = fileteredOredrs.values_list('npdeliverycreateddetailinfo__ref', flat=True)
         listToStr = ','.join(map(str, documentsIdFromOrders))
         print(listToStr)
@@ -863,16 +867,31 @@ def orders(request):
             }
             data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
             list_data = data["data"]
-            print(list_data)
+            print(data)
             register_Ref = ""
             if list_data:
                 register_Ref = list_data[0]["Ref"]
+                register_number = list_data[0]["Number"]
+                date = list_data[0]["Date"]
+
+                in_list = []
+                for obj in list_data[0]["Success"]:
+                    in_list.append(obj['Number'])
+                np_link_print = f'//my.novaposhta.ua/scanSheet/printScanSheet/refs[]/{register_Ref}/type/pdf/apiKey/99f738524ca3320ece4b43b10f4181b1'
+                regInfoModel = RegisterNPInfo(barcode_string=register_number, register_url=np_link_print, date=date, documentsId=in_list, for_orders=for_orders_name_list)
+                regInfoModel.save()
+                return redirect(np_link_print)
 
             if data["errors"]:
                 errors = data["errors"]
                 print(errors)
-            np_link_print = f'//my.novaposhta.ua/scanSheet/printScanSheet/refs[]/{register_Ref}/type/pdf/apiKey/99f738524ca3320ece4b43b10f4181b1'
-            return redirect(np_link_print)
+                for error in errors:
+                    messages.info(request, error)
+                return render(request, 'supplies/orders_new.html',
+                              {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True,
+                               'totalCount': totalCount,
+                               'isOrdersTab': True})
+
 
     return render(request, 'supplies/orders_new.html',
                   {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True, 'totalCount': totalCount,

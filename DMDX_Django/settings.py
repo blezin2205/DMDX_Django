@@ -191,6 +191,8 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # The URL to use when referring to static files (where they will be served from)
 STATIC_URL = '/static/'
+MEDIA_URL ='/media/'
+MEDIA_ROOT = BASE_DIR/'media'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 

@@ -36,6 +36,10 @@
                             </div>
                         </li>
 
+            {% if request.user.is_staff %}
+            <li class="nav-item"><a href="{% url 'nova_poshta_registers' %}" class="btn btn-outline-primary{% if isRegisters %} active {% endif %}" aria-current="page">Реєстри НП</a></li>
+            {% endif %}
+
 
 
 

@@ -37,6 +37,13 @@ def httpRequest(request):
     return render(request, "supplies/http_response.html", {'data': data["data"]})
 
 
+def nova_poshta_registers(request):
+    registers = RegisterNPInfo.objects.all().order_by('-id')
+
+    return render(request, 'supplies/nova_poshta_registers.html', {'registers': registers})
+
+
+
 def get_register_for_orders(request):
     cheked = False
     if request.method == 'POST':

@@ -105,6 +105,8 @@ urlpatterns = [
     path('create-np_document-for-order/<int:order_id>', NPViews.create_np_document_for_order, name='create_np_document_for_order'),
     path('np-delivery-detail-info-for-order/<int:order_id>', NPViews.np_delivery_detail_info_for_order, name='np_delivery_detail_info_for_order'),
     path('np_create_ID_button_subscribe/<int:order_id>', NPViews.np_create_ID_button_subscribe, name='np_create_ID_button_subscribe'),
-    path('get_register_for_orders', NPViews.get_register_for_orders, name='get_register_for_orders')
+    path('get_register_for_orders', NPViews.get_register_for_orders, name='get_register_for_orders'),
+
+    path('nova_poshta_registers', NPViews.nova_poshta_registers, name='nova_poshta_registers')
 
 ]
