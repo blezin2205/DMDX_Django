@@ -10,8 +10,9 @@
 {% endblock %}
 
 {% block content %}
-{% for register in registers %}
-<div class="card text-center my-4 border shadow-sm" style="width: 20rem">
+    <div class="container">
+    {% for register in registers %}
+<div class="card text-center mx-auto my-4 border shadow-sm" style="width: 20rem; min-height: 500px">
   <div class="card-header">
     <img src="{{ register.barcode.url }}" width="300" height="100" class="card-img-top" alt="..." style="border-radius: 8px">
   </div>
@@ -29,4 +30,6 @@
   </div>
 </div>
 {% endfor %}
+    </div>
+
 {% endblock %}
