@@ -1415,13 +1415,20 @@ def editClientInfo(request, client_id):
             comment = request.POST.get('comment')
             recipientType = request.POST.get('recipientType')
 
+            # Counterparty REF for add address as private person, but if organization added as organization to NP, address ref should be save for orgRef
+            counterpartyref = "3b0e7317-2a6b-11eb-8513-b88303659df5"
+
+            if client.ref_NP is not None:
+                counterpartyref = client.ref_NP
+
+
             if recipientType == 'Doors':
                 params = {
                     "apiKey": "99f738524ca3320ece4b43b10f4181b1",
                     "modelName": "Address",
                     "calledMethod": "save",
                     "methodProperties": {
-                        "CounterpartyRef": "3b0e7317-2a6b-11eb-8513-b88303659df5",
+                        "CounterpartyRef": counterpartyref,
                         "StreetRef": addressRef,
                         "BuildingNumber": streetNumber,
                         "Flat": flatNumber,

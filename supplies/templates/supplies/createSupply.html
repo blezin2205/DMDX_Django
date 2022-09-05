@@ -1,4 +1,5 @@
 {% extends 'supplies/base.html' %}
+{% load crispy_forms_filters %}
 {% load static %}
 {% load bootstrap %}
     {% block title %}
@@ -8,8 +9,10 @@
 {% block content %}
 <form method="POST" action="">
   {% csrf_token %}
+<div class="w-50">
+    {{ form|crispy }}
+</div>
 
-{{ form|bootstrap }}
 
 {% if messages %}
 <ul class="messages my-4" style="color: red">

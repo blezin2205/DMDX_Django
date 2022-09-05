@@ -181,11 +181,17 @@ class Workers(models.Model):
     ref_counterparty_NP = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
+        user_np_type = None
         try:
-            cityname = self.for_place.name
+            # cityname = self.for_place.name
+            counterpartyRef = self.ref_counterparty_NP
+            if counterpartyRef is not None and counterpartyRef == '3b13350b-2a6b-11eb-8513-b88303659df5':
+                user_np_type = ', (Приватна особа)'
+            elif counterpartyRef is not None:
+                user_np_type = ', (Організація)'
         except:
-            cityname = "City NAME"
-        return f'{self.name} {self.secondName}, працює в {cityname}'
+            user_np_type = ''
+        return f'{self.name} {self.secondName}{user_np_type}'
 
     class Meta:
         verbose_name = 'Працівник'
