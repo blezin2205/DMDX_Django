@@ -103,19 +103,15 @@ class ClientForm(ModelForm):
         return orgCode
 
 
-class ClientFormExcludeOrgCode(ModelForm):
+class ClientFormForParcel(ModelForm):
     class Meta:
         model = Place
-        exclude = ['city', 'user', 'ref_NP', 'isAddedToNP', 'name_in_NP', 'organization_code']
+        fields = ['address_NP', 'worker_NP']
 
     def __init__(self, *args, **kwargs):
-        super(ClientFormExcludeOrgCode, self).__init__(*args, **kwargs)
-        self.fields['name'].label = "Назва організації"
-        self.fields['city_ref'].label = "Місто"
-        self.fields['address'].label = "Адреса"
-        self.fields['link'].label = "Ссилка"
-        self.fields['address_NP'].label = "Адреса відправки"
-        self.fields['worker_NP'].label = "Контакта особа отримання відправки"
+        super(ClientFormForParcel, self).__init__(*args, **kwargs)
+        self.fields['address_NP'].label = "Адреса отримувача"
+        self.fields['worker_NP'].label = "Контактна особа-отримувач"
 
 
 class WorkerForm(ModelForm):

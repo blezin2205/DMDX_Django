@@ -8,7 +8,7 @@
 {% block content %}
 <form method="POST" action="">
     {% csrf_token %}
-    <div class="container" style="height: 75px">
+    <div class="container " style="height: 75px">
   <div class="row">
     <div class="col">
               <a href="/orders" class="btn btn-primary {% if isOrdersTab %} active {% endif %}" aria-current="page">Замовлення {% if cartCountData.orders_incomplete > 0 %} <span class="badge bg-warning ms-2">{{ cartCountData.orders_incomplete }}</span> {% endif %}</a>

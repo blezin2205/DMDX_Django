@@ -1,11 +1,10 @@
-{% extends 'supplies/base.html' %}
+{% extends 'supplies/base_for_home.html' %}
     {% block title %}
 {{ title }}
 {% endblock %}
 
 {% block content %}
-    <div class="container">
-    <div class="allSupply">
+    <div class="container py-1">
     <form method="POST" action="" style="display: inline;" onsubmit="window.mytest()">
   {% csrf_token %}
 <h3>
@@ -32,16 +31,17 @@
     <a href="{% url 'orderDetailCsv' order.id %}">Export to Excel</a>
 </div>
 
-    <table class="table centred mt-5">
+    <table class="table centred mt-3 w-auto mx-auto">
   <thead class="thead-dark">
     <tr>
-      <th scope="col">{{supplies|length}}</th>
-      <th scope="col" class="textAlignLeft">Назва товару</th>
+      <th scope="col" class="textAlignLeft" style="min-width: 400px">({{supplies|length}}) Назва товару</th>
+      <th scope="col">Пакування / Тести</th>
+        <th scope="col">Категорія</th>
         <th scope="col">REF</th>
+        <th scope="col">SMN</th>
         <th scope="col">LOT</th>
         <th scope="col">Кількість</th>
-        <th scope="col">Призначення</th>
-        <th scope="col">Термін придатності</th>
+        <th scope="col">Термін</th>
         <th scope="col">Оновлено</th>
         {% if not order.isComplete and request.user.is_staff %}
         <th scope="col">Action</th>
@@ -52,20 +52,16 @@
     {% for el in supplies %}
 
      <tr>
-      <th scope="row">{{forloop.counter}}</th>
-      <td style="text-align: left;">{% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</td>
-      <td>
+      <th scope="row" style="text-align: left">{{forloop.counter}}. {% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</th>
+      <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.package_and_tests }}{% endif %}</td>
+      <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.category.name }}{% endif %}</td>
+      <td style="min-width: 100px">
           {% if el.generalSupply.ref is not none %}
                         {% if el.generalSupply %} {{ el.generalSupply.ref }} {% else %} {{ el.internalRef }} {% endif %}
                 {% endif %}
       </td>
-
-         <td class="supplyRow">
-                    {% if el.lot is not none %}
-                        {{ el.lot }}
-                {% endif %}
-                    </td>
-
+     <td style="min-width: 100px">{% if el.generalSupply.SMN_code is not none %}{{ el.generalSupply.SMN_code }}{% endif %}</td>
+         <td style="min-width: 100px">{% if el.lot is not none %}{{ el.lot }}{% endif %}</td>
             <td>
                 <div class="hstack gap-2 justify-content-center">
                     {% if not order.isComplete and request.user.is_staff %}
@@ -78,9 +74,8 @@
 
                 </div>
             </td>
-            <td>{{ el.generalSupply.category.name }}</td>
-            <td>{{ el.date_expired|date:"d.m.Y" }}</td>
-            <td>{{ el.date_created|date:"d.m.Y" }}</td>
+            <td style="min-width: 100px">{{ el.date_expired|date:"d.m.Y" }}</td>
+            <td style="min-width: 100px">{{ el.date_created|date:"d.m.Y" }}</td>
      {% if not order.isComplete and request.user.is_staff %}
      <td><button data-product={{ el.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-suppinorder-button"><i class="bi bi-trash"></i></button></td>
      {% endif %}
@@ -88,7 +83,6 @@
    {% endfor %}
   </tbody>
 </table>
-</div>
 <script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити це замовлення ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
 
 {% endblock %}

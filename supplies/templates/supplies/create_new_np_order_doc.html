@@ -8,11 +8,10 @@
 {% endblock %}
 
 {% block content %}
-
-
      <div class="w-50 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
      <form method="POST" action="">
 {% csrf_token %}
+     {{ placeForm|crispy }}
      {{ inputForm.sender_np_place|as_crispy_field }}
      <div class="row g-3">
   <div class="col-sm">
@@ -61,6 +60,8 @@
     <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
     {% endfor %}
 
+<p class="py-3" style="font-weight: inherit; color: orange"><em>Якщо отримали помилку, про те, що адреса отримувача не належить отримувачу, потрібно додати адресу до організації, для якої попередньо вже було додано ЄДРПОУ</em></p>
+
 </ul>
              <div id="error"></div>
 {% endif %}
@@ -72,7 +73,5 @@
          </div>
 </form>
 </div>
-
-
 
 {% endblock %}

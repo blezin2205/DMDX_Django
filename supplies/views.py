@@ -878,7 +878,9 @@ def orders(request):
                 for obj in list_data[0]["Success"]:
                     in_list.append(obj['Number'])
                 np_link_print = f'//my.novaposhta.ua/scanSheet/printScanSheet/refs[]/{register_Ref}/type/pdf/apiKey/99f738524ca3320ece4b43b10f4181b1'
-                regInfoModel = RegisterNPInfo(barcode_string=register_number, register_url=np_link_print, date=date, documentsId=in_list, for_orders=for_orders_name_list)
+                dt_obj = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
+                date_string = dt_obj.strftime('%d.%m.%Y %H:%M')
+                regInfoModel = RegisterNPInfo(barcode_string=register_number, register_url=np_link_print, date=date_string, documentsId=in_list, for_orders=for_orders_name_list)
                 regInfoModel.save()
                 return redirect(np_link_print)
 
@@ -970,7 +972,7 @@ def ordersForClient(request, client_id):
     if not orders:
         title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
 
-    return render(request, 'supplies/orders.html', {'title': title, 'orders': orders, 'isClients': True})
+    return render(request, 'supplies/orders_new.html', {'title': title, 'orders': orders, 'isClients': True})
 
 
 @login_required(login_url='login')
@@ -1639,18 +1641,22 @@ def render_to_xls(request, order_id):
     supplies_in_order = order.supplyinorder_set.all()
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f"attachment; filename=Order-{order_id}.xlsx"
+    response['Content-Disposition'] = f"attachment; filename=Order-{order_id}-{order.place.name}-{order.place.city}.xlsx"
 
     row_num = 3
+    row_num_to_table = 3
 
     wb = Workbook(response, {'in_memory': True})
-    ws = wb.add_worksheet(f'№{order_id}, {order.place.name}, {order.place.city}')
+    ws = wb.add_worksheet(f'№{order_id}')
     format = wb.add_format({'bold': True})
     format.set_font_size(16)
 
     columns_table = [{'header': '№'},
                      {'header': 'Назва товару'},
+                     {'header': 'Пакування / Тести'},
+                     {'header': 'Категорія'},
                      {'header': 'REF'},
+                     {'header': 'SMN Code'},
                      {'header': 'LOT'},
                      {'header': 'К-ть'},
                      {'header': 'Тер.прид.'},
@@ -1663,36 +1669,65 @@ def render_to_xls(request, order_id):
         format = wb.add_format()
         format.set_font_size(14)
         ws.write(1, 0, f'Коммент.: {order.comment}', format)
-        ws.write(2, 0, f'Всього: {supplies_in_order.count()} шт.', format)
+    ws.write(2, 0, f'Всього: {supplies_in_order.count()} шт.', format)
+
+    if order.npdeliverycreateddetailinfo_set.exists():
+        format = wb.add_format()
+        format.set_font_size(15)
+        for deliveryInfo in order.npdeliverycreateddetailinfo_set.all():
+            row_num += 1
+            ws.write(row_num, 0, f'Номер накладної НП: {deliveryInfo.document_id}', format)
+            row_num += 1
+            ws.write(row_num, 0, f'Aдреса отримувача: {deliveryInfo.recipient_address}', format)
+            row_num += 1
+            ws.write(row_num, 0, f'Контактна особа-отримувач: {deliveryInfo.recipient_worker}', format)
+            row_num += 1
+            ws.write(row_num, 0, f'Розрахункова дата доставки: {deliveryInfo.estimated_time_delivery}', format)
+            row_num += 1
+            ws.write(row_num, 0, f'Вартість доставки: {deliveryInfo.cost_on_site} грн.', format)
+            row_num += 1
+            ws.write(row_num, 0, '', format)
+            row_num += 1
+            row_num_to_table = row_num
 
     format = wb.add_format()
     format.set_font_size(14)
+    ws.add_table(row_num, 0, supplies_in_order.count() + row_num, len(columns_table) - 1, {'columns': columns_table})
 
     for row in supplies_in_order:
         row_num += 1
         name = row.generalSupply.name
+        category = row.generalSupply.category
         ref = ''
         if row.generalSupply.ref:
             ref = row.generalSupply.ref
+        smn_code = ''
+        if row.generalSupply.SMN_code:
+            smn_code = row.generalSupply.SMN_code
+        packtests = ''
+        if row.generalSupply.package_and_tests:
+            packtests = row.generalSupply.package_and_tests
+
         lot = ''
         if row.lot:
             lot = row.lot
         count = row.count_in_order
+
         date_expired = row.date_expired.strftime("%d-%m-%Y")
 
-        val_row = [name, ref, lot, count, date_expired]
+        val_row = [name, packtests, category, ref, smn_code, lot, count, date_expired]
 
         for col_num in range(len(val_row)):
-            ws.write(row_num, 0, row_num - 3)
+            ws.write(row_num, 0, row_num - row_num_to_table)
             ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
 
     ws.set_column(0, 0, 5)
     ws.set_column(1, 1, 35)
-    ws.set_column(2, 3, 20)
-    ws.set_column(4, 4, 10)
-    ws.set_column(5, 5, 15)
-
-    ws.add_table(3, 0, supplies_in_order.count() + 3, len(columns_table) - 1, {'columns': columns_table})
+    ws.set_column(2, 3, 15)
+    ws.set_column(4, 5, 20)
+    ws.set_column(6, 6, 15)
+    ws.set_column(7, 7, 5)
+    ws.set_column(8, 8, 12)
     wb.close()
 
     return response

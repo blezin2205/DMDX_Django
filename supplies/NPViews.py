@@ -39,7 +39,6 @@ def httpRequest(request):
 
 def nova_poshta_registers(request):
     registers = RegisterNPInfo.objects.all().order_by('-id')
-
     return render(request, 'supplies/nova_poshta_registers.html', {'registers': registers})
 
 
@@ -60,19 +59,28 @@ def create_np_document_for_order(request, order_id):
     deliveryInfo = for_place.address_NP
     deliveryType = deliveryInfo.deliveryType
     sender_places = SenderNPPlaceInfo.objects.filter(for_user=request.user)
-    title = f'Cформувати інтернет-документ для: \n{for_place.name}, {for_place.city_ref.name}'
+    title = f'Cформувати інтернет-документ для:\n- Замовлення №{order.id} \n- {for_place.name}, {for_place.city_ref.name}'
     inputForm = CreateNPParselForm(instance=order)
+    placeForm = ClientFormForParcel(instance=for_place)
+
     inputForm.fields['sender_np_place'].queryset = sender_places
+    placeForm.fields['worker_NP'].queryset = for_place.workers
+    placeForm.fields['address_NP'].queryset = for_place.delivery_places
+
     try:
        sendplace = sender_places.get(id=user.np_last_choosed_delivery_place_id)
     except:
        sendplace = None
     inputForm.fields['sender_np_place'].initial = sendplace
+    placeForm.fields['worker_NP'].initial = for_place.worker_NP
+    placeForm.fields['address_NP'].initial = for_place.address_NP
+
 
     if request.method == 'POST':
         inputForm = CreateNPParselForm(request.POST, instance=order)
+        placeForm = ClientFormForParcel(request.POST, instance=for_place)
         print(inputForm.is_valid())
-        if inputForm.is_valid():
+        if inputForm.is_valid() and placeForm.is_valid():
             dateSend = inputForm.cleaned_data['dateDelivery'].strftime('%d.%m.%Y')
             sender_np_place = inputForm.cleaned_data['sender_np_place']
             payment_money_type = inputForm.cleaned_data['payment_money_type']
@@ -89,6 +97,9 @@ def create_np_document_for_order(request, order_id):
             volumeGeneral = float(width / 100) * float(length / 100) * float(height / 100)
 
             sender_place = inputForm.cleaned_data['sender_np_place']
+            recipient_address = placeForm.cleaned_data['address_NP']
+            recipient_worker = placeForm.cleaned_data['worker_NP']
+
 
             params = {
                 "apiKey": "99f738524ca3320ece4b43b10f4181b1",
@@ -110,15 +121,21 @@ def create_np_document_for_order(request, order_id):
                     "SenderAddress": sender_np_place.address_ref_NP,
                     "ContactSender": request.user.np_contact_sender_ref,
                     "SendersPhone": request.user.mobNumber,
-                    "CityRecipient": deliveryInfo.city_ref_NP,
-                    "Recipient": for_place.worker_NP.ref_counterparty_NP,
-                    "RecipientAddress": deliveryInfo.address_ref_NP,
-                    "ContactRecipient": for_place.worker_NP.ref_NP,
-                    "RecipientsPhone": for_place.worker_NP.telNumber
+                    "CityRecipient": recipient_address.city_ref_NP,
+                    "Recipient": recipient_worker.ref_counterparty_NP,
+                    "RecipientAddress": recipient_address.address_ref_NP,
+                    "ContactRecipient": recipient_worker.ref_NP,
+                    "RecipientsPhone": recipient_worker.telNumber
                 }
             }
             data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
             print(data)
+            workr_postition = ''
+            if recipient_worker.position:
+                workr_postition = recipient_worker.position
+
+            worker_name = f'{recipient_worker}, {workr_postition}, телефон: {recipient_worker.telNumber}'
+            address_name = f'{recipient_address.cityName}, {recipient_address.addressName}'
 
             if data["success"] is True and data["data"][0] is not None:
                 list = data["data"][0]
@@ -126,7 +143,7 @@ def create_np_document_for_order(request, order_id):
                 cost = list["CostOnSite"]
                 estimated_date = list["EstimatedDeliveryDate"]
                 id_number = int(list["IntDocNumber"])
-                detailInfo = NPDeliveryCreatedDetailInfo(document_id=id_number, ref=ref, cost_on_site=cost, estimated_time_delivery=estimated_date, for_order=order)
+                detailInfo = NPDeliveryCreatedDetailInfo(document_id=id_number, ref=ref, cost_on_site=cost, estimated_time_delivery=estimated_date, recipient_worker=worker_name, recipient_address=address_name, for_order=order)
                 detailInfo.save()
                 user.np_last_choosed_delivery_place_id = sender_place.id
                 user.save()
@@ -148,7 +165,7 @@ def create_np_document_for_order(request, order_id):
                     messages.info(request, error)
                 return render(request, 'supplies/create_new_np_order_doc.html', {'inputForm': inputForm})
 
-    return render(request, 'supplies/create_new_np_order_doc.html', {'inputForm': inputForm, 'title': title})
+    return render(request, 'supplies/create_new_np_order_doc.html', {'inputForm': inputForm, 'placeForm': placeForm, 'title': title})
 
 
 def address_getCities(request):

@@ -272,6 +272,8 @@ class NPDeliveryCreatedDetailInfo(models.Model):
     ref = models.CharField(max_length=50)
     cost_on_site = models.PositiveIntegerField()
     estimated_time_delivery = models.CharField(max_length=12)
+    recipient_worker = models.CharField(max_length=200, null=True, blank=True)
+    recipient_address = models.CharField(max_length=200, null=True, blank=True)
     for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
 
     def __str__(self):

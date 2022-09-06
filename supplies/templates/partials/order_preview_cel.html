@@ -1,4 +1,4 @@
-<div id="order_preview_cell{{ order.id }}">
+<div id="order_preview_cell{{ order.id }}" class="my-2">
     <div class="hstack gap-3">
      <a href="{% url 'orderDetail' order.id %}?next={{ request.get_full_path|urlencode }}" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" style="border-radius: 1rem;">
      <div class="d-flex gap-2 w-100 justify-content-between">
