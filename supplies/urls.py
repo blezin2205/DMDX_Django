@@ -82,6 +82,7 @@ urlpatterns = [
 
 
     path('api/supplies', apiViews.SuppliesApiView.as_view()),
+    path('api/supplies_add_from_scan', apiViews.SuppliesFromScanSaveApiView.as_view()),
     path('api/general-supplies', apiViews.GeneralSuppliesApiView.as_view()),
     path('api/<int:pk>/', apiViews.SupplyDetailView.as_view()),
 

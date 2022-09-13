@@ -64,7 +64,10 @@
 {#        <i class="bi bi-trash"></i>#}
 {#    </button>#}
 {#</form>#}
-         <a class="btn btn-sm btn-warning" href="{% url 'updateNote' note.id %}"><i class="bi bi-pencil"></i></a>
+         {% if request.user == note.from_user %}
+             <a class="btn btn-sm btn-warning" href="{% url 'updateNote' note.id %}"><i class="bi bi-pencil"></i></a>
+             {% endif %}
+
     </div>
      </td>
 

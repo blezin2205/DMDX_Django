@@ -119,6 +119,12 @@ class GeneralSupply(models.Model):
         verbose_name_plural = 'Товари (назва)'
 
 
+class SupplySaveFromScanApiModel(models.Model):
+    smn = models.CharField(max_length=50, null=True, blank=True)
+    supplyLot = models.CharField(max_length=50, null=True, blank=True)
+    expiredDate = models.DateField(null=True)
+
+
 class Supply(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100, null=True, blank=True)

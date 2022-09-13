@@ -34,6 +34,34 @@ class SuppliesApiView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class SuppliesFromScanSaveApiView(APIView):
+
+    def post(self, request):
+        serializer = SupplySaveFromScanSerializer(data=request.data)
+        if serializer.is_valid():
+            print(serializer.validated_data)
+            smn = serializer.validated_data['smn']
+            lot = serializer.validated_data['supplyLot']
+            expDate = serializer.validated_data['expiredDate']
+            print(f'SMN -- {smn}')
+            try:
+                genSup = GeneralSupply.objects.get(SMN_code=smn)
+                try:
+                    sup = genSup.general.all().get(supplyLot=lot, expiredDate=expDate)
+                    sup.count += 1
+                except:
+                    sup = Supply(name=genSup.name, general_supply=genSup, category=genSup.category, ref=genSup.ref,
+                                 supplyLot=lot, count=1, expiredDate=expDate)
+
+                sup.save()
+                print(genSup)
+                # serializer.save()
+                supSerializer = SupplySerializer(sup)
+                return Response(supSerializer.data, status=status.HTTP_201_CREATED)
+            except:
+                return Response(serializer.errors, status=status.HTTP_404_NOT_FOUND)
+
+
 class SupplyDetailView(APIView):
 
     def get_object(self, pk):

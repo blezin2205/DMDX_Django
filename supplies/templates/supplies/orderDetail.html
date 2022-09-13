@@ -1,5 +1,6 @@
 {% extends 'supplies/base_for_home.html' %}
-    {% block title %}
+{% load mathfilters %}
+{% block title %}
 {{ title }}
 {% endblock %}
 
@@ -69,7 +70,7 @@
                     {% endif %}
                     {{ el.count_in_order }}
                 {% if not order.isComplete and request.user.is_staff %}
-                    <button data-product="{{ el.id }}" data-action="add" class="btn btn-lg update-order-count text-primary" type="submit"><i class="bi bi-plus"></i></button>
+                    <button data-product="{{ el.id }}" data-action="add" class="btn btn-lg update-order-count text-primary {% if el.count_in_order|sub:el.supply.count|sub:el.supply.countOnHold == 0 %} disabled {% endif %}" type="submit"><i class="bi bi-plus"></i></button>
                 {% endif %}
 
                 </div>

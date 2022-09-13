@@ -23,9 +23,16 @@ class GeneralSupplySerializer(serializers.ModelSerializer):
         return super(GeneralSupplySerializer, self).to_representation(instance)
 
 
+class SupplySaveFromScanSerializer(serializers.ModelSerializer):
+    expiredDate = serializers.DateField(format="%d-%m-%Y", input_formats=['%d-%m-%Y', 'iso-8601', '%y%m%d'], allow_null=True)
+
+    class Meta:
+        model = SupplySaveFromScanApiModel
+        fields = '__all__'
+
 class SupplySerializer(serializers.ModelSerializer):
     dateCreated = serializers.DateField(format="%d-%m-%Y", input_formats=['%d-%m-%Y', 'iso-8601'], default=timezone.now().date())
-    expiredDate = serializers.DateField(format="%d-%m-%Y", input_formats=['%d-%m-%Y', 'iso-8601'], allow_null=True)
+    expiredDate = serializers.DateField(format="%d-%m-%Y", input_formats=['%d-%m-%Y', 'iso-8601', '%y%m%d'], allow_null=True)
 
     class Meta:
         model = Supply
