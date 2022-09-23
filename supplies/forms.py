@@ -52,7 +52,8 @@ class GeneralSupplyForm(ModelForm):
 class CreateClientForm(ModelForm):
     class Meta:
         model = Place
-        exclude = ['city', 'user', 'ref_NP', 'address_NP', 'worker_NP', 'isAddedToNP', 'name_in_NP']
+        # exclude = ['city', 'user', 'ref_NP', 'address_NP', 'worker_NP', 'isAddedToNP', 'name_in_NP']
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super(CreateClientForm, self).__init__(*args, **kwargs)
@@ -88,8 +89,8 @@ class ClientForm(ModelForm):
         self.fields['city_ref'].label = "Місто"
         self.fields['address'].label = "Адреса"
         self.fields['link'].label = "Ссилка"
-        self.fields['address_NP'].label = "Адреса відправки"
-        self.fields['worker_NP'].label = "Контакта особа отримання відправки"
+        # self.fields['address_NP'].label = "Адреса відправки"
+        # self.fields['worker_NP'].label = "Контакта особа отримання відправки"
         self.fields['organization_code'].label = "ЄДРПОУ (Якщо поле заповнене, організація буде додана в НП)"
         if self.instance.isAddedToNP:
             self.fields.pop('organization_code')
@@ -106,12 +107,13 @@ class ClientForm(ModelForm):
 class ClientFormForParcel(ModelForm):
     class Meta:
         model = Place
-        fields = ['address_NP', 'worker_NP']
+        # fields = ['address_NP', 'worker_NP']
+        fields = '__all__'
 
-    def __init__(self, *args, **kwargs):
-        super(ClientFormForParcel, self).__init__(*args, **kwargs)
-        self.fields['address_NP'].label = "Адреса отримувача"
-        self.fields['worker_NP'].label = "Контактна особа-отримувач"
+    # def __init__(self, *args, **kwargs):
+    #     super(ClientFormForParcel, self).__init__(*args, **kwargs)
+    #     self.fields['address_NP'].label = "Адреса отримувача"
+    #     self.fields['worker_NP'].label = "Контактна особа-отримувач"
 
 
 class WorkerForm(ModelForm):
