@@ -315,6 +315,7 @@ class StatusNPParselFromDoucmentID(models.Model):
     announcedPrice = models.CharField(max_length=50, blank=True, null=True)
 
 
+
 class PreOrder(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
