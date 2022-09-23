@@ -324,18 +324,90 @@ def np_delivery_detail_info_for_order(request, order_id):
             for obj in data["data"]:
                 number = obj["Number"]
                 status_code = obj["StatusCode"]
+                counterpartyRecipientDescription = obj["CounterpartyRecipientDescription"]
+                documentWeight = obj["DocumentWeight"]
+                factualWeight = obj["FactualWeight"]
+                payerType = obj["PayerType"]
+                seatsAmount = obj["SeatsAmount"]
+                phoneRecipient = obj["PhoneRecipient"]
+                scheduledDeliveryDate = obj["ScheduledDeliveryDate"]
+                if scheduledDeliveryDate != '':
+                    scheduledDeliveryDate_obj = datetime.datetime.strptime(scheduledDeliveryDate, '%d-%m-%Y %H:%M:%S')
+                    scheduledDeliveryDate = scheduledDeliveryDate_obj.strftime('%d.%m.%Y %H:%M')
+                documentCost = obj["DocumentCost"]
+                paymentMethod = obj["PaymentMethod"]
+                warehouseSender = obj["WarehouseSender"]
+                dateCreated = obj["DateCreated"]
+                dateCreated_obj = datetime.datetime.strptime(dateCreated, '%d-%m-%Y %H:%M:%S')
+                dateCreated = dateCreated_obj.strftime('%d.%m.%Y %H:%M')
+                dateScan = obj["DateScan"]
+                if dateScan != '':
+                    dateScan_obj = datetime.datetime.strptime(dateScan, '%H:%M %d.%m.%Y')
+                    dateScan = dateScan_obj.strftime('%d.%m.%Y %H:%M')
+
+                actualDeliveryDate = obj["ActualDeliveryDate"]
+                if actualDeliveryDate != '':
+                    actualDeliveryDate_obj = datetime.datetime.strptime(actualDeliveryDate, '%Y-%m-%d %H:%M:%S')
+                    actualDeliveryDate = actualDeliveryDate_obj.strftime('%d.%m.%Y %H:%M')
+                recipientDateTime = obj["RecipientDateTime"]
+                if recipientDateTime != '':
+                    recipientDateTime_obj = datetime.datetime.strptime(recipientDateTime, '%d.%m.%Y %H:%M:%S')
+                    recipientDateTime = recipientDateTime_obj.strftime('%d.%m.%Y %H:%M')
+
+                recipientAddress = obj["RecipientAddress"]
+                recipientFullNameEW = obj["RecipientFullNameEW"]
+                cargoDescriptionString = obj["CargoDescriptionString"]
+                announcedPrice = obj["AnnouncedPrice"]
                 status = obj["Status"]
                 status_parsel_code = int(status_code)
+                print(dateCreated)
+                print(dateScan)
                 try:
                     status_parsel_model = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.get(
                         docNumber=number, for_order_id=order_id)
                     status_parsel_model.status_desc = status
                     status_parsel_model.status_code = status_code
                     status_parsel_model.docNumber = number
+                    status_parsel_model.counterpartyRecipientDescription = counterpartyRecipientDescription
+                    status_parsel_model.documentWeight = documentWeight
+                    status_parsel_model.factualWeight = factualWeight
+                    status_parsel_model.payerType = payerType
+                    status_parsel_model.seatsAmount = seatsAmount
+                    status_parsel_model.phoneRecipient = phoneRecipient
+                    status_parsel_model.scheduledDeliveryDate = scheduledDeliveryDate
+                    status_parsel_model.documentCost = documentCost
+                    status_parsel_model.paymentMethod = paymentMethod
+                    status_parsel_model.warehouseSender = warehouseSender
+                    status_parsel_model.dateCreated = dateCreated
+                    status_parsel_model.dateScan = dateScan
+                    status_parsel_model.recipientAddress = recipientAddress
+                    status_parsel_model.recipientFullNameEW = recipientFullNameEW
+                    status_parsel_model.cargoDescriptionString = cargoDescriptionString
+                    status_parsel_model.announcedPrice = announcedPrice
+                    status_parsel_model.actualDeliveryDate = actualDeliveryDate
+                    status_parsel_model.recipientDateTime = recipientDateTime
                     status_parsel_model.save()
                 except:
                     status_parsel_model = StatusNPParselFromDoucmentID(status_code=status_code, status_desc=status,
-                                                                       docNumber=number, for_order_id=order_id)
+                                                                       docNumber=number, for_order_id=order_id,
+                                                                       counterpartyRecipientDescription=counterpartyRecipientDescription,
+                                                                       documentWeight=documentWeight,
+                                                                       factualWeight=factualWeight,
+                                                                       payerType=payerType,
+                                                                       seatsAmount=seatsAmount,
+                                                                       phoneRecipient=phoneRecipient,
+                                                                       scheduledDeliveryDate=scheduledDeliveryDate,
+                                                                       documentCost=documentCost,
+                                                                       paymentMethod=paymentMethod,
+                                                                       warehouseSender=warehouseSender,
+                                                                       dateCreated=dateCreated,
+                                                                       dateScan=dateScan,
+                                                                       actualDeliveryDate=actualDeliveryDate,
+                                                                       recipientDateTime=recipientDateTime,
+                                                                       recipientAddress=recipientAddress,
+                                                                       recipientFullNameEW=recipientFullNameEW,
+                                                                       cargoDescriptionString=cargoDescriptionString,
+                                                                       announcedPrice=announcedPrice)
                     status_parsel_model.save()
 
         parsels_status_data = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.all()

@@ -1407,6 +1407,7 @@ def editWorkerInfo(request, worker_id):
 
         if 'delete' in request.POST:
             wrkr.delete()
+            next = request.POST.get('next')
             return redirect(next)
 
     return render(request, 'supplies/addNewWorkerForClient.html',

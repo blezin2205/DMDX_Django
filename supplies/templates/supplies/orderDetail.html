@@ -27,6 +27,29 @@
         <p class="mb-2"><span>Статус:</span> <span class="waiting">В очікуванні</span></p>
         {%  endif %}
 
+    <div class="container bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
+        <h5>Нова пошта інфо: </h5>
+        {% for document in order.statusnpparselfromdoucmentid_set.all %}
+            <h6><u>Накладна № {{ document.docNumber }}</u></h6>
+            <p class="mb-2"><span>Статус НП:</span> <b style="color: {% if document.status_code == '9' %} green {% elif document.status_code == '2' %} red {% else %} orange {% endif %}">{{ document.status_desc }}</b>  </p>
+            <li>Відправник: {{ document.warehouseSender }}</li>
+            <li>Отримувач: {{ document.counterpartyRecipientDescription }}, {{ document.recipientAddress }}, {{ document.recipientFullNameEW }}</li>
+            <li>Тел.: {{ document.phoneRecipient }} </li>
+            <li>Дата сканування: {{ document.dateScan }} </li>
+            <li>Дата прибуття: {{ document.actualDeliveryDate }} </li>
+            <li>Дата видачі: {{ document.recipientDateTime }} </li>
+
+            <li>Об'ємна вага: {{ document.documentWeight }}</li>
+            <li>Фактична вага: {{ document.factualWeight }}</li>
+            <li>Платник доставки: {{ document.payerType }}</li>
+            <li>Оплата: {{ document.paymentMethod }}</li>
+            <li>Кількість місць: {{ document.seatsAmount }}</li>
+            <li>Вартість доставки: {{ document.documentCost }}</li>
+            <li>Оціночна вартість: {{ document.announcedPrice }}</li>
+            <li>Опис: {{ document.cargoDescriptionString }}</li>
+
+        {% endfor %}
+    </div>
 
 {#        <a href="{% url 'orderDetailPdf' order.id %}">PDF</a>#}
     <a href="{% url 'orderDetailCsv' order.id %}">Export to Excel</a>

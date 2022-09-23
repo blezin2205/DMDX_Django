@@ -295,7 +295,24 @@ class StatusNPParselFromDoucmentID(models.Model):
     status_desc = models.CharField(max_length=200)
     docNumber = models.CharField(max_length=50)
     for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
-
+    counterpartyRecipientDescription = models.CharField(max_length=50, blank=True)
+    documentWeight = models.CharField(max_length=50, blank=True)
+    factualWeight = models.CharField(max_length=50, blank=True)
+    payerType = models.CharField(max_length=50, blank=True)
+    seatsAmount = models.CharField(max_length=50, blank=True)
+    phoneRecipient = models.CharField(max_length=50, blank=True)
+    scheduledDeliveryDate = models.CharField(max_length=50, blank=True)
+    documentCost = models.CharField(max_length=50, blank=True)
+    paymentMethod = models.CharField(max_length=50, blank=True)
+    warehouseSender = models.CharField(max_length=300, blank=True)
+    dateCreated = models.CharField(max_length=50, blank=True)
+    dateScan = models.CharField(max_length=50, blank=True)
+    actualDeliveryDate = models.CharField(max_length=50, blank=True)
+    recipientDateTime = models.CharField(max_length=50, blank=True)
+    recipientAddress = models.CharField(max_length=300, blank=True)
+    recipientFullNameEW = models.CharField(max_length=300, blank=True)
+    cargoDescriptionString = models.CharField(max_length=300, blank=True)
+    announcedPrice = models.CharField(max_length=50, blank=True)
 
 
 class PreOrder(models.Model):
