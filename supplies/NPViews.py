@@ -64,16 +64,16 @@ def create_np_document_for_order(request, order_id):
     placeForm = ClientFormForParcel(instance=for_place)
 
     inputForm.fields['sender_np_place'].queryset = sender_places
-    # placeForm.fields['worker_NP'].queryset = for_place.workers
-    # placeForm.fields['address_NP'].queryset = for_place.delivery_places
+    placeForm.fields['worker_NP'].queryset = for_place.workers
+    placeForm.fields['address_NP'].queryset = for_place.delivery_places
 
     try:
        sendplace = sender_places.get(id=user.np_last_choosed_delivery_place_id)
     except:
        sendplace = None
     inputForm.fields['sender_np_place'].initial = sendplace
-    # placeForm.fields['worker_NP'].initial = for_place.worker_NP
-    # placeForm.fields['address_NP'].initial = for_place.address_NP
+    placeForm.fields['worker_NP'].initial = for_place.worker_NP
+    placeForm.fields['address_NP'].initial = for_place.address_NP
 
 
     if request.method == 'POST':
@@ -97,10 +97,9 @@ def create_np_document_for_order(request, order_id):
             volumeGeneral = float(width / 100) * float(length / 100) * float(height / 100)
 
             sender_place = inputForm.cleaned_data['sender_np_place']
-            # recipient_address = placeForm.cleaned_data['address_NP']
-            # recipient_worker = placeForm.cleaned_data['worker_NP']
-            recipient_address = ""
-            recipient_worker = ""
+            recipient_address = placeForm.cleaned_data['address_NP']
+            recipient_worker = placeForm.cleaned_data['worker_NP']
+
 
 
             params = {

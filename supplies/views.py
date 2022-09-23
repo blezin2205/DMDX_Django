@@ -1423,8 +1423,8 @@ def editClientInfo(request, client_id):
     adressesSet = client.delivery_places.all()
     workersSetExist = workersSet.exists()
     adressSetExist = adressesSet.exists()
-    # form.fields['worker_NP'].queryset = workersSet
-    # form.fields['address_NP'].queryset = adressesSet
+    form.fields['worker_NP'].queryset = workersSet
+    form.fields['address_NP'].queryset = adressesSet
     cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         if 'add_address_NP' in request.POST:
