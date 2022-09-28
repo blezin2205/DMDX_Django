@@ -123,6 +123,7 @@ class SupplySaveFromScanApiModel(models.Model):
     smn = models.CharField(max_length=50, null=True, blank=True)
     supplyLot = models.CharField(max_length=50, null=True, blank=True)
     expiredDate = models.DateField(null=True)
+    count = models.PositiveIntegerField(null=True, blank=True)
 
 
 class Supply(models.Model):

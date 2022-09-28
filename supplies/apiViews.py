@@ -43,15 +43,16 @@ class SuppliesFromScanSaveApiView(APIView):
             smn = serializer.validated_data['smn']
             lot = serializer.validated_data['supplyLot']
             expDate = serializer.validated_data['expiredDate']
+            count = serializer.validated_data['count']
             print(f'SMN -- {smn}')
             try:
                 genSup = GeneralSupply.objects.get(SMN_code=smn)
                 try:
                     sup = genSup.general.all().get(supplyLot=lot, expiredDate=expDate)
-                    sup.count += 1
+                    sup.count += count
                 except:
                     sup = Supply(name=genSup.name, general_supply=genSup, category=genSup.category, ref=genSup.ref,
-                                 supplyLot=lot, count=1, expiredDate=expDate)
+                                 supplyLot=lot, count=count, expiredDate=expDate)
 
                 sup.save()
                 print(genSup)
