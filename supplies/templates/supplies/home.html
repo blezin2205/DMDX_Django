@@ -21,10 +21,11 @@
      <form method="get" class="form-inline justify-content-center">
          <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
              <div class="hstack gap-2">
-                 {{ suppFilter.form.ordering|bootstrap }}
-                 {{ suppFilter.form.category|bootstrap }}
-                 {{ suppFilter.form.ref|bootstrap }}
-                 {{ suppFilter.form.name|bootstrap }}
+                 {{ suppFilter.form.ordering|as_crispy_field }}
+                 {{ suppFilter.form.category|as_crispy_field }}
+                 {{ suppFilter.form.ref|as_crispy_field }}
+                 {{ suppFilter.form.SMN_code|as_crispy_field }}
+                 {{ suppFilter.form.name|as_crispy_field }}
              </div>
              <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
 

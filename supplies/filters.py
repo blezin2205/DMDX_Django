@@ -48,12 +48,13 @@ class SupplyFilter(django_filters.FilterSet):
     )
     name = CharFilter(field_name='name', lookup_expr='icontains', label='Назва товару')
     ref = CharFilter(field_name='ref', lookup_expr='icontains', label='REF')
+    SMN_code = CharFilter(field_name='SMN_code', lookup_expr='icontains', label='SMN')
     ordering = ChoiceFilter(label='Сортування', choices=EXIST_CHOICES.choices, method='filter_by_order')
 
 
     class Meta:
         model = GeneralSupply
-        fields = ['name', 'category', 'ref', 'ordering']
+        fields = ['name', 'category', 'ref', 'SMN_code', 'ordering']
 
     def __init__(self, *args, **kwargs):
         super(SupplyFilter, self).__init__(*args, **kwargs)

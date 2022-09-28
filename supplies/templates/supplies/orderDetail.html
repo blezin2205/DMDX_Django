@@ -10,10 +10,7 @@
   {% csrf_token %}
 <h3>
     <input type="hidden" name="next" value="{{ request.GET.next }}">
-     {% if not order.isComplete and request.user.is_staff %}
-         <small class="text-muted">Для: {{order.place.name}}, {{order.place.city_ref.name}}</small> <button class="btn btn-outline-danger mx-2" type="submit" name="delete"><i class="bi bi-trash"></i></button>
-    {% endif %}
-
+         <small class="text-muted">Для: {{order.place.name}}, {{order.place.city_ref.name}}</small>{% if not order.isComplete and request.user.is_staff %} <button class="btn btn-outline-danger mx-2" type="submit" name="delete"><i class="bi bi-trash"></i></button>{% endif %}
 </h3>
     </form>
 {% if order.comment %}
