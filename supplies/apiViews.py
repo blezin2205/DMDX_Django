@@ -5,7 +5,7 @@ from rest_framework import renderers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from django.db.models import Q
 from django.http import Http404
 from .forms import *
 
@@ -35,6 +35,15 @@ class SuppliesApiView(APIView):
 
 
 class SuppliesFromScanSaveApiView(APIView):
+
+    def get(self, request):
+        searchtext = str(request.data['searchText'])
+        try:
+            genSup = GeneralSupply.objects.filter(general__isnull=False).filter(Q(name__icontains=searchtext) | Q(ref__icontains=searchtext) | Q(SMN_code__icontains=searchtext)).distinct()
+            gensupSerializer = GeneralSupplySerializer(instance=genSup, many=True)
+            return Response(gensupSerializer.data, status=status.HTTP_200_OK)
+        except:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
     def post(self, request):
         serializer = SupplySaveFromScanSerializer(data=request.data)

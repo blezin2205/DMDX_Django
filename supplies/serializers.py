@@ -20,6 +20,7 @@ class GeneralSupplySerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         self.fields['general'] = SupplySerializer(read_only=True, many=True)
+        self.fields['category'] = CategorySerializer(read_only=True)
         return super(GeneralSupplySerializer, self).to_representation(instance)
 
 

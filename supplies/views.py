@@ -1,4 +1,4 @@
-import csv
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse
 from django.urls import reverse
@@ -27,6 +27,7 @@ from django.contrib import messages
 import requests
 import pandas
 import csv
+import pymsteams
 
 
 async def httpRequest(request):
@@ -650,6 +651,27 @@ def cartDetail(request):
                               isComplete=isComplete,
                               comment=comment)
                 order.save()
+
+                detailTable = render(request, 'teams/order_detail_table.html', {})
+                detailTableString = str(detailTable)
+
+                myTeamsMessage = pymsteams.connectorcard("https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/c6694506a800419ab9aa040b09d0a5b1/3894266e-3403-44b0-a8e4-5a568f2b70a4")
+                myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
+
+                myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}')
+                myTeamsMessage.addLinkButton("Excel", f'https://dmdxstorage.herokuapp.com/order-detail-csv/{order.id}')
+                created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
+                if order.comment:
+                    comment = f'*комментарій:*  **{order.comment}**'
+                    myTeamsMessage.text(f'{created}\n\n{comment}')
+                    myTeamsMessage.send()
+                else:
+                    myTeamsMessage.text(f'{created}')
+                    myTeamsMessage.send()
+
+
+
+
 
                 for index, sup in enumerate(supplies):
                     suppInOrder = SupplyInOrder(count_in_order=countList[index],
