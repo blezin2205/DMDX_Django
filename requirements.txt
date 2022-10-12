@@ -1,4 +1,4 @@
-aiogram==2.20
+
 aiohttp==3.8.1
 aiosignal==1.2.0
 arabic-reshaper==2.1.3
