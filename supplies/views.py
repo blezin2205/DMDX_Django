@@ -989,7 +989,7 @@ def orderUpdateStatus(request, order_id):
 @login_required(login_url='login')
 def ordersForClient(request, client_id):
     place = get_object_or_404(Place, pk=client_id)
-    orders = place.order_set.all()
+    orders = place.order_set.all().order_by('-id')
     title = f'Всі замовлення для клієнта: \n {place.name}, {place.city_ref.name}'
     if not orders:
         title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
