@@ -135,6 +135,7 @@ class Supply(models.Model):
     supplyLot = models.CharField(max_length=50, null=True, blank=True)
     count = models.PositiveIntegerField(null=True, blank=True)
     countOnHold = models.PositiveIntegerField(null=True, blank=True, default=0)
+    preCountOnHold = models.PositiveIntegerField(null=True, blank=True, default=0)
     dateCreated = models.DateField(null=True, auto_now_add=True)
     expiredDate = models.DateField(null=True)
 
@@ -149,6 +150,11 @@ class Supply(models.Model):
 
     def isInCart(self):
         return SupplyInOrderInCart.objects.get(supply_id=self.id).exists()
+
+    def getTotalOnHold(self):
+        return self.countOnHold + self.preCountOnHold
+    def availableCount(self):
+        return self.count - self.getTotalOnHold()
 
 
     def __str__(self):

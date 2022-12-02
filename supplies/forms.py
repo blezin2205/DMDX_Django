@@ -199,14 +199,38 @@ class OrderInCartForm(ModelForm):
         self.fields['comment'].label = "Комментарій"
         self.fields['isComplete'].label = "Відправлено"
 
+class PreOrderInClientCartForm(ModelForm):
+    class Meta:
+        model = OrderInCart
+        fields = ['place', 'comment', 'isComplete']
+    def __init__(self, *args, **kwargs):
+        super(PreOrderInClientCartForm, self).__init__(*args, **kwargs)
+        self.fields['place'].label = "Організація"
+        self.fields['comment'].label = "Комментарій"
+        self.fields['isComplete'].label = "Відправлено"
+
+    def clean_place(self):
+        place = self.cleaned_data['place']
+        if place:
+            return place
+        else:
+            raise forms.ValidationError("Виберіть організацію!")
 
 class OrderForm(forms.Form):
     order = forms.ModelChoiceField(queryset=Order.objects.filter(isComplete=False))
 
+class CountInCartFieldForm(forms.Form):
+    count = forms.IntegerField()
+
+    # def clean_count(self):
+    #     count = self.cleaned_data['count']
+    #     if count > count.max_value:
+    #         raise forms.ValidationError("Введена кількість більша за наявну!")
+    #     else:
+    #         return count
 
 class PreOrderForm(forms.Form):
     order = forms.ModelChoiceField(queryset=PreOrder.objects.filter(isComplete=False))
-
 
 class DeviceForm(ModelForm):
     class Meta:

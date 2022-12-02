@@ -262,7 +262,10 @@ def preorder_supp_buttons(request, supp_id):
     suppInCart.save()
 
     countInPreCart = suppInCart.count_in_order
-    response = render(request, 'partials/add_precart_button.html', {'countInPreCart': countInPreCart, 'supp': supply})
+    deltaCountOnHold = supply.count - (supply.countOnHold + supply.preCountOnHold) == 0
+    deltaCountOnCart = supply.count - (supply.countOnHold + supply.preCountOnHold) - countInPreCart == 0
+
+    response = render(request, 'partials/add_precart_button.html', {'countInPreCart': countInPreCart, 'supp': supply, 'deltaCountOnHold': deltaCountOnHold, 'deltaCountOnCart': deltaCountOnCart})
     trigger_client_event(response, 'subscribe_precart', {})
     return response
 
@@ -474,7 +477,13 @@ def cartDetailForClient(request):
 
     isClient = request.user.groups.filter(name='client').exists()
     if isClient:
-        orderForm.fields['place'].queryset = Place.objects.filter(user=request.user)
+        orderForm = PreOrderInClientCartForm(request.POST or None)
+        places = Place.objects.filter(user=request.user)
+        orderForm.fields['place'].queryset = places
+
+        if places.count() == 1:
+            print(places.count())
+            orderForm.fields['place'].initial = places.first()
 
     if request.method == 'POST':
 
@@ -483,9 +492,14 @@ def cartDetailForClient(request):
 
         if orderForm.is_valid():
             place_id = request.POST.get('place_id')
-            place = Place.objects.get(id=place_id)
             comment = orderForm.cleaned_data['comment']
             isComplete = orderForm.cleaned_data['isComplete']
+            if isClient:
+                place = orderForm.cleaned_data['place']
+            else:
+                place_id = request.POST.get('place_id')
+                place = Place.objects.get(id=place_id)
+
             if isComplete:
                 dateSent = timezone.now().date()
             else:
@@ -504,6 +518,8 @@ def cartDetailForClient(request):
                                                    date_created=sup.date_created,
                                                    date_expired=sup.date_expired)
                     suppInOrder.save()
+                    sup.supply.preCountOnHold += int(suppInOrder.count_in_order)
+                    sup.supply.save()
                 elif sup.general_supply:
                     general_sup = sup.general_supply
                     suppInOrder = SupplyInPreorder(count_in_order=countList[index],
@@ -520,7 +536,7 @@ def cartDetailForClient(request):
     return render(request, 'supplies/preorder-cart.html',
                   {'title': 'Корзина передзамовлення', 'order': orderInCart, 'cartCountData': cartCountData,
                    'supplies': supplies, 'cities': cities,
-                   'orderForm': orderForm
+                   'orderForm': orderForm, 'isClient': isClient,
                    })
 
 

@@ -37,11 +37,7 @@
               <div class="col-md-3 col-lg-3 col-xl-2 d-flex">
                   <div class="vstack gap-2">
                   {% if item.supply %}
-                      {% if item.supply.countOnHold %}
-                          <label for="form1">Доступно: {{ item.supply.count|sub:item.supply.countOnHold }}</label>
-                          {% else %}
-                          <label for="form1">Доступно: {{ item.supply.count }}</label>
-                      {% endif %}
+                      <label for="form1">Доступно: {{ item.supply.availableCount }}</label>
                   {% elif item.general_supply %}
                       <label for="form1" style="color: #ab4302">Товар відсутній</label>
                   {% endif %}
@@ -53,9 +49,6 @@
                   </div>
 
               </div>
-
-
-
 
 
 
@@ -80,7 +73,7 @@
 
 
   {% csrf_token %}
-        {% if not placeExist %}
+        {% if not isClient %}
          <select class="form-select mb-3" aria-label="Default select example" name="city" hx-get="{% url 'get_place_for_city_in_cart' %}" hx-trigger="change" hx-target="#places">
   <option selected>Вибрати місто</option>
              {% for city in cities %}
@@ -91,7 +84,11 @@
           {% include 'partials/choose_place_in_cart.html' %}
       </div>
       {% endif %}
-      {{ orderForm|crispy }}
+      {% if isClient %}
+          {{ orderForm.place|as_crispy_field }}
+      {% endif %}
+      {{ orderForm.comment|as_crispy_field }}
+      {{ orderForm.isComplete|as_crispy_field }}
       <input type="hidden" name="next" value="{{ request.GET.next }}">
      <button class="btn btn-outline-primary my-2" type="submit">Зберегти</button>
 

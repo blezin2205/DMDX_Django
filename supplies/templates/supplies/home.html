@@ -85,7 +85,7 @@
     <tr>
 
       <td  style="width: 200px"><div>{% if supp.supplyLot is not none %} {{ supp.supplyLot }} {% endif %}</div></td>
-      <td style="width: 150px"><div><span style="font-weight: 600">{{ supp.count }}</span>  {% if supp.countOnHold %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2">{{ supp.countOnHold }}</span> {% endif %} </div> </td>
+      <td style="width: 150px"><div><span style="font-weight: 600">{{ supp.count }}</span>  {% if supp.countOnHold %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2">{{ supp.countOnHold }}</span> {% endif %} {% if supp.preCountOnHold %}  <span style="background-color: #5bc0de; font-weight: 600" class="px-2 rounded-2">{{ supp.preCountOnHold }}</span> {% endif %} </div> </td>
       <td style="width: 100px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.expiredDate|date:"d.m.Y" }}
  </div>
       </td>
@@ -112,7 +112,7 @@
         {% if supp|in_precart:request.user %}
             <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
         {% else %}
-            <button hx-post="{% url 'update_item_precart' supp.id %}" hx-target="#add_precart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}"  type="submit" ><i class="bi bi-cart-plus"></i></button>
+            <button hx-post="{% url 'update_item_precart' supp.id %}" hx-target="#add_precart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn {% if supp.count|sub:supp.getTotalOnHold == 0 %} disabled {% endif %}" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}"  type="submit" ><i class="bi bi-cart-plus"></i></button>
         {% endif %}
         </div>
 
