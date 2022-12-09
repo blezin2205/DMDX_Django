@@ -15,6 +15,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 import json
 from django.core.paginator import Paginator
+from django.db.models import Count, Sum, F
 
 from io import BytesIO
 from django.http import HttpResponse
@@ -367,6 +368,14 @@ def update_order_count(request):
 
 
 @login_required(login_url='login')
+def orderTypeDescriptionField(request):
+    orderType = request.POST.get('orderType')
+    isAgreement = orderType == 'Agreement'
+    return render(request, 'partials/orderTypeDescriptionField.html', {'isAgreement': isAgreement})
+
+
+
+@login_required(login_url='login')
 def updateCartItem(request):
     data = json.loads(request.body)
     prodId = data['productId']
@@ -491,43 +500,79 @@ def cartDetailForClient(request):
         countListId = request.POST.getlist('count_list_id')
 
         if orderForm.is_valid():
-            place_id = request.POST.get('place_id')
             comment = orderForm.cleaned_data['comment']
             isComplete = orderForm.cleaned_data['isComplete']
+            orderType = 'Preorder'
             if isClient:
                 place = orderForm.cleaned_data['place']
             else:
                 place_id = request.POST.get('place_id')
                 place = Place.objects.get(id=place_id)
+                orderType = request.POST.get('orderType')
 
-            if isComplete:
-                dateSent = timezone.now().date()
+
+            if orderType == 'Agreement':
+                agreement_description = request.POST.get('agreement_description')
+                if isComplete:
+                    dateSent = timezone.now().date()
+                else:
+                    dateSent = None
+                agreement = Agreement(userCreated=orderInCart.userCreated, description=agreement_description, for_place=place, isComplete=isComplete, comment=comment)
+                agreement.save()
+
+                for index, sup in enumerate(supplies):
+                    if sup.supply:
+                        general_sup = sup.supply.general_supply
+                        suppInOrder = SupplyInAgreement(count_in_agreement=countList[index],
+                                                       generalSupply=sup.supply.general_supply,
+                                                       supply=sup.supply,
+                                                       supply_for_agreement=agreement, lot=sup.lot,
+                                                       date_created=sup.date_created,
+                                                       date_expired=sup.date_expired)
+                        suppInOrder.save()
+                        sup.supply.preCountOnHold += int(suppInOrder.count_in_agreement)
+                        sup.supply.save()
+                    elif sup.general_supply:
+                        general_sup = sup.general_supply
+                        suppInOrder = SupplyInAgreement(count_in_agreement=countList[index],
+                                                       generalSupply=general_sup,
+                                                       supply_for_agreement=agreement, lot=sup.lot,
+                                                       date_created=sup.date_created,
+                                                       date_expired=sup.date_expired)
+                        suppInOrder.save()
             else:
-                dateSent = None
-            order = PreOrder(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent, isComplete=isComplete,
-                             comment=comment)
-            order.save()
+                if isComplete:
+                    dateSent = timezone.now().date()
+                else:
+                    dateSent = None
+                order = PreOrder(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent,
+                                 isComplete=isComplete,
+                                 comment=comment)
+                order.save()
 
-            for index, sup in enumerate(supplies):
-                if sup.supply:
-                    general_sup = sup.supply.general_supply
-                    suppInOrder = SupplyInPreorder(count_in_order=countList[index],
-                                                   generalSupply=sup.supply.general_supply,
-                                                   supply=sup.supply,
-                                                   supply_for_order=order, lot=sup.lot,
-                                                   date_created=sup.date_created,
-                                                   date_expired=sup.date_expired)
-                    suppInOrder.save()
-                    sup.supply.preCountOnHold += int(suppInOrder.count_in_order)
-                    sup.supply.save()
-                elif sup.general_supply:
-                    general_sup = sup.general_supply
-                    suppInOrder = SupplyInPreorder(count_in_order=countList[index],
-                                                   generalSupply=general_sup,
-                                                   supply_for_order=order, lot=sup.lot,
-                                                   date_created=sup.date_created,
-                                                   date_expired=sup.date_expired)
-                    suppInOrder.save()
+                for index, sup in enumerate(supplies):
+                    if sup.supply:
+                        general_sup = sup.supply.general_supply
+                        suppInOrder = SupplyInPreorder(count_in_order=countList[index],
+                                                       generalSupply=sup.supply.general_supply,
+                                                       supply=sup.supply,
+                                                       supply_for_order=order, lot=sup.lot,
+                                                       date_created=sup.date_created,
+                                                       date_expired=sup.date_expired)
+                        suppInOrder.save()
+                        sup.supply.preCountOnHold += int(suppInOrder.count_in_order)
+                        sup.supply.save()
+                    elif sup.general_supply:
+                        general_sup = sup.general_supply
+                        suppInOrder = SupplyInPreorder(count_in_order=countList[index],
+                                                       generalSupply=general_sup,
+                                                       supply_for_order=order, lot=sup.lot,
+                                                       date_created=sup.date_created,
+                                                       date_expired=sup.date_expired)
+                        suppInOrder.save()
+
+
+
 
         orderInCart.delete()
 
@@ -638,7 +683,17 @@ def get_place_for_city_in_cart(request):
     except:
         places = None
 
-    return render(request, 'partials/choose_place_in_cart.html', {'places': places, 'cityChoosed': places != None})
+    return render(request, 'partials/choose_place_in_cart.html', {'places': places, 'cityChoosed': places != None, 'placeChoosed': False})
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def get_agreement_for_place_for_city_in_cart(request):
+    place_id = request.GET.get('place_id')
+    place = Place.objects.get(pk=place_id)
+    agreements = place.agreement_set.filter(isComplete=False)
+
+    return render(request, 'partials/choose_agreement_forplace_incart.html', {'agreements': agreements, 'placeChoosed': agreements.exists()})
 
 
 @login_required(login_url='login')
@@ -656,16 +711,21 @@ def cartDetail(request):
 
             if orderForm.is_valid():
                 place_id = request.POST.get('place_id')
+                agreement_id = request.POST.get('agreement_id')
                 place = Place.objects.get(id=place_id)
                 comment = orderForm.cleaned_data['comment']
                 isComplete = orderForm.cleaned_data['isComplete']
+                agreement = None
+                if agreement_id:
+                    agreement = Agreement.objects.get(pk=agreement_id)
+
                 if isComplete:
                     dateSent = timezone.now().date()
                 else:
                     dateSent = None
                 order = Order(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent,
                               isComplete=isComplete,
-                              comment=comment)
+                              comment=comment, for_agreement=agreement)
                 order.save()
 
                 detailTable = render(request, 'teams/order_detail_table.html', {})
@@ -680,10 +740,10 @@ def cartDetail(request):
                 if order.comment:
                     comment = f'*комментарій:*  **{order.comment}**'
                     myTeamsMessage.text(f'{created}\n\n{comment}')
-                    myTeamsMessage.send()
+                    # myTeamsMessage.send()
                 else:
                     myTeamsMessage.text(f'{created}')
-                    myTeamsMessage.send()
+                    # myTeamsMessage.send()
 
 
 
@@ -721,6 +781,19 @@ def cartDetail(request):
                             supply.save(update_fields=['countOnHold'])
                             supply.countOnHold = countOnHold + countInOrder
                             supply.save(update_fields=['countOnHold'])
+
+                if agreement_id:
+                    agreement = Agreement.objects.get(pk=agreement_id)
+                    sups_in_agreement = agreement.supplyinagreement_set.all()
+                    allDelivered = all(sup.supIsFullyDelivered() for sup in sups_in_agreement)
+                    print(f'ALL DELIVERED IN AGREEMENT ---------------------- {allDelivered}')
+                    if allDelivered:
+                        dateSent = timezone.now().date()
+                        agreement.isComplete = True
+                        agreement.dateSent = dateSent
+                        agreement.save()
+                        order.for_agreement = agreement
+                        order.save(update_fields=['for_agreement'])
 
             orderInCart.delete()
             return redirect('/orders')
@@ -1011,6 +1084,17 @@ def ordersForClient(request, client_id):
         title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
 
     return render(request, 'supplies/orders_new.html', {'title': title, 'orders': orders, 'isClients': True})
+
+
+@login_required(login_url='login')
+def agreementsForClient(request, client_id):
+    place = get_object_or_404(Place, pk=client_id)
+    orders = place.agreement_set.all().order_by('-id')
+    title = f'Всі договори для клієнта: \n {place.name}, {place.city_ref.name}'
+    if not orders:
+        title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає договорів'
+
+    return render(request, 'supplies/agreements_list.html', {'title': title, 'orders': orders, 'isClients': True})
 
 
 @login_required(login_url='login')
@@ -2009,6 +2093,67 @@ def orderDetail(request, order_id):
     return render(request, 'supplies/orderDetail.html',
                   {'title': f'Замовлення № {order_id}', 'order': order, 'supplies': supplies_in_order,
                    'cartCountData': cartCountData, 'isOrders': True})
+
+
+@login_required(login_url='login')
+def get_agreement_detail_for_cart(request):
+    agr_id = request.GET.get('agreement_id')
+    try:
+        agreement = Agreement.objects.get(pk=agr_id)
+        supplies_in_agreement = agreement.supplyinagreement_set.all().order_by('id')
+    except:
+        agreement = None
+        supplies_in_agreement = None
+
+
+    return render(request, 'partials/get_agreement_detail_for_cart.html',
+                  {'agreement': agreement, 'supplies': supplies_in_agreement, 'agreement_is_exist': agreement != None })
+
+
+
+
+@login_required(login_url='login')
+def agreementDetail(request, agreement_id):
+    agreement = get_object_or_404(Agreement, pk=agreement_id)
+    supplies_in_agreement = agreement.supplyinagreement_set.all().order_by('id')
+    orders_in_agreement = agreement.order_set.all().order_by('-id')
+    cartCountData = countCartItemsHelper(request)
+    next = request.POST.get('next')
+
+    # if request.method == 'POST':
+    #
+    #     if 'delete' in request.POST:
+    #         next = request.POST.get('next')
+    #         if not order.isComplete:
+    #             supps = order.supplyinorder_set.all()
+    #             for el in supps:
+    #                 if el.hasSupply():
+    #                     countInOrder = el.count_in_order
+    #                     supp = el.supply
+    #                     supp.countOnHold -= countInOrder
+    #                     supp.save(update_fields=['countOnHold'])
+    #
+    #         if order.npdeliverycreateddetailinfo_set.exists():
+    #             docrefs = order.npdeliverycreateddetailinfo_set.values_list('ref')
+    #             for ref in docrefs:
+    #                 params = {
+    #                     "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+    #                     "modelName": "InternetDocument",
+    #                     "calledMethod": "delete",
+    #                     "methodProperties": {
+    #                         "DocumentRefs": ref
+    #                     }
+    #                 }
+    #                 data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+    #                 print(data)
+    #
+    #         order.delete()
+    #         return HttpResponseRedirect(next)
+
+    return render(request, 'supplies/agreementDetail.html',
+                  {'title': f'Договір № {agreement.description}', 'agreement': agreement, 'supplies': supplies_in_agreement, 'orders': orders_in_agreement,
+                   'cartCountData': cartCountData, 'isOrders': True})
+
 
 
 @login_required(login_url='login')

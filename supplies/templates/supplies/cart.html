@@ -90,6 +90,10 @@
       <div id="places">
           {% include 'partials/choose_place_in_cart.html' %}
       </div>
+
+{#          <div id="agreements">#}
+{#          {% include 'partials/choose_agreement_forplace_incart.html' %}#}
+{#      </div>#}
       {% endif %}
       {{ orderForm|crispy }}
 <button class="btn btn-outline-primary my-2" type="submit" name="save">Зберегти</button>

@@ -1,0 +1,15 @@
+{% load bootstrap %}
+{% if placeChoosed %}
+<select class="form-select my-3" aria-label="Default select example" name="agreement_id" hx-get="{% url 'get_agreement_detail_for_cart' %}" hx-trigger="change"
+        hx-target="#agreement_detail_for_cart">
+  <option selected>Вибрати договір</option>
+             {% for agreement in agreements %}
+                 <option value="{{agreement.id}}">№{{ agreement.description }}</option>
+             {% endfor %}
+</select>
+
+        <div id="agreement_detail_for_cart">
+          {% include 'partials/get_agreement_detail_for_cart.html' %}
+      </div>
+
+{% endif %}

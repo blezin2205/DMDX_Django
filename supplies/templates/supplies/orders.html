@@ -18,8 +18,11 @@
  <a href="{% url 'orderDetail' order.id %}?next={{ request.get_full_path }}" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" style="border-radius: 1rem;">
     <div class="d-flex gap-2 w-100 justify-content-between">
       <div>
-        <h6 class="mb-1">Заказ №: {{order.id}}</h6>
+        <h6 class="mb-1">Замовлення №: {{order.id}}</h6>
         <p class="mb-1">Для: {{order.place.name}}, {{order.place.city_ref.name}}</p>
+      {% if order.for_agreement %}
+          <p class="mb-1">Договір: №{{order.for_agreement.description}}</p>
+      {% endif %}
 
       {% if order.npdeliverycreateddetailinfo_set.exists %}
           <div id="np_delivery_detail_info_for_order" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">

@@ -30,9 +30,9 @@
   </div>
       <div class="card-body">
 
-        {% if client.servicenote_set.count > 0 %}
-            <a href="{% url 'serviceNotesForClient' client.id %}" class="icon-link me-3">
-          Cервісні записи ({{ client.servicenote_set.count }})
+        {% if client.agreement_set.count > 0 %}
+            <a href="{% url 'agreementsForClient' client.id %}" class="icon-link me-3">
+          Договори ({{ client.agreement_set.count }})
         </a>
         {% endif %}
 
@@ -41,6 +41,12 @@
           Замовлення ({{ client.order_set.count }})
         </a>
             {% endif %}
+
+      {% if client.servicenote_set.count > 0 %}
+            <a href="{% url 'serviceNotesForClient' client.id %}" class="icon-link me-3">
+          Cервісні записи ({{ client.servicenote_set.count }})
+        </a>
+        {% endif %}
 
       {% if client.device_set.count > 0 %}
                 <a href="{% url 'devicesForClient' client.id %}">

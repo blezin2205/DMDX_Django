@@ -8,6 +8,9 @@ urlpatterns = [
     path('cart/', views.cartDetail, name='cart'),
     path('preorders-cart/', views.cartDetailForClient, name='precart'),
     path('get_place_for_city_in_cart/', views.get_place_for_city_in_cart, name='get_place_for_city_in_cart'),
+    path('get_agreement_for_place_for_city_in_cart/', views.get_agreement_for_place_for_city_in_cart, name='get_agreement_for_place_for_city_in_cart'),
+    path('get_agreement_detail_for_cart/', views.get_agreement_detail_for_cart, name='get_agreement_detail_for_cart'),
+
 
      path('update-cart-item-count/', views.updateCartItemCount, name='cart-count'),
      path('update-precart-item-count/', views.updatePreCartItemCount, name='precart-count'),
@@ -25,6 +28,8 @@ urlpatterns = [
     path('add_preorder_general_to_preorder/<int:prodId>', views.add_preorder_general_to_preorder, name='add_preorder_general_to_preorder'),
     path('cart/update_item/', views.updateCartItem, name='update_item_detail'),
     path('preorders-cart/update_item/', views.updateCartItem, name='update_item_detail'),
+    path('preorders-cart/orderTypeDescriptionField/', views.orderTypeDescriptionField, name='orderTypeDescriptionField'),
+
     path('delete_supply/<int:suppId>', views.deleteSupply, name='delete_supply'),
     path('delete_supply_in_order/', views.deleteSupplyInOrder, name='delete_supply_in_order'),
 
@@ -55,6 +60,7 @@ urlpatterns = [
 
     path('clientsInfo', views.clientsInfo, name='clientsInfo'),
     path('clientsInfo/<int:client_id>/orders', views.ordersForClient, name='ordersForClient'),
+    path('clientsInfo/<int:client_id>/agreements', views.agreementsForClient, name='agreementsForClient'),
     path('clientsInfo/<int:client_id>/devices', views.devicesForClient, name='devicesForClient'),
     path('clientsInfo/<int:place_id>/add-new-worker', views.addNewWorkerForClient, name='newWorkerForPlace'),
     path('clientsInfo/<int:client_id>/serviceNotes', views.serviceNotesForClient, name='serviceNotesForClient'),
@@ -71,6 +77,8 @@ urlpatterns = [
     path('serviceNotes/update/<int:note_id>', views.updateNote, name='updateNote'),
 
     path('orders/<int:order_id>', views.orderDetail, name='orderDetail'),
+    path('agreements/<int:agreement_id>', views.agreementDetail, name='agreementDetail'),
+
     path('preorders/<int:order_id>', views.preorderDetail, name='preorderDetail'),
     path('preorders/<int:order_id>/generate-order', views.preorderDetail_generateOrder, name='preorderDetail-generate-order'),
 

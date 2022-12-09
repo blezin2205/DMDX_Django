@@ -9,6 +9,7 @@ import barcode
 from barcode.writer import ImageWriter
 from io import BytesIO
 from django.core.files import File
+from django.db.models import Count, Sum
 
 
 class CustomUser(AbstractUser):
@@ -251,6 +252,23 @@ class ServiceNote(models.Model):
         verbose_name_plural = 'Сервісні замітки'
 
 
+class Agreement(models.Model):
+    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+    description = models.CharField(max_length=300, null=True, blank=True)
+    for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
+    dateCreated = models.DateField(auto_now_add=True, null=True)
+    dateSent = models.DateField(null=True, blank=True)
+    isComplete = models.BooleanField(default=False)
+    comment = models.CharField(max_length=300, null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.id}, {self.description}'
+
+    class Meta:
+        verbose_name = 'Договір'
+        verbose_name_plural = 'Договори'
+
+
 class Order(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
@@ -259,6 +277,7 @@ class Order(models.Model):
     isComplete = models.BooleanField(default=False)
     comment = models.CharField(max_length=300, null=True, blank=True)
     documentsId = ArrayField(models.CharField(max_length=200), blank=True, null=True)
+    for_agreement = models.ForeignKey(Agreement, on_delete=models.SET_NULL, null=True)
 
 
     def get_np_DocumetsIdList(self):
@@ -337,6 +356,53 @@ class PreOrder(models.Model):
     class Meta:
         verbose_name = 'Передзамовлення'
         verbose_name_plural = 'Передзамовлення'
+
+
+class SupplyInAgreement(models.Model):
+    count_in_agreement = models.PositiveIntegerField(null=True, blank=True)
+    generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.SET_NULL, null=True, blank=True)
+    supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True)
+    supply_for_agreement = models.ForeignKey(Agreement, on_delete=models.CASCADE, null=True)
+    lot = models.CharField(max_length=20, null=True, blank=True)
+    date_expired = models.DateField(null=True)
+    date_created = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        name = None
+        if self.generalSupply:
+            name = self.generalSupply.name
+        elif self.supply:
+            name = self.supply.general_supply.name
+
+        return f'ID Agreement: {self.supply_for_agreement.id} | name: {name}'
+
+    class Meta:
+        verbose_name = 'Товар в Договорі'
+        verbose_name_plural = 'Товари в Договорах'
+
+    def getAlreadyDeliveredCount(self):
+        count = 0
+        orders = self.supply_for_agreement.order_set.all()
+        for order in orders:
+            print(order.id)
+            gen_sup = order.supplyinorder_set.filter(generalSupply=self.generalSupply)
+            print(gen_sup)
+            counties = gen_sup.aggregate(total_count=Sum('count_in_order'))
+            try:
+                total_count = counties["total_count"]
+                print(f'Total count --------------  {total_count}')
+                count += total_count
+            except:
+                print(f'Total count --------------  {count}')
+
+        return count
+
+    def supIsFullyDelivered(self):
+        print(f'getAlreadyDeliveredCount  --- {self.getAlreadyDeliveredCount()}')
+        print(f'count_in_agreement -----  {self.count_in_agreement}')
+        return self.getAlreadyDeliveredCount() == self.count_in_agreement
+
+
 
 
 class SupplyInPreorder(models.Model):

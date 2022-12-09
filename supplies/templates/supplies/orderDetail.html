@@ -18,6 +18,12 @@
   <small class="text-muted">Комментарій: {{order.comment}}</small>
 </h4>
 {% endif %}
+    {% if order.for_agreement %}
+<h4>
+    <a href="{% url 'agreementDetail' order.for_agreement.id %}?next={{ request.get_full_path }}">Договір: № {{order.for_agreement.description}}</a>
+</h4>
+{% endif %}
+
 <h5>
   <small class="text-muted">Cтворив: {{order.userCreated.last_name}}</small>
 </h5>
