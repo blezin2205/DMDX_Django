@@ -37,9 +37,9 @@
         <th scope="col">Категорія</th>
         <th scope="col">REF</th>
         <th scope="col">SMN</th>
-        <th scope="col">LOT</th>
-        <th scope="col">Договір/Відвантажено</th>
-        <th scope="col">Термін</th>
+        <th scope="col">Борг</th>
+        <th scope="col">Відвантажено</th>
+        <th scope="col">Договір</th>
 {#        {% if not order.isComplete and request.user.is_staff %}#}
 {#        <th scope="col">Action</th>#}
 {#         {% endif %}#}
@@ -58,20 +58,20 @@
                 {% endif %}
       </td>
      <td style="min-width: 100px">{% if el.generalSupply.SMN_code is not none %}{{ el.generalSupply.SMN_code }}{% endif %}</td>
-         <td style="min-width: 100px">{% if el.lot is not none %}{{ el.lot }}{% endif %}</td>
+         <td> {{ el.count_in_agreement|sub:delivered_count }} </td>
             <td>
                 <div class="hstack gap-2 justify-content-center">
 {#                    {% if not order.isComplete and request.user.is_staff %}#}
 {#                    <button data-product="{{ el.id }}" data-action="remove" class="btn btn-lg update-order-count text-primary" type="submit"><i class="bi bi-dash"></i></button>#}
 {#                    {% endif %}#}
-                    {{ el.count_in_agreement }} / {{ delivered_count }}
+                   {{ delivered_count }}
 {#                {% if not order.isComplete and request.user.is_staff %}#}
 {#                    <button data-product="{{ el.id }}" data-action="add" class="btn btn-lg update-order-count text-primary {% if el.count_in_order|sub:el.supply.count|sub:el.supply.countOnHold == 0 %} disabled {% endif %}" type="submit"><i class="bi bi-plus"></i></button>#}
 {#                {% endif %}#}
 
                 </div>
             </td>
-            <td style="min-width: 100px">{{ el.date_expired|date:"d.m.Y" }}</td>
+            <td> {{ el.count_in_agreement }} </td>
 {#     {% if not order.isComplete and request.user.is_staff %}#}
 {#     <td><button data-product={{ el.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-suppinorder-button"><i class="bi bi-trash"></i></button></td>#}
 {#     {% endif %}#}
@@ -81,6 +81,9 @@
   </tbody>
 </table>
 </div>
+    <div class="text-center my-3">
+    <h5><u>Замовлення, що були зроблені за цим договором</u></h5>
+    </div>
     <div class="list-group list-group-radio d-grid gap-2 border-0 w-auto" id="order_delete_cell">
         {% include 'partials/order_delete_cell.html' %}
 </div>

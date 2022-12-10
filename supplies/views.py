@@ -730,9 +730,12 @@ def cartDetail(request):
 
                 detailTable = render(request, 'teams/order_detail_table.html', {})
                 detailTableString = str(detailTable)
+                agreementString = ''
+                if order.for_agreement:
+                    agreementString = f', \n\nДоговір № {order.for_agreement.description}'
 
                 myTeamsMessage = pymsteams.connectorcard("https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/c6694506a800419ab9aa040b09d0a5b1/3894266e-3403-44b0-a8e4-5a568f2b70a4")
-                myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
+                myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}{agreementString}')
 
                 myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}')
                 myTeamsMessage.addLinkButton("Excel", f'https://dmdxstorage.herokuapp.com/order-detail-csv/{order.id}')
@@ -740,10 +743,10 @@ def cartDetail(request):
                 if order.comment:
                     comment = f'*комментарій:*  **{order.comment}**'
                     myTeamsMessage.text(f'{created}\n\n{comment}')
-                    # myTeamsMessage.send()
+                    myTeamsMessage.send()
                 else:
                     myTeamsMessage.text(f'{created}')
-                    # myTeamsMessage.send()
+                    myTeamsMessage.send()
 
 
 
@@ -928,6 +931,19 @@ def order_delete(request, order_id):
     next = request.GET.get('next')
     return HttpResponseRedirect(next)
 
+
+@login_required(login_url='login')
+def agreements(request):
+    cartCountData = countCartItemsHelper(request)
+    orders = Agreement.objects.all().order_by('-id')
+    totalCount = orders.count()
+
+    title = f'Всі договори. ({totalCount} шт.)'
+
+    return render(request, 'supplies/agreements.html',
+                  {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True,
+                   'totalCount': totalCount,
+                   'isAgreementsTab': True})
 
 
 @login_required(login_url='login')

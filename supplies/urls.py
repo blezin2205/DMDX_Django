@@ -55,6 +55,8 @@ urlpatterns = [
     path('logout', views.logoutUser, name='logout'),
 
     path('orders', views.orders, name='orders'),
+    path('agreements', views.agreements, name='agreements'),
+
     path('preorders', views.preorders, name='preorders'),
     path('orders_update_status/<int:order_id>', views.orderUpdateStatus, name='orders_update_status'),
 
