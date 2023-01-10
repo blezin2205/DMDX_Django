@@ -16,7 +16,6 @@ from django.http import JsonResponse
 import json
 from django.core.paginator import Paginator
 from django.db.models import Count, Sum, F
-from googletrans import Translator
 from io import BytesIO
 from django.http import HttpResponse
 from django.template.loader import get_template
