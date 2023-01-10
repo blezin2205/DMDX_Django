@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<form method="POST" action="">
+<form method="POST" action="" enctype="multipart/form-data">
   {% csrf_token %}
 <div class="w-50">
     {{ form|crispy }}

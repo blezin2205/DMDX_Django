@@ -108,7 +108,7 @@ class DeviceFilter(django_filters.FilterSet):
     serial_number = CharFilter(field_name='serial_number', lookup_expr='icontains', label='Серійний номер')
     class Meta:
         model = Device
-        fields = '__all__'
+        exclude = ['image']
 
     def __init__(self, *args, **kwargs):
         super(DeviceFilter, self).__init__(*args, **kwargs)

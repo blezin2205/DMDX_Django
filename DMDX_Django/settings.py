@@ -14,7 +14,8 @@ from pathlib import Path
 import  os
 
 import dj_database_url
-
+import cloudinary_storage
+import cloudinary
 
 # Heroku: Update database configuration from $DATABASE_URL.
 
@@ -56,7 +57,9 @@ INSTALLED_APPS = [
     'wkhtmltopdf',
     'crispy_forms',
     'crispy_bootstrap5',
-    'pg_copy'
+    'pg_copy',
+    # 'cloudinary_storage',
+    'cloudinary',
 ]
 
 MIDDLEWARE = [
@@ -69,6 +72,21 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# CLOUDINARY_STORAGE = {
+#     'CLOUD_NAME': 'hmflrailz',
+#     'API_KEY': '557949198628418',
+#     'API_SECRET': 'so7e0wlsMQUWafO-Yv1QeNcJGkg'
+# }
+
+cloudinary.config(
+  cloud_name = "hmflrailz",
+  api_key = "557949198628418",
+  api_secret = "so7e0wlsMQUWafO-Yv1QeNcJGkg",
+  secure = True
+)
+
+# DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 WKHTMLTOPDF_CMD = '/usr/local/bin/wkhtmltopdf'
 WKHTMLTOPDF_CMD_OPTIONS = {

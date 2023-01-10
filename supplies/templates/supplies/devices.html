@@ -1,6 +1,8 @@
 {% extends 'supplies/base.html' %}
 {% load static %}
 {% load bootstrap %}
+{% load cloudinary %}
+
 
     {% block title %}
 {{ title }}
@@ -41,7 +43,38 @@
   {% for device in devices %}
     <tr>
       <th scope="row">{{ device.id }}</th>
-      <td>{{ device.general_device.name }}</td>
+      <td>
+
+          {% if device.image %}
+              <a href="#" class="pop">
+              <div datasrc="{{ device.image.url }}">{{ device.general_device.name }}</div>
+</a>
+
+              <div class="modal fade" id="imagemodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+{#    <div class="modal-content">#}
+      <div class="modal-body">
+        <img src="" class="imagepreview" style="width: 100%;" >
+      </div>
+{#    </div>#}
+  </div>
+</div>
+
+              <script>
+              $(function() {
+		$('.pop').on('click', function() {
+			$('.imagepreview').attr('src', $(this).find('div').attr('datasrc'));
+			$('#imagemodal').modal('show');
+		});
+});
+              </script>
+    {% else %}
+         {{ device.general_device.name }}
+
+    {% endif %}
+
+
+      </td>
       <td>{% if device.serial_number  %}{{ device.serial_number }}{% endif %}</td>
          {% if isDevices %}
             <td>{{ device.in_place.name }}, {{ device.in_place.city_ref.name }}</td>

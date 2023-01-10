@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect, HttpResponse, FileResponse
 from django.urls import reverse
 from django.db.models import Prefetch, prefetch_related_objects
 from .decorators import unauthenticated_user, allowed_users
+from .google_translation import translate_text
 from .models import *
 from .serializers import *
 from datetime import date
@@ -16,7 +17,7 @@ from django.http import JsonResponse
 import json
 from django.core.paginator import Paginator
 from django.db.models import Count, Sum, F
-
+from googletrans import Translator
 from io import BytesIO
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -711,11 +712,17 @@ def cartDetail(request):
 
             if orderForm.is_valid():
                 place_id = request.POST.get('place_id')
-                agreement_id = request.POST.get('agreement_id')
+
                 place = Place.objects.get(id=place_id)
                 comment = orderForm.cleaned_data['comment']
                 isComplete = orderForm.cleaned_data['isComplete']
                 agreement = None
+
+                try:
+                    agreement_id = int(request.POST.get('agreement_id'))
+                except:
+                    agreement_id = None
+
                 if agreement_id:
                     agreement = Agreement.objects.get(pk=agreement_id)
 
@@ -732,21 +739,21 @@ def cartDetail(request):
                 detailTableString = str(detailTable)
                 agreementString = ''
                 if order.for_agreement:
-                    agreementString = f', \n\nДоговір № {order.for_agreement.description}'
+                    agreementString = f'Договір № {order.for_agreement.description}'
 
                 myTeamsMessage = pymsteams.connectorcard("https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/c6694506a800419ab9aa040b09d0a5b1/3894266e-3403-44b0-a8e4-5a568f2b70a4")
-                myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}{agreementString}')
+                myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
 
                 myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}')
                 myTeamsMessage.addLinkButton("Excel", f'https://dmdxstorage.herokuapp.com/order-detail-csv/{order.id}')
                 created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
-                if order.comment:
-                    comment = f'*комментарій:*  **{order.comment}**'
-                    myTeamsMessage.text(f'{created}\n\n{comment}')
-                    myTeamsMessage.send()
-                else:
-                    myTeamsMessage.text(f'{created}')
-                    myTeamsMessage.send()
+                # if order.comment:
+                #     comment = f'*комментарій:*  **{order.comment}**'
+                #     myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
+                #     myTeamsMessage.send()
+                # else:
+                #     myTeamsMessage.text(f'{agreementString}\n\n{created}')
+                #     myTeamsMessage.send()
 
 
 
@@ -1009,6 +1016,7 @@ def orders(request):
                 date_string = dt_obj.strftime('%d.%m.%Y %H:%M')
                 regInfoModel = RegisterNPInfo(barcode_string=register_number, register_url=np_link_print, date=date_string, documentsId=in_list, for_orders=for_orders_name_list)
                 regInfoModel.save()
+
                 return redirect(np_link_print)
 
             if data["errors"]:
@@ -1478,16 +1486,14 @@ def addNewClient(request):
 @login_required(login_url='login')
 def addNewDeviceForClient(request, client_id):
     client = Place.objects.get(id=client_id)
-    form = DeviceForm(request.POST or None)
+    form = DeviceForm(request.POST or None, request.FILES or None)
     cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         if form.is_valid():
-            device = Device(general_device=form.cleaned_data['general_device'],
-                            serial_number=form.cleaned_data['serial_number'],
-                            date_installed=form.cleaned_data['date_installed'],
-                            in_city=client.city_ref,
-                            in_place=client)
-            device.save()
+            form_to_save = form.save(commit=False)  # gives you the instance without saving it
+            form_to_save.in_city = client.city_ref
+            form_to_save.in_place = client
+            form_to_save.save()
             return redirect('/clientsInfo')
 
     return render(request, 'supplies/createSupply.html',
@@ -2012,6 +2018,7 @@ def preorder_render_to_xls(request, order_id):
 
 @login_required(login_url='login')
 def devices_render_to_xls(request):
+    translator = Translator()
     devices = Device.objects.all()
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -2041,7 +2048,7 @@ def devices_render_to_xls(request):
     for row in devices:
         row_num += 1
         name = row.general_device.name
-        customer = row.in_place.name
+        customer = translate_text(row.in_place.name, target_language='en')
         customer_city = row.in_place.city
         serial_number = ''
         if row.serial_number:

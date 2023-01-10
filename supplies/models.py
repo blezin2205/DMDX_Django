@@ -10,6 +10,9 @@ from barcode.writer import ImageWriter
 from io import BytesIO
 from django.core.files import File
 from django.db.models import Count, Sum
+from cloudinary import uploader
+from cloudinary.models import CloudinaryField
+import cloudinary
 
 
 class CustomUser(AbstractUser):
@@ -43,6 +46,7 @@ class RegisterNPInfo(models.Model):
     barcode_string = models.CharField(max_length=200)
     register_url = models.CharField(max_length=800, blank=True)
     barcode = models.ImageField(upload_to='images/', blank=True)
+    barcode_url = models.CharField(max_length=800, blank=True, null=True)
     date = models.CharField(max_length=200)
     register_ref = models.CharField(max_length=100, blank=True)
     documentsId = ArrayField(models.CharField(max_length=400), blank=True, null=True)
@@ -57,6 +61,9 @@ class RegisterNPInfo(models.Model):
         buffer = BytesIO()
         ean.write(buffer)
         self.barcode.save(f'{self.barcode_string}.png', File(buffer), save=False)
+        uploader.upload(self.barcode, public_id=f'{self.barcode_string}', unique_filename=False, overwrite=True, folder='register_np_barcodes')
+        srcURL = cloudinary.CloudinaryImage(f'register_np_barcodes/{self.barcode_string}').build_url()
+        self.barcode_url = srcURL
         return super().save(*args, **kwargs)
 
 
@@ -563,10 +570,11 @@ class Device(models.Model):
     serial_number = models.CharField(max_length=50, null=True, blank=True)
     in_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     date_installed = models.DateField(null=True, blank=True)
+    image = CloudinaryField("Image", overwrite=True, resource_type="image", transformation={"quality": "auto:eco"}, format="jpg", null=True, default=None, blank=True, folder='device_media')
     in_city = models.ForeignKey(City, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
-        return f'{self.general_device.name} in {self.in_place.name}, {self.in_place.city_ref.name}'
+        return f'{self.id}'
 
     class Meta:
         verbose_name = 'Прилад'

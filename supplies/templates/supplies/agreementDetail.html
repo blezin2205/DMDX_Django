@@ -81,8 +81,11 @@
   </tbody>
 </table>
 </div>
+
+
+
     <div class="text-center my-3">
-    <h5><u>Замовлення, що були зроблені за цим договором</u></h5>
+    <h5><u>{% if orders %}Замовлення, що були зроблені за цим договором{% else %} За цим договором ще немає замовлень {% endif %}</u></h5>
     </div>
     <div class="list-group list-group-radio d-grid gap-2 border-0 w-auto" id="order_delete_cell">
         {% include 'partials/order_delete_cell.html' %}
