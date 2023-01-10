@@ -14,7 +14,6 @@ from pathlib import Path
 import  os
 
 import dj_database_url
-import cloudinary_storage
 import cloudinary
 
 # Heroku: Update database configuration from $DATABASE_URL.

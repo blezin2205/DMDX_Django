@@ -4,7 +4,6 @@ from django.http import HttpResponseRedirect, HttpResponse, FileResponse
 from django.urls import reverse
 from django.db.models import Prefetch, prefetch_related_objects
 from .decorators import unauthenticated_user, allowed_users
-from .google_translation import translate_text
 from .models import *
 from .serializers import *
 from datetime import date
