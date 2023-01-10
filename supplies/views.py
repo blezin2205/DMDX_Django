@@ -747,13 +747,13 @@ def cartDetail(request):
                 myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}')
                 myTeamsMessage.addLinkButton("Excel", f'https://dmdxstorage.herokuapp.com/order-detail-csv/{order.id}')
                 created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
-                # if order.comment:
-                #     comment = f'*комментарій:*  **{order.comment}**'
-                #     myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
-                #     myTeamsMessage.send()
-                # else:
-                #     myTeamsMessage.text(f'{agreementString}\n\n{created}')
-                #     myTeamsMessage.send()
+                if order.comment:
+                    comment = f'*комментарій:*  **{order.comment}**'
+                    myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
+                    myTeamsMessage.send()
+                else:
+                    myTeamsMessage.text(f'{agreementString}\n\n{created}')
+                    myTeamsMessage.send()
 
 
 
