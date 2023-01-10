@@ -13,8 +13,6 @@ Babel==2.10.1
 binaryornot==0.4.4
 botocore==1.27.66
 Brotli==1.0.9
-CacheControl==0.12.10
-cachetools==5.0.0
 certifi==2021.10.8
 cffi==1.15.0
 chardet==4.0.0
