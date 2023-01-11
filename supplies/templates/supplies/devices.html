@@ -52,18 +52,21 @@
 
               <div class="modal fade" id="imagemodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-{#    <div class="modal-content">#}
+    <div class="modal-content" style="background-color: rgba(255,246,16,0); border-color: rgba(255,246,16,0)">
       <div class="modal-body">
         <img src="" class="imagepreview" style="width: 100%;" >
+         <a class="full_image_view btn btn-primary mt-2" href="" role="button">Full image</a>
       </div>
-{#    </div>#}
+    </div>
   </div>
 </div>
 
               <script>
               $(function() {
 		$('.pop').on('click', function() {
-			$('.imagepreview').attr('src', $(this).find('div').attr('datasrc'));
+            let src = $(this).find('div').attr('datasrc')
+			$('.imagepreview').attr('src', src);
+            $('.full_image_view').attr('href', src);
 			$('#imagemodal').modal('show');
 		});
 });

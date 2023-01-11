@@ -34,6 +34,7 @@ urlpatterns = [
     path('delete_supply_in_order/', views.deleteSupplyInOrder, name='delete_supply_in_order'),
 
     path('allDevices/', views.devicesList, name='allDevices'),
+    path('allDevices/full_image_view_for_device_image/<int:device_id>', views.full_image_view_for_device_image, name='full_image_view_for_device_image'),
     path('allDevices/export-to-xls', views.devices_render_to_xls, name='devices_render_to_xls'),
 
 

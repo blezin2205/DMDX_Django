@@ -135,6 +135,11 @@ def countCartItemsHelper(request):
     return {'cart_items': cart_items, 'precart_items': precart_items, 'orders_incomplete': orders_incomplete,
             'preorders_incomplete': preorders_incomplete}
 
+@login_required(login_url='login')
+def full_image_view_for_device_image(request, device_id):
+    device = Device.objects.get(pk=device_id)
+    return render(request, 'supplies/full_image_view_for_device_image.html', {'device': device})
+
 
 def countOnHoldMake(request):
     supps = Supply.objects.all()
