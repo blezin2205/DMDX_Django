@@ -1355,12 +1355,12 @@ def addSupplyToExistPreOrderGeneral(request, supp_id):
 @allowed_users(allowed_roles=['admin'])
 def updateGeneralSupply(request, supp_id):
     supp = GeneralSupply.objects.get(id=supp_id)
-    form = GeneralSupplyForm(instance=supp)
+    form = NewGeneralSupplyForm(instance=supp)
     cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         next = request.POST.get('next')
         if 'save' in request.POST:
-            form = GeneralSupplyForm(request.POST, instance=supp)
+            form = NewGeneralSupplyForm(request.POST, request.FILES, instance=supp)
             if form.is_valid():
                 # obj = form.save(commit=False)
                 # obj.from_user = User.objects.get(pk=request.user.id)
@@ -1426,7 +1426,7 @@ def addgeneralSupplyOnly(request):
     form = NewGeneralSupplyForm()
     cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
-        form = NewGeneralSupplyForm(request.POST)
+        form = NewGeneralSupplyForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             return redirect('/')

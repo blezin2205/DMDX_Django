@@ -118,6 +118,8 @@ class GeneralSupply(models.Model):
     SMN_code = models.CharField(max_length=50, null=True, blank=True)
     package_and_tests = models.CharField(max_length=50, null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    image = CloudinaryField("Image", overwrite=True, resource_type="image", transformation={"quality": "auto:eco"},
+                            format="jpg", null=True, default=None, blank=True, folder='general_supply_media')
 
     def __str__(self):
         return f'{self.id} - {self.name}'

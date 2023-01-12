@@ -56,7 +56,37 @@
     {% for el in supplies %}
 
      <tr>
-      <th scope="row" style="text-align: left; max-width: 350px">{{ el.name }}</th>
+      <th scope="row" style="text-align: left; max-width: 350px">
+      {% if el.image %}
+      <div style="display:flex; flex-direction: row;">
+
+          <a href="#" class="pop">
+              <div datasrc="{{ el.image.url }}"><i class="bi bi-card-image"></i></div>
+</a>
+
+              <div class="modal fade" id="imagemodal" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background-color: rgba(255,246,16,0); border-color: rgba(255,246,16,0)">
+      <div class="modal-body">
+         <a class="full_image_view" href=""><img src="" class="imagepreview" style="width: 100%" ></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+              <script>
+              $(function() {
+		$('.pop').on('click', function() {
+            let src = $(this).find('div').attr('datasrc')
+			$('.imagepreview').attr('src', src);
+            $('.full_image_view').attr('href', src);
+			$('#imagemodal').modal('show');
+		});
+});
+              </script>
+
+{% endif %}
+          {{ el.name }} </div> </th>
       <td>
        {% if el.package_and_tests is not none %}
                         {{ el.package_and_tests }}
