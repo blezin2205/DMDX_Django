@@ -1,4 +1,5 @@
 {% extends 'supplies/base.html' %}
+{% load myapp_extras %}
     {% block title %}
 {{ title }}
 {% endblock %}
@@ -42,7 +43,9 @@
         <th scope="col">Кількість</th>
         <th scope="col">Призначення</th>
         <th scope="col">Термін придатності</th>
-        <th scope="col">Оновлено</th>
+     {% if request.user|has_group:"empl" or request.user.is_staff %}
+          <th scope="col">Оновлено</th>
+    {% endif %}
         {% if not order.isComplete and request.user.is_staff %}
         <th scope="col">Action</th>
          {% endif %}
@@ -80,7 +83,9 @@
             </td>
             <td>{{ el.generalSupply.category.name }}</td>
             <td>{{ el.date_expired|date:"d.m.Y" }}</td>
-            <td>{{ el.date_created|date:"d.m.Y" }}</td>
+            {% if request.user|has_group:"empl" or request.user.is_staff %}
+          <td style="min-width: 100px">{{ el.date_created|date:"d.m.Y" }}</td>
+     {% endif %}
      {% if not order.isComplete %}
      <td><button data-product={{ el.id }} data-action="delete-preorder" class="btn btn-sm btn-danger add-btn delete-suppinorder-button"><i class="bi bi-trash"></i></button></td>
      {% endif %}

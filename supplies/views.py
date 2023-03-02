@@ -445,18 +445,20 @@ def logoutUser(request):
 def home(request):
 
     supplies = GeneralSupply.objects.all().order_by('name')
+    suppFilter = SupplyFilter(request.GET, queryset=supplies)
 
     # fetchxmls()
     uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
-    isClient = request.user.groups.filter(name='client').exists()
+    isClient = request.user.groups.filter(name='client').exists() and not request.user.is_staff
     if isClient:
         uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False, place__user=request.user).exists()
+        html_page = 'supplies/home_for_client.html'
     else:
         uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False).exists()
+        html_page = 'supplies/home.html'
+        if not suppFilter.data:
+            suppFilter.data['ordering'] = SupplyFilter.EXIST_CHOICES.В_наявності
 
-    suppFilter = SupplyFilter(request.GET, queryset=supplies)
-    if not suppFilter.data:
-        suppFilter.data['ordering'] = SupplyFilter.EXIST_CHOICES.В_наявності
     supplies = suppFilter.qs
 
     # if suppFilter.data['ordering'] == "onlyGood":
@@ -471,7 +473,7 @@ def home(request):
         supp = supplies.get(id=request.POST.get('supp_id'))
         supp.delete()
 
-    return render(request, 'supplies/home.html', {'title': 'Всі товари',
+    return render(request, html_page, {'title': 'Всі товари',
                                                   'cartCountData': cartCountData,
                                                   'supplies': page_obj, 'suppFilter': suppFilter,
                                                   'isHome': True,

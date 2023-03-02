@@ -20,21 +20,23 @@
             <li class="nav-item"><a href="/allDevices" class="btn btn-outline-primary{% if isDevices %} active {% endif %}" aria-current="page">Прилади</a></li>
 
             {% endif %}
+            {% if request.user.is_staff %}
 
                 <li class="nav-item dropdown mx-4">
                             <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Додати</a>
                             <div class="dropdown-menu">
-                                {% if request.user.is_staff %}
+
                               <a class="dropdown-item" href="{% url 'create_note' %}">Сервісну замітку</a>
 {#                              <a class="dropdown-item" href="{% url 'addGeneralSupply-with-supp' %}">Товар</a>#}
                               <a class="dropdown-item" href="{% url 'addClient' %}">Клієнта</a>
                                     <a class="dropdown-item" href="{% url 'add_np_sender_place' %}">Відділення відправки</a>
-                                 {% endif %}
+
                                  <a class="dropdown-item" href="{% url 'add-general-supply' %}">Назву товару</a>
                               <div class="dropdown-divider"></div>
 {#                              <a class="dropdown-item" href="{% url 'countOnHoldMake' %}">Separated link</a>#}
                             </div>
                         </li>
+            {% endif %}
 
             {% if request.user.is_staff %}
             <li class="nav-item"><a href="{% url 'nova_poshta_registers' %}" class="btn btn-outline-primary{% if isRegisters %} active {% endif %}" aria-current="page">Реєстри НП</a></li>

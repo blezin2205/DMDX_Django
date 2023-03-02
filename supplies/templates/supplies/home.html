@@ -8,9 +8,8 @@
     {% block title %}
 {{ title }}
 {% endblock %}
-
 {% block content %}
-
+{% if request.user|has_group:"empl" or request.user.is_staff %}
 
 <div class="container py-1">
   <div class="btn-group my-3">
@@ -138,19 +137,19 @@
 
 {#    <button data-product={{ supp.id }} data-action="delete" class="btn btn-sm btn-danger add-btn delete-supp-button me-2" data-toggle="tooltip" data-placement="top" title="Видалити LOT"><i class="bi bi-trash"></i></button>#}
 {% endif %}
-        <div id="add_precart_button-{{supp.id}}">
-        {% if supp|in_precart:request.user %}
-            <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
-        {% else %}
-            <button hx-post="{% url 'update_item_precart' supp.id %}" hx-target="#add_precart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn {% if supp.count|sub:supp.getTotalOnHold == 0 %} disabled {% endif %}" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}"  type="submit" ><i class="bi bi-cart-plus"></i></button>
-        {% endif %}
-        </div>
+{#        <div id="add_precart_button-{{supp.id}}">#}
+{#        {% if supp|in_precart:request.user %}#}
+{#            <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>#}
+{#        {% else %}#}
+{#            <button hx-post="{% url 'update_item_precart' supp.id %}" hx-target="#add_precart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn {% if supp.count|sub:supp.getTotalOnHold == 0 %} disabled {% endif %}" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}"  type="submit" ><i class="bi bi-cart-plus"></i></button>#}
+{#        {% endif %}#}
+{#        </div>#}
 
 
-        {% if uncompletePreOrdersExist %}
-    <a href="{% url 'addSupplyToExistPreOrder' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого передзамовлення" style="background: #5bc0de"><i class="bi bi-bag-plus"></i></a>
-
-            {% endif %}
+{#        {% if uncompletePreOrdersExist %}#}
+{#    <a href="{% url 'addSupplyToExistPreOrder' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary me-2 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого передзамовлення" style="background: #5bc0de"><i class="bi bi-bag-plus"></i></a>#}
+{##}
+{#            {% endif %}#}
 
     </div>
     </td>
@@ -217,9 +216,155 @@
     </ul>
 </nav>
 {% endif %}
+    {% else %}
 
+
+<div class="container py-1">
+  <div class="btn-group my-3">
+  <a href="/" class="btn btn-primary mx-2 {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+  <a href="/childSupply" class="btn btn-primary {% if isChild %} active {% endif %}">Список товарів</a>
+</div>
+
+     <form method="get" class="form-inline justify-content-center">
+         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
+             <div class="hstack gap-2">
+                 {{ suppFilter.form.ordering|as_crispy_field }}
+                 {{ suppFilter.form.category|as_crispy_field }}
+                 {{ suppFilter.form.ref|as_crispy_field }}
+                 {{ suppFilter.form.SMN_code|as_crispy_field }}
+                 {{ suppFilter.form.name|as_crispy_field }}
+             </div>
+             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
+
+</div>
+
+        </form>
+     </div>
+    <table class="table centred mt-3 w-auto mx-auto">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col" class="textAlignLeft">({{supplies|length}}) Назва товару</th>
+      <th scope="col">Пакування / Тести</th>
+        <th scope="col">Категорія</th>
+        <th scope="col">REF</th>
+        <th scope="col">SMN</th>
+        <th scope="col" >
+            <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %}">
+                <div style="width: 200px;">LOT</div>
+            <div style="width: 150px;">Кількість</div>
+            <div style="width: 100px;">Термін</div>
+            </div>
+        </th>
+    <th>
+    </th>
+    </tr>
+  </thead>
+  <tbody id="cart-badge">
+    {% for el in supplies %}
+
+     <tr>
+      <th scope="row" style="text-align: left; max-width: 350px">
+      {% if el.image %}
+      <div style="display:flex; flex-direction: row;">
+
+          <a href="#" class="pop">
+              <div datasrc="{{ el.image.url }}"><i class="bi bi-card-image"></i></div>
+</a>
+
+              <div class="modal fade" id="imagemodal" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background-color: rgba(255,246,16,0); border-color: rgba(255,246,16,0)">
+      <div class="modal-body">
+         <a class="full_image_view" href=""><img src="" class="imagepreview" style="width: 100%" ></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+              <script>
+              $(function() {
+		$('.pop').on('click', function() {
+            let src = $(this).find('div').attr('datasrc')
+			$('.imagepreview').attr('src', src);
+            $('.full_image_view').attr('href', src);
+			$('#imagemodal').modal('show');
+		});
+});
+              </script>
+
+{% endif %}
+          {{ el.name }} </div> </th>
+      <td>
+       {% if el.package_and_tests is not none %}
+                        {{ el.package_and_tests }}
+                {% endif %}
+
+      </td>
+      <td>{{ el.category.name }}</td>
+      <td>
+
+          {% if el.ref is not none %}
+                        {{ el.ref }}
+                {% endif %}
+      </td>
+        <td>
+
+          {% if el.SMN_code is not none %}
+                        {{ el.SMN_code }}
+                {% endif %}
+      </td>
+        <td>
+{#        <div class="vstack gap-1 justify-content-end">#}
+ <div class="hstack gap-1 justify-content-end">
+        <div id="add_preorder_general_to_preorder-{{el.id}}">
+            {% if el|in_precart_general:request.user %}
+            <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
+        {% else %}
+{#            <button data-product={{ el.id }} data-action="add-general" class="btn btn-sm btn-primary add-btn preorder-general-supp-button" style="background: #5bc0de" data-toggle="tooltip" data-placement="top" title="В корзину передзамовлення (Назва)"><i class="bi bi-cart-plus"></i></button>#}
+
+             <button hx-post="{% url 'add_preorder_general_to_preorder' el.id %}" hx-target="#add_preorder_general_to_preorder-{{el.id}}" class="btn btn-sm btn-primary add-btn" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}"  type="submit" ><i class="bi bi-cart-plus"></i></button>
+        {% endif %}
+        </div>
+
+            {% if uncompletePreOrdersExist %}
+    <a href="{% url 'addSupplyToExistPreOrderGeneral' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого передзамовлення (Назва)" style="background: #5bc0de"><i class="bi bi-bag-plus"></i></a>
+
+            {% endif %}
+        </div>
+            </td>
+
+     {% endfor %}
+    </tr>
+
+  </tbody>
+</table>
+
+    {% if supplies.paginator.num_pages > 1 %}
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        {% if supplies.has_previous %}
+            <li class="page-item"><a class="page-link" href="{% my_url supplies.previous_page_number 'page' request.GET.urlencode %}">&laquo;</a></li>
+        {% else %}
+            <li class="page-item disabled"><a class="page-link" href="#">&laquo;</a></li>
+        {% endif %}
+        {% for i in supplies.paginator.page_range %}
+            {% if supplies.number == i %}
+                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+            {% else %}
+                <li class="page-item"><a class="page-link" href="{% my_url i 'page' request.GET.urlencode %}">{{ i }}</a></li>
+            {% endif %}
+        {% endfor %}
+        {% if supplies.has_next %}
+            <li class="page-item"><a class="page-link" href="{% my_url supplies.next_page_number 'page' request.GET.urlencode %}">&raquo;</a></li>
+        {% else %}
+            <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endif %}
 
 
 {% endblock %}
-
 
