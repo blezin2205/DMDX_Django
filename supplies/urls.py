@@ -29,6 +29,8 @@ urlpatterns = [
     path('cart/update_item/', views.updateCartItem, name='update_item_detail'),
     path('preorders-cart/update_item/', views.updateCartItem, name='update_item_detail'),
     path('preorders-cart/orderTypeDescriptionField/', views.orderTypeDescriptionField, name='orderTypeDescriptionField'),
+    path('preorders-cart/update_count_in_preorder_cart/<int:itemId>', views.update_count_in_preorder_cart, name='update_count_in_preorder_cart'),
+
 
     path('delete_supply/<int:suppId>', views.deleteSupply, name='delete_supply'),
     path('delete_supply_in_order/', views.deleteSupplyInOrder, name='delete_supply_in_order'),

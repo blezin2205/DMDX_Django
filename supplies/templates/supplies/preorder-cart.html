@@ -11,57 +11,46 @@
 <form method="POST" action="">
 
 <section class="h-100" style="background-color: #eee;">
+
+
+
   <div class="container h-100 py-3">
     <div class="row d-flex justify-content-center align-items-center h-100">
-      <div class="col-10">
-          {% for item in supplies %}
-        <div class="card rounded-5 mb-4">
-          <div class="card-body px-4">
-            <div class="row d-flex justify-content-between align-items-center">
-              <div class="col-md-3 col-lg-3 col-xl-3">
-               {% if item.supply %}
-                   <div style="font-size: large">{{ item.supply.general_supply.name }}</div>
-                  {% if item.supply.general_supply.ref %}
-                      <p><span class="text-muted">REF: {{ item.supply.general_supply.ref }}</span></p>
-                  {% endif %}
-              {% endif %}
+      <section class="col-10">
+      {% for key, value in supDict.items %}
 
+          <section class="h-100 p-3 my-2" style="background-color: #f3f3f3;">
+          <div class="row d-flex justify-content-center align-items-center h-100">  {{ key }}</div>
+
+          {% for item in value %}
+        <div class="card rounded-5 mb-4">
+          <div class="card-body px-3">
+            <div class="row d-flex justify-content-between align-items-center">
+              <div class="col-md-2 col-lg-4 col-xl-4">
                {% if item.general_supply %}
-              <div style="font-size: large">{{ item.general_supply.name }}</div>
+              <div class="mb-2" style="font-size: large">{{ item.general_supply.name }}</div>
                   {% if item.general_supply.ref %}
-                      <p><span class="text-muted">REF: {{ item.general_supply.ref }}</span></p>
+                      <div class="text-muted" style="font-size: small">REF: {{ item.general_supply.ref }}</div>
                   {% endif %}
+                   {% if item.general_supply.SMN_code %}
+                       <div class="text-muted" style="font-size: small">SMN: {{ item.general_supply.SMN_code }}</div>
+                  {% endif %}
+                   {% if item.general_supply.category %}
+                       <div class="text-muted" style="font-size: smaller"> Категорія: {{ item.general_supply.category }}</div>
+              {% endif %}
               {% endif %}
 
               </div>
               <div class="col-md-3 col-lg-3 col-xl-2 d-flex">
-                  <div class="vstack gap-2">
-                  {% if item.supply %}
-                      <label for="form1">Доступно: {{ item.supply.availableCount }}</label>
-                  {% elif item.general_supply %}
-                      <label for="form1" style="color: #ab4302">Товар відсутній</label>
-                  {% endif %}
-
-
-                <input id="form1" min="0" name="count_list" value="{{ item.count_in_order }}" type="number"
-                  class="form-control form-control-sm" />
-                  <input type="hidden" name="count_list_id" value="{{ item.id }}">
-                  </div>
+                <input id="form1{{ item.id }}" min="0" name="count_list" value="{{ item.count_in_order }}" type="number"
+                  class="form-control form-control-sm" hx-trigger="keyup changed delay:1000ms" hx-post="{% url 'update_count_in_preorder_cart' item.id %}" hx-target="#precart-badge" />
+                  <input type="hidden" id="hidden{{ item.id }}" name="count_list_id" value="{{ item.id }}">
 
               </div>
-
-
-
-
-
               <div class="col-md-2 col-lg-2 col-xl-2 offset-lg-1">
-                  {% if item.lot %}
-                      <span class="text-muted"> LOT:</span> <span>{{ item.lot }}</span>
+                  {% if item.general_supply.package_and_tests %}
+                      <span class="text-muted"> Пакування / Тести:</span> <span>{{ item.general_supply.package_and_tests }}</span>
                   {% endif %}
-
-              {% if item.date_expired %}
-                  <p><span class="text-muted"> Строк:</span> <span>{{ item.date_expired|date:"d.m.Y" }}</span> </p>
-              {% endif %}
               </div>
               <div class="col-md-1 col-lg-1 col-xl-1 text-end">
                   <button data-product="{{ item.id }}" data-action="delete-precart" class="btn btn-lg add-btn update-cart-detail text-danger" type="button"><i class="bi bi-trash"></i></button>
@@ -70,7 +59,16 @@
           </div>
         </div>
           {% endfor %}
+          </section>
+      {% endfor %}
 
+      <style>
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+</style>
 
   {% csrf_token %}
         {% if not isClient %}

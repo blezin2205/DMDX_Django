@@ -21,6 +21,7 @@ class CustomUser(AbstractUser):
     mobNumber = models.CharField(max_length=100, null=True)
     np_sender_ref = models.CharField(max_length=100, null=True)
     np_last_choosed_delivery_place_id = models.SmallIntegerField(blank=True, null=True)
+    isUserAbleToDelivery = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.first_name} {self.last_name}'

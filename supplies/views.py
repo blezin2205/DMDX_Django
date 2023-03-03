@@ -482,6 +482,23 @@ def home(request):
                                                   'uncompletePreOrdersExist': uncompletePreOrdersExist})
 
 
+
+
+def update_count_in_preorder_cart(request, itemId):
+
+    supsInPreorderInCart = SupplyInPreorderInCart.objects.get(id=itemId)
+    if request.method == 'POST':
+        countList = request.POST.getlist('count_list')
+        countListId = request.POST.getlist('count_list_id')
+
+        firstIndex = countListId.index(f'{itemId}')
+        count = countList[firstIndex]
+        supsInPreorderInCart.count_in_order = count
+        supsInPreorderInCart.save()
+        return updatePreCartItemCount(request)
+
+
+
 @login_required(login_url='login')
 def cartDetailForClient(request):
     orderInCart = PreorderInCart.objects.get(userCreated=request.user, isComplete=False)
@@ -491,6 +508,14 @@ def cartDetailForClient(request):
     orderForm = OrderInCartForm(request.POST or None)
 
     isClient = request.user.groups.filter(name='client').exists()
+
+    supDict = {}
+    for d in supplies:
+        t = supDict.setdefault(d.general_supply.category, [])
+        t.append(d)
+    print(supDict)
+
+
     if isClient:
         orderForm = PreOrderInClientCartForm(request.POST or None)
         places = Place.objects.filter(user=request.user)
@@ -587,7 +612,7 @@ def cartDetailForClient(request):
     return render(request, 'supplies/preorder-cart.html',
                   {'title': 'Корзина передзамовлення', 'order': orderInCart, 'cartCountData': cartCountData,
                    'supplies': supplies, 'cities': cities,
-                   'orderForm': orderForm, 'isClient': isClient,
+                   'orderForm': orderForm, 'isClient': isClient, 'supDict': supDict,
                    })
 
 
@@ -755,10 +780,10 @@ def cartDetail(request):
                 if order.comment:
                     comment = f'*комментарій:*  **{order.comment}**'
                     myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
-                    myTeamsMessage.send()
+                    # myTeamsMessage.send()
                 else:
                     myTeamsMessage.text(f'{agreementString}\n\n{created}')
-                    myTeamsMessage.send()
+                    # myTeamsMessage.send()
 
 
 
