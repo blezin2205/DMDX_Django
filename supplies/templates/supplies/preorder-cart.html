@@ -87,12 +87,17 @@ input[type=number]::-webkit-outer-spin-button {
           {% include 'partials/choose_place_in_cart.html' %}
       </div>
             {% else %}
-            <select class="form-select mb-3" aria-label="Default select example" name="place_id" hx-get="{% url 'choose_preorder_in_cart_for_client' %}" hx-trigger="change" hx-target="#preorders_for_client">
+            {% if places.count > 1 %}
+                <select class="form-select mb-3" aria-label="Default select example" name="place_id" hx-get="{% url 'choose_preorder_in_cart_for_client' %}" hx-trigger="change" hx-target="#preorders_for_client">
   <option selected>Вибрати організацію</option>
              {% for place in places %}
                  <option value="{{place.id}}">{{ place.name }}, {{ place.city_ref.name }}</option>
              {% endfor %}
 </select>
+                {% else %}
+                <input type="hidden" name="place_id" value="{{ places.first.id }}">
+                {% endif %}
+
       <div id="preorders_for_client">
           {% include 'partials/choose_preorder_in_cart_for_client.html' %}
       </div>

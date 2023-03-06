@@ -11,6 +11,7 @@
 
     <h4 style="color: grey">Cтворив: <u style="color: black">{{ order.userCreated }}</u></h4>
 <form method="POST" action="">
+<button class="btn btn-outline-danger my-4" type="submit" name="delete">Видалити</button>
 
 <section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #f5f5f5;">
   <div class="container h-100 py-3">
@@ -49,9 +50,9 @@
                   {% endif %}
 
 
-                <input id="form1" min="0" name="count_list" value="{{ item.count_in_order }}" type="number"
+                <input id="form1" min="0" name="count_{{ item.id }}" value="{{ item.count_in_order }}" type="number"
                   class="form-control form-control-sm" />
-                  <input type="hidden" name="count_list_id" value="{{ item.id }}">
+                  <input type="hidden" name="count_id_{{ item.id }}" value="{{ item.id }}">
                   </div>
 
               </div>
@@ -79,30 +80,28 @@
           {% endfor %}
 
 
-  {% csrf_token %}
+      {{ orderForm.comment|as_crispy_field }}
+      {% if request.user|has_group:"admin" or request.user.is_staff %}
+      {{ orderForm.isComplete|as_crispy_field }}
+      {% endif %}
+
+      {% csrf_token %}
       {% if not placeExist %}
-         <select class="form-select mb-3" aria-label="Default select example" name="city" hx-get="{% url 'get_place_for_city_in_cart' %}" hx-trigger="change" hx-target="#places">
+         <select class="form-select mb-3" aria-label="Default select example" name="city" hx-get="{% url 'get_place_for_city_in_precart' %}" hx-trigger="change" hx-target="#places">
   <option selected>Вибрати місто</option>
              {% for city in cities %}
                  <option value="{{city.id}}">{{ city.name }}</option>
              {% endfor %}
 </select>
       <div id="places">
-          {% include 'partials/choose_place_in_cart.html' %}
+          {% include 'partials/choose_place_in_cart_not_precart.html' %}
       </div>
 
 {#          <div id="agreements">#}
 {#          {% include 'partials/choose_agreement_forplace_incart.html' %}#}
 {#      </div>#}
       {% endif %}
-      {{ orderForm.comment|as_crispy_field }}
-      {% if request.user|has_group:"admin" or request.user.is_staff %}
-      {{ orderForm.isComplete|as_crispy_field }}
-      {% endif %}
-<button class="btn btn-outline-primary my-2" type="submit" name="save">Зберегти</button>
-          <button class="btn btn-outline-danger my-5 mx-3" type="submit" name="delete">Видалити</button>
 
-      <input type="hidden" name="next" value="{{ request.GET.next }}">
       </div>
     </div>
   </div>

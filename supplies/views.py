@@ -392,7 +392,18 @@ def update_order_count(request):
 def orderTypeDescriptionField(request):
     orderType = request.POST.get('orderType')
     isAgreement = orderType == 'Agreement'
-    return render(request, 'partials/orderTypeDescriptionField.html', {'isAgreement': isAgreement})
+    return render(request, 'partials/orderTypeDescriptionField.html', {'isAgreement': isAgreement})@login_required(login_url='login')
+
+
+def add_to_exist_order_from_cart(request):
+    orderType = request.POST.get('orderType')
+    isAdd_to_exist_order = orderType == 'add_to_Exist_order'
+    orders = []
+    if isAdd_to_exist_order:
+        place_id = request.POST.get('place_id')
+        place = Place.objects.get(pk=place_id)
+        orders = place.order_set.filter(isComplete=False)
+    return render(request, 'partials/add_to_exist_order_from_cart.html', {'isAdd_to_exist_order': isAdd_to_exist_order, 'orders': orders})
 
 
 @login_required(login_url='login')
@@ -400,7 +411,7 @@ def orderTypeDescriptionField_for_client(request):
     orderType = request.POST.get('orderType')
     place_id_Selected = request.POST.get('place_id')
     isAddedToExistPreorder = orderType == 'add_to_Exist_preorder'
-    preorders = PreOrder.objects.filter(userCreated=request.user, isComplete=False, place_id=place_id_Selected)
+    preorders = PreOrder.objects.filter(isComplete=False, place_id=place_id_Selected)
 
     return render(request, 'partials/orderTypeDescriptionField_for_client.html', {'isAddedToExistPreorder': isAddedToExistPreorder, 'preorders': preorders})
 
@@ -555,6 +566,8 @@ def cartDetailForClient(request):
     cities = City.objects.all()
     orderForm = OrderInCartForm(request.POST or None)
     places = []
+    placeChoosed = False
+    preorders = None
 
 
 
@@ -570,10 +583,11 @@ def cartDetailForClient(request):
     if isClient:
         places = Place.objects.filter(user=request.user)
         # places.fields['place'].queryset = places
-        isPendingPreorderExist = PreOrder.objects.filter(isComplete=False, userCreated=request.user).exists()
+        preorders = PreOrder.objects.filter(isComplete=False, userCreated=request.user)
 
         if places.count() == 1:
             print(places.count())
+            placeChoosed = True
             # places.fields['place'].initial = places.first()
     else:
         isPendingPreorderExist = PreOrder.objects.filter(isComplete=False).exists()
@@ -691,7 +705,7 @@ def cartDetailForClient(request):
     return render(request, 'supplies/preorder-cart.html',
                   {'title': 'Корзина передзамовлення', 'order': orderInCart, 'cartCountData': cartCountData,
                    'supplies': supplies, 'cities': cities,
-                   'orderForm': orderForm, 'places': places, 'isClient': isClient, 'supDict': supDict})
+                   'orderForm': orderForm, 'places': places, 'placeChoosed': placeChoosed, 'preorders': preorders, 'isClient': isClient, 'supDict': supDict})
 
 
 @login_required(login_url='login')
@@ -788,13 +802,28 @@ def add_np_sender_place(request):
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin', 'empl', 'client'])
 def choose_preorder_in_cart_for_client(request):
-    place = request.GET.get('place_id')
-    preorders = Place.objects.get(id=place).preorder_set.filter(isComplete=False)
+    try:
+        place = request.GET.get('place_id')
+        preorders = Place.objects.get(id=place).preorder_set.filter(isComplete=False)
+    except:
+        place = None
+        preorders = None
 
     return render(request, 'partials/choose_preorder_in_cart_for_client.html',
                   {'preorders': preorders, 'placeChoosed': place != None})
 
 
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
+def get_place_for_city_in_precart(request):
+    city_id = request.GET.get('city')
+    try:
+        places = Place.objects.filter(city_ref_id=city_id)
+    except:
+        places = None
+
+    return render(request, 'partials/choose_place_in_cart_not_precart.html', {'places': places, 'cityChoosed': places != None, 'placeChoosed': False})
 
 
 
@@ -807,7 +836,23 @@ def get_place_for_city_in_cart(request):
     except:
         places = None
 
-    return render(request, 'partials/choose_place_in_cart.html', {'places': places, 'cityChoosed': places != None, 'placeChoosed': False})
+    return render(request, 'partials/choose_place_in_cart.html',
+                  {'places': places, 'cityChoosed': places != None, 'placeChoosed': False})
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
+def choose_place_in_cart_not_precart(request):
+    place_id = request.GET.get('place_id')
+    try:
+        place = Place.objects.get(pk=place_id)
+        orders = place.order_set.filter(isComplete=False)
+    except:
+        place = None
+        orders =None
+
+    return render(request, 'partials/choose_uncompleted_order_in_cart.html', {'orders': orders, 'isPlaceChoosed': place != None})
+
 
 
 @login_required(login_url='login')
@@ -852,87 +897,159 @@ def cartDetail(request):
     cities = City.objects.all()
     if request.method == 'POST':
         if 'save' in request.POST:
-            countList = request.POST.getlist('count_list')
-            countListId = request.POST.getlist('count_list_id')
-
+            orderType = request.POST.get('orderType')
             if orderForm.is_valid():
                 place_id = request.POST.get('place_id')
-
                 place = Place.objects.get(id=place_id)
                 comment = orderForm.cleaned_data['comment']
                 try:
                     isComplete = orderForm.cleaned_data['isComplete']
                 except:
                     isComplete = False
-                agreement = None
-
-                try:
-                    agreement_id = int(request.POST.get('agreement_id'))
-                except:
-                    agreement_id = None
-
-                if agreement_id:
-                    agreement = Agreement.objects.get(pk=agreement_id)
 
                 if isComplete:
                     dateSent = timezone.now().date()
                 else:
                     dateSent = None
-                order = Order(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent,
-                              isComplete=isComplete,
-                              comment=comment, for_agreement=agreement)
-                order.save()
+                if orderType == 'new_order':
 
-                # detailTable = render(request, 'teams/order_detail_table.html', {})
-                # detailTableString = str(detailTable)
-                t = threading.Thread(target=sendTeamsMsgCart, args=[order], daemon=True)
-                t.start()
+                    order = Order(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent,
+                                  isComplete=isComplete,
+                                  comment=comment)
+                    order.save()
 
-                for index, sup in enumerate(supplies):
-                    suppInOrder = SupplyInOrder(count_in_order=countList[index],
-                                                supply=sup.supply,
-                                                generalSupply=sup.supply.general_supply,
-                                                supply_for_order=order, lot=sup.lot,
-                                                date_created=sup.date_created,
-                                                date_expired=sup.date_expired,
-                                                internalName=sup.supply.general_supply.name,
-                                                internalRef=sup.supply.general_supply.ref)
-                    suppInOrder.save()
-                    supply = suppInOrder.supply
-                    try:
-                        countOnHold = int(supply.countOnHold)
-                    except:
-                        countOnHold = 0
-                    countInOrder = int(suppInOrder.count_in_order)
-                    if isComplete:
-                        supDeltaCount = supply.count - countInOrder
-                        if supDeltaCount == 0:
-                            supply.delete()
+                    for index, sup in enumerate(supplies):
+                        count = request.POST.get(f'count_{sup.id}')
+                        suppInOrder = SupplyInOrder(count_in_order=count,
+                                                    supply=sup.supply,
+                                                    generalSupply=sup.supply.general_supply,
+                                                    supply_for_order=order,
+                                                    lot=sup.lot,
+                                                    date_created=sup.date_created,
+                                                    date_expired=sup.date_expired,
+                                                    internalName=sup.supply.general_supply.name,
+                                                    internalRef=sup.supply.general_supply.ref)
+                        suppInOrder.save()
+                        supply = suppInOrder.supply
+                        try:
+                            countOnHold = int(supply.countOnHold)
+                        except:
+                            countOnHold = 0
+                        countInOrder = int(suppInOrder.count_in_order)
+                        if isComplete:
+                            supDeltaCount = supply.count - countInOrder
+                            if supDeltaCount == 0:
+                                supply.delete()
+                            else:
+                                supply.count -= countInOrder
+                                supply.save(update_fields=['count'])
                         else:
-                            supply.count -= countInOrder
-                            supply.save(update_fields=['count'])
-                    else:
-                        if supply.countOnHold:
-                            supply.countOnHold = countOnHold + countInOrder
-                            supply.save(update_fields=['countOnHold'])
-                        else:
-                            supply.countOnHold = 0
-                            supply.save(update_fields=['countOnHold'])
-                            supply.countOnHold = countOnHold + countInOrder
-                            supply.save(update_fields=['countOnHold'])
+                            if supply.countOnHold:
+                                supply.countOnHold = countOnHold + countInOrder
+                                supply.save(update_fields=['countOnHold'])
+                            else:
+                                supply.countOnHold = 0
+                                supply.save(update_fields=['countOnHold'])
+                                supply.countOnHold = countOnHold + countInOrder
+                                supply.save(update_fields=['countOnHold'])
 
-                if agreement_id:
-                    agreement = Agreement.objects.get(pk=agreement_id)
-                    sups_in_agreement = agreement.supplyinagreement_set.all()
-                    allDelivered = all(sup.supIsFullyDelivered() for sup in sups_in_agreement)
-                    print(f'ALL DELIVERED IN AGREEMENT ---------------------- {allDelivered}')
-                    if allDelivered:
-                        dateSent = timezone.now().date()
-                        agreement.isComplete = True
-                        agreement.dateSent = dateSent
-                        agreement.save()
-                        order.for_agreement = agreement
-                        order.save(update_fields=['for_agreement'])
+                    t = threading.Thread(target=sendTeamsMsgCart, args=[order], daemon=True)
+                    t.start()
+
+
+                elif orderType == 'add_to_Exist_order':
+                    selected_non_completed_order = request.POST.get('selected_non_completed_order')
+                    selectedOrder = Order.objects.get(id=selected_non_completed_order)
+
+                    selectedOrder.dateSent = dateSent
+                    selectedOrder.isComplete = isComplete
+                    if selectedOrder.comment and comment:
+                        selectedOrder.comment += f' / {comment}'
+                    elif comment:
+                        selectedOrder.comment = comment
+                    selectedOrder.save()
+
+                    sups_in_order = selectedOrder.supplyinorder_set.all()
+                    # print("----||||||||---------")
+                    # print(sups_in_preorder)
+
+                    for index, sup in enumerate(supplies):
+                        count = request.POST.get(f'count_{sup.id}')
+                        general_sup = sup.supply.general_supply
+                        try:
+                            exist_sup = sups_in_order.get(generalSupply=general_sup)
+                            exist_sup.count_in_order += int(count)
+                            exist_sup.save()
+                            supply = exist_sup.supply
+                            try:
+                                countOnHold = int(supply.countOnHold)
+                            except:
+                                countOnHold = 0
+                            countInOrder = int(exist_sup.count_in_order)
+                            if isComplete:
+                                supDeltaCount = supply.count - countInOrder
+                                if supDeltaCount == 0:
+                                    supply.delete()
+                                else:
+                                    supply.count -= countInOrder
+                                    supply.save(update_fields=['count'])
+
+                                genSupInPreorder = exist_sup.supply_in_preorder
+                                if genSupInPreorder:
+                                    genSupInPreorder.count_in_order_current += exist_sup.count_in_order
+                                    if genSupInPreorder.count_in_order - genSupInPreorder.count_in_order_current <= 0:
+                                        genSupInPreorder.state_of_delivery = 'Complete'
+                                    else:
+                                        genSupInPreorder.state_of_delivery = 'Partial'
+                                    genSupInPreorder.save()
+
+
+                            else:
+                                if supply.countOnHold:
+                                    supply.countOnHold = countOnHold + countInOrder
+                                    supply.save(update_fields=['countOnHold'])
+                                else:
+                                    supply.countOnHold = 0
+                                    supply.save(update_fields=['countOnHold'])
+                                    supply.countOnHold = countOnHold + countInOrder
+                                    supply.save(update_fields=['countOnHold'])
+
+
+                        except:
+                            suppInOrder = SupplyInOrder(count_in_order=count,
+                                                        supply=sup.supply,
+                                                        generalSupply=general_sup,
+                                                        supply_for_order=selectedOrder,
+                                                        supply_in_preorder=selectedOrder.for_preorder,
+                                                        lot=sup.lot,
+                                                        date_created=sup.date_created,
+                                                        date_expired=sup.date_expired,
+                                                        internalName=general_sup.name,
+                                                        internalRef=general_sup.ref)
+                            suppInOrder.save()
+                            supply = suppInOrder.supply
+                            try:
+                                countOnHold = int(supply.countOnHold)
+                            except:
+                                countOnHold = 0
+                            countInOrder = int(suppInOrder.count_in_order)
+                            if isComplete:
+                                supDeltaCount = supply.count - countInOrder
+                                if supDeltaCount == 0:
+                                    supply.delete()
+                                else:
+                                    supply.count -= countInOrder
+                                    supply.save(update_fields=['count'])
+                            else:
+                                if supply.countOnHold:
+                                    supply.countOnHold = countOnHold + countInOrder
+                                    supply.save(update_fields=['countOnHold'])
+                                else:
+                                    supply.countOnHold = 0
+                                    supply.save(update_fields=['countOnHold'])
+                                    supply.countOnHold = countOnHold + countInOrder
+                                    supply.save(update_fields=['countOnHold'])
+
 
             orderInCart.delete()
             return redirect('/orders')
@@ -1309,12 +1426,16 @@ def ordersForClient(request, client_id):
 @login_required(login_url='login')
 def agreementsForClient(request, client_id):
     place = get_object_or_404(Place, pk=client_id)
-    orders = place.agreement_set.all().order_by('-id')
-    title = f'Всі договори для клієнта: \n {place.name}, {place.city_ref.name}'
-    if not orders:
-        title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає договорів'
+    orders = place.preorder_set.all().order_by('-id')
+    preorderFilter = PreorderFilter(request.GET, queryset=orders)
+    orders = preorderFilter.qs
+    cartCountData = countCartItemsHelper(request)
+    title = f'Всі передзамовлення для клієнта: \n {place.name}, {place.city_ref.name}'
 
-    return render(request, 'supplies/agreements_list.html', {'title': title, 'orders': orders, 'isClients': True})
+    return render(request, 'supplies/preorders.html',
+           {'title': title, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData,
+            'isOrders': True,
+            'isPreordersTab': True, 'fromClientList': True})
 
 
 @login_required(login_url='login')

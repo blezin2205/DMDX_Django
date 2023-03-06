@@ -30,11 +30,13 @@
   </div>
       <div class="card-body">
 
-        {% if client.agreement_set.count > 0 %}
+        {% if client.preorder_set.count > 0 %}
             <a href="{% url 'agreementsForClient' client.id %}" class="icon-link me-3">
-          Договори ({{ client.agreement_set.count }})
+          Передзамовлення ({{ client.preorder_set.count }})
         </a>
         {% endif %}
+
+
 
             {% if client.order_set.count > 0 %}
                 <a href="{% url 'ordersForClient' client.id %} " class="icon-link me-3">

@@ -9,7 +9,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit, Layout, MultiField, Div
 from django.forms import formset_factory
-from dynamic_forms import  DynamicField, DynamicFormMixin
+# from dynamic_forms import  DynamicField, DynamicFormMixin
 
 
 class CreateNPParselForm(ModelForm):
@@ -70,10 +70,9 @@ class CreateClientForm(ModelForm):
 
     def clean_organization_code(self):
         orgCode = self.cleaned_data['organization_code']
-        print("---didgigs",orgCode.isdigit())
         if orgCode and len(orgCode) != 8:
             raise forms.ValidationError("ЄДРПОУ має 8 цифр!")
-        if not orgCode.isdigit():
+        if orgCode and not orgCode.isdigit():
             raise forms.ValidationError("Тільки цифри")
         return orgCode
 
@@ -199,12 +198,6 @@ class OrderInCartForm(ModelForm):
         super(OrderInCartForm, self).__init__(*args, **kwargs)
         self.fields['comment'].label = "Коментар"
         self.fields['isComplete'].label = "Підтверджено"
-
-
-
-class PreOrderInClientCartForm_Test(DynamicFormMixin, forms.Form):
-    place = forms.ModelChoiceField(queryset=Place.objects.all())
-
 
 
 class PreOrderInClientCartForm(ModelForm):

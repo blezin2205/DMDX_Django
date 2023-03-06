@@ -8,7 +8,10 @@ urlpatterns = [
     path('cart/', views.cartDetail, name='cart'),
     path('preorders-cart/', views.cartDetailForClient, name='precart'),
     path('get_place_for_city_in_cart/', views.get_place_for_city_in_cart, name='get_place_for_city_in_cart'),
+    path('get_place_for_city_in_precart/', views.get_place_for_city_in_precart, name='get_place_for_city_in_precart'),
     path('get_agreement_for_place_for_city_in_cart/', views.get_agreement_for_place_for_city_in_cart, name='get_agreement_for_place_for_city_in_cart'),
+    path('add_to_exist_order_from_cart/', views.add_to_exist_order_from_cart, name='add_to_exist_order_from_cart'),
+    path('choose_place_in_cart_not_precart/', views.choose_place_in_cart_not_precart, name='choose_place_in_cart_not_precart'),
     path('get_agreement_detail_for_cart/', views.get_agreement_detail_for_cart, name='get_agreement_detail_for_cart'),
 
 

@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-
+{% if not fromClientList %}
      <div class="col">
               <a href="/orders" class="btn btn-primary {% if isOrdersTab %} active {% endif %}" aria-current="page">Замовлення {% if cartCountData.orders_incomplete > 0 %} <span class="badge bg-warning ms-2">{{ cartCountData.orders_incomplete }}</span> {% endif %}</a>
     {% if request.user|has_group:"empl" or request.user.is_staff %}
@@ -25,7 +25,7 @@
 {% endif %}
 
     </div>
-
+{% endif %}
      <form method="get" class="form-inline justify-content-center">
          <div class="hstack w-50 gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between">
              <div class="hstack gap-2">

@@ -6,41 +6,9 @@
 
 {% block content %}
 
-<div class="vstack gap-3">
     {% for order in orders %}
 
-<div class="hstack gap-3">
-
- <a href="{% url 'agreementDetail' order.id %}?next={{ request.get_full_path }}" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" style="border-radius: 1rem;">
-    <div class="d-flex gap-2 w-100 justify-content-between">
-      <div>
-        <h6 class="mb-1">Договір №: {{order.description}}</h6>
-        <p class="mb-1">Для: {{order.for_place.name}}, {{order.for_place.city_ref.name}}</p>
-
-        {% if order.isComplete %}
-        <p class="mb-2"><span>Статус:</span> <span class="complete">Закрито</span></p>
-        {% else %}
-        <p class="mb-2"><span>Статус:</span> <span class="waiting">В очікуванні</span></p>
-        {% endif %}
-
-        {% if order.comment %}
-            <p class="mb-0"> <span class="text-muted">Комментарiй:</span> {{order.comment}}</p>
-        {% endif %}
-
-      </div>
-      <div>
-          {% if order.isComplete %}
-      <p class="opacity-60 text-nowrap date">Дата закриття: {{order.dateSent|date:"d.m.Y"}}</p>
-          {% endif %}
-      <p class="opacity-60 text-nowrap date">Дата створення: {{order.dateCreated|date:"d.m.Y"}}</p>
-      </div>
-
-    </div>
-  </a>
-
-  </div>
+{% include 'partials/preorder_preview_cell.html' %}
 
     {% endfor %}
-     </div>
-
 {% endblock %}

@@ -59,7 +59,7 @@ INSTALLED_APPS = [
     'pg_copy',
     # 'cloudinary_storage',
     'cloudinary',
-    'widget_tweaks'
+    # 'widget_tweaks'
 ]
 
 MIDDLEWARE = [
@@ -128,28 +128,28 @@ WSGI_APPLICATION = 'DMDX_Django.wsgi.application'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'dmdx',
-        'USER': 'blezin',
-        'PASSWORD': 'blezin',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-
+#
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'dmdx_new',
-#         'USER': 'postgres',
-#         'PASSWORD': '4646',
+#         'NAME': 'dmdx',
+#         'USER': 'blezin',
+#         'PASSWORD': 'blezin',
 #         'HOST': 'localhost',
 #         'PORT': '5432',
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'dmdx_new',
+        'USER': 'postgres',
+        'PASSWORD': '4646',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
 
 db_from_env = dj_database_url.config(conn_max_age=500)
 DATABASES['default'].update(db_from_env)
