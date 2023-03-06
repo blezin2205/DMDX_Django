@@ -9,6 +9,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit, Layout, MultiField, Div
 from django.forms import formset_factory
+from dynamic_forms import  DynamicField, DynamicFormMixin
 
 
 class CreateNPParselForm(ModelForm):
@@ -196,8 +197,15 @@ class OrderInCartForm(ModelForm):
         fields = ['comment', 'isComplete']
     def __init__(self, *args, **kwargs):
         super(OrderInCartForm, self).__init__(*args, **kwargs)
-        self.fields['comment'].label = "Комментарій"
-        self.fields['isComplete'].label = "Відправлено"
+        self.fields['comment'].label = "Коментар"
+        self.fields['isComplete'].label = "Підтверджено"
+
+
+
+class PreOrderInClientCartForm_Test(DynamicFormMixin, forms.Form):
+    place = forms.ModelChoiceField(queryset=Place.objects.all())
+
+
 
 class PreOrderInClientCartForm(ModelForm):
     class Meta:
@@ -206,8 +214,8 @@ class PreOrderInClientCartForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super(PreOrderInClientCartForm, self).__init__(*args, **kwargs)
         self.fields['place'].label = "Організація"
-        self.fields['comment'].label = "Комментарій"
-        self.fields['isComplete'].label = "Відправлено"
+        self.fields['comment'].label = "Коментар"
+        self.fields['isComplete'].label = "Підтверджено"
 
     def clean_place(self):
         place = self.cleaned_data['place']

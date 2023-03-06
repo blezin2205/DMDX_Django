@@ -29,7 +29,9 @@ urlpatterns = [
     path('cart/update_item/', views.updateCartItem, name='update_item_detail'),
     path('preorders-cart/update_item/', views.updateCartItem, name='update_item_detail'),
     path('preorders-cart/orderTypeDescriptionField/', views.orderTypeDescriptionField, name='orderTypeDescriptionField'),
+    path('preorders-cart/orderTypeDescriptionField_for_client/', views.orderTypeDescriptionField_for_client, name='orderTypeDescriptionField_for_client'),
     path('preorders-cart/update_count_in_preorder_cart/<int:itemId>', views.update_count_in_preorder_cart, name='update_count_in_preorder_cart'),
+    path('preorders-cart/choose_preorder_in_cart_for_client', views.choose_preorder_in_cart_for_client, name='choose_preorder_in_cart_for_client'),
 
 
     path('delete_supply/<int:suppId>', views.deleteSupply, name='delete_supply'),
@@ -61,6 +63,9 @@ urlpatterns = [
     path('agreements', views.agreements, name='agreements'),
 
     path('preorders', views.preorders, name='preorders'),
+    path('delete-preorder/<int:order_id>', views.deletePreorder, name='delete-preorder'),
+    path('delete_preorder_sup_in_preorder_cart/<int:sup_id>/<int:order_id>', views.delete_preorder_sup_in_preorder_cart, name='delete-preorder-sup-in-preorder-cart'),
+    path('update-preorder-status/<int:order_id>', views.updatePreorderStatus, name='updatePreorderStatus'),
     path('orders_update_status/<int:order_id>', views.orderUpdateStatus, name='orders_update_status'),
 
     path('clientsInfo', views.clientsInfo, name='clientsInfo'),
@@ -81,7 +86,8 @@ urlpatterns = [
     path('serviceNotes/delete/<int:note_id>', views.deleteServiceNote, name='deleteNote'),
     path('serviceNotes/update/<int:note_id>', views.updateNote, name='updateNote'),
 
-    path('orders/<int:order_id>', views.orderDetail, name='orderDetail'),
+    path('orders/<int:order_id>/<int:sup_id>', views.orderDetail, name='orderDetail'),
+    # path('orders/<int:order_id>/<int:sup_id>', views.orderDetail_with_highlighted, name='orderDetail_with_highlighted'),
     path('agreements/<int:agreement_id>', views.agreementDetail, name='agreementDetail'),
 
     path('preorders/<int:order_id>', views.preorderDetail, name='preorderDetail'),

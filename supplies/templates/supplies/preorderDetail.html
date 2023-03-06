@@ -1,5 +1,6 @@
-{% extends 'supplies/base.html' %}
+{% extends 'supplies/base_for_home.html' %}
 {% load myapp_extras %}
+{% load mathfilters %}
     {% block title %}
 {{ title }}
 {% endblock %}
@@ -38,25 +39,42 @@
     <tr>
       <th scope="col">{{supplies|length}}</th>
       <th scope="col" class="textAlignLeft">Назва товару</th>
+        <th scope="col">Пакування / Тести</th>
+    <th scope="col">Категорія</th>
         <th scope="col">REF</th>
-        <th scope="col">LOT</th>
-        <th scope="col">Кількість</th>
-        <th scope="col">Призначення</th>
-        <th scope="col">Термін придатності</th>
-     {% if request.user|has_group:"empl" or request.user.is_staff %}
-          <th scope="col">Оновлено</th>
+        <th scope="col">SMN code</th>
+        <th scope="col">Замовлено</th>
+    {% if order.isComplete %}
+        <th scope="col">Поставлено</th>
+        <th scope="col">Борг</th>
+
+
+    <th scope="col" >
+            <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %} ">
+                <div style="width: 110px;">LOT</div>
+            <div style="width: 110px;">Кількість</div>
+            <div style="width: 110px;">Термін</div>
+            </div>
+        </th>
     {% endif %}
+
         {% if not order.isComplete and request.user.is_staff %}
-        <th scope="col">Action</th>
+        <th scope="col"></th>
          {% endif %}
     </tr>
   </thead>
   <tbody>
     {% for el in supplies %}
 
-     <tr>
-      <th scope="row">{{forloop.counter}}</th>
-      <td style="text-align: left;">{% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</td>
+     <tr {% if order.isComplete %} style="background-color:{% if el.state_of_delivery == 'Complete' %} #eafff0 {% elif el.state_of_delivery == 'Partial' %} #fffdea {% else %} #fff0ea{% endif %}" {% endif %}>
+      <td scope="row">{{forloop.counter}}.</td>
+      <td style="text-align: left; font-weight: bolder">{% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</td>
+     <td class="supplyRow">
+                    {% if el.generalSupply.package_and_tests is not none %}
+                        {{ el.generalSupply.package_and_tests }}
+                {% endif %}
+                    </td>
+     <td>{{ el.generalSupply.category.name }}</td>
       <td>
           {% if el.generalSupply.ref is not none %}
                         {% if el.generalSupply %} {{ el.generalSupply.ref }} {% else %} {{ el.internalRef }} {% endif %}
@@ -64,32 +82,61 @@
       </td>
 
          <td class="supplyRow">
-                    {% if el.lot is not none %}
-                        {{ el.lot }}
+                    {% if el.generalSupply.SMN_code is not none %}
+                        {{ el.generalSupply.SMN_code }}
                 {% endif %}
                     </td>
 
             <td>
-                <div class="hstack gap-2 justify-content-center">
+                <div class="hstack gap-1 justify-content-center">
                     {% if not order.isComplete %}
-                    <button data-product="{{ el.id }}" data-action="remove-preorder" class="btn btn-lg update-order-count text-primary" type="submit"><i class="bi bi-dash"></i></button>
+                    <button data-product="{{ el.id }}" data-action="remove-preorder" class="btn  update-order-count text-primary" type="submit"><div class="font-weight-bold">-</div></button>
                     {% endif %}
                     {{ el.count_in_order }}
                 {% if not order.isComplete %}
-                    <button data-product="{{ el.id }}" data-action="add-preorder" class="btn btn-lg update-order-count text-primary" type="submit"><i class="bi bi-plus"></i></button>
+                    <button data-product="{{ el.id }}" data-action="add-preorder" class="btn update-order-count text-primary" type="submit"><div class="font-weight-bold">+</div></button>
                 {% endif %}
 
                 </div>
             </td>
-            <td>{{ el.generalSupply.category.name }}</td>
-            <td>{{ el.date_expired|date:"d.m.Y" }}</td>
-            {% if request.user|has_group:"empl" or request.user.is_staff %}
-          <td style="min-width: 100px">{{ el.date_created|date:"d.m.Y" }}</td>
+
+     {% if order.isComplete %}
+         <td>{{ el.count_in_order_current }}</td>
+         <td>{{ el.count_in_order|sub:el.count_in_order_current }}</td>
+
      {% endif %}
-     {% if not order.isComplete %}
+{% if order.isComplete %}
+     <td class="supplyRow">
+
+<table class="table table-borderless mb-0" style="background: rgb(245,245,245); border-radius: 8px;">
+  <tbody>
+   {% for supp in el.supplyinorder_set.all %}
+{#       {% if supp.supply_for_order.isComplete %}#}
+           <tr>
+
+
+      <td  style="width: 120px"><div>{% if supp.lot is not none %} {{ supp.lot }} {% endif %}</div></td>
+      <td style="width: 110px"><div>{{ supp.count_in_order }}</div> </td>
+      <td style="width: 100px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.date_expired|date:"d.m.Y" }}
+ </div>
+      </td>
+           <td style="width: 50px">
+           <a href="{% url 'orderDetail' order_id=supp.supply_for_order.id sup_id=supp.id %}?next={{ request.get_full_path|urlencode }}" {% if not supp.supply_for_order.isComplete %} class="link-warning" {% endif %} >№{{ supp.supply_for_order.id }}</a></td>
+</tr>
+{#      {% endif %}#}
+
+     {% endfor %}
+  </tbody>
+</table>
+</td>
+     {% endif %}
+
+         {% if not order.isComplete %}
      <td><button data-product={{ el.id }} data-action="delete-preorder" class="btn btn-sm btn-danger add-btn delete-suppinorder-button"><i class="bi bi-trash"></i></button></td>
      {% endif %}
-    </tr>
+
+
+
    {% endfor %}
   </tbody>
 </table>

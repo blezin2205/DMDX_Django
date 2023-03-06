@@ -1,5 +1,6 @@
 {% extends 'supplies/base.html' %}
 {% load myapp_extras %}
+{% load crispy_forms_filters %}
     {% block title %}
 {{ title }}
 {% endblock %}
@@ -25,56 +26,26 @@
 
     </div>
 
+     <form method="get" class="form-inline justify-content-center">
+         <div class="hstack w-50 gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between">
+             <div class="hstack gap-2">
+                 {{ preorderFilter.form.isComplete|as_crispy_field }}
+                 {{ preorderFilter.form.state_of_delivery|as_crispy_field }}
+             </div>
+             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
+
+</div>
+
+        </form>
+
+
 {% if orders.count == 0 %}
 
     <h3>Передзамовлень ще немає!</h3>
 {% else %}
-    <div class="listOrders my-4">
-    {% for order in orders %}
-
-<div class="hstack gap-3 py-2">
-
- <a href="{% url 'preorderDetail' order.id %}?next={{ request.get_full_path }}" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" style="border-radius: 1rem;">
-    <div class="d-flex gap-2 w-100 justify-content-between">
-      <div>
-        <h6 class="mb-1">Заказ №: {{order.id}}</h6>
-        <p class="mb-1">Для: {{order.place.name}}, {{order.place.city_ref.name}}</p>
-
-        {% if order.isComplete %}
-        <p class="mb-2"><span>Статус:</span> <span class="complete">Підтверджено</span></p>
-        {% else %}
-        <p class="mb-2"><span>Статус:</span> <span style="color: #5bc0de; font-weight: bold">В очікуванні</span></p>
-        {% endif %}
-
-        {% if order.comment %}
-            <p class="mb-0"> <span class="text-muted">Комментарiй:</span> {{order.comment}}</p>
-        {% endif %}
-
-      </div>
-      <div>
-          {% if order.isComplete %}
-      <p class="opacity-60 text-nowrap date">Дата відправки: {{order.dateSent|date:"d.m.Y"}}</p>
-          {% endif %}
-      <p class="opacity-60 text-nowrap date">Дата створення: {{order.dateCreated|date:"d.m.Y"}}</p>
-      </div>
-
-    </div>
-  </a>
-
-{% if not order.isComplete %}
-
-<button data-product="{{ order.id }}" data-action="update-preorder" class="btn btn-success btn-lg add-btn update-order-status" type="submit"><i class="bi bi-check2"></i></button>
-    {% else %}
-    <a href="{% url 'preorderDetail-generate-order' order.id %}?next={{ request.get_full_path }}" class="btn btn-primary btn-lg" role="button" data-toggle="tooltip" data-placement="top" title="Згенерувати замовлення"><i class="bi bi-cart-plus-fill"></i></a>
-{% endif %}
-    <form action="" onsubmit="window.mytest()">
-        <button data-product="{{ order.id }}" data-action="delete-preorder" class="btn btn-danger btn-lg add-btn update-order-status" type="submit"><i class="bi bi-trash"></i></button>
-    </form>
-
-  </div>
-
-    {% endfor %}
-    </div>
+    <div class="container" id="preorders-list">
+    {% include 'partials/preorders-list.html' %}
+</div>
 {% endif %}
 <script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
 {% endblock %}

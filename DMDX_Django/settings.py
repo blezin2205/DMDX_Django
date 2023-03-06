@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'pg_copy',
     # 'cloudinary_storage',
     'cloudinary',
+    'widget_tweaks'
 ]
 
 MIDDLEWARE = [

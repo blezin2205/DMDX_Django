@@ -1,6 +1,6 @@
-<div id="order_preview_cell{{ order.id }}" class="my-2">
+<div id="order_preview_cell{{ order.id }}" class="my-4">
     <div class="hstack gap-3">
-     <a href="{% url 'orderDetail' order.id %}?next={{ request.get_full_path|urlencode }}" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" style="border-radius: 1rem;">
+     <a href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" style="border-radius: 1rem;">
      <div class="d-flex gap-2 w-100 justify-content-between">
      <div>
     <h6 class="mb-1">Замовлення №: {{order.id}}</h6>
@@ -8,6 +8,11 @@
      {% if order.for_agreement %}
           <p class="mb-1">Договір: <b>№{{order.for_agreement.description}}</b></p>
       {% endif %}
+
+     {% if order.for_preorder %}
+          <p class="mb-1">Передзамовлення: <b>№{{order.for_preorder.id}}</b></p>
+      {% endif %}
+
      {% if order.isComplete %}
         <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span></p>
         {% else %}

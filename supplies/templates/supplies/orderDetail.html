@@ -87,7 +87,7 @@
   <tbody>
     {% for el in supplies %}
 
-     <tr>
+     <tr style="{% if el.id == highlighted_sup_id %} background-color: #eafff0 {% endif %}">
       <th scope="row" style="text-align: left">{{forloop.counter}}. {% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</th>
       <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.package_and_tests }}{% endif %}</td>
       <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.category.name }}{% endif %}</td>

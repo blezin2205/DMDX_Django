@@ -10,20 +10,17 @@
 {% block content %}
 <form method="POST" action="">
 
-<section class="h-100" style="background-color: #eee;">
-
-
-
+<section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #eee;">
   <div class="container h-100 py-3">
     <div class="row d-flex justify-content-center align-items-center h-100">
       <section class="col-10">
       {% for key, value in supDict.items %}
 
-          <section class="h-100 p-3 my-2" style="background-color: #f3f3f3;">
-          <div class="row d-flex justify-content-center align-items-center h-100">  {{ key }}</div>
+          <section class="h-100 p-3 my-4 row d-flex shadow-sm rounded" style="background-color: #f8f8f8;">
+          <h6><div class="row d-flex justify-content-center align-items-center h-100">  {{ key }}</div></h6>
 
           {% for item in value %}
-        <div class="card rounded-5 mb-4">
+        <div class="card rounded-5 mt-3">
           <div class="card-body px-3">
             <div class="row d-flex justify-content-between align-items-center">
               <div class="col-md-2 col-lg-4 col-xl-4">
@@ -42,9 +39,9 @@
 
               </div>
               <div class="col-md-3 col-lg-3 col-xl-2 d-flex">
-                <input id="form1{{ item.id }}" min="0" name="count_list" value="{{ item.count_in_order }}" type="number"
-                  class="form-control form-control-sm" hx-trigger="keyup changed delay:1000ms" hx-post="{% url 'update_count_in_preorder_cart' item.id %}" hx-target="#precart-badge" />
-                  <input type="hidden" id="hidden{{ item.id }}" name="count_list_id" value="{{ item.id }}">
+                <input id="form1{{ item.id }}" min="0" name="count_{{ item.id }}" value="{{ item.count_in_order }}" type="number"
+                  class="form-control form-control-sm" hx-trigger="keyup changed delay:1000ms" hx-post="{% url 'update_count_in_preorder_cart' item.id %}" hx-target="#precart-badge"/>
+                  <input type="hidden" id="hidden{{ item.id }}" name="count_id_{{ item.id }}" value="{{ item.id }}">
 
               </div>
               <div class="col-md-2 col-lg-2 col-xl-2 offset-lg-1">
@@ -61,6 +58,14 @@
           {% endfor %}
           </section>
       {% endfor %}
+
+      <div class="pb-3">
+{#          {% if isClient %}#}
+{#          {{ orderForm.place|as_crispy_field }}#}
+{#      {% endif %}#}
+      {{ orderForm.comment|as_crispy_field }}
+          {{ orderForm.isComplete|as_crispy_field }}
+      </div>
 
       <style>
 input[type=number]::-webkit-inner-spin-button,
@@ -81,32 +86,25 @@ input[type=number]::-webkit-outer-spin-button {
       <div id="places">
           {% include 'partials/choose_place_in_cart.html' %}
       </div>
-      {% endif %}
-      {% if isClient %}
-          {{ orderForm.place|as_crispy_field }}
-      {% endif %}
-      {{ orderForm.comment|as_crispy_field }}
-      {{ orderForm.isComplete|as_crispy_field }}
-      <div class="vstack gap-4">
-
-           {% if not isClient %}
-       <div class="btn-group pt-3" role="group" aria-label="Basic radio toggle button group" style="width: fit-content">
-  <input type="radio" class="btn-check" name="orderType" value="Preorder" id="btnradio1" autocomplete="off" checked hx-post="{% url 'orderTypeDescriptionField' %}" hx-trigger="click" hx-target="#orderType">
-  <label class="btn btn-outline-primary" for="btnradio1">Передзамовлення</label>
-
-  <input type="radio" class="btn-check" name="orderType" value="Agreement" id="btnradio2" autocomplete="off" hx-post="{% url 'orderTypeDescriptionField' %}" hx-trigger="click" hx-target="#orderType">
-  <label class="btn btn-outline-primary" for="btnradio2">Договір</label>
-</div>
-               <div id="orderType">
-         {% include 'partials/orderTypeDescriptionField.html' %}
-    </div>
-       {% endif %}
-      <input type="hidden" name="next" value="{{ request.GET.next }}">
-     <button class="btn btn-outline-primary my-2" style="width: 100px" type="submit">Зберегти</button>
+            {% else %}
+            <select class="form-select mb-3" aria-label="Default select example" name="place_id" hx-get="{% url 'choose_preorder_in_cart_for_client' %}" hx-trigger="change" hx-target="#preorders_for_client">
+  <option selected>Вибрати організацію</option>
+             {% for place in places %}
+                 <option value="{{place.id}}">{{ place.name }}, {{ place.city_ref.name }}</option>
+             {% endfor %}
+</select>
+      <div id="preorders_for_client">
+          {% include 'partials/choose_preorder_in_cart_for_client.html' %}
       </div>
+
+
+{#            <input type="hidden" name="orderType" value="Preorder">#}
+{#            <input type="hidden" name="next" value="{{ request.GET.next }}">#}
+{#     <button class="btn btn-outline-primary my-2" style="width: 100px" type="submit">Зберегти</button>#}
+      {% endif %}
+
       </div>
     </div>
-  </div>
 </section>
  </form>
 {% endblock %}

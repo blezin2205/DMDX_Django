@@ -21,7 +21,6 @@ class CustomUser(AbstractUser):
     mobNumber = models.CharField(max_length=100, null=True)
     np_sender_ref = models.CharField(max_length=100, null=True)
     np_last_choosed_delivery_place_id = models.SmallIntegerField(blank=True, null=True)
-    isUserAbleToDelivery = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
@@ -279,8 +278,31 @@ class Agreement(models.Model):
         verbose_name_plural = 'Договори'
 
 
+class PreOrder(models.Model):
+    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+    place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
+    dateCreated = models.DateField(auto_now_add=True, null=True)
+    dateSent = models.DateField(null=True, blank=True)
+    isComplete = models.BooleanField(default=False)
+    comment = models.CharField(max_length=300, null=True, blank=True)
+    STATE_CHOICES = (
+        ('Awaiting', 'Очікується'),
+        ('Partial', 'Частково поставлено'),
+        ('Complete', 'Повністю поставлено'),
+    )
+    state_of_delivery = models.CharField(max_length=20, choices=STATE_CHOICES, default='Awaiting')
+
+    def __str__(self):
+        return f'презаказ № {self.id}, для {self.place.name}, от {self.dateSent}'
+
+    class Meta:
+        verbose_name = 'Передзамовлення'
+        verbose_name_plural = 'Передзамовлення'
+
+
 class Order(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+    for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, related_name='orders_for_preorder')
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)
@@ -352,20 +374,7 @@ class StatusNPParselFromDoucmentID(models.Model):
 
 
 
-class PreOrder(models.Model):
-    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
-    place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
-    dateCreated = models.DateField(auto_now_add=True, null=True)
-    dateSent = models.DateField(null=True, blank=True)
-    isComplete = models.BooleanField(default=False)
-    comment = models.CharField(max_length=300, null=True, blank=True)
 
-    def __str__(self):
-        return f'презаказ № {self.id}, для {self.place.name}, от {self.dateSent}'
-
-    class Meta:
-        verbose_name = 'Передзамовлення'
-        verbose_name_plural = 'Передзамовлення'
 
 
 class SupplyInAgreement(models.Model):
@@ -417,19 +426,20 @@ class SupplyInAgreement(models.Model):
 
 class SupplyInPreorder(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True)
+    count_in_order_current = models.PositiveIntegerField(default=0)
     generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.SET_NULL, null=True, blank=True)
-    supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True)
     supply_for_order = models.ForeignKey(PreOrder, on_delete=models.CASCADE, null=True)
-    lot = models.CharField(max_length=20, null=True, blank=True)
-    date_expired = models.DateField(null=True)
-    date_created = models.DateField(null=True, blank=True)
+    STATE_CHOICES = (
+        ('Awaiting', 'Очікується'),
+        ('Partial', 'Частково поставлено'),
+        ('Complete', 'Повністю поставлено'),
+    )
+    state_of_delivery = models.CharField(max_length=20, choices=STATE_CHOICES, default='Awaiting')
 
     def __str__(self):
         name = None
         if self.generalSupply:
             name = self.generalSupply.name
-        elif self.supply:
-            name = self.supply.general_supply.name
 
         return f'ID order: {self.supply_for_order.id} | name: {name}'
 
@@ -443,12 +453,22 @@ class SupplyInOrder(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True)
     generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.SET_NULL, null=True, blank=True, related_name='inGeneralSupp')
     supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True, related_name='inSupply')
+    supply_in_preorder = models.ForeignKey(SupplyInPreorder, on_delete=models.SET_NULL, null=True, blank=True)
     supply_for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
     lot = models.CharField(max_length=20, null=True, blank=True)
     date_expired = models.DateField(null=True)
     date_created = models.DateField(null=True, blank=True)
     internalName = models.CharField(max_length=50, null=True, blank=True)
     internalRef = models.CharField(max_length=30, null=True, blank=True)
+
+    def date_is_good(self):
+        return self.date_expired > timezone.now().date()
+
+    def date_is_expired(self):
+        return self.date_expired < timezone.now().date()
+
+    def date_is_today(self):
+        return self.date_expired == timezone.now().date()
 
 
     def hasSupply(self):

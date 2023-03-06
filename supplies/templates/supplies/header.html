@@ -20,7 +20,7 @@
             <li class="nav-item"><a href="/allDevices" class="btn btn-outline-primary{% if isDevices %} active {% endif %}" aria-current="page">Прилади</a></li>
 
             {% endif %}
-            {% if request.user.is_staff %}
+            {% if request.user.is_staff or request.user|has_group:"empl" %}
 
                 <li class="nav-item dropdown mx-4">
                             <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Додати</a>
@@ -61,9 +61,9 @@
 
 
             <span class="my-3">&#129409; Привіт, {{ request.user.first_name }} {{ request.user.last_name }} &#129409;</span>
-                         <a href="" class="btn btn-sm btn-outline-primary me-1" role="button"><i class="bi bi-gear"></i></a>
+{#                         <a href="" class="btn btn-sm btn-outline-primary me-1" role="button"><i class="bi bi-gear"></i></a>#}
             <span>
-            <a class="btn btn-outline-primary ms-3" href="{% url 'logout' %}" role="button">Вийти</a>
+            <a class="btn btn-outline-primary ms-3" href="{% url 'logout' %}" role="button"><i class="bi bi-box-arrow-right"></i></a>
             </span>
         {% endif %}
                 </div>
