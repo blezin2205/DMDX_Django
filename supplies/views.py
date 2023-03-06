@@ -865,8 +865,6 @@ def get_agreement_for_place_for_city_in_cart(request):
     return render(request, 'partials/choose_agreement_forplace_incart.html', {'agreements': agreements, 'isPendingPreorderExist': agreements.exists(), 'isPlaceChoosed': True})
 
 
-
-
 def sendTeamsMsgCart(order):
     agreementString = ''
     if order.for_preorder:
@@ -977,7 +975,7 @@ def cartDetail(request):
                         count = request.POST.get(f'count_{sup.id}')
                         general_sup = sup.supply.general_supply
                         try:
-                            exist_sup = sups_in_order.get(generalSupply=general_sup)
+                            exist_sup = sups_in_order.get(supply=sup.supply)
                             exist_sup.count_in_order += int(count)
                             exist_sup.save()
                             supply = exist_sup.supply
@@ -985,14 +983,13 @@ def cartDetail(request):
                                 countOnHold = int(supply.countOnHold)
                             except:
                                 countOnHold = 0
-                            countInOrder = int(exist_sup.count_in_order)
+                            countInOrder = exist_sup.count_in_order
                             if isComplete:
-                                supDeltaCount = supply.count - countInOrder
-                                if supDeltaCount == 0:
+                                supply.countOnHold -= countOnHold
+                                supply.count -= countInOrder
+                                supply.save(update_fields=['countOnHold', 'count'])
+                                if supply.count == 0:
                                     supply.delete()
-                                else:
-                                    supply.count -= countInOrder
-                                    supply.save(update_fields=['count'])
 
                                 genSupInPreorder = exist_sup.supply_in_preorder
                                 if genSupInPreorder:
@@ -1003,24 +1000,32 @@ def cartDetail(request):
                                         genSupInPreorder.state_of_delivery = 'Partial'
                                     genSupInPreorder.save()
 
-
                             else:
                                 if supply.countOnHold:
-                                    supply.countOnHold = countOnHold + countInOrder
+                                    print('-------------------------')
+                                    print(supply.countOnHold)
+                                    print(f'count on hold = {countOnHold}')
+                                    print(f'count in order = {count}')
+                                    print('-------------------------')
+                                    supply.countOnHold = countOnHold + int(count)
                                     supply.save(update_fields=['countOnHold'])
                                 else:
                                     supply.countOnHold = 0
                                     supply.save(update_fields=['countOnHold'])
-                                    supply.countOnHold = countOnHold + countInOrder
+                                    supply.countOnHold = countOnHold + int(count)
                                     supply.save(update_fields=['countOnHold'])
 
-
                         except:
+                            try:
+                                sup_in_preorder = selectedOrder.for_preorder.supplyinpreorder_set.get(
+                                    generalSupply=general_sup)
+                            except:
+                                sup_in_preorder = None
                             suppInOrder = SupplyInOrder(count_in_order=count,
                                                         supply=sup.supply,
                                                         generalSupply=general_sup,
                                                         supply_for_order=selectedOrder,
-                                                        supply_in_preorder=selectedOrder.for_preorder,
+                                                        supply_in_preorder=sup_in_preorder,
                                                         lot=sup.lot,
                                                         date_created=sup.date_created,
                                                         date_expired=sup.date_expired,
@@ -1040,6 +1045,17 @@ def cartDetail(request):
                                 else:
                                     supply.count -= countInOrder
                                     supply.save(update_fields=['count'])
+
+                                genSupInPreorder = suppInOrder.supply_in_preorder
+                                if genSupInPreorder:
+                                    genSupInPreorder.count_in_order_current += countInOrder
+                                    if genSupInPreorder.count_in_order - genSupInPreorder.count_in_order_current <= 0:
+                                        genSupInPreorder.state_of_delivery = 'Complete'
+                                    else:
+                                        genSupInPreorder.state_of_delivery = 'Partial'
+                                    genSupInPreorder.save()
+
+
                             else:
                                 if supply.countOnHold:
                                     supply.countOnHold = countOnHold + countInOrder
@@ -1049,6 +1065,15 @@ def cartDetail(request):
                                     supply.save(update_fields=['countOnHold'])
                                     supply.countOnHold = countOnHold + countInOrder
                                     supply.save(update_fields=['countOnHold'])
+
+                    if selectedOrder.for_preorder and isComplete:
+                        sups_in_preorder = selectedOrder.for_preorder.supplyinpreorder_set.all()
+                        if all(sp.state_of_delivery == 'Complete' for sp in sups_in_preorder):
+                            selectedOrder.for_preorder.state_of_delivery = 'Complete'
+                        elif any(x.state_of_delivery == 'Partial' or 'Awaiting' for x in sups_in_preorder):
+                            selectedOrder.for_preorder.state_of_delivery = 'Partial'
+                        selectedOrder.for_preorder.save(update_fields=['state_of_delivery'])
+
 
 
             orderInCart.delete()
@@ -2576,6 +2601,9 @@ def preorderDetail_generateOrder(request, order_id):
                     supInOrder.save()
                     s.countOnHold += s.count
                     s.save(update_fields=['countOnHold'])
+
+            t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
+            t.start()
             return redirect('/orders')
 
         else:
