@@ -880,10 +880,10 @@ def sendTeamsMsgCart(order):
     if order.comment:
         comment = f'*комментарій:*  **{order.comment}**'
         myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
-        # myTeamsMessage.send()
+        myTeamsMessage.send()
     else:
         myTeamsMessage.text(f'{agreementString}\n\n{created}')
-        # myTeamsMessage.send()
+        myTeamsMessage.send()
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin', 'empl'])
