@@ -129,10 +129,10 @@
                 <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
             {% endif %}
     </div>
-    {% if uncompleteOrdersExist %}
-    <a href="{% url 'addSupplyToExistOrder' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary me-1 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого замовлення"><i class="bi bi-bag-plus"></i></a>
-
-            {% endif %}
+{#    {% if uncompleteOrdersExist %}#}
+{#    <a href="{% url 'addSupplyToExistOrder' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary me-1 {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого замовлення"><i class="bi bi-bag-plus"></i></a>#}
+{##}
+{#            {% endif %}#}
     {% if request.user|has_group:"admin" %}
         <a href="{% url 'updateSupply' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning me-1" role="button" data-toggle="tooltip" data-placement="top" title="Редагувати LOT"><i class="bi bi-pencil"></i></a>
          {% endif %}
