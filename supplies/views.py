@@ -970,8 +970,11 @@ def cartDetail(request):
                     sups_in_order = selectedOrder.supplyinorder_set.all()
                     # print("----||||||||---------")
                     # print(sups_in_preorder)
+                    sups_in_order_arr = []
+                    sups_in_order_arr = list(sups_in_order)
 
-                    for index, sup in enumerate(supplies):
+
+                    for sup in supplies:
                         count = request.POST.get(f'count_{sup.id}')
                         general_sup = sup.supply.general_supply
                         try:
@@ -979,12 +982,16 @@ def cartDetail(request):
                             exist_sup.count_in_order += int(count)
                             exist_sup.save()
                             supply = exist_sup.supply
+                            sups_in_order_arr.remove(exist_sup)
+                            print('------------removed-------------')
+                            print(exist_sup.supply.general_supply.name)
                             try:
                                 countOnHold = int(supply.countOnHold)
                             except:
                                 countOnHold = 0
                             countInOrder = exist_sup.count_in_order
                             if isComplete:
+                                print(isComplete)
                                 supply.countOnHold -= countOnHold
                                 supply.count -= countInOrder
                                 supply.save(update_fields=['countOnHold', 'count'])
@@ -1065,6 +1072,30 @@ def cartDetail(request):
                                     supply.save(update_fields=['countOnHold'])
                                     supply.countOnHold = countOnHold + countInOrder
                                     supply.save(update_fields=['countOnHold'])
+
+                    print('---------------------////////////----------------')
+                    if isComplete:
+                        for su in sups_in_order_arr:
+                            try:
+                                countOnHold = int(su.supply.countOnHold)
+                            except:
+                                countOnHold = 0
+                            print(su.supply.general_supply.name)
+                            su.supply.countOnHold -= countOnHold
+                            su.supply.count -= su.count_in_order
+                            su.supply.save(update_fields=['countOnHold', 'count'])
+                            if su.supply.count == 0:
+                                su.supply.delete()
+
+                            genSupInPreorder = su.supply_in_preorder
+                            if genSupInPreorder:
+                                genSupInPreorder.count_in_order_current += su.count_in_order
+                                if genSupInPreorder.count_in_order - genSupInPreorder.count_in_order_current <= 0:
+                                    genSupInPreorder.state_of_delivery = 'Complete'
+                                else:
+                                    genSupInPreorder.state_of_delivery = 'Partial'
+                            genSupInPreorder.save()
+
 
                     if selectedOrder.for_preorder and isComplete:
                         sups_in_preorder = selectedOrder.for_preorder.supplyinpreorder_set.all()
@@ -2222,7 +2253,12 @@ def render_to_xls(request, order_id):
 
 def preorder_render_to_xls(request, order_id):
     order = get_object_or_404(PreOrder, pk=order_id)
-    supplies_in_order = order.supplyinpreorder_set.all()
+    supplies_in_order_all = order.supplyinpreorder_set.all()
+    supplies_in_order = []
+    for sup in supplies_in_order_all:
+        if sup.count_in_order - sup.count_in_order_current > 0:
+            supplies_in_order.append(sup)
+    print(supplies_in_order)
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f"attachment; filename=Preorder_{order_id}.xlsx"
@@ -2235,12 +2271,14 @@ def preorder_render_to_xls(request, order_id):
     format.set_font_size(16)
 
     columns_table = [{'header': '№'},
-                     {'header': 'Назва товару'},
+                     {'header': 'Name'},
+                     {'header': 'Category'},
                      {'header': 'REF'},
-                     {'header': 'LOT'},
-                     {'header': 'К-ть'},
-                     {'header': 'Тер.прид.'},
-                     {'header': 'Index'}
+                     {'header': 'SMN code'},
+                     {'header': 'Count in order'},
+                     {'header': 'Delivered count'},
+                     {'header': 'Awaiting count'},
+                     # {'header': 'Index'}
                      ]
 
     ws.write(0, 0,
@@ -2331,15 +2369,18 @@ def preorder_render_to_xls(request, order_id):
         ref = ''
         if row.generalSupply.ref:
             ref = row.generalSupply.ref
-        lot = ''
-        if row.lot:
-            lot = row.lot
-        count = row.count_in_order
+        smn = ''
+        if row.generalSupply.SMN_code:
+            smn = row.generalSupply.SMN_code
+        category = ''
+        if row.generalSupply.category:
+            category = row.generalSupply.category
+        count_in_order = row.count_in_order
+        current_delivery_count = row.count_in_order_current
+        count_borg = row.count_in_order - row.count_in_order_current
         date_expired = ''
-        if row.date_expired:
-            date_expired = row.date_expired.strftime("%d-%m-%Y")
 
-        val_row = [name, ref, lot, count, date_expired, colorIndex]
+        val_row = [name, category, ref, smn, count_in_order, current_delivery_count, count_borg]
 
         for col_num in range(len(val_row)):
             ws.write(row_num, 0, row_num - 3)
@@ -2347,12 +2388,11 @@ def preorder_render_to_xls(request, order_id):
 
     ws.set_column(0, 0, 5)
     ws.set_column(1, 1, 35)
-    ws.set_column(2, 3, 15)
-    ws.set_column(4, 4, 6)
-    ws.set_column(5, 5, 12)
-    ws.set_column(6, 6, 5)
+    ws.set_column(2, 4, 20)
+    ws.set_column(4, 7, 15)
+    # ws.set_column(8, 8, 5)
 
-    ws.add_table(9, 0, supplies_in_order.count() + 9, len(columns_table) - 1, {'columns': columns_table})
+    ws.add_table(9, 0, len(supplies_in_order) + 9, len(columns_table) - 1, {'columns': columns_table})
     wb.close()
 
     return response

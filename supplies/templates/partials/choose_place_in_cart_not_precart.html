@@ -2,7 +2,7 @@
 {% if cityChoosed %}
 <select class="form-select my-3" aria-label="Default select example" name="place_id" hx-get="{% url 'choose_place_in_cart_not_precart' %}" hx-trigger="change"
         hx-target="#orders_uncompleted">
-  <option selected>Вибрати організацію(orders)</option>
+  <option selected>Вибрати організацію...</option>
              {% for place in places %}
                  <option value="{{place.id}}">{{ place.name }}</option>
              {% endfor %}

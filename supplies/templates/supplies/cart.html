@@ -82,7 +82,7 @@
 
       {{ orderForm.comment|as_crispy_field }}
       {% if request.user|has_group:"admin" or request.user.is_staff %}
-{#      {{ orderForm.isComplete|as_crispy_field }}#}
+      {{ orderForm.isComplete|as_crispy_field }}
       {% endif %}
 
       {% csrf_token %}
