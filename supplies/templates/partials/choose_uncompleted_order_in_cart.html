@@ -11,10 +11,29 @@
                <div id="orderType">
                {% include 'partials/add_to_exist_order_from_cart.html' %}
     </div>
+    {% if place.isHaveUncompletedPreorders %}
+        <div class="alert alert-warning" role="alert">
+  <h5>Ця організація має незавершені передзамовлення!</h5>
+            <div class="row d-flex justify-content-center align-items-center h-100">
+    {% for preorder in preorders %}
+        <a href="{% url 'preorderDetail' preorder.id %}"> №{{ preorder.id }} {% if preorder.comment %} | {{ preorder.comment }} {% endif %}  </a>
+        {% endfor %}
+     </div>
+</div>
+        {% endif %}
                {% else %}
+    {% if place.isHaveUncompletedPreorders %}
+        <div class="alert alert-warning" role="alert">
+  <h5>Ця організація має незавершені передзамовлення!</h5>
+            <div class="row d-flex justify-content-center align-items-center h-100">
+    {% for preorder in preorders %}
+        <a style="font-weight: bold" class="my-1" href="{% url 'preorderDetail' preorder.id %}"> №{{ preorder.id }} {% if preorder.comment %} | {{ preorder.comment }} {% endif %}  </a>
+        {% endfor %}
+     </div>
+</div>
+        {% endif %}
                <input type="hidden" name="orderType" value="new_order">
     <input type="hidden" name="next" value="{{ request.GET.next }}">
      <button class="btn btn-outline-primary my-2" style="width: 100px" type="submit" name="save">Зберегти</button>
-
        {% endif %}
        {% endif %}

@@ -847,11 +847,15 @@ def choose_place_in_cart_not_precart(request):
     try:
         place = Place.objects.get(pk=place_id)
         orders = place.order_set.filter(isComplete=False)
+        preorders = place.getUcompletePreorderSet()
     except:
         place = None
         orders =None
+        preorders = None
 
-    return render(request, 'partials/choose_uncompleted_order_in_cart.html', {'orders': orders, 'isPlaceChoosed': place != None})
+
+
+    return render(request, 'partials/choose_uncompleted_order_in_cart.html', {'orders': orders, 'place': place, 'preorders': preorders, 'isPlaceChoosed': place != None})
 
 
 

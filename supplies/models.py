@@ -176,7 +176,7 @@ class Supply(models.Model):
 
 
 
-
+from django.db.models import Q
 
 class Place(models.Model):
     name = models.CharField(max_length=200)
@@ -191,6 +191,18 @@ class Place(models.Model):
     address_NP = models.OneToOneField('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, unique=True)
     isAddedToNP = models.BooleanField(default=False, blank=True)
     name_in_NP = models.CharField(max_length=200, null=True, blank=True)
+
+    def isHaveUncompletedPreorders(self):
+        if self.preorder_set.exists():
+           if self.preorder_set.filter(state_of_delivery='Awaiting').exists() or self.preorder_set.filter(state_of_delivery='Partial').exists():
+               return True
+           else:
+              return False
+        else:
+           return False
+
+    def getUcompletePreorderSet(self):
+       return self.preorder_set.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial'))
 
 
     def __str__(self):
