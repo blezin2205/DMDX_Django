@@ -105,15 +105,26 @@ def fetchxmls():
     #         genSup = GeneralSupply(name=name, ref=ref, package_and_tests=packed, category_id=5)
     #         genSup.save()
 
-
+@login_required(login_url='login')
 def countCartItemsHelper(request):
+    precart_order = PreorderInCart.objects.filter(userCreated=request.user)
+    print('___________________PRECART____________________')
+    print(precart_order)
+    print(request.user.first_name)
+
     try:
         orderInCart = OrderInCart.objects.first()
-        cart_items = orderInCart.get_cart_items
+        orderitems = orderInCart.supplyinorderincart_set.all()
+        cart_items = sum([item.count_in_order for item in orderitems])
     except:
         cart_items = 0
     try:
-        precart_items = PreorderInCart.objects.get(userCreated=request.user, isComplete=False).get_cart_items
+        precart_order = PreorderInCart.objects.get(userCreated=request.user, isComplete=False)
+        print('___________________PRECART try____________________')
+        print(precart_order)
+        precart_items = precart_order.supplyinpreorderincart_set.all().count()
+        # precart_items = sum([item.count_in_order for item in orderitems])
+        print(f'----------------count     {precart_items}')
     except:
         precart_items = 0
     try:
@@ -213,17 +224,17 @@ def add_preorder_general_to_preorder(request, prodId):
     preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
 
     try:
-        suppInCart = SupplyInPreorderInCart.objects.get(id=general_supply.id,
+        suppInCart = SupplyInPreorderInCart.objects.get(
                                         supply_for_order=preorder,
                                         general_supply=general_supply)
+        suppInCart.count_in_order += 1
+        suppInCart.save(update_fields=['count_in_order'])
     except:
-        suppInCart = SupplyInPreorderInCart(id=general_supply.id,
+        suppInCart = SupplyInPreorderInCart(count_in_order=1,
                                             supply_for_order=preorder,
                                             general_supply=general_supply)
+        suppInCart.save()
 
-
-    suppInCart.count_in_order = (suppInCart.count_in_order + 1)
-    suppInCart.save()
     countInPreorder = suppInCart.count_in_order
     response = render(request, 'partials/add_precart_button_general.html',
                       {'el': general_supply, 'countInPreCart': countInPreorder})
@@ -552,10 +563,10 @@ def sendTeamsMsg(order):
     if order.comment:
         comment = f'*коментар:*  **{order.comment}**'
         myTeamsMessage.text(f'{created}\n\n{comment};')
-        myTeamsMessage.send()
+        # myTeamsMessage.send()
     else:
         myTeamsMessage.text(f'{created}')
-        myTeamsMessage.send()
+        # myTeamsMessage.send()
 
 
 @login_required(login_url='login')
@@ -1476,11 +1487,13 @@ def orderUpdateStatus(request, order_id):
 def ordersForClient(request, client_id):
     place = get_object_or_404(Place, pk=client_id)
     orders = place.order_set.all().order_by('-id')
+    orderFilter = OrderFilter(request.GET, queryset=orders)
+    orders = orderFilter.qs
     title = f'Всі замовлення для клієнта: \n {place.name}, {place.city_ref.name}'
     if not orders:
         title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
 
-    return render(request, 'supplies/orders_new.html', {'title': title, 'orders': orders, 'isClients': True})
+    return render(request, 'supplies/orders_new.html', {'title': title, 'orders': orders, 'orderFilter': orderFilter, 'isClients': True})
 
 
 @login_required(login_url='login')
