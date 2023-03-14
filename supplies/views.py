@@ -107,10 +107,6 @@ def fetchxmls():
 
 @login_required(login_url='login')
 def countCartItemsHelper(request):
-    precart_order = PreorderInCart.objects.filter(userCreated=request.user)
-    print('___________________PRECART____________________')
-    print(precart_order)
-    print(request.user.first_name)
 
     try:
         orderInCart = OrderInCart.objects.first()
@@ -120,11 +116,9 @@ def countCartItemsHelper(request):
         cart_items = 0
     try:
         precart_order = PreorderInCart.objects.get(userCreated=request.user, isComplete=False)
-        print('___________________PRECART try____________________')
-        print(precart_order)
-        precart_items = precart_order.supplyinpreorderincart_set.all().count()
-        # precart_items = sum([item.count_in_order for item in orderitems])
-        print(f'----------------count     {precart_items}')
+
+        orderitems = precart_order.supplyinpreorderincart_set.all()
+        precart_items = sum([item.count_in_order for item in orderitems])
     except:
         precart_items = 0
     try:
