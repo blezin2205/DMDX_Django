@@ -314,14 +314,14 @@ class PreOrder(models.Model):
 
 class Order(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
-    for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, related_name='orders_for_preorder')
+    for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders_for_preorder')
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)
     isComplete = models.BooleanField(default=False)
     comment = models.CharField(max_length=300, null=True, blank=True)
     documentsId = ArrayField(models.CharField(max_length=200), blank=True, null=True)
-    for_agreement = models.ForeignKey(Agreement, on_delete=models.SET_NULL, null=True)
+    for_agreement = models.ForeignKey(Agreement, on_delete=models.SET_NULL, null=True, blank=True)
 
 
     def get_np_DocumetsIdList(self):
