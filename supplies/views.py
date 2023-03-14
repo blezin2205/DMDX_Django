@@ -459,7 +459,11 @@ def registerPage(request):
         if request.method == 'POST':
             form = CreateUserForm(request.POST)
             if form.is_valid():
-                form.save()
+                user = form.save(commit=False)
+                user.save()
+                user_group = Group.objects.get(name='client')
+                user.groups.add(user_group)
+                return redirect('login')
 
         context = {'form': form}
     return render(request, 'auth/register.html', context)
@@ -557,10 +561,10 @@ def sendTeamsMsg(order):
     if order.comment:
         comment = f'*коментар:*  **{order.comment}**'
         myTeamsMessage.text(f'{created}\n\n{comment};')
-        # myTeamsMessage.send()
+        myTeamsMessage.send()
     else:
         myTeamsMessage.text(f'{created}')
-        # myTeamsMessage.send()
+        myTeamsMessage.send()
 
 
 @login_required(login_url='login')
@@ -883,7 +887,7 @@ def sendTeamsMsgCart(order):
         "https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/c6694506a800419ab9aa040b09d0a5b1/3894266e-3403-44b0-a8e4-5a568f2b70a4")
     myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
 
-    myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}')
+    myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}/0')
     myTeamsMessage.addLinkButton("Excel", f'https://dmdxstorage.herokuapp.com/order-detail-csv/{order.id}')
     created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
     if order.comment:

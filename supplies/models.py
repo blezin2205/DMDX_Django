@@ -3,7 +3,7 @@ import datetime
 from django.db import models
 from django.utils import timezone
 from django.contrib.sessions.models import Session
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
 from django.contrib.postgres.fields import ArrayField
 import barcode
 from barcode.writer import ImageWriter

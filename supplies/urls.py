@@ -58,7 +58,7 @@ urlpatterns = [
     path('addSupplyToExistPreOrderGeneral/<int:supp_id>', views.addSupplyToExistPreOrderGeneral, name='addSupplyToExistPreOrderGeneral'),
 
 
-    # path('auth', views.registerPage, name='auth'),
+    path('auth', views.registerPage, name='auth'),
     path('login', views.loginPage, name='login'),
     path('logout', views.logoutUser, name='logout'),
 
