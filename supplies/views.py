@@ -1283,14 +1283,14 @@ def orders(request):
         totalCount = orders.count()
         title = f'Всі замовлення. ({totalCount} шт.)'
 
-    orderFilter = OrderFilter(request.GET, queryset=orders)
+    orderFilter = OrderFilter(request.POST or None, queryset=orders)
     orders = orderFilter.qs
     paginator = Paginator(orders, 20)
-    page_number = request.GET.get('page')
+    page_number = request.POST.get('page')
     orders = paginator.get_page(page_number)
 
     if request.method == 'POST':
-        selected_orders = request.POST.getlist('flexCheckDefault')
+        selected_orders = request.POST.getlist('register_print_buttons')
         print("------ ", selected_orders, "-----------")
         selected_ids = map(int, selected_orders)
         fileteredOredrs = Order.objects.filter(pk__in=selected_ids)
@@ -1301,8 +1301,10 @@ def orders(request):
         documentsIdFromOrders = fileteredOredrs.values_list('npdeliverycreateddetailinfo__ref', flat=True)
         listToStr = ','.join(map(str, documentsIdFromOrders))
         print(listToStr)
+        print("------------------------------------------------list string np red")
 
         if 'print_choosed' in request.POST:
+            print('---------------------PRINT CHOOSED --------------------------------')
             np_link_print = f'https://my.novaposhta.ua/orders/printMarking85x85/orders/{listToStr}/type/pdf8/apiKey/99f738524ca3320ece4b43b10f4181b1'
             return redirect(np_link_print)
 

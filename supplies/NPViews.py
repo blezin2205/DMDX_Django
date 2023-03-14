@@ -46,7 +46,7 @@ def nova_poshta_registers(request):
 def get_register_for_orders(request):
     cheked = False
     if request.method == 'POST':
-        selected_orders = request.POST.getlist('flexCheckDefault')
+        selected_orders = request.POST.getlist('register_print_buttons')
         cheked = len(selected_orders) > 0
     return render(request, 'partials/register_print_orders_chekbox_buttons.html', {'cheked': cheked})
 

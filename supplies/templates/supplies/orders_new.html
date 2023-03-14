@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-
+ <form method="post" class="form-inline justify-content-center">
     {% csrf_token %}
     <div class="container ">
   <div class="row">
@@ -34,24 +34,21 @@
     </div>
   </div>
 
-    <form method="get" class="form-inline justify-content-center">
+{#    <form method="get" class="form-inline justify-content-center">#}
          <div class="hstack w-50 gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between">
-{#             <div class="hstack gap-2">#}
+             <div class="hstack gap-2">
                  {{ orderFilter.form.isComplete|as_crispy_field }}
-{#             </div>#}
+             </div>
              <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
 
 </div>
-
-        </form>
+{##}
+{#        </form>#}
 
 </div>
-<form method="POST" action="">
     <div class="container" id="order_delete_cell">
         {% include 'partials/order_delete_cell.html' %}
 </div>
-    </form>
-
         {% if orders.paginator.num_pages > 1 %}
 <nav aria-label="Page navigation" class="mt-5">
     <ul class="pagination justify-content-center">
@@ -75,4 +72,5 @@
     </ul>
 </nav>
 {% endif %}
+ </form>
 {% endblock %}
