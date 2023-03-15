@@ -107,6 +107,9 @@ def fetchxmls():
 
 @login_required(login_url='login')
 def countCartItemsHelper(request):
+    isClient = request.user.groups.filter(name='client').exists()
+    preorders_await = 0
+    preorders_partial = 0
 
     try:
         orderInCart = OrderInCart.objects.first()
@@ -116,13 +119,11 @@ def countCartItemsHelper(request):
         cart_items = 0
     try:
         precart_order = PreorderInCart.objects.get(userCreated=request.user, isComplete=False)
-
         orderitems = precart_order.supplyinpreorderincart_set.all()
         precart_items = sum([item.count_in_order for item in orderitems])
     except:
         precart_items = 0
     try:
-        isClient = request.user.groups.filter(name='client').exists()
         if isClient:
             orders_incomplete = Order.objects.filter(isComplete=False, place__user=request.user).count()
         else:
@@ -130,7 +131,6 @@ def countCartItemsHelper(request):
     except:
         orders_incomplete = 0
     try:
-        isClient = request.user.groups.filter(name='client').exists()
         if isClient:
             preorders_incomplete = PreOrder.objects.filter(isComplete=False, place__user=request.user).count()
         else:
@@ -138,8 +138,16 @@ def countCartItemsHelper(request):
     except:
         preorders_incomplete = 0
 
+
+    if not isClient:
+        preorders_await = PreOrder.objects.filter(state_of_delivery='Awaiting').count()
+        preorders_partial = PreOrder.objects.filter(state_of_delivery='Partial').count()
+
+
+
+
     return {'cart_items': cart_items, 'precart_items': precart_items, 'orders_incomplete': orders_incomplete,
-            'preorders_incomplete': preorders_incomplete}
+            'preorders_incomplete': preorders_incomplete, 'preorders_await': preorders_await, 'preorders_partial': preorders_partial}
 
 @login_required(login_url='login')
 def full_image_view_for_device_image(request, device_id):
@@ -1806,6 +1814,37 @@ def addgeneralSupply(request):
 
     return render(request, 'supplies/createSupply.html',
                   {'title': f'Додати новий товар', 'form': form, 'cartCountData': cartCountData})
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
+def addNewCity(request):
+    form = NewCityForm()
+    cartCountData = countCartItemsHelper(request)
+    if request.method == 'POST':
+        form = NewCityForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('/')
+
+    return render(request, 'supplies/createSupply.html',
+                  {'title': f'Додати нове місто', 'form': form, 'cartCountData': cartCountData})
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
+def addNewCategory(request):
+    form = NewCategoryForm()
+    cartCountData = countCartItemsHelper(request)
+    if request.method == 'POST':
+        form = NewCategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('/')
+
+    return render(request, 'supplies/createSupply.html',
+                  {'title': f'Додати нову категорію для товара', 'form': form, 'cartCountData': cartCountData})
+
 
 
 @login_required(login_url='login')

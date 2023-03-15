@@ -144,7 +144,13 @@ def create_np_document_for_order(request, order_id):
                 cost = list["CostOnSite"]
                 estimated_date = list["EstimatedDeliveryDate"]
                 id_number = int(list["IntDocNumber"])
-                detailInfo = NPDeliveryCreatedDetailInfo(document_id=id_number, ref=ref, cost_on_site=cost, estimated_time_delivery=estimated_date, recipient_worker=worker_name, recipient_address=address_name, for_order=order)
+                detailInfo = NPDeliveryCreatedDetailInfo(document_id=id_number,
+                                                         ref=ref, cost_on_site=cost,
+                                                         estimated_time_delivery=estimated_date,
+                                                         recipient_worker=worker_name,
+                                                         recipient_address=address_name,
+                                                         for_order=order,
+                                                         userCreated=user)
                 detailInfo.save()
                 user.np_last_choosed_delivery_place_id = sender_place.id
                 user.save()
@@ -306,7 +312,7 @@ def np_delivery_detail_info_for_order(request, order_id):
     if not noMoreUpdate:
         for docu in documentsIdList:
             documents.append({'DocumentNumber': docu.document_id,
-                              'Phone': userCreated.mobNumber})
+                              'Phone': docu.userCreated.mobNumber})
 
         objList = []
 

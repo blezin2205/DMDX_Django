@@ -48,6 +48,8 @@ urlpatterns = [
 
     path('add-general-supply-with-supply', views.addgeneralSupply, name='addGeneralSupply-with-supp'),
     path('add-general-supply', views.addgeneralSupplyOnly, name='add-general-supply'),
+    path('add-new-city', views.addNewCity, name='add-new-city'),
+    path('add-new-supply-category', views.addNewCategory, name='add-new-supply-category'),
     path('add-client', views.addNewClient, name='addClient'),
     path('newLot/<int:supp_id>', views.addNewLotforSupply, name='addNewLot'),
 

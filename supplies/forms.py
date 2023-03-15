@@ -190,6 +190,26 @@ class NewGeneralSupplyForm(ModelForm):
         self.fields['category'].label = "Категорія"
 
 
+class NewCityForm(ModelForm):
+    class Meta:
+        model = City
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(NewCityForm, self).__init__(*args, **kwargs)
+        self.fields['name'].label = "Назва міста"
+
+
+class NewCategoryForm(ModelForm):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(NewCategoryForm, self).__init__(*args, **kwargs)
+        self.fields['name'].label = "Назва категорії"
+
+
 class OrderInCartForm(ModelForm):
     class Meta:
         model = OrderInCart

@@ -9,6 +9,7 @@ import barcode
 from barcode.writer import ImageWriter
 from io import BytesIO
 from django.core.files import File
+from django.db.models import Q
 from django.db.models import Count, Sum
 from cloudinary import uploader
 from cloudinary.models import CloudinaryField
@@ -243,7 +244,7 @@ class Workers(models.Model):
     def __str__(self):
         user_np_type = None
         try:
-            # cityname = self.for_place.name
+            telNumber = self.telNumber
             counterpartyRef = self.ref_counterparty_NP
             if counterpartyRef is not None and counterpartyRef == '3b13350b-2a6b-11eb-8513-b88303659df5':
                 user_np_type = ', (Приватна особа)'
@@ -251,7 +252,8 @@ class Workers(models.Model):
                 user_np_type = ', (Організація)'
         except:
             user_np_type = ''
-        return f'{self.name} {self.secondName}{user_np_type}'
+            telNumber = ''
+        return f'{self.name} {self.secondName}{user_np_type} {telNumber}'
 
     class Meta:
         verbose_name = 'Працівник'
@@ -307,6 +309,10 @@ class PreOrder(models.Model):
     def __str__(self):
         return f'презаказ № {self.id}, для {self.place.name}, от {self.dateSent}'
 
+
+    def checkIfUncompletedDeliveryPreordersExist(self):
+        return PreOrder.objects.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial')).exists()
+
     class Meta:
         verbose_name = 'Передзамовлення'
         verbose_name_plural = 'Передзамовлення'
@@ -351,6 +357,7 @@ class NPDeliveryCreatedDetailInfo(models.Model):
     recipient_worker = models.CharField(max_length=200, null=True, blank=True)
     recipient_address = models.CharField(max_length=200, null=True, blank=True)
     for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
+    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'Накладна № {self.document_id}, для замовлення №{self.for_order.id}'
