@@ -301,6 +301,7 @@ def np_delivery_detail_info_for_order(request, order_id):
     userCreated = order.userCreated
     documentsIdList = order.npdeliverycreateddetailinfo_set.all()
     documents = []
+    userCreatedList = {}
 
     noMoreUpdate = False
 
@@ -313,6 +314,7 @@ def np_delivery_detail_info_for_order(request, order_id):
         for docu in documentsIdList:
             documents.append({'DocumentNumber': docu.document_id,
                               'Phone': docu.userCreated.mobNumber})
+            userCreatedList[docu.document_id] = docu.userCreated
 
         objList = []
 
@@ -330,6 +332,8 @@ def np_delivery_detail_info_for_order(request, order_id):
         if data["data"]:
             for obj in data["data"]:
                 number = obj["Number"]
+                user_who_created_document = userCreatedList[number]
+
                 status_code = obj["StatusCode"]
                 counterpartyRecipientDescription = obj["CounterpartyRecipientDescription"]
                 documentWeight = obj["DocumentWeight"]
@@ -343,7 +347,7 @@ def np_delivery_detail_info_for_order(request, order_id):
                     scheduledDeliveryDate = scheduledDeliveryDate_obj.strftime('%d.%m.%Y %H:%M')
                 documentCost = obj["DocumentCost"]
                 paymentMethod = obj["PaymentMethod"]
-                warehouseSender = obj["WarehouseSender"]
+                warehouseSender = f'{user_who_created_document.first_name}, {user_who_created_document.last_name}, {obj["WarehouseSender"]}'
                 dateCreated = obj["DateCreated"]
                 dateCreated_obj = datetime.datetime.strptime(dateCreated, '%d-%m-%Y %H:%M:%S')
                 dateCreated = dateCreated_obj.strftime('%d.%m.%Y %H:%M')
