@@ -22,6 +22,7 @@ urlpatterns = [
 
     path('', views.home, name='home'),
     path('childSupply', views.childSupply, name='childSupply'),
+    path('load_xms_data', views.load_xms_data, name='load_xms_data'),
 
      path('count-on-hold-make', views.countOnHoldMake, name='countOnHoldMake'),
 

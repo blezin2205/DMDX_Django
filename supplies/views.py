@@ -60,8 +60,28 @@ async def httpRequest(request):
     return render(request, "supplies/http_response.html", {'data': data["data"]})
 
 
-def fetchxmls():
+def load_xms_data(request):
     print('Hello')
+
+    if request.POST:
+        excel_file = request.FILES["excel_file"]
+        excel_data_df = pandas.read_excel(excel_file, sheet_name='Immulite2000', header=None, index_col=None)
+        wb = excel_data_df
+        vals = wb.values
+        for obj in vals:
+            ref = obj[0]
+            print('----------------------------------')
+            print(obj)
+            smn = str(obj[2]).removesuffix('.0')
+            name = str(obj[1])
+            packed = obj[2]
+            tests = obj[5]
+
+            print(ref, name, packed)
+
+
+
+    return render(request, 'supplies/load_xms_data.html', {})
 
 
 
@@ -90,20 +110,19 @@ def fetchxmls():
         # place.save()
 
     #
-    # excel_data_df = pandas.read_excel('/Users/macbook/Documents/DIAMEDIX/OfertaDiasys.xlsx', header=None, index_col=None, sheet_name='cons')
-    # wb = excel_data_df
-    # vals = wb.values
     # for obj in vals:
     #     ref = obj[0]
-    #     # smn = str(obj[2]).removesuffix('.0')
-    #     name = str(obj[1])
-    #     packed = obj[2]
-    #     # tests = obj[5]
-    #     # tests = obj[5]
-    #     if name != 'nan':
-    #         print(name, ref, packed)
-    #         genSup = GeneralSupply(name=name, ref=ref, package_and_tests=packed, category_id=5)
-    #         genSup.save()
+    #     print('----------------------------------')
+    #     print(obj)
+        # smn = str(obj[2]).removesuffix('.0')
+        # name = str(obj[1])
+        # packed = obj[2]
+        # tests = obj[5]
+        # tests = obj[5]
+        # if name != 'nan':
+        #     print(name, ref, packed)
+        #     genSup = GeneralSupply(name=name, ref=ref, package_and_tests=packed, category_id=5)
+        #     genSup.save()
 
 @login_required(login_url='login')
 def countCartItemsHelper(request):
@@ -502,7 +521,6 @@ def home(request):
     supplies = GeneralSupply.objects.all().order_by('name')
     suppFilter = SupplyFilter(request.GET, queryset=supplies)
 
-    # fetchxmls()
     uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
     isClient = request.user.groups.filter(name='client').exists() and not request.user.is_staff
     if isClient:
@@ -1191,6 +1209,8 @@ def childSupply(request):
             ref = ''
             lot = ''
             category = ''
+            if row.name:
+                name = row.name
             if row.general_supply:
                 name = row.general_supply.name
                 ref = row.general_supply.ref
@@ -1200,10 +1220,6 @@ def childSupply(request):
                 lot = row.supplyLot
             count = row.count
             date_expired = row.expiredDate.strftime("%d.%m.%Y")
-            if row.name:
-                name = row.name
-
-
 
             val_row = [name, ref, lot, count, date_expired, category]
 
