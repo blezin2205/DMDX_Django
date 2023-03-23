@@ -2338,7 +2338,7 @@ def preorder_render_to_xls(request, order_id):
     row_num = 9
 
     wb = Workbook(response, {'in_memory': True})
-    ws = wb.add_worksheet(f'№{order_id}, {order.place.name}, {order.place.city_ref.name}')
+    ws = wb.add_worksheet(f'Order №{order_id}')
     format = wb.add_format({'bold': True})
     format.set_font_size(16)
 
@@ -2360,7 +2360,7 @@ def preorder_render_to_xls(request, order_id):
         format = wb.add_format()
         format.set_font_size(14)
         ws.write(1, 0, f'Коммент.: {order.comment}', format)
-        ws.write(2, 0, f'Всього: {supplies_in_order.count()} шт.', format)
+        ws.write(2, 0, f'Всього: {len(supplies_in_order)} шт.', format)
 
     format = wb.add_format({'text_wrap': True})
     format.set_font_size(14)
