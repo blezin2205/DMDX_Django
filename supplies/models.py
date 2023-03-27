@@ -186,7 +186,7 @@ class Place(models.Model):
     address = models.CharField(max_length=100, null=True, blank=True)
     link = models.CharField(max_length=300, null=True, blank=True)
     user = models.ManyToManyField(CustomUser, blank=True)
-    organization_code = models.CharField(max_length=8, null=True, blank=True)
+    organization_code = models.CharField(max_length=10, null=True, blank=True)
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
     worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True)
     address_NP = models.OneToOneField('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, unique=True)

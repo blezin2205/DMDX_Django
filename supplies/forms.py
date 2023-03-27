@@ -96,8 +96,6 @@ class ClientForm(ModelForm):
 
     def clean_organization_code(self):
         orgCode = self.cleaned_data['organization_code']
-        if orgCode and len(orgCode) != 8:
-            raise forms.ValidationError("ЄДРПОУ має 8 цифр!")
         if orgCode and not orgCode.isdigit():
             raise forms.ValidationError("Тільки цифри!")
         return orgCode

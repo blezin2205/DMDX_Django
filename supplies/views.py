@@ -546,6 +546,24 @@ def home(request):
         supp = supplies.get(id=request.POST.get('supp_id'))
         supp.delete()
 
+#     auth_token = 'b38b9b168929ecd6568ceede5432f2cd7b12d1c8'
+#     hed = {'Authorization': 'Bearer ' + auth_token}
+#     data = {
+#    "recipients": [
+#       "380503346204",
+#       "380992438918",
+#    ],
+#    "sms": {
+#       "sender": "DIAMEDIX",
+#       "text": "Diamedix Top!!!!!!!!"
+#    }
+# }
+#
+#     url = 'https://api.turbosms.ua/message/send.json'
+#     response = requests.post(url, json=data, headers=hed)
+#     print(response)
+#     print(response.json())
+
     return render(request, html_page, {'title': 'Всі товари',
                                                   'cartCountData': cartCountData,
                                                   'supplies': page_obj, 'suppFilter': suppFilter,
