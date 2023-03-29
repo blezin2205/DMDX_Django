@@ -122,7 +122,12 @@ class GeneralSupply(models.Model):
                             format="jpg", null=True, default=None, blank=True, folder='general_supply_media')
 
     def __str__(self):
-        return f'{self.id} - {self.name}'
+        try:
+            name = self.name
+        except:
+            name = "NO NAME"
+
+        return name
 
     class Meta:
         verbose_name = 'Товар (назва)'
@@ -168,7 +173,7 @@ class Supply(models.Model):
 
 
     def __str__(self):
-        return f'{self.id} - {self.general_supply.name}'
+        return self.general_supply.name
 
     class Meta:
         verbose_name = 'Товар'

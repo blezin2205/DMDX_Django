@@ -34,14 +34,19 @@ class SupplySaveFromScanSerializer(serializers.ModelSerializer):
 class SupplySerializer(serializers.ModelSerializer):
     dateCreated = serializers.DateField(format="%d-%m-%Y", input_formats=['%d-%m-%Y', 'iso-8601'], default=timezone.now().date())
     expiredDate = serializers.DateField(format="%d-%m-%Y", input_formats=['%d-%m-%Y', 'iso-8601', '%y%m%d'], allow_null=True)
+    name = serializers.CharField(source='general_supply', allow_null=True)
+    ref = serializers.CharField(source='general_supply.ref', allow_null=True)
+    smn_code = serializers.CharField(source='general_supply.SMN_code', allow_null=True)
+    category = serializers.CharField(source='category.name', allow_null=True)
+    package_and_tests = serializers.CharField(source='general_supply.package_and_tests', allow_null=True)
 
     class Meta:
         model = Supply
-        fields = '__all__'
+        fields = ['dateCreated', 'expiredDate', 'name', 'ref', 'category', 'count', 'countOnHold', 'smn_code', 'package_and_tests']
 
-    def to_representation(self, instance):
-        self.fields['category'] = CategorySerializer(read_only=True)
-        return super(SupplySerializer, self).to_representation(instance)
+    # def to_representation(self, instance):
+    #     self.fields['category'] = CategorySerializer(read_only=True)
+    #     return super(SupplySerializer, self).to_representation(instance)
 
 
 class PlaceSerializer(serializers.ModelSerializer):
