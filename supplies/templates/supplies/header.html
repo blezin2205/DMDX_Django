@@ -20,30 +20,23 @@
             <li class="nav-item"><a href="/allDevices" class="btn btn-outline-primary{% if isDevices %} active {% endif %}" aria-current="page">Прилади</a></li>
 
             {% endif %}
-            {% if request.user.is_staff or request.user|has_group:"empl" %}
-
-                <li class="nav-item dropdown mx-4">
-                            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Додати</a>
-                            <div class="dropdown-menu">
-
-                              <a class="dropdown-item" href="{% url 'create_note' %}">Сервісну замітку</a>
+{#            {% if request.user.is_staff or request.user|has_group:"empl" %}#}
+{##}
+{#                <li class="nav-item dropdown mx-4">#}
+{#                            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Додати</a>#}
+{#                            <div class="dropdown-menu">#}
+{##}
+{#                              <a class="dropdown-item" href="{% url 'create_note' %}">Сервісну замітку</a>#}
 {#                              <a class="dropdown-item" href="{% url 'addGeneralSupply-with-supp' %}">Товар</a>#}
-                              <a class="dropdown-item" href="{% url 'addClient' %}">Клієнта</a>
-                                    <a class="dropdown-item" href="{% url 'add_np_sender_place' %}">Відділення відправки</a>
-
-                                 <a class="dropdown-item" href="{% url 'add-general-supply' %}">Назву товару</a>
-                              <div class="dropdown-divider"></div>
+{#                              <a class="dropdown-item" href="{% url 'addClient' %}">Клієнта</a>#}
+{#                                    <a class="dropdown-item" href="{% url 'add_np_sender_place' %}">Відділення відправки</a>#}
+{##}
+{#                                 <a class="dropdown-item" href="{% url 'add-general-supply' %}">Назву товару</a>#}
+{#                              <div class="dropdown-divider"></div>#}
 {#                              <a class="dropdown-item" href="{% url 'countOnHoldMake' %}">Separated link</a>#}
-                            </div>
-                        </li>
-            {% endif %}
-
-            {% if request.user.is_staff %}
-            <li class="nav-item"><a href="{% url 'nova_poshta_registers' %}" class="btn btn-outline-primary{% if isRegisters %} active {% endif %}" aria-current="page">Реєстри НП</a></li>
-            {% endif %}
-
-
-
+{#                            </div>#}
+{#                        </li>#}
+{#            {% endif %}#}
 
             </ul>
             <ul class="navbar-nav ms-auto">
@@ -59,12 +52,43 @@
                             {% include 'partials/cart-badge.html' %}
                         </div>
 
+                         {% if request.user.is_staff or request.user|has_group:"empl" %}
+                             <div>
+                                  {% if cartCountData.preorders_await > 0 %}
+                                 <h6 style="color: #de735b; font-weight: bold">Очікується ({{ cartCountData.preorders_await }})</h6>
+                                 {% endif %}
+                             {% if cartCountData.preorders_partial > 0 %}
+                                 <h6 style="color: #deb05b; font-weight: bold">Частково поставлено ({{ cartCountData.preorders_partial }})</h6>
+                                {% endif %}
+                             </div>
+
+
+
+                            <div class="dropdown mx-4">
+  <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    Меню
+  </button>
+  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+    <a class="dropdown-item" href="{% url 'nova_poshta_registers' %}">Реєстри НП</a>
+      <a class="dropdown-item" href="{% url 'add_np_sender_place' %}">Відділення відправки</a>
+      <div class="dropdown-divider"></div>
+    <a class="dropdown-item" href="{% url 'create_note' %}">Додати сервісну замітку</a>
+{#                              <a class="dropdown-item" href="{% url 'addGeneralSupply-with-supp' %}">Товар</a>#}
+      <a class="dropdown-item" href="{% url 'addClient' %}">Додати клієнта</a>
+      <a class="dropdown-item" href="{% url 'add-new-city' %}">Додати місто</a>
+      <a class="dropdown-item" href="{% url 'add-new-supply-category' %}">Додати категорію товара</a>
+      <a class="dropdown-item" href="{% url 'add-general-supply' %}">Додати назву товара</a>
+  </div>
+</div>
+                            {% endif %}
+
 
             <span class="my-3">&#129409; Привіт, {{ request.user.first_name }} {{ request.user.last_name }} &#129409;</span>
 {#                         <a href="" class="btn btn-sm btn-outline-primary me-1" role="button"><i class="bi bi-gear"></i></a>#}
             <span>
             <a class="btn btn-outline-primary ms-3" href="{% url 'logout' %}" role="button"><i class="bi bi-box-arrow-right"></i></a>
             </span>
+
         {% endif %}
                 </div>
                 </li>
@@ -72,3 +96,4 @@
         </div>
     </div>
 </nav>
+

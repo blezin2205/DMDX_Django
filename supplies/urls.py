@@ -22,6 +22,7 @@ urlpatterns = [
 
     path('', views.home, name='home'),
     path('childSupply', views.childSupply, name='childSupply'),
+    path('load_xms_data', views.load_xms_data, name='load_xms_data'),
 
      path('count-on-hold-make', views.countOnHoldMake, name='countOnHoldMake'),
 
@@ -48,6 +49,8 @@ urlpatterns = [
 
     path('add-general-supply-with-supply', views.addgeneralSupply, name='addGeneralSupply-with-supp'),
     path('add-general-supply', views.addgeneralSupplyOnly, name='add-general-supply'),
+    path('add-new-city', views.addNewCity, name='add-new-city'),
+    path('add-new-supply-category', views.addNewCategory, name='add-new-supply-category'),
     path('add-client', views.addNewClient, name='addClient'),
     path('newLot/<int:supp_id>', views.addNewLotforSupply, name='addNewLot'),
 
@@ -58,7 +61,7 @@ urlpatterns = [
     path('addSupplyToExistPreOrderGeneral/<int:supp_id>', views.addSupplyToExistPreOrderGeneral, name='addSupplyToExistPreOrderGeneral'),
 
 
-    # path('auth', views.registerPage, name='auth'),
+    path('auth', views.registerPage, name='auth'),
     path('login', views.loginPage, name='login'),
     path('logout', views.logoutUser, name='logout'),
 

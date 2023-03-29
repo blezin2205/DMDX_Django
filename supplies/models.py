@@ -3,12 +3,13 @@ import datetime
 from django.db import models
 from django.utils import timezone
 from django.contrib.sessions.models import Session
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
 from django.contrib.postgres.fields import ArrayField
 import barcode
 from barcode.writer import ImageWriter
 from io import BytesIO
 from django.core.files import File
+from django.db.models import Q
 from django.db.models import Count, Sum
 from cloudinary import uploader
 from cloudinary.models import CloudinaryField
@@ -181,7 +182,7 @@ class Supply(models.Model):
 
 
 
-
+from django.db.models import Q
 
 class Place(models.Model):
     name = models.CharField(max_length=200)
@@ -189,13 +190,25 @@ class Place(models.Model):
     city = models.CharField(max_length=100, null=True, blank=True)
     address = models.CharField(max_length=100, null=True, blank=True)
     link = models.CharField(max_length=300, null=True, blank=True)
-    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
-    organization_code = models.CharField(max_length=8, null=True, blank=True)
+    user = models.ManyToManyField(CustomUser, blank=True)
+    organization_code = models.CharField(max_length=10, null=True, blank=True)
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
     worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True)
     address_NP = models.OneToOneField('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, unique=True)
     isAddedToNP = models.BooleanField(default=False, blank=True)
     name_in_NP = models.CharField(max_length=200, null=True, blank=True)
+
+    def isHaveUncompletedPreorders(self):
+        if self.preorder_set.exists():
+           if self.preorder_set.filter(state_of_delivery='Awaiting').exists() or self.preorder_set.filter(state_of_delivery='Partial').exists():
+               return True
+           else:
+              return False
+        else:
+           return False
+
+    def getUcompletePreorderSet(self):
+       return self.preorder_set.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial'))
 
 
     def __str__(self):
@@ -236,7 +249,7 @@ class Workers(models.Model):
     def __str__(self):
         user_np_type = None
         try:
-            # cityname = self.for_place.name
+            telNumber = self.telNumber
             counterpartyRef = self.ref_counterparty_NP
             if counterpartyRef is not None and counterpartyRef == '3b13350b-2a6b-11eb-8513-b88303659df5':
                 user_np_type = ', (Приватна особа)'
@@ -244,7 +257,8 @@ class Workers(models.Model):
                 user_np_type = ', (Організація)'
         except:
             user_np_type = ''
-        return f'{self.name} {self.secondName}{user_np_type}'
+            telNumber = ''
+        return f'{self.name} {self.secondName}{user_np_type} {telNumber}'
 
     class Meta:
         verbose_name = 'Працівник'
@@ -300,6 +314,10 @@ class PreOrder(models.Model):
     def __str__(self):
         return f'презаказ № {self.id}, для {self.place.name}, от {self.dateSent}'
 
+
+    def checkIfUncompletedDeliveryPreordersExist(self):
+        return PreOrder.objects.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial')).exists()
+
     class Meta:
         verbose_name = 'Передзамовлення'
         verbose_name_plural = 'Передзамовлення'
@@ -307,14 +325,14 @@ class PreOrder(models.Model):
 
 class Order(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
-    for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, related_name='orders_for_preorder')
+    for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders_for_preorder')
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)
     isComplete = models.BooleanField(default=False)
     comment = models.CharField(max_length=300, null=True, blank=True)
     documentsId = ArrayField(models.CharField(max_length=200), blank=True, null=True)
-    for_agreement = models.ForeignKey(Agreement, on_delete=models.SET_NULL, null=True)
+    for_agreement = models.ForeignKey(Agreement, on_delete=models.SET_NULL, null=True, blank=True)
 
 
     def get_np_DocumetsIdList(self):
@@ -344,6 +362,7 @@ class NPDeliveryCreatedDetailInfo(models.Model):
     recipient_worker = models.CharField(max_length=200, null=True, blank=True)
     recipient_address = models.CharField(max_length=200, null=True, blank=True)
     for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
+    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'Накладна № {self.document_id}, для замовлення №{self.for_order.id}'

@@ -96,8 +96,6 @@ class ClientForm(ModelForm):
 
     def clean_organization_code(self):
         orgCode = self.cleaned_data['organization_code']
-        if orgCode and len(orgCode) != 8:
-            raise forms.ValidationError("ЄДРПОУ має 8 цифр!")
         if orgCode and not orgCode.isdigit():
             raise forms.ValidationError("Тільки цифри!")
         return orgCode
@@ -188,6 +186,26 @@ class NewGeneralSupplyForm(ModelForm):
         self.fields['name'].label = "Назва"
         self.fields['ref'].label = "REF"
         self.fields['category'].label = "Категорія"
+
+
+class NewCityForm(ModelForm):
+    class Meta:
+        model = City
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(NewCityForm, self).__init__(*args, **kwargs)
+        self.fields['name'].label = "Назва міста"
+
+
+class NewCategoryForm(ModelForm):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(NewCategoryForm, self).__init__(*args, **kwargs)
+        self.fields['name'].label = "Назва категорії"
 
 
 class OrderInCartForm(ModelForm):

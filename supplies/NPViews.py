@@ -46,7 +46,7 @@ def nova_poshta_registers(request):
 def get_register_for_orders(request):
     cheked = False
     if request.method == 'POST':
-        selected_orders = request.POST.getlist('flexCheckDefault')
+        selected_orders = request.POST.getlist('register_print_buttons')
         cheked = len(selected_orders) > 0
     return render(request, 'partials/register_print_orders_chekbox_buttons.html', {'cheked': cheked})
 
@@ -144,7 +144,13 @@ def create_np_document_for_order(request, order_id):
                 cost = list["CostOnSite"]
                 estimated_date = list["EstimatedDeliveryDate"]
                 id_number = int(list["IntDocNumber"])
-                detailInfo = NPDeliveryCreatedDetailInfo(document_id=id_number, ref=ref, cost_on_site=cost, estimated_time_delivery=estimated_date, recipient_worker=worker_name, recipient_address=address_name, for_order=order)
+                detailInfo = NPDeliveryCreatedDetailInfo(document_id=id_number,
+                                                         ref=ref, cost_on_site=cost,
+                                                         estimated_time_delivery=estimated_date,
+                                                         recipient_worker=worker_name,
+                                                         recipient_address=address_name,
+                                                         for_order=order,
+                                                         userCreated=user)
                 detailInfo.save()
                 user.np_last_choosed_delivery_place_id = sender_place.id
                 user.save()
@@ -295,6 +301,7 @@ def np_delivery_detail_info_for_order(request, order_id):
     userCreated = order.userCreated
     documentsIdList = order.npdeliverycreateddetailinfo_set.all()
     documents = []
+    userCreatedList = {}
 
     noMoreUpdate = False
 
@@ -306,7 +313,8 @@ def np_delivery_detail_info_for_order(request, order_id):
     if not noMoreUpdate:
         for docu in documentsIdList:
             documents.append({'DocumentNumber': docu.document_id,
-                              'Phone': userCreated.mobNumber})
+                              'Phone': docu.userCreated.mobNumber})
+            userCreatedList[docu.document_id] = docu.userCreated
 
         objList = []
 
@@ -324,6 +332,8 @@ def np_delivery_detail_info_for_order(request, order_id):
         if data["data"]:
             for obj in data["data"]:
                 number = obj["Number"]
+                user_who_created_document = userCreatedList[number]
+
                 status_code = obj["StatusCode"]
                 counterpartyRecipientDescription = obj["CounterpartyRecipientDescription"]
                 documentWeight = obj["DocumentWeight"]
@@ -337,7 +347,7 @@ def np_delivery_detail_info_for_order(request, order_id):
                     scheduledDeliveryDate = scheduledDeliveryDate_obj.strftime('%d.%m.%Y %H:%M')
                 documentCost = obj["DocumentCost"]
                 paymentMethod = obj["PaymentMethod"]
-                warehouseSender = obj["WarehouseSender"]
+                warehouseSender = f'{user_who_created_document.first_name}, {user_who_created_document.last_name}, {obj["WarehouseSender"]}'
                 dateCreated = obj["DateCreated"]
                 dateCreated_obj = datetime.datetime.strptime(dateCreated, '%d-%m-%Y %H:%M:%S')
                 dateCreated = dateCreated_obj.strftime('%d.%m.%Y %H:%M')

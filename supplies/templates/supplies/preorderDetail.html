@@ -140,6 +140,14 @@
    {% endfor %}
   </tbody>
 </table>
+ <div class="text-center my-3">
+    <h5><u>{% if order.orders_for_preorder.all %}Замовлення, що були зроблені за цим передзамовленням{% else %} За цим передзамовленням ще немає замовлень {% endif %}</u></h5>
+    </div>
+    <div class="list-group list-group-radio d-grid gap-2 border-0 w-auto" id="order_delete_cell">
+        {% with orders=order.orders_for_preorder.all %}
+        {% include 'partials/order_delete_cell.html' %}
+        {% endwith %}
+</div>
 
 
 </div>
