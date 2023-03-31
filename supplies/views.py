@@ -518,24 +518,6 @@ def logoutUser(request):
 @login_required(login_url='login')
 def home(request):
 
-
-    auth_token = 'b38b9b168929ecd6568ceede5432f2cd7b12d1c8'
-    hed = {'Authorization': 'Bearer ' + auth_token}
-    data = {
-   "recipients": [
-      "380992438918",
-   ],
-   "sms": {
-      "sender": "DIAMEDIX",
-      "text": "Hello Diamedix! \nhttps://dmdxstorage.herokuapp.com",
-   }
-}
-
-    url = 'https://api.turbosms.ua/message/send.json'
-    response = requests.post(url, json=data, headers=hed)
-    print(response)
-    print(response.json())
-
     supplies = GeneralSupply.objects.all().order_by('name')
     suppFilter = SupplyFilter(request.GET, queryset=supplies)
 

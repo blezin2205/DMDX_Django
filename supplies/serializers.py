@@ -42,7 +42,7 @@ class SupplySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Supply
-        fields = ['dateCreated', 'expiredDate', 'name', 'ref', 'category', 'count', 'countOnHold', 'smn_code', 'package_and_tests']
+        fields = ['id', 'supplyLot', 'dateCreated', 'expiredDate', 'name', 'ref', 'category', 'count', 'countOnHold', 'smn_code', 'package_and_tests']
 
     # def to_representation(self, instance):
     #     self.fields['category'] = CategorySerializer(read_only=True)

@@ -55,7 +55,7 @@ class SuppliesFromScanSaveApiView(APIView):
             count = serializer.validated_data['count']
             print(f'SMN -- {smn}')
             try:
-                genSup = GeneralSupply.objects.get(SMN_code=smn)
+                genSup = GeneralSupply.objects.get(Q(SMN_code=smn) | Q(ref=smn))
                 try:
                     sup = genSup.general.all().get(supplyLot=lot, expiredDate=expDate)
                     sup.count += count
