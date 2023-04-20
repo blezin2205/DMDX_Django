@@ -38,7 +38,9 @@
          <div class="hstack w-50 gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between">
              <div class="hstack gap-2">
                  {{ orderFilter.form.isComplete|as_crispy_field }}
+                 {% if request.user|has_group:"empl" or request.user.is_staff %}
                  {{ orderFilter.form.for_state_of_client|as_crispy_field }}
+                 {% endif %}
              </div>
              <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
 

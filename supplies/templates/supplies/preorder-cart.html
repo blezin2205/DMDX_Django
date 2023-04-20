@@ -114,6 +114,8 @@ input[type=number]::-webkit-outer-spin-button {
 {#            <input type="hidden" name="orderType" value="Preorder">#}
 {#            <input type="hidden" name="next" value="{{ request.GET.next }}">#}
 {#     <button class="btn btn-outline-primary my-2" style="width: 100px" type="submit">Зберегти</button>#}
+            {% else %}
+            <input type="hidden" name="preorderType" value="new_preorder">
       {% endif %}
 
       </div>
