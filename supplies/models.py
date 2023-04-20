@@ -186,11 +186,13 @@ class Place(models.Model):
     address = models.CharField(max_length=100, null=True, blank=True)
     link = models.CharField(max_length=300, null=True, blank=True)
     user = models.ManyToManyField(CustomUser, blank=True)
+    allowed_categories = models.ManyToManyField(Category, blank=True)
     organization_code = models.CharField(max_length=10, null=True, blank=True)
     ref_NP = models.CharField(max_length=100, null=True, blank=True)
     worker_NP = models.OneToOneField('Workers', on_delete=models.SET_NULL, null=True, blank=True)
     address_NP = models.OneToOneField('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, unique=True)
     isAddedToNP = models.BooleanField(default=False, blank=True)
+    isPrivatePlace = models.BooleanField(default=False, blank=True)
     name_in_NP = models.CharField(max_length=200, null=True, blank=True)
 
     def isHaveUncompletedPreorders(self):
@@ -298,6 +300,7 @@ class PreOrder(models.Model):
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)
     isComplete = models.BooleanField(default=False)
+    isPreorder = models.BooleanField(default=False, blank=True)
     comment = models.CharField(max_length=300, null=True, blank=True)
     STATE_CHOICES = (
         ('Awaiting', 'Очікується'),

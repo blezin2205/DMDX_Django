@@ -59,7 +59,7 @@
           </section>
       {% endfor %}
 
-      <div class="pb-3">
+      <div>
 {#          {% if isClient %}#}
 {#          {{ orderForm.place|as_crispy_field }}#}
 {#      {% endif %}#}
@@ -77,6 +77,14 @@ input[type=number]::-webkit-outer-spin-button {
 
   {% csrf_token %}
         {% if not isClient %}
+             <div class="btn-group pb-4" role="group" aria-label="Basic radio toggle button group" style="width: fit-content">
+  <input type="radio" class="btn-check" name="preorderType" value="new_preorder" id="btnradio1" autocomplete="off" checked>
+  <label class="btn btn-outline-primary" for="btnradio1">Передзамовлення</label>
+
+  <input type="radio" class="btn-check" name="preorderType" value="new_agreement" id="btnradio2">
+  <label class="btn btn-outline-primary" for="btnradio2">Договір</label>
+</div>
+
          <select class="form-select mb-3" aria-label="Default select example" name="city" hx-get="{% url 'get_place_for_city_in_cart' %}" hx-trigger="change" hx-target="#places">
   <option selected>Вибрати місто</option>
              {% for city in cities %}

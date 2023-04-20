@@ -11,6 +11,7 @@
          <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
              <div class="hstack gap-2">
                  {{ placeFilter.form.city_ref|bootstrap }}
+                 {{ placeFilter.form.isPrivatePlace|bootstrap }}
              </div>
              <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
 
@@ -22,7 +23,7 @@
     <div class="col">
 
     <div class="card bg-light">
-  <div class="card-header">
+  <div class="card-header" style="background: {% if client.isPrivatePlace %} #ffeeda {% else %} #e4eafd {% endif %} ">
     <div class="hstack justify-content-between">
           <h4>{{client.name}}, {{client.city_ref.name}}.</h4>
           <a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-outline-dark" role="button"><i class="bi bi-pencil"></i></a>

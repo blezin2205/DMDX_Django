@@ -1,0 +1,8 @@
+{% load bootstrap %}
+{% load mathfilters %}
+{% load myapp_extras %}
+{% if cheked %}
+
+    {% csrf_token %}
+    <button class="btn btn-lg btn-outline-primary mx-1" type="submit" name="print_choosed" role="button" data-toggle="tooltip" data-placement="top" title="Export to Excel"><i class="bi bi-filetype-xlsx"></i></button>
+{% endif %}

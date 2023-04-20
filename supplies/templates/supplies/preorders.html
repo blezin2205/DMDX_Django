@@ -6,8 +6,12 @@
 {% endblock %}
 
 {% block content %}
+     <form method="post" class="form-inline justify-content-center">
+      {% csrf_token %}
 {% if not fromClientList %}
      <div class="col">
+      <div class="row">
+      <div class="col my-3">
               <a href="/orders" class="btn btn-primary {% if isOrdersTab %} active {% endif %}" aria-current="page">Замовлення {% if cartCountData.orders_incomplete > 0 %} <span class="badge bg-warning ms-2">{{ cartCountData.orders_incomplete }}</span> {% endif %}</a>
     {% if request.user|has_group:"empl" or request.user.is_staff %}
          <a href="{% url 'agreements' %}" class="btn btn-primary {% if isAgreementsTab %} active {% endif %}" aria-current="page">Договори</a>
@@ -25,18 +29,25 @@
 {% endif %}
 
     </div>
+      <div class="col d-flex justify-content-end" id="xls_preorder_print_buttons">
+        {% include 'partials/xls_preorders_print_buttons.html' %}
+    </div>
+    </div>
+    </div>
 {% endif %}
-     <form method="get" class="form-inline justify-content-center">
-         <div class="hstack w-50 gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between">
+{#     <form method="get" class="form-inline justify-content-center">#}
+         <div class="hstack w-75 gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between">
              <div class="hstack gap-2">
                  {{ preorderFilter.form.isComplete|as_crispy_field }}
                  {{ preorderFilter.form.state_of_delivery|as_crispy_field }}
+                 {{ preorderFilter.form.for_state_of_client|as_crispy_field }}
+                 {{ preorderFilter.form.isPreorder|as_crispy_field }}
              </div>
              <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
 
 </div>
 
-        </form>
+{#        </form>#}
 
 
 {% if orders.count == 0 %}
@@ -48,4 +59,5 @@
 </div>
 {% endif %}
 <script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
+ </form>
 {% endblock %}

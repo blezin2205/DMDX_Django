@@ -50,6 +50,14 @@ def get_register_for_orders(request):
         cheked = len(selected_orders) > 0
     return render(request, 'partials/register_print_orders_chekbox_buttons.html', {'cheked': cheked})
 
+def get_print_xls_for_preorders(request):
+    cheked = False
+    if request.method == 'POST':
+        selected_orders = request.POST.getlist('xls_preorder_print_buttons')
+        cheked = len(selected_orders) > 0
+        print(selected_orders)
+    return render(request, 'partials/xls_preorders_print_buttons.html', {'cheked': cheked})
+
 
 def create_np_document_for_order(request, order_id):
 
@@ -255,6 +263,8 @@ def search_warehouse(request):
         }
     }
     data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+    print("WAREHOUSES")
+    print(data['data'])
     context = {"results": data["data"]}
     return render(request, 'partials/search-streets-results.html', context)
 
@@ -278,6 +288,13 @@ def choosed_street(request):
     streetRef = request.POST.get('streetRef')
 
     recipientType = request.POST.get('recipientType')
+
+    print("--------------------------------------")
+    print(streetName)
+    print(streetType)
+    print(streetRef)
+    print(recipientType)
+    print("--------------------------------------")
     if recipientType == 'Warehouse':
         ifStreet = False
     else:

@@ -89,6 +89,7 @@ class ClientForm(ModelForm):
         self.fields['address'].label = "Адреса"
         self.fields['link'].label = "Ссилка"
         self.fields['address_NP'].label = "Адреса відправки"
+        self.fields['isPrivatePlace'].label = "Приватна організація"
         self.fields['worker_NP'].label = "Контакта особа отримання відправки"
         self.fields['organization_code'].label = "ЄДРПОУ (Якщо поле заповнене, організація буде додана в НП)"
         if self.instance.isAddedToNP:

@@ -514,24 +514,43 @@ def logoutUser(request):
     logout(request)
     return redirect('login')
 
+from itertools import chain
 
 @login_required(login_url='login')
 def home(request):
 
-    supplies = GeneralSupply.objects.all().order_by('name')
-    suppFilter = SupplyFilter(request.GET, queryset=supplies)
-
     uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
     isClient = request.user.groups.filter(name='client').exists() and not request.user.is_staff
     if isClient:
+
+        user_places = request.user.place_set.all()
+        user_allowed_categories = set()
+        for plc in user_places:
+            categories = plc.allowed_categories.values_list('id', flat=True)
+            # user_allowed_categories.add(categories.values())
+            for quer in categories:
+                user_allowed_categories.add(quer)
+
         uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False, place__user=request.user).exists()
         html_page = 'supplies/home_for_client.html'
+        supplies = GeneralSupply.objects.filter(category_id__in=user_allowed_categories).order_by('name')
+        suppFilter = SupplyFilter(request.GET, queryset=supplies)
+        category = Category.objects.filter(id__in=user_allowed_categories)
+        suppFilter.form.fields['category'].queryset = category
+        if category.count() == 1:
+            suppFilter.data['category'] = category.first()
+
     else:
+        supplies = GeneralSupply.objects.all().order_by('name')
+        suppFilter = SupplyFilter(request.GET, queryset=supplies)
         uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False).exists()
         html_page = 'supplies/home.html'
-        if not suppFilter.data:
-            suppFilter.data['ordering'] = SupplyFilter.EXIST_CHOICES.В_наявності
 
+
+
+
+    if not suppFilter.data:
+        suppFilter.data['ordering'] = SupplyFilter.EXIST_CHOICES.В_наявності
     supplies = suppFilter.qs
 
     # if suppFilter.data['ordering'] == "onlyGood":
@@ -651,6 +670,7 @@ def cartDetailForClient(request):
             comment = orderForm.cleaned_data['comment']
             isComplete = orderForm.cleaned_data['isComplete']
             orderType = request.POST.get('orderType')
+            preorderType = request.POST.get('preorderType')
             place_id = request.POST.get('place_id')
             place = Place.objects.get(id=place_id)
 
@@ -692,12 +712,13 @@ def cartDetailForClient(request):
 
 
             elif orderType == 'Preorder':
+                isPreorder = preorderType == 'new_preorder'
                 if isComplete:
                     dateSent = timezone.now().date()
                 else:
                     dateSent = None
                 order = PreOrder(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent,
-                                 isComplete=isComplete,
+                                 isComplete=isComplete, isPreorder=isPreorder,
                                  comment=comment)
                 order.save()
 
@@ -1396,6 +1417,92 @@ def orders(request):
                    'isOrdersTab': True})
 
 
+
+def generate_list_of_xls_from_preorders_list(preorders_list):
+    selected_ids = map(int, preorders_list)
+    fileteredOredrs = PreOrder.objects.filter(pk__in=selected_ids)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f"attachment; filename=Preorders_List_{datetime.datetime.now().strftime('%d.%m.%Y  %H:%M')}.xlsx"
+    wb = Workbook(response, {'in_memory': True})
+    for preorder in fileteredOredrs:
+        preorder_render_to_xls_by_preorder(response, preorder, wb)
+    wb.close()
+    return response
+
+
+
+
+def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
+    order_id = order.id
+    supplies_in_order_all = order.supplyinpreorder_set.all()
+    supplies_in_order = []
+    for sup in supplies_in_order_all:
+        if sup.count_in_order - sup.count_in_order_current > 0:
+            supplies_in_order.append(sup)
+    row_num = 4
+    init_row_num = row_num
+
+
+    ws = wb.add_worksheet(f'Order №{order_id}')
+    format = wb.add_format({'bold': True})
+    format.set_font_size(16)
+
+    columns_table = [{'header': '№'},
+                     {'header': 'Name'},
+                     {'header': 'Category'},
+                     {'header': 'REF'},
+                     {'header': 'SMN code'},
+                     {'header': 'Awaiting count'},
+                     # {'header': 'Index'}
+                     ]
+
+    ws.write(0, 0,
+             f'Замов. №{order_id} для {order.place.name[:30]}, {order.place.city_ref.name} від {order.dateCreated.strftime("%d-%m-%Y")}',
+             format)
+
+    format = wb.add_format()
+    format.set_font_size(14)
+
+    ws.set_column(0, 0, 5)
+    ws.set_column(1, 1, 35)
+    ws.set_column(2, 4, 20)
+    ws.set_column(4, 5, 15)
+    # ws.set_column(8, 8, 5)
+
+    ws.add_table(row_num, 0, len(supplies_in_order) + row_num, len(columns_table) - 1, {'columns': columns_table})
+
+    if order.comment:
+        ws.write(1, 0, f'Коммент.: {order.comment}', format)
+        ws.write(2, 0, f'Всього: {len(supplies_in_order)} шт.', format)
+    else:
+        ws.write(1, 0, f'Всього: {len(supplies_in_order)} шт.', format)
+
+
+
+    for row in supplies_in_order:
+        row_num += 1
+        name = row.generalSupply.name
+        ref = ''
+        if row.generalSupply.ref:
+            ref = row.generalSupply.ref
+        smn = ''
+        if row.generalSupply.SMN_code:
+            smn = row.generalSupply.SMN_code
+        category = ''
+        if row.generalSupply.category:
+            category = row.generalSupply.category
+        count_in_order = row.count_in_order
+        current_delivery_count = row.count_in_order_current
+        count_borg = row.count_in_order - row.count_in_order_current
+        date_expired = ''
+
+        val_row = [name, category, ref, smn, count_borg]
+
+        for col_num in range(len(val_row)):
+            ws.write(row_num, 0, row_num - init_row_num)
+            ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
+
+
 @login_required(login_url='login')
 def preorders(request):
     cartCountData = countCartItemsHelper(request)
@@ -1408,8 +1515,13 @@ def preorders(request):
         orders = PreOrder.objects.all().order_by('-id')
         title = 'Всі передзамовлення'
 
-    preorderFilter = PreorderFilter(request.GET, queryset=orders)
+    preorderFilter = PreorderFilter(request.POST, queryset=orders)
     orders = preorderFilter.qs
+
+    if request.method == 'POST':
+        if 'print_choosed' in request.POST:
+            selected_orders = request.POST.getlist('xls_preorder_print_buttons')
+            return generate_list_of_xls_from_preorders_list(selected_orders)
 
     return render(request, 'supplies/preorders.html',
                   {'title': title, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData, 'isOrders': True,

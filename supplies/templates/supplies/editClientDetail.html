@@ -17,7 +17,10 @@
     {{ form.city_ref|as_crispy_field }}
     {{ form.address|as_crispy_field }}
     {{ form.link|as_crispy_field }}
+
     {% if not place.isAddedToNP %}{{ form.organization_code|as_crispy_field }}{% else %} <h5 class="pb-4">ЄДРПОУ: <u>{{ place.organization_code }}</u></h5>{% endif %}
+
+{{ form.isPrivatePlace|as_crispy_field }}
 </section>
 
 

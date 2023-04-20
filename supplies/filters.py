@@ -43,16 +43,31 @@ class OrderFilter(django_filters.FilterSet):
     )
 
     isComplete = ChoiceFilter(choices=ADDRESSED_CHOICES, label='Status')
+    PRIVATE_CHOICES = (
+        ('1', 'Приватні'),
+        ('0', 'Державні')
+    )
+
+    for_state_of_client = ChoiceFilter(choices=PRIVATE_CHOICES, label='Тип організації', method='filter_by_state_of_client')
 
     class Meta:
         model = Order
-        fields = ['isComplete']
+        fields = ['isComplete', 'for_state_of_client']
 
     def __init__(self, *args, **kwargs):
         super(OrderFilter, self).__init__(*args, **kwargs)
         self.filters['isComplete'].label = "Готовність"
         self.filters['isComplete'].extra.update(
             {'empty_label': 'Всі'})
+        self.filters['for_state_of_client'].extra.update(
+            {'empty_label': 'Всі'})
+
+    def filter_by_state_of_client(self, queryset, name, value):
+        if value == '1':
+            return queryset.filter(place__isPrivatePlace=True)
+        elif value == '0':
+            return queryset.filter(place__isPrivatePlace=False)
+
 
 
 class PreorderFilter(django_filters.FilterSet):
@@ -61,7 +76,20 @@ class PreorderFilter(django_filters.FilterSet):
         ('0', 'В очікуванні')
     )
 
+    PREORDER_TYPE_CHOICES = (
+        ('1', 'Передзамовлення'),
+        ('0', 'Договори')
+    )
+
+    PRIVATE_CHOICES = (
+        ('1', 'Приватні'),
+        ('0', 'Державні')
+    )
+
     isComplete = ChoiceFilter(choices=ADDRESSED_CHOICES, label='Status')
+    isPreorder = ChoiceFilter(choices=PREORDER_TYPE_CHOICES, label='Status')
+    for_state_of_client = ChoiceFilter(choices=PRIVATE_CHOICES, label='Тип організації',
+                                       method='filter_by_state_of_client')
 
     STATE_CHOICES = (
         ('Awaiting', 'Очікується'),
@@ -71,18 +99,29 @@ class PreorderFilter(django_filters.FilterSet):
 
     class Meta:
         model = PreOrder
-        fields = ['state_of_delivery', 'isComplete']
+        fields = ['state_of_delivery', 'isComplete', 'for_state_of_client', 'isPreorder']
 
     def filter_by_state_of_delivery(self, queryset, name, value):
         return queryset.filter(state_of_delivery=value)
+
+    def filter_by_state_of_client(self, queryset, name, value):
+        if value == '1':
+            return queryset.filter(place__isPrivatePlace=True)
+        elif value == '0':
+            return queryset.filter(place__isPrivatePlace=False)
 
     def __init__(self, *args, **kwargs):
         super(PreorderFilter, self).__init__(*args, **kwargs)
         self.filters['isComplete'].label = "Статус"
         self.filters['isComplete'].extra.update(
             {'empty_label': 'Всі'})
+        self.filters['isPreorder'].label = "Тип передзамовлення"
+        self.filters['isPreorder'].extra.update(
+            {'empty_label': 'Всі'})
         self.filters['state_of_delivery'].label = "Статус поставки"
         self.filters['state_of_delivery'].extra.update(
+            {'empty_label': 'Всі'})
+        self.filters['for_state_of_client'].extra.update(
             {'empty_label': 'Всі'})
 
 
@@ -175,6 +214,13 @@ class DeviceFilter(django_filters.FilterSet):
 
 
 class PlaceFilter(django_filters.FilterSet):
+    PRIVATE_CHOICES = (
+        ('1', 'Приватні'),
+        ('0', 'Державні')
+    )
+
+    isPrivatePlace = ChoiceFilter(choices=PRIVATE_CHOICES, label='Тип організації')
+
     class Meta:
         model = Place
         fields =  '__all__'
