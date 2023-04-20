@@ -1233,6 +1233,7 @@ def childSupply(request):
                          {'header': 'К-ть'},
                          {'header': 'Тер.прид.'},
                          {'header': 'Категорія'},
+                         {'header': 'Оновлено'},
                          ]
 
         ws.write(0, 0,
@@ -1259,8 +1260,9 @@ def childSupply(request):
                 lot = row.supplyLot
             count = row.count
             date_expired = row.expiredDate.strftime("%d.%m.%Y")
+            date_created = row.dateCreated.strftime("%d.%m.%Y")
 
-            val_row = [name, ref, lot, count, date_expired, category]
+            val_row = [name, ref, lot, count, date_expired, category, date_created]
 
             for col_num in range(len(val_row)):
                 ws.write(row_num, 0, row_num - 3)
@@ -1269,9 +1271,8 @@ def childSupply(request):
         ws.set_column(0, 0, 5)
         ws.set_column(1, 1, 35)
         ws.set_column(2, 3, 15)
-        ws.set_column(4, 4, 10)
-        ws.set_column(5, 5, 10)
-        ws.set_column(6, 6, 12)
+        ws.set_column(4, 5, 10)
+        ws.set_column(6, 7, 12)
 
         ws.add_table(3, 0, suppFilter.qs.count() + 3, len(columns_table) - 1, {'columns': columns_table})
         wb.close()

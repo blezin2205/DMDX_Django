@@ -9,6 +9,23 @@ import requests
 from django_htmx.http import trigger_client_event
 
 
+def sendTurboSMSRequest(text, recipients):
+    auth_token = 'b38b9b168929ecd6568ceede5432f2cd7b12d1c8'
+    hed = {'Authorization': 'Bearer ' + auth_token}
+    data = {
+        "recipients": recipients,
+        "sms": {
+            "sender": "DIAMEDIX",
+            "text": text,
+        }
+    }
+
+    url = 'https://api.turbosms.ua/message/send.json'
+    response = requests.post(url, json=data, headers=hed)
+    print(response)
+    print(response.json())
+
+
 def httpRequest(request):
 
     param = {'apiKey': '99f738524ca3320ece4b43b10f4181b1',
