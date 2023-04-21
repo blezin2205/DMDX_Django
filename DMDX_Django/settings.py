@@ -140,16 +140,16 @@ DATABASES = {
     }
 }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'dmdx_new',
-#         'USER': 'postgres',
-#         'PASSWORD': '4646',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'dmdx_new',
+        'USER': 'postgres',
+        'PASSWORD': '4646',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
 
 db_from_env = dj_database_url.config(conn_max_age=500)
 DATABASES['default'].update(db_from_env)
@@ -225,3 +225,10 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 AUTH_USER_MODEL = "supplies.CustomUser"
 PG_COPY_BACKUP_PATH = 'db_backup'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'blezin2205@gmail.com'
+EMAIL_HOST_PASSWORD = 'Rohlikos31'

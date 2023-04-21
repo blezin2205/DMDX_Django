@@ -21,6 +21,9 @@ from io import BytesIO
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
+from django.conf import settings
+from django.core.mail import send_mail
+
 import os
 from xlsxwriter.workbook import Workbook
 from django_htmx.http import trigger_client_event
@@ -583,6 +586,12 @@ def home(request):
 #     print(response)
 #     print(response.json())
 
+    # subject = 'welcome to GFG world'
+    # message = f'Hi, thank you for registering in geeksforgeeks.'
+    # email_from = settings.EMAIL_HOST_USER
+    # recipient_list = ['oleksandr.stepanov@diamedix.ro']
+    # send_mail(subject, message, email_from, recipient_list)
+
     return render(request, html_page, {'title': 'Всі товари',
                                                   'cartCountData': cartCountData,
                                                   'supplies': page_obj, 'suppFilter': suppFilter,
@@ -713,14 +722,18 @@ def cartDetailForClient(request):
 
             elif orderType == 'Preorder':
                 isPreorder = preorderType == 'new_preorder'
+                state_of_delivery = 'awaiting_from_customer'
                 if isComplete:
                     dateSent = timezone.now().date()
+                    state_of_delivery = 'accepted_by_customer'
                 else:
                     dateSent = None
                 order = PreOrder(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent,
                                  isComplete=isComplete, isPreorder=isPreorder,
-                                 comment=comment)
+                                 comment=comment, state_of_delivery=state_of_delivery)
                 order.save()
+                print("----------------PREORDER-------------------")
+                print(state_of_delivery)
 
                 for index, sup in enumerate(supplies):
                     count = request.POST.get(f'count_{sup.id}')
@@ -731,8 +744,8 @@ def cartDetailForClient(request):
 
                     suppInOrder.save()
 
-                t = threading.Thread(target=sendTeamsMsg, args=[order], daemon=True)
-                t.start()
+                # t = threading.Thread(target=sendTeamsMsg, args=[order], daemon=True)
+                # t.start()
 
             elif orderType == 'add_to_Exist_preorder':
                 selected_non_completed_preorder = request.POST.get('selected_non_completed_preorder')
@@ -1419,9 +1432,14 @@ def orders(request):
 
 
 
-def generate_list_of_xls_from_preorders_list(preorders_list):
+def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus = False):
     selected_ids = map(int, preorders_list)
     fileteredOredrs = PreOrder.objects.filter(pk__in=selected_ids)
+    if withChangedStatus:
+        for ord in fileteredOredrs:
+            ord.state_of_delivery = 'Awaiting'
+            ord.save()
+
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f"attachment; filename=Preorders_List_{datetime.datetime.now().strftime('%d.%m.%Y  %H:%M')}.xlsx"
     wb = Workbook(response, {'in_memory': True})
@@ -1520,9 +1538,11 @@ def preorders(request):
     orders = preorderFilter.qs
 
     if request.method == 'POST':
+        selected_orders = request.POST.getlist('xls_preorder_print_buttons')
         if 'print_choosed' in request.POST:
-            selected_orders = request.POST.getlist('xls_preorder_print_buttons')
             return generate_list_of_xls_from_preorders_list(selected_orders)
+        if 'print_choosed_and_status_updated' in request.POST:
+            return generate_list_of_xls_from_preorders_list(selected_orders, True)
 
     return render(request, 'supplies/preorders.html',
                   {'title': title, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData, 'isOrders': True,
@@ -1568,6 +1588,7 @@ def updatePreorderStatus(request, order_id):
     order = PreOrder.objects.get(id=order_id)
 
     order.isComplete = True
+    order.state_of_delivery = 'accepted_by_customer'
     order.dateSent = timezone.now().date()
     order.save()
 
@@ -2782,9 +2803,13 @@ def preorderDetail(request, order_id):
     order = get_object_or_404(PreOrder, pk=order_id)
     supplies_in_order = order.supplyinpreorder_set.all().order_by('id')
     cartCountData = countCartItemsHelper(request)
+    if order.isPreorder:
+        title = f'Передзамовлення № {order_id}'
+    else:
+        title = f'Договір № {order_id}'
 
     return render(request, 'supplies/preorderDetail.html',
-                  {'title': f'Передзамовлення № {order_id}', 'order': order, 'supplies': supplies_in_order,
+                  {'title': title, 'order': order, 'supplies': supplies_in_order,
                    'cartCountData': cartCountData, 'isOrders': True})
 
 

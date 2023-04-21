@@ -308,11 +308,13 @@ class PreOrder(models.Model):
     isPreorder = models.BooleanField(default=False, blank=True)
     comment = models.CharField(max_length=300, null=True, blank=True)
     STATE_CHOICES = (
-        ('Awaiting', 'Очікується'),
+        ('awaiting_from_customer', 'Формується замовником'),
+        ('accepted_by_customer', 'Підтверджено замовником'),
+        ('Awaiting', 'Замовлено у виробника'),
         ('Partial', 'Частково поставлено'),
         ('Complete', 'Повністю поставлено'),
     )
-    state_of_delivery = models.CharField(max_length=20, choices=STATE_CHOICES, default='Awaiting')
+    state_of_delivery = models.CharField(max_length=50, choices=STATE_CHOICES, default='awaiting_from_customer')
 
     def __str__(self):
         return f'презаказ № {self.id}, для {self.place.name}, от {self.dateSent}'
