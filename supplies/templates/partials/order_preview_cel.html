@@ -10,7 +10,11 @@
       {% endif %}
 
      {% if order.for_preorder %}
-          <p class="mb-1">Передзамовлення: <b>№{{order.for_preorder.id}}</b></p>
+         {% if order.for_preorder.isPreorder %}
+             <p class="mb-1">Передзамовлення: <b>№{{order.for_preorder.id}}</b></p>
+             {% else %}
+             <p class="mb-1">Договір: <b>№{{order.for_preorder.id}}</b> {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }} {% endif %} </p>
+             {% endif %}
       {% endif %}
 
      {% if order.isComplete %}

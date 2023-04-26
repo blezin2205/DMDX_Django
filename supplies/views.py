@@ -540,8 +540,6 @@ def home(request):
         suppFilter = SupplyFilter(request.GET, queryset=supplies)
         category = Category.objects.filter(id__in=user_allowed_categories)
         suppFilter.form.fields['category'].queryset = category
-        if category.count() == 1:
-            suppFilter.data['category'] = category.first()
 
     else:
         supplies = GeneralSupply.objects.all().order_by('name')
@@ -744,8 +742,8 @@ def cartDetailForClient(request):
 
                     suppInOrder.save()
 
-                # t = threading.Thread(target=sendTeamsMsg, args=[order], daemon=True)
-                # t.start()
+                t = threading.Thread(target=sendTeamsMsg, args=[order], daemon=True)
+                t.start()
 
             elif orderType == 'add_to_Exist_preorder':
                 selected_non_completed_preorder = request.POST.get('selected_non_completed_preorder')
