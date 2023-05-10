@@ -1435,8 +1435,9 @@ def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus =
     fileteredOredrs = PreOrder.objects.filter(pk__in=selected_ids)
     if withChangedStatus:
         for ord in fileteredOredrs:
-            ord.state_of_delivery = 'Awaiting'
-            ord.save()
+            if ord.state_of_delivery == 'accepted_by_customer':
+                ord.state_of_delivery = 'Awaiting'
+                ord.save()
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f"attachment; filename=Preorders_List_{datetime.datetime.now().strftime('%d.%m.%Y  %H:%M')}.xlsx"
