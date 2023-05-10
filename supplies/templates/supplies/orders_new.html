@@ -52,6 +52,8 @@
     <div class="container" id="order_delete_cell">
         {% include 'partials/order_delete_cell.html' %}
 </div>
+  </form>
+ <form method="get" class="form-inline justify-content-center">
         {% if orders.paginator.num_pages > 1 %}
 <nav aria-label="Page navigation" class="mt-5">
     <ul class="pagination justify-content-center">
@@ -72,8 +74,10 @@
         {% else %}
             <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
         {% endif %}
+
     </ul>
 </nav>
 {% endif %}
  </form>
+
 {% endblock %}

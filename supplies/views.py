@@ -1360,8 +1360,8 @@ def orders(request):
 
     orderFilter = OrderFilter(request.POST or None, queryset=orders)
     orders = orderFilter.qs
-    paginator = Paginator(orders, 20)
-    page_number = request.POST.get('page')
+    paginator = Paginator(orders, 1)
+    page_number = request.GET.get('page')
     orders = paginator.get_page(page_number)
 
     if request.method == 'POST':
