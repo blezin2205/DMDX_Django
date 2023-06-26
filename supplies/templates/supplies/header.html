@@ -39,6 +39,29 @@
 {#            {% endif %}#}
 
             </ul>
+
+        {% if request.user|has_group:"empl" or request.user.is_staff %}
+        <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    {% if cartCountData.order_to_send_today > 0 %}
+                       <i style="font-size: 20px"><b class="text-danger">Відправити замовлень сьогодні: {{ cartCountData.order_to_send_today }} шт.</b></i>
+
+                    {% endif %}
+                </li>
+            </ul>
+{% elif request.user|has_group:"client" %}
+             <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                   <div style="text-align: center;">
+  <b>DIAMEDIX UA</b>
+  <br>
+  <i style="font-size: 12px;">Тестова версія для формування замовлень. Щодо питань та зауважень прошу звертатись за телефоном: 099-243-89-18, Олександр. </i>
+</div>
+
+
+                </li>
+            </ul>
+ {% endif %}
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
                 <div class="hstack gap-2 justify-content-between">
@@ -53,14 +76,15 @@
                         </div>
 
                          {% if request.user.is_staff or request.user|has_group:"empl" %}
-                             <div>
-                                  {% if cartCountData.preorders_await > 0 %}
-                                 <h6 style="color: #de735b; font-weight: bold">Очікується ({{ cartCountData.preorders_await }})</h6>
-                                 {% endif %}
-                             {% if cartCountData.preorders_partial > 0 %}
-                                 <h6 style="color: #deb05b; font-weight: bold">Частково поставлено ({{ cartCountData.preorders_partial }})</h6>
-                                {% endif %}
-                             </div>
+
+{#                             <div>#}
+{#                                  {% if cartCountData.preorders_await > 0 %}#}
+{#                                 <h6 style="color: #de735b; font-weight: bold">Очікується ({{ cartCountData.preorders_await }})</h6>#}
+{#                                 {% endif %}#}
+{#                             {% if cartCountData.preorders_partial > 0 %}#}
+{#                                 <h6 style="color: #deb05b; font-weight: bold">Частково поставлено ({{ cartCountData.preorders_partial }})</h6>#}
+{#                                {% endif %}#}
+{#                             </div>#}
 
 
 
@@ -71,6 +95,7 @@
   <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
     <a class="dropdown-item" href="{% url 'nova_poshta_registers' %}">Реєстри НП</a>
       <a class="dropdown-item" href="{% url 'add_np_sender_place' %}">Відділення відправки</a>
+      <a class="dropdown-item" href="">Графіки</a>
       <div class="dropdown-divider"></div>
     <a class="dropdown-item" href="{% url 'create_note' %}">Додати сервісну замітку</a>
 {#                              <a class="dropdown-item" href="{% url 'addGeneralSupply-with-supp' %}">Товар</a>#}

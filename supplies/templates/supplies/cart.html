@@ -79,11 +79,13 @@
         </div>
           {% endfor %}
 
+<hr class="rounded my-4">
+      <div class="container py-4 mt-4 shadow-sm rounded" style="background-color: rgba(234,233,233,0.77)">
 
-      {{ orderForm.comment|as_crispy_field }}
-      {% if request.user|has_group:"admin" or request.user.is_staff %}
-      {{ orderForm.isComplete|as_crispy_field }}
-      {% endif %}
+          <div style="width: 250px">{{ orderForm.dateToSend|as_crispy_field }}</div>
+          {{ orderForm.comment|as_crispy_field }}
+
+
 
       {% csrf_token %}
       {% if not placeExist %}
@@ -96,6 +98,7 @@
       <div id="places">
           {% include 'partials/choose_place_in_cart_not_precart.html' %}
       </div>
+           </div>
 
 {#          <div id="agreements">#}
 {#          {% include 'partials/choose_agreement_forplace_incart.html' %}#}

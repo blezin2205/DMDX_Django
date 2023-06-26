@@ -1,4 +1,8 @@
+{% load mathfilters %}
+{% load myapp_extras %}
 <div id="order_preview_cell{{ order.id }}" class="my-4">
+
+
     <div class="hstack gap-3">
      <a href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" style="border-radius: 1rem;">
      <div class="d-flex gap-2 w-100 justify-content-between">
@@ -38,6 +42,19 @@
 
   </div>
       <div>
+
+{% if request.user|has_group:"empl" or request.user.is_staff %}
+      {% if order.dateToSend and not order.isComplete %}
+{% now "d.m.Y" as current_date %}
+{% if order.dateToSend|date:"d.m.Y" == current_date %}
+    <p><div class="p-1 mb-1 bg-danger text-dark" style="border-radius: 4px"><b style="text-underline: #0b0b0b">Відправити</b>:
+   <b>Сьогодні</b>
+    </div></p>
+{% else %}
+    <p><div class="p-1 mb-1 bg-warning text-dark" style="border-radius: 4px"><b style="text-underline: #0b0b0b">Відправити</b>:
+    <b>{{order.dateToSend|date:"d.m.Y"}}</b>
+    </div></p>
+{% endif %}{% endif %}{% endif %}
 
       <p class="opacity-60 text-nowrap date" >Дата створення: {{order.dateCreated|date:"d.m.Y"}}</p>
          {% if order.isComplete %}

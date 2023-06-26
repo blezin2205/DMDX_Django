@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse
@@ -16,7 +17,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 import json
 from django.core.paginator import Paginator
-from django.db.models import Count, Sum, F
+from django.db.models import *
 from io import BytesIO
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -132,6 +133,7 @@ def countCartItemsHelper(request):
     isClient = request.user.groups.filter(name='client').exists()
     preorders_await = 0
     preorders_partial = 0
+    order_to_send_today = 0
 
     try:
         orderInCart = OrderInCart.objects.first()
@@ -164,12 +166,13 @@ def countCartItemsHelper(request):
     if not isClient:
         preorders_await = PreOrder.objects.filter(state_of_delivery='Awaiting').count()
         preorders_partial = PreOrder.objects.filter(state_of_delivery='Partial').count()
+        order_to_send_today = Order.objects.filter(dateToSend=date.today(), isComplete=False).count()
 
 
 
 
     return {'cart_items': cart_items, 'precart_items': precart_items, 'orders_incomplete': orders_incomplete,
-            'preorders_incomplete': preorders_incomplete, 'preorders_await': preorders_await, 'preorders_partial': preorders_partial}
+            'preorders_incomplete': preorders_incomplete, 'preorders_await': preorders_await, 'preorders_partial': preorders_partial, 'order_to_send_today': order_to_send_today}
 
 @login_required(login_url='login')
 def full_image_view_for_device_image(request, device_id):
@@ -989,6 +992,7 @@ def cartDetail(request):
                 place_id = request.POST.get('place_id')
                 place = Place.objects.get(id=place_id)
                 comment = orderForm.cleaned_data['comment']
+                dateToSend = orderForm.cleaned_data['dateToSend']
                 try:
                     isComplete = orderForm.cleaned_data['isComplete']
                 except:
@@ -1002,7 +1006,7 @@ def cartDetail(request):
 
                     order = Order(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent,
                                   isComplete=isComplete,
-                                  comment=comment)
+                                  comment=comment, dateToSend=dateToSend)
                     order.save()
 
                     for index, sup in enumerate(supplies):
@@ -1040,8 +1044,8 @@ def cartDetail(request):
                                 supply.countOnHold = countOnHold + countInOrder
                                 supply.save(update_fields=['countOnHold'])
 
-                    t = threading.Thread(target=sendTeamsMsgCart, args=[order], daemon=True)
-                    t.start()
+                    # t = threading.Thread(target=sendTeamsMsgCart, args=[order], daemon=True)
+                    # t.start()
 
 
                 elif orderType == 'add_to_Exist_order':
@@ -1354,7 +1358,7 @@ def orders(request):
         title = f'Всі замовлення для {request.user.first_name} {request.user.last_name}. ({totalCount} шт.)'
 
     else:
-        orders = Order.objects.all().order_by('isComplete', '-id')
+        orders = Order.objects.all().order_by('isComplete', 'dateToSend', '-id')
         totalCount = orders.count()
         title = f'Всі замовлення. ({totalCount} шт.)'
 
@@ -2823,6 +2827,7 @@ def preorderDetail_generateOrder(request, order_id):
         checkBoxSuppIdList = request.POST.getlist('flexCheckDefault')
         count_list = request.POST.getlist('count_list')
         count_list_id = request.POST.getlist('count_list_id')
+        comment_for_order = request.POST.get('comment_for_order')
         print("POST ---")
 
 
@@ -2843,7 +2848,7 @@ def preorderDetail_generateOrder(request, order_id):
             t.append(d)
 
         if supDict:
-            new_order = Order(userCreated=request.user, for_preorder=order, place=order.place)
+            new_order = Order(userCreated=request.user, for_preorder=order, place=order.place, comment=comment_for_order)
             new_order.save()
             for key, value in supDict.items():
                 print("------------------------")
@@ -2869,8 +2874,8 @@ def preorderDetail_generateOrder(request, order_id):
                     s.countOnHold += s.count
                     s.save(update_fields=['countOnHold'])
 
-            t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
-            t.start()
+            # t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
+            # t.start()
             return redirect('/orders')
 
         else:

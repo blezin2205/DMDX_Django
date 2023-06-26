@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.db.models import Count, Sum
 from cloudinary import uploader
 from cloudinary.models import CloudinaryField
+from django import forms
 import cloudinary
 
 
@@ -307,6 +308,8 @@ class PreOrder(models.Model):
     isComplete = models.BooleanField(default=False)
     isPreorder = models.BooleanField(default=False, blank=True)
     comment = models.CharField(max_length=300, null=True, blank=True)
+    dateToOrdered = models.DateField(null=True, blank=True)
+
     STATE_CHOICES = (
         ('awaiting_from_customer', 'Формується замовником'),
         ('accepted_by_customer', 'Підтверджено замовником'),
@@ -338,6 +341,7 @@ class Order(models.Model):
     comment = models.CharField(max_length=300, null=True, blank=True)
     documentsId = ArrayField(models.CharField(max_length=200), blank=True, null=True)
     for_agreement = models.ForeignKey(Agreement, on_delete=models.SET_NULL, null=True, blank=True)
+    dateToSend = models.DateField(null=True, blank=True)
 
 
     def get_np_DocumetsIdList(self):

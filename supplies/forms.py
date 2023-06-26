@@ -210,24 +210,29 @@ class NewCategoryForm(ModelForm):
 
 
 class OrderInCartForm(ModelForm):
+    dateToSend = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'min': datetime.datetime.now().date()}), initial=None, required=False)
+
     class Meta:
         model = OrderInCart
-        fields = ['comment', 'isComplete']
+        fields = ['comment', 'isComplete', 'dateToSend']
     def __init__(self, *args, **kwargs):
         super(OrderInCartForm, self).__init__(*args, **kwargs)
         self.fields['comment'].label = "Коментар"
         self.fields['isComplete'].label = "Підтверджено"
+        self.fields['dateToSend'].label = "Дата, коли потрібно відправити замовлення (опційно)"
 
 
 class PreOrderInClientCartForm(ModelForm):
+    dateToSend = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'min': datetime.datetime.now().date()}), initial=None, required=False)
     class Meta:
         model = OrderInCart
-        fields = ['place', 'comment', 'isComplete']
+        fields = ['place', 'comment', 'isComplete', 'dateToSend']
     def __init__(self, *args, **kwargs):
         super(PreOrderInClientCartForm, self).__init__(*args, **kwargs)
         self.fields['place'].label = "Організація"
         self.fields['comment'].label = "Коментар"
         self.fields['isComplete'].label = "Підтверджено"
+        self.fields['dateToSend'].label = "Дата, на коли формується поточне замовлення (опційно)"
 
     def clean_place(self):
         place = self.cleaned_data['place']
