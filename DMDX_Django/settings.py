@@ -143,7 +143,7 @@ DATABASES = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'dmdx_new',
+        'NAME': 'dmdx',
         'USER': 'postgres',
         'PASSWORD': '4646',
         'HOST': 'localhost',

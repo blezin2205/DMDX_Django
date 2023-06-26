@@ -1354,7 +1354,7 @@ def orders(request):
         title = f'Всі замовлення для {request.user.first_name} {request.user.last_name}. ({totalCount} шт.)'
 
     else:
-        orders = Order.objects.all().order_by('-id')
+        orders = Order.objects.all().order_by('isComplete', '-id')
         totalCount = orders.count()
         title = f'Всі замовлення. ({totalCount} шт.)'
 

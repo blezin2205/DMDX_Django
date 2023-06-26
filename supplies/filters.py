@@ -1,5 +1,6 @@
 import django_filters
 from .models import *
+from django import forms
 from django_filters import CharFilter, ChoiceFilter, ModelChoiceFilter
 from django.db.models import Exists, OuterRef, Q, Prefetch
 from django.utils import timezone
@@ -90,6 +91,11 @@ class PreorderFilter(django_filters.FilterSet):
     isPreorder = ChoiceFilter(choices=PREORDER_TYPE_CHOICES, label='Status')
     for_state_of_client = ChoiceFilter(choices=PRIVATE_CHOICES, label='Тип організації',
                                        method='filter_by_state_of_client')
+    state_of_delivery = django_filters.MultipleChoiceFilter(choices=PreOrder.STATE_CHOICES, widget=forms.CheckboxSelectMultiple())
+    search_text = CharFilter(method='my_custom_filter_search_text', label='Пошук...')
+
+    def my_custom_filter_search_text(self, queryset, name, value):
+        return queryset.filter(Q(comment__icontains=value) | Q(place__name__icontains=value) | Q(place__city_ref__name__icontains=value) | Q(place__city__icontains=value))
 
     STATE_CHOICES = (
         ('Awaiting', 'Очікується'),
@@ -99,7 +105,7 @@ class PreorderFilter(django_filters.FilterSet):
 
     class Meta:
         model = PreOrder
-        fields = ['state_of_delivery', 'isComplete', 'for_state_of_client', 'isPreorder']
+        fields = ['state_of_delivery', 'isComplete', 'for_state_of_client', 'isPreorder', 'search_text']
 
     def filter_by_state_of_delivery(self, queryset, name, value):
         return queryset.filter(state_of_delivery=value)
@@ -119,8 +125,8 @@ class PreorderFilter(django_filters.FilterSet):
         self.filters['isPreorder'].extra.update(
             {'empty_label': 'Всі'})
         self.filters['state_of_delivery'].label = "Статус поставки"
-        self.filters['state_of_delivery'].extra.update(
-            {'empty_label': 'Всі'})
+        # self.filters['state_of_delivery'].extra.update(
+        #     {'empty_label': 'Всі'})
         self.filters['for_state_of_client'].extra.update(
             {'empty_label': 'Всі'})
 
@@ -220,6 +226,8 @@ class PlaceFilter(django_filters.FilterSet):
     )
 
     isPrivatePlace = ChoiceFilter(choices=PRIVATE_CHOICES, label='Тип організації')
+    name = CharFilter(field_name='name', lookup_expr='icontains', label='Назва')
+    city = CharFilter(field_name='city', lookup_expr='icontains', label='Місто')
 
     class Meta:
         model = Place
@@ -231,6 +239,8 @@ class PlaceFilter(django_filters.FilterSet):
 
 
 class CityFilter(django_filters.FilterSet):
+    name = CharFilter(field_name='name', lookup_expr='icontains', label='Назва міста')
+
     class Meta:
         model = City
         fields =  '__all__'
