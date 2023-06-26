@@ -1044,8 +1044,8 @@ def cartDetail(request):
                                 supply.countOnHold = countOnHold + countInOrder
                                 supply.save(update_fields=['countOnHold'])
 
-                    # t = threading.Thread(target=sendTeamsMsgCart, args=[order], daemon=True)
-                    # t.start()
+                    t = threading.Thread(target=sendTeamsMsgCart, args=[order], daemon=True)
+                    t.start()
 
 
                 elif orderType == 'add_to_Exist_order':
@@ -2874,8 +2874,8 @@ def preorderDetail_generateOrder(request, order_id):
                     s.countOnHold += s.count
                     s.save(update_fields=['countOnHold'])
 
-            # t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
-            # t.start()
+            t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
+            t.start()
             return redirect('/orders')
 
         else:
