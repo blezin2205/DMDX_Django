@@ -48,7 +48,11 @@
         <div class="container bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
         <h5>Нова пошта інфо: </h5>
         {% for document in order.statusnpparselfromdoucmentid_set.all %}
-            <h6><u>Накладна № {{ document.docNumber }}</u></h6>
+            <h6><u>Накладна № {{ document.docNumber }}</u>
+                {% if request.user|has_group:"empl" or request.user.is_staff %}
+                <button data-product="{{ document.id }}" data-action="delete" class="btn btn-sm mx-4 btn-danger add-btn delete-npdocument-button"><i class="bi bi-trash"></i></button>
+            {% endif %}
+            </h6>
             <p class="mb-2"><span>Статус НП:</span> <b style="color: {% if document.status_code == '9' %} green {% elif document.status_code == '2' %} red {% else %} orange {% endif %}">{{ document.status_desc }}</b>  </p>
             <li><u style="font-style: italic">Відправник:</u> {{ document.warehouseSender }}</li>
             <li><u style="font-style: italic">Отримувач:</u> {{ document.counterpartyRecipientDescription }}, {{ document.recipientAddress }}, {{ document.recipientFullNameEW }}</li>

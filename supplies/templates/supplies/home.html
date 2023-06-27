@@ -13,8 +13,10 @@
 
 <div class="container py-1">
   <div class="btn-group my-3">
-  <a href="/" class="btn btn-primary mx-2 {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
-  <a href="/childSupply" class="btn btn-primary {% if isChild %} active {% endif %}">Список товарів</a>
+  <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+
+  <a href="/childSupply" class="btn btn-primary mx-2 {% if isChild %} active {% endif %}">Список товарів</a>
+  <a href="/childSupply" class="btn btn-primary {% if isChild %} active {% endif %}">Історія товарів</a>
 </div>
 
      <form method="get" class="form-inline justify-content-center">
@@ -85,7 +87,13 @@
               </script>
 
 {% endif %}
-          {{ el.name }} </div> </th>
+      {% if request.user|has_group:"empl" or request.user.is_staff %}
+<a href="{% url 'history_for_supply' el.id %}?next={{ request.get_full_path|urlencode }}" class="text-decoration-none link-dark">
+   {{ el.name }}
+</a>
+      {% else %}
+          {{ el.name }}
+      {% endif %}</div> </th>
       <td>
        {% if el.package_and_tests is not none %}
                         {{ el.package_and_tests }}

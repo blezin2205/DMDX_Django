@@ -40,6 +40,8 @@ urlpatterns = [
 
     path('delete_supply/<int:suppId>', views.deleteSupply, name='delete_supply'),
     path('delete_supply_in_order/', views.deleteSupplyInOrder, name='delete_supply_in_order'),
+    path('deleteSupplyInOrderNPDocumentButton/', views.deleteSupplyInOrderNPDocumentButton, name='deleteSupplyInOrderNPDocumentButton'),
+
 
     path('allDevices/', views.devicesList, name='allDevices'),
     path('allDevices/full_image_view_for_device_image/<int:device_id>', views.full_image_view_for_device_image, name='full_image_view_for_device_image'),
@@ -53,6 +55,7 @@ urlpatterns = [
     path('add-new-supply-category', views.addNewCategory, name='add-new-supply-category'),
     path('add-client', views.addNewClient, name='addClient'),
     path('newLot/<int:supp_id>', views.addNewLotforSupply, name='addNewLot'),
+    path('history_for_supply/<int:supp_id>', views.history_for_supply, name='history_for_supply'),
 
     path('update/<int:supp_id>', views.updateSupply, name='updateSupply'),
     path('update_general/<int:supp_id>', views.updateGeneralSupply, name='updateGeneralSupply'),

@@ -143,9 +143,48 @@ class SupplySaveFromScanApiModel(models.Model):
     count = models.PositiveIntegerField(null=True, blank=True)
 
 
+class SupplyForHistory(models.Model):
+    name = models.CharField(max_length=300, null=True, blank=True)
+    history_description = models.CharField(max_length=500, null=True, blank=True)
+    general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    ref = models.CharField(max_length=50, null=True, blank=True)
+    supplyLot = models.CharField(max_length=50, null=True, blank=True)
+    count = models.PositiveIntegerField(null=True, blank=True)
+    countOnHold = models.PositiveIntegerField(null=True, blank=True, default=0)
+    dateCreated = models.DateField(null=True, auto_now_add=True)
+    expiredDate = models.DateField(null=True)
+
+    ACTION_TYPE = (
+        ('added', 'Додано'),
+        ('deleted', 'Видалено'),
+        ('updated', 'Оновлено'),
+    )
+    action_type = models.CharField(max_length=100, choices=ACTION_TYPE, blank=True, null=True)
+
+    def get_action_type_value(self):
+        return self.get_action_type_display()
+
+    def date_is_good(self):
+        return self.expiredDate > timezone.now().date()
+
+    def date_is_expired(self):
+        return self.expiredDate < timezone.now().date()
+
+    def date_is_today(self):
+        return self.expiredDate == timezone.now().date()
+
+    def __str__(self):
+        return self.general_supply.name
+
+    class Meta:
+        verbose_name = 'Товар (Історія)'
+        verbose_name_plural = 'Товари (Історія)'
+
+
 class Supply(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=100, null=True, blank=True)
+    name = models.CharField(max_length=300, null=True, blank=True)
     general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True, related_name='general')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     ref = models.CharField(max_length=50, null=True, blank=True)
@@ -309,6 +348,7 @@ class PreOrder(models.Model):
     isPreorder = models.BooleanField(default=False, blank=True)
     comment = models.CharField(max_length=300, null=True, blank=True)
     dateToOrdered = models.DateField(null=True, blank=True)
+    isClosed = models.BooleanField(default=False)
 
     STATE_CHOICES = (
         ('awaiting_from_customer', 'Формується замовником'),
@@ -321,6 +361,9 @@ class PreOrder(models.Model):
 
     def __str__(self):
         return f'презаказ № {self.id}, для {self.place.name}, от {self.dateSent}'
+
+    def get_state_of_delivery_value(self):
+        return self.get_state_of_delivery_display()
 
 
     def checkIfUncompletedDeliveryPreordersExist(self):

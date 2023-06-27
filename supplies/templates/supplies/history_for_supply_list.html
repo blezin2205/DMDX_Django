@@ -1,0 +1,81 @@
+{% extends 'supplies/base_for_home.html' %}
+{% load crispy_forms_filters %}
+{% load bootstrap %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<div class="container py-1">
+
+{#    <form method="get" class="form-inline justify-content-center">#}
+{#         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">#}
+{#             <div class="hstack gap-2">#}
+{##}
+{#                  {{ suppFilter.form.ordering|as_crispy_field }}#}
+{#                 {{ suppFilter.form.category|as_crispy_field }}#}
+{#                 {{ suppFilter.form.ref|as_crispy_field }}#}
+{#                 {{ suppFilter.form.supplyLot|as_crispy_field }}#}
+{#                 {{ suppFilter.form.name|as_crispy_field }}#}
+{##}
+{#             </div>#}
+{#             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>#}
+{##}
+{#</div>#}
+{##}
+{##}
+{#    <input type="hidden" name="xls_button"#}
+{#        value="{{ supplies }}" />#}
+{#    <button type="submit" class="btn btn-outline">#}
+{#        Export to Excel#}
+{#    </button>#}
+{#        </form>#}
+{#    <form method="GET">#}
+{#    {% csrf_token %}#}
+{#    <input type="hidden" name="xls_button"#}
+{#        value="{{ suppFilter }}" />#}
+{#    <button type="submit" class="btn btn-outline-primary">#}
+{#        Export to Excel#}
+{#    </button>#}
+{##}
+{#    </form>#}
+
+
+        <table class="table centred mt-3 w-100 mx-auto">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">({{supplies|length}} шт.) Дія</th>
+      <th scope="col">Опис</th>
+{#        <th scope="col">Категорія</th>#}
+{#        <th scope="col">REF</th>#}
+{#        <th scope="col">SMN</th>#}
+        <th scope="col">LOT</th>
+        <th scope="col">Кількість</th>
+        <th scope="col">Термін</th>
+        <th scope="col">Дата додавання</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for el in supplies %}
+
+     <tr>
+      <th scope="row" style="text-align: left">{{ el.get_action_type_value }}</th>
+<td>{% if el.history_description %} {{ el.history_description }} {% endif %}</td>
+
+         <td class="supplyRow">
+                    {% if el.supplyLot is not none %}
+                        {{ el.supplyLot }}
+                {% endif %}
+                    </td>
+
+            <td>{{ el.count }}</td>
+            <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.expiredDate|date:"d.m.Y" }}
+
+                            </div></td>
+            <td>{{ el.dateCreated|date:"d.m.Y" }}</td>
+    </tr>
+   {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

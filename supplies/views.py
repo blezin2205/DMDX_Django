@@ -205,10 +205,33 @@ def deleteSupply(request, suppId):
 
 
 @login_required(login_url='login')
+def deleteSupplyInOrderNPDocumentButton(request):
+    data = json.loads(request.body)
+    prodId = data['productId']
+    action = data['action']
+    print(action)
+
+    if action == 'delete':
+        statusParsel = StatusNPParselFromDoucmentID.objects.get(pk=prodId)
+        npDocument = NPDeliveryCreatedDetailInfo.objects.get(document_id=statusParsel.docNumber)
+        statusParsel.delete()
+        npDocument.delete()
+        print("NP DOCUMENT ACTION TO DELETE")
+        print(prodId)
+
+    return JsonResponse('Item was added', safe=False)
+
+
+@login_required(login_url='login')
 def deleteSupplyInOrder(request):
     data = json.loads(request.body)
     prodId = data['productId']
     action = data['action']
+
+
+    if action == 'delete-npdocument':
+        print("NP DOCUMENT ACTION TO DELETE")
+        print(prodId)
 
     if action == 'delete':
         suppInOrder = SupplyInOrder.objects.get(id=prodId)
@@ -1534,7 +1557,7 @@ def preorders(request):
         orders = PreOrder.objects.filter(place__user=request.user).order_by('-id')
         title = f'Всі передзамовлення для {request.user.first_name} {request.user.last_name}'
     else:
-        orders = PreOrder.objects.all().order_by('-id')
+        orders = PreOrder.objects.all().order_by('-state_of_delivery', '-id')
         title = 'Всі передзамовлення'
 
     preorderFilter = PreorderFilter(request.POST, queryset=orders)
@@ -1943,8 +1966,20 @@ def updateGeneralSupply(request, supp_id):
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
+def history_for_supply(request, supp_id):
+    cartCountData = countCartItemsHelper(request)
+    generalSupp = GeneralSupply.objects.get(id=supp_id)
+    supplies = generalSupp.supplyforhistory_set.all().order_by('-id')
+    return render(request, 'supplies/history_for_supply_list.html',
+                  {'generalSupp': generalSupp, 'supplies': supplies, 'cartCountData': cartCountData})
+
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def addNewLotforSupply(request, supp_id):
     generalSupp = GeneralSupply.objects.get(id=supp_id)
+
     form = SupplyForm()
     cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
@@ -1957,6 +1992,21 @@ def addNewLotforSupply(request, supp_id):
             obj.ref = generalSupp.ref
             obj.save()
             next = request.POST.get('next')
+
+            lot = form.cleaned_data['supplyLot']
+            lot = form.cleaned_data['supplyLot']
+            lot = form.cleaned_data['supplyLot']
+
+            supForHistory = SupplyForHistory(name=generalSupp.name,
+                                             history_description="Додано новий лот (Кнопка)",
+                                             general_supply=generalSupp,
+                                             category=generalSupp.category,
+                                             ref=generalSupp.ref,
+                                             supplyLot=obj.supplyLot,
+                                             count=obj.count,
+                                             dateCreated=obj.dateCreated,
+                                             expiredDate=obj.expiredDate, action_type='added')
+            supForHistory.save()
             return HttpResponseRedirect(next)
 
     return render(request, 'supplies/createSupply.html',
