@@ -214,6 +214,18 @@ def deleteSupplyInOrderNPDocumentButton(request):
     if action == 'delete':
         statusParsel = StatusNPParselFromDoucmentID.objects.get(pk=prodId)
         npDocument = NPDeliveryCreatedDetailInfo.objects.get(document_id=statusParsel.docNumber)
+
+        params = {
+            "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+            "modelName": "InternetDocument",
+            "calledMethod": "delete",
+            "methodProperties": {
+                "DocumentRefs": npDocument.ref
+            }
+        }
+        data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+        print(data)
+
         statusParsel.delete()
         npDocument.delete()
         print("NP DOCUMENT ACTION TO DELETE")
