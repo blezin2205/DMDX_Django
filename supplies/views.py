@@ -66,26 +66,32 @@ async def httpRequest(request):
 
 def load_xms_data(request):
     print('Hello')
+    counter = 0
 
     if request.POST:
         excel_file = request.FILES["excel_file"]
-        excel_data_df = pandas.read_excel(excel_file, sheet_name='Immulite2000', header=None, index_col=None)
+        catID = request.POST.get("category_id")
+        category_id = int(catID)
+        excel_data_df = pandas.read_excel(excel_file, sheet_name='Immulite', header=None, index_col=None)
         wb = excel_data_df
         vals = wb.values
         for obj in vals:
-            ref = obj[0]
             print('----------------------------------')
-            print(obj)
-            smn = str(obj[2]).removesuffix('.0')
-            name = str(obj[1])
-            packed = obj[2]
-            tests = obj[5]
+            smn = str(obj[1])
+            name = str(obj[2]).removeprefix("IMMULITE").strip()
+            packed = obj[3]
 
-            print(ref, name, packed)
+            print(smn, name, packed)
+
+            if smn != "nan" or name != "nan":
+                new = GeneralSupply(name=name, SMN_code=smn, package_and_tests=packed, category_id=category_id)
+                new.save()
+                counter += 1
 
 
 
-    return render(request, 'supplies/load_xms_data.html', {})
+
+    return render(request, 'supplies/load_xms_data.html', {'counter': counter})
 
 
 
@@ -1658,6 +1664,7 @@ def orderUpdateStatus(request, order_id):
 
 
         order.isComplete = True
+        order.dateToSend = None
         order.dateSent = timezone.now().date()
         order.save()
 
