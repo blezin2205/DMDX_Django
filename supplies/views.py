@@ -2114,8 +2114,9 @@ def addNewClient(request):
             address = form.cleaned_data['address']
             link = form.cleaned_data['link']
             organization_code = form.cleaned_data['organization_code']
+            isPrivatePlace = form.cleaned_data['isPrivatePlace']
 
-            org = Place(name=name, city_ref=city_ref, address=address, link=link)
+            org = Place(name=name, city_ref=city_ref, address=address, link=link, isPrivatePlace=isPrivatePlace)
 
             if organization_code is not None:
                 params = {
