@@ -141,7 +141,6 @@ python-jwt==2.0.1
 pytils==0.4.1
 pytz==2022.1
 pytz-deprecation-shim==0.1.0.post0
-PyYAML==5.4.1
 qrcode==7.3.1
 reportlab==3.6.9
 requests==2.25.1
