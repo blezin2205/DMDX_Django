@@ -33,7 +33,7 @@ class ChildSupplyFilter(django_filters.FilterSet):
     def filter_by_order(self, queryset, name, value):
 
         if value == 'onlyGood':
-            return  queryset.filter(expiredDate__gte=timezone.now().date()).order_by('expiredDate').distinct()
+            return queryset.filter(expiredDate__gte=timezone.now().date()).order_by('expiredDate').distinct()
         elif value =='onlyExpired':
             return queryset.filter(expiredDate__lt=timezone.now().date()).order_by('-expiredDate').distinct()
         elif value =='dateCreated':
