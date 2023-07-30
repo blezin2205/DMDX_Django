@@ -33,7 +33,7 @@ import requests
 import pandas
 import csv
 import pymsteams
-import plotly.express as px
+# import plotly.express as px
 from django.db.models import Sum, F
 
 
@@ -69,40 +69,40 @@ async def httpRequest(request):
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def chartOfSoldSupplies(request):
-
-    sups = SupplyInOrder.objects.filter(generalSupply__isnull=False, generalSupply__category_id=1).values(
-        'generalSupply'
-    ).annotate(
-        total_count_in_order=Sum('count_in_order')
-    ).order_by(
-        'generalSupply'
-    )
-
-    supply_in_order_list = []
-    for sup in sups:
-        general_supply_id = sup['generalSupply']
-        total_count_in_order = sup['total_count_in_order']
-        supply_in_order = SupplyInOrder.objects.filter(generalSupply_id=general_supply_id).first()
-        supply_in_order.count_in_order = total_count_in_order
-        supply_in_order_list.append(supply_in_order)
-
-    # supply_in_order_list = sorted(supply_in_order_list, key=lambda x: x.count_in_order)
-    fig = px.bar(
-        x=[item.generalSupply.name for item in supply_in_order_list],
-        y=[item.count_in_order for item in supply_in_order_list],
-        title="Supplies in Orders",
-        labels={'x': 'name', 'y': 'count'}
-    )
-
-    fig.update_layout(title={
-        'font_size': 22,
-        'xanchor': 'center',
-        'x': 0.5
-    })
-
-    chart = fig.to_html()
-    context = {'chart': chart}
-    return render(request, "supplies/chart-sold.html", context)
+    #
+    # sups = SupplyInOrder.objects.filter(generalSupply__isnull=False, generalSupply__category_id=1).values(
+    #     'generalSupply'
+    # ).annotate(
+    #     total_count_in_order=Sum('count_in_order')
+    # ).order_by(
+    #     'generalSupply'
+    # )
+    #
+    # supply_in_order_list = []
+    # for sup in sups:
+    #     general_supply_id = sup['generalSupply']
+    #     total_count_in_order = sup['total_count_in_order']
+    #     supply_in_order = SupplyInOrder.objects.filter(generalSupply_id=general_supply_id).first()
+    #     supply_in_order.count_in_order = total_count_in_order
+    #     supply_in_order_list.append(supply_in_order)
+    #
+    # # supply_in_order_list = sorted(supply_in_order_list, key=lambda x: x.count_in_order)
+    # fig = px.bar(
+    #     x=[item.generalSupply.name for item in supply_in_order_list],
+    #     y=[item.count_in_order for item in supply_in_order_list],
+    #     title="Supplies in Orders",
+    #     labels={'x': 'name', 'y': 'count'}
+    # )
+    #
+    # fig.update_layout(title={
+    #     'font_size': 22,
+    #     'xanchor': 'center',
+    #     'x': 0.5
+    # })
+    #
+    # chart = fig.to_html()
+    # context = {'chart': chart}
+    return render(request, "supplies/chart-sold.html", {})
 
 
 @login_required(login_url='login')
