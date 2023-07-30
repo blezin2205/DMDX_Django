@@ -33,6 +33,8 @@ import requests
 import pandas
 import csv
 import pymsteams
+import plotly.express as px
+from django.db.models import Sum, F
 
 
 async def httpRequest(request):
@@ -51,19 +53,60 @@ async def httpRequest(request):
     }
 
     data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(param)).json()
-    cityData = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(getListOfCitiesParams)).json()
-    cityDataCount = cityData["data"]
-    cities = []
-    for city in cityDataCount:
-        cityName = city["Description"]
-        cities.append(City(name=cityName))
-        print(cityName)
-
-    print(len(cities))
+    # cityData = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(getListOfCitiesParams)).json()
+    # cityDataCount = cityData["data"]
+    # cities = []
+    # for city in cityDataCount:
+    #     cityName = city["Description"]
+    #     cities.append(City(name=cityName))
+    #     print(cityName)
+    #
+    # print(len(cities))
 
     return render(request, "supplies/http_response.html", {'data': data["data"]})
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def chartOfSoldSupplies(request):
+
+    sups = SupplyInOrder.objects.filter(generalSupply__isnull=False, generalSupply__category_id=1).values(
+        'generalSupply'
+    ).annotate(
+        total_count_in_order=Sum('count_in_order')
+    ).order_by(
+        'generalSupply'
+    )
+
+    supply_in_order_list = []
+    for sup in sups:
+        general_supply_id = sup['generalSupply']
+        total_count_in_order = sup['total_count_in_order']
+        supply_in_order = SupplyInOrder.objects.filter(generalSupply_id=general_supply_id).first()
+        supply_in_order.count_in_order = total_count_in_order
+        supply_in_order_list.append(supply_in_order)
+
+    # supply_in_order_list = sorted(supply_in_order_list, key=lambda x: x.count_in_order)
+    fig = px.bar(
+        x=[item.generalSupply.name for item in supply_in_order_list],
+        y=[item.count_in_order for item in supply_in_order_list],
+        title="Supplies in Orders",
+        labels={'x': 'name', 'y': 'count'}
+    )
+
+    fig.update_layout(title={
+        'font_size': 22,
+        'xanchor': 'center',
+        'x': 0.5
+    })
+
+    chart = fig.to_html()
+    context = {'chart': chart}
+    return render(request, "supplies/chart-sold.html", context)
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def load_xms_data(request):
     print('Hello')
     counter = 0
@@ -1270,7 +1313,7 @@ def childSupply(request):
         orderInCart = None
         cart_items = 0
 
-    if request.GET.get('xls_button'):
+    if 'xls_button' in request.GET:
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f"attachment; filename=Supply_List.xlsx"
@@ -1339,6 +1382,87 @@ def childSupply(request):
     return render(request, 'supplies/homeChild.html',
                   {'title': 'Дочерні товари', 'supplies': supplies, 'cartCountData': cartCountData,
                    'suppFilter': suppFilter, 'isHome': True, 'isChild': True})
+
+
+@login_required(login_url='login')
+def historySupply(request):
+    supplies = SupplyForHistory.objects.all().order_by('-id')
+    suppFilter = HistorySupplyFilter(request.GET, queryset=supplies)
+    supplies = suppFilter.qs
+
+    if 'xls_button' in request.GET:
+
+        suppFilter = HistorySupplyFilter(request.POST, queryset=supplies)
+        supplies = suppFilter.qs
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f"attachment; filename=Supplies_History_List.xlsx"
+
+        wb = Workbook(response, {'in_memory': True})
+        ws = wb.add_worksheet('Sup_History_List')
+        format = wb.add_format({'bold': True})
+        format.set_font_size(16)
+
+        columns_table = [{'header': '№'},
+                         {'header': 'ACTION'},
+                         {'header': 'Назва товару'},
+                         {'header': 'REF'},
+                         {'header': 'LOT'},
+                         {'header': 'К-ть'},
+                         {'header': 'Тер.прид.'},
+                         {'header': 'Категорія'},
+                         {'header': 'Оновлено'},
+                         ]
+
+        ws.write(0, 0, f'Загальний список товарів', format)
+
+        format = wb.add_format({'num_format': 'dd.mm.yyyy'})
+        format.set_font_size(12)
+
+        row_num = 3
+
+        for row in supplies:
+            row_num += 1
+            action = row.get_action_type_value()
+            name = ''
+            ref = ''
+            lot = ''
+            category = ''
+            if row.name:
+                name = row.name
+            if row.general_supply:
+                name = row.general_supply.name
+                ref = row.general_supply.ref
+                category = row.general_supply.category.name
+
+            if row.supplyLot:
+                lot = row.supplyLot
+            count = row.count
+            date_expired = row.expiredDate.strftime("%d.%m.%Y")
+            date_created = row.dateCreated.strftime("%d.%m.%Y")
+
+            val_row = [action, name, ref, lot, count, date_expired, category, date_created]
+
+            for col_num in range(len(val_row)):
+                ws.write(row_num, 0, row_num - 3)
+                ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
+
+        ws.set_column(0, 0, 5)
+        ws.set_column(1, 1, 15)
+        ws.set_column(2, 2, 35)
+        ws.set_column(3, 4, 15)
+        ws.set_column(5, 6, 10)
+        ws.set_column(7, 8, 12)
+
+        ws.add_table(3, 0, row_num, len(columns_table) - 1, {'columns': columns_table})
+        wb.close()
+        return response
+
+    cartCountData = countCartItemsHelper(request)
+
+    return render(request, 'supplies/home-history.html',
+                  {'title': 'Історія товарів', 'supplies': supplies, 'cartCountData': cartCountData,
+                   'suppFilter': suppFilter, 'isHome': True, 'isHistory': True})
+
 
 
 
@@ -1646,9 +1770,13 @@ def orderUpdateStatus(request, order_id):
         for el in supps:
             countInOrder = el.count_in_order
             supp = el.supply
+            suppForHistory = supp.get_supp_for_history()
+            suppForHistory.action_type = 'added-order'
+            suppForHistory.supply_for_order = order
             supp.countOnHold -= countInOrder
             supp.count -= countInOrder
             supp.save(update_fields=['countOnHold', 'count'])
+            suppForHistory.save()
             if supp.count == 0:
                 supp.delete()
 
@@ -1832,11 +1960,17 @@ def updateSupply(request, supp_id):
         if 'save' in request.POST:
             form = SupplyForm(request.POST, instance=note)
             if form.is_valid():
-                # obj = form.save(commit=False)
+                obj = form.save(commit=False)
                 # obj.from_user = User.objects.get(pk=request.user.id)
-                form.save()
+                suppForHistory = obj.get_supp_for_history()
+                suppForHistory.action_type = 'updated'
+                suppForHistory.save()
+                obj.save()
         elif 'delete' in request.POST:
             supp = Supply.objects.get(id=supp_id)
+            suppForHistory = supp.get_supp_for_history()
+            suppForHistory.action_type = 'deleted'
+            suppForHistory.save()
             supp.delete()
 
         return HttpResponseRedirect(next)
@@ -2009,23 +2143,32 @@ def addNewLotforSupply(request, supp_id):
             obj.category = generalSupp.category
             obj.name = generalSupp.name
             obj.ref = generalSupp.ref
-            obj.save()
             next = request.POST.get('next')
 
             lot = form.cleaned_data['supplyLot']
-            lot = form.cleaned_data['supplyLot']
-            lot = form.cleaned_data['supplyLot']
+            count = form.cleaned_data['count']
+            expiredDate = form.cleaned_data['expiredDate']
+            try:
+                supIfExist = generalSupp.general.get(supplyLot=lot, expiredDate=expiredDate)
+                supIfExist.count += count
+                supIfExist.save()
 
-            supForHistory = SupplyForHistory(name=generalSupp.name,
-                                             history_description="Додано новий лот (Кнопка)",
-                                             general_supply=generalSupp,
-                                             category=generalSupp.category,
-                                             ref=generalSupp.ref,
-                                             supplyLot=obj.supplyLot,
-                                             count=obj.count,
-                                             dateCreated=obj.dateCreated,
-                                             expiredDate=obj.expiredDate, action_type='added')
-            supForHistory.save()
+            except:
+                obj.save()
+
+            supHistory = obj.get_supp_for_history()
+
+            try:
+                supForHistory = SupplyForHistory.objects.get(supplyLot=supHistory.supplyLot,
+                                                             dateCreated=supHistory.dateCreated, expiredDate=supHistory.expiredDate)
+                supForHistory.count += supHistory.count
+                supForHistory.action_type = 'added-handle'
+                supForHistory.save()
+
+            except:
+                supHistory.action_type = 'added-handle'
+                supHistory.save()
+
             return HttpResponseRedirect(next)
 
     return render(request, 'supplies/createSupply.html',

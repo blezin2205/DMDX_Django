@@ -17,7 +17,7 @@
          <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
              <div class="hstack gap-2">
 
-                  {{ suppFilter.form.ordering|as_crispy_field }}
+                  {{ suppFilter.form.action_type|as_crispy_field }}
                  {{ suppFilter.form.category|as_crispy_field }}
                  {{ suppFilter.form.ref|as_crispy_field }}
                  {{ suppFilter.form.supplyLot|as_crispy_field }}
@@ -27,7 +27,8 @@
              <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
 
 </div>
-<button type="submit" class="btn btn-outline-primary" name="xls_button">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-outline-primary" name="xls_button">
         Export to Excel
     </button>
         </form>
@@ -36,6 +37,7 @@
         <table class="table centred mt-3 w-auto mx-auto">
   <thead class="thead-dark">
     <tr>
+        <th scope="col">Дія</th>
       <th scope="col">{{supplies|length}} Назва товару</th>
       <th scope="col">Пакування / Тести</th>
         <th scope="col">Категорія</th>
@@ -51,6 +53,10 @@
     {% for el in supplies %}
 
      <tr>
+     <td>{{ el.get_action_type_value }} {% if el.supply_for_order %}
+     <a href="{% url 'orderDetail' order_id=el.supply_for_order.id sup_id=0 %}?next={{ request.get_full_path|urlencode }}" {% if not el.supply_for_order.isComplete %} class="link-warning" {% endif %} >№{{ el.supply_for_order.id }}</a>
+
+     {% endif %}</td>
       <th scope="row" style="text-align: left">{{ el.general_supply.name }}</th>
       <td>{{ el.general_supply.package_and_tests }}</td>
      <td>{{ el.general_supply.category }}</td>
@@ -74,9 +80,7 @@
                     </td>
 
             <td>{{ el.count }}</td>
-            <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.expiredDate|date:"d.m.Y" }}
-
-                            </div></td>
+            <td>{{ el.expiredDate|date:"d.m.Y" }}</td>
             <td>{{ el.dateCreated|date:"d.m.Y" }}</td>
     </tr>
    {% endfor %}

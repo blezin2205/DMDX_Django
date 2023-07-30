@@ -63,9 +63,22 @@ class SuppliesFromScanSaveApiView(APIView):
                     sup = Supply(name=genSup.name, general_supply=genSup, category=genSup.category, ref=genSup.ref,
                                  supplyLot=lot, count=count, expiredDate=expDate)
 
+
+                supHistory = sup.get_supp_for_history()
+
+                try:
+                    supForHistory = SupplyForHistory.objects.get(supplyLot=supHistory.supplyLot, dateCreated=supHistory.dateCreated, expiredDate=supHistory.expiredDate)
+                    supForHistory.count += supHistory.count
+                    supForHistory.action_type = 'added-scan'
+                    supForHistory.save()
+
+                except:
+                    supHistory.action_type = 'added-scan'
+                    supHistory.save()
+
                 sup.save()
-                print(genSup)
-                # serializer.save()
+
+
                 supSerializer = SupplySerializer(sup)
                 return Response(supSerializer.data, status=status.HTTP_201_CREATED)
             except:

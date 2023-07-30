@@ -22,6 +22,7 @@ urlpatterns = [
 
     path('', views.home, name='home'),
     path('childSupply', views.childSupply, name='childSupply'),
+    path('historySupply', views.historySupply, name='historySupply'),
     path('load_xms_data', views.load_xms_data, name='load_xms_data'),
 
      path('count-on-hold-make', views.countOnHoldMake, name='countOnHoldMake'),
@@ -123,7 +124,7 @@ urlpatterns = [
 
     path('add_np_sender_place', views.add_np_sender_place, name='add_np_sender_place'),
 
-    path('http-response', NPViews.httpRequest),
+    path('chart-sold', views.chartOfSoldSupplies),
     path('address_getCities', NPViews.address_getCities),
     path('search-city-np', NPViews.search_city, name='search-city-np'),
     path('choosed-city', NPViews.choosed_city, name='choosed-city'),

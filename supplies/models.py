@@ -143,45 +143,6 @@ class SupplySaveFromScanApiModel(models.Model):
     count = models.PositiveIntegerField(null=True, blank=True)
 
 
-class SupplyForHistory(models.Model):
-    name = models.CharField(max_length=300, null=True, blank=True)
-    history_description = models.CharField(max_length=500, null=True, blank=True)
-    general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
-    ref = models.CharField(max_length=50, null=True, blank=True)
-    supplyLot = models.CharField(max_length=50, null=True, blank=True)
-    count = models.PositiveIntegerField(null=True, blank=True)
-    countOnHold = models.PositiveIntegerField(null=True, blank=True, default=0)
-    dateCreated = models.DateField(null=True, auto_now_add=True)
-    expiredDate = models.DateField(null=True)
-
-    ACTION_TYPE = (
-        ('added', 'Додано'),
-        ('deleted', 'Видалено'),
-        ('updated', 'Оновлено'),
-    )
-    action_type = models.CharField(max_length=100, choices=ACTION_TYPE, blank=True, null=True)
-
-    def get_action_type_value(self):
-        return self.get_action_type_display()
-
-    def date_is_good(self):
-        return self.expiredDate > timezone.now().date()
-
-    def date_is_expired(self):
-        return self.expiredDate < timezone.now().date()
-
-    def date_is_today(self):
-        return self.expiredDate == timezone.now().date()
-
-    def __str__(self):
-        return self.general_supply.name
-
-    class Meta:
-        verbose_name = 'Товар (Історія)'
-        verbose_name_plural = 'Товари (Історія)'
-
-
 class Supply(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=300, null=True, blank=True)
@@ -211,6 +172,16 @@ class Supply(models.Model):
         return self.countOnHold + self.preCountOnHold
     def availableCount(self):
         return self.count - self.getTotalOnHold()
+
+    def get_supp_for_history(self):
+        return SupplyForHistory(name=self.name,
+                                general_supply=self.general_supply,
+                                category=self.category,
+                                ref=self.ref,
+                                supplyLot=self.supplyLot,
+                                count=self.count,
+                                dateCreated=timezone.now().date(),
+                                expiredDate=self.expiredDate)
 
 
     def __str__(self):
@@ -404,6 +375,47 @@ class Order(models.Model):
     class Meta:
         verbose_name = 'Замовлення'
         verbose_name_plural = 'Замовлення'
+
+
+class SupplyForHistory(models.Model):
+    name = models.CharField(max_length=300, null=True, blank=True)
+    history_description = models.CharField(max_length=500, null=True, blank=True)
+    general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True)
+    supply_for_order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+    ref = models.CharField(max_length=50, null=True, blank=True)
+    supplyLot = models.CharField(max_length=50, null=True, blank=True)
+    count = models.PositiveIntegerField(null=True, blank=True)
+    dateCreated = models.DateField(null=True, auto_now_add=True)
+    expiredDate = models.DateField(null=True)
+
+    ACTION_TYPE = (
+        ('added-handle', 'Додано(Вручну)'),
+        ('added-scan', 'Додано(Скан)'),
+        ('added-order', 'Додано в замовлення'),
+        ('deleted', 'Видалено'),
+        ('updated', 'Оновлено'),
+    )
+    action_type = models.CharField(max_length=100, choices=ACTION_TYPE, blank=True, null=True)
+
+    def get_action_type_value(self):
+        return self.get_action_type_display()
+
+    def date_is_good(self):
+        return self.expiredDate > timezone.now().date()
+
+    def date_is_expired(self):
+        return self.expiredDate < timezone.now().date()
+
+    def date_is_today(self):
+        return self.expiredDate == timezone.now().date()
+
+    def __str__(self):
+        return self.general_supply.name
+
+    class Meta:
+        verbose_name = 'Товар (Історія)'
+        verbose_name_plural = 'Товари (Історія)'
 
 
 class NPDeliveryCreatedDetailInfo(models.Model):
