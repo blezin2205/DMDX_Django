@@ -102,7 +102,7 @@ def chartOfSoldSupplies(request):
 
     chart = fig.to_html()
     context = {'chart': chart}
-    return render(request, "supplies/chart-sold.html", {})
+    return render(request, "supplies/chart-sold.html", context)
 
 
 @login_required(login_url='login')

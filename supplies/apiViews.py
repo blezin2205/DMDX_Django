@@ -65,10 +65,11 @@ class SuppliesFromScanSaveApiView(APIView):
 
 
                 supHistory = sup.get_supp_for_history()
+                supHistory.count = count
 
                 try:
                     supForHistory = SupplyForHistory.objects.get(supplyLot=supHistory.supplyLot, dateCreated=supHistory.dateCreated, expiredDate=supHistory.expiredDate)
-                    supForHistory.count = supHistory.count
+                    supForHistory.count += supHistory.count
                     supForHistory.action_type = 'added-scan'
                     supForHistory.save()
 
