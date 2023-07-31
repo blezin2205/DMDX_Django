@@ -27,6 +27,7 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
 
+
 class SenderNPPlaceInfo(models.Model):
     cityName = models.CharField(max_length=200, blank=True)
     addressName = models.CharField(max_length=200, blank=True)
@@ -34,7 +35,6 @@ class SenderNPPlaceInfo(models.Model):
     address_ref_NP = models.CharField(max_length=100, blank=True)
     deliveryType = models.CharField(max_length=20, blank=True)
     for_user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, related_name='sender_np_places')
-
 
     def __str__(self):
         return f'{self.cityName}, {self.addressName}'
@@ -63,14 +63,14 @@ class RegisterNPInfo(models.Model):
         buffer = BytesIO()
         ean.write(buffer)
         self.barcode.save(f'{self.barcode_string}.png', File(buffer), save=False)
-        uploader.upload(self.barcode, public_id=f'{self.barcode_string}', unique_filename=False, overwrite=True, folder='register_np_barcodes')
+        uploader.upload(self.barcode, public_id=f'{self.barcode_string}', unique_filename=False, overwrite=True,
+                        folder='register_np_barcodes')
         srcURL = cloudinary.CloudinaryImage(f'register_np_barcodes/{self.barcode_string}').build_url()
         self.barcode_url = srcURL
         return super().save(*args, **kwargs)
 
 
 class CreateParselModel(models.Model):
-
     class PaymentUserType(models.TextChoices):
         ВІДПРАВНИК = "Sender"
         ОТРИМУВАЧ = "Recipient"
@@ -79,8 +79,10 @@ class CreateParselModel(models.Model):
         БЕЗГОТІВКОВИЙ = "NonCash"
         ГОТІВКА = "Cash"
 
-    payment_user_type = models.CharField(choices=PaymentUserType.choices, max_length=12, default=PaymentUserType.ВІДПРАВНИК)
-    payment_money_type = models.CharField(choices=PaymentMoneyType.choices, max_length=12, default=PaymentMoneyType.БЕЗГОТІВКОВИЙ)
+    payment_user_type = models.CharField(choices=PaymentUserType.choices, max_length=12,
+                                         default=PaymentUserType.ВІДПРАВНИК)
+    payment_money_type = models.CharField(choices=PaymentMoneyType.choices, max_length=12,
+                                          default=PaymentMoneyType.БЕЗГОТІВКОВИЙ)
     sender_np_place = models.ForeignKey(SenderNPPlaceInfo, on_delete=models.SET_NULL, null=True)
     width = models.PositiveIntegerField()
     length = models.PositiveIntegerField()
@@ -170,6 +172,7 @@ class Supply(models.Model):
 
     def getTotalOnHold(self):
         return self.countOnHold + self.preCountOnHold
+
     def availableCount(self):
         return self.count - self.getTotalOnHold()
 
@@ -183,7 +186,6 @@ class Supply(models.Model):
                                 dateCreated=timezone.now().date(),
                                 expiredDate=self.expiredDate)
 
-
     def __str__(self):
         return self.general_supply.name
 
@@ -192,8 +194,8 @@ class Supply(models.Model):
         verbose_name_plural = 'Товари'
 
 
-
 from django.db.models import Q
+
 
 class Place(models.Model):
     name = models.CharField(max_length=200)
@@ -213,16 +215,16 @@ class Place(models.Model):
 
     def isHaveUncompletedPreorders(self):
         if self.preorder_set.exists():
-           if self.preorder_set.filter(state_of_delivery='Awaiting').exists() or self.preorder_set.filter(state_of_delivery='Partial').exists():
-               return True
-           else:
-              return False
+            if self.preorder_set.filter(state_of_delivery='Awaiting').exists() or self.preorder_set.filter(
+                    state_of_delivery='Partial').exists():
+                return True
+            else:
+                return False
         else:
-           return False
+            return False
 
     def getUcompletePreorderSet(self):
-       return self.preorder_set.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial'))
-
+        return self.preorder_set.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial'))
 
     def __str__(self):
         return f'{self.name}, {self.city_ref.name}'
@@ -239,7 +241,6 @@ class DeliveryPlace(models.Model):
     address_ref_NP = models.CharField(max_length=100, blank=True)
     deliveryType = models.CharField(max_length=20, blank=True)
     for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True, related_name='delivery_places')
-
 
     def __str__(self):
         return f'{self.cityName}, {self.addressName}'
@@ -336,7 +337,6 @@ class PreOrder(models.Model):
     def get_state_of_delivery_value(self):
         return self.get_state_of_delivery_display()
 
-
     def checkIfUncompletedDeliveryPreordersExist(self):
         return PreOrder.objects.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial')).exists()
 
@@ -347,7 +347,8 @@ class PreOrder(models.Model):
 
 class Order(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
-    for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders_for_preorder')
+    for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name='orders_for_preorder')
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)
@@ -356,7 +357,6 @@ class Order(models.Model):
     documentsId = ArrayField(models.CharField(max_length=200), blank=True, null=True)
     for_agreement = models.ForeignKey(Agreement, on_delete=models.SET_NULL, null=True, blank=True)
     dateToSend = models.DateField(null=True, blank=True)
-
 
     def get_np_DocumetsIdList(self):
         set = self.npdeliverycreateddetailinfo_set.all()
@@ -367,7 +367,6 @@ class Order(models.Model):
 
     def get_parsel_delivery_status(self):
         return int(self.statusnpparselfromdoucmentid_set.first().status_code)
-
 
     def __str__(self):
         return f'Заказ № {self.id}, для {self.place.name}, от {self.dateSent}'
@@ -401,14 +400,14 @@ class SupplyForHistory(models.Model):
     def get_action_type_value(self):
         return self.get_action_type_display()
 
-    def date_is_good(self):
-        return self.expiredDate > timezone.now().date()
-
-    def date_is_expired(self):
-        return self.expiredDate < timezone.now().date()
-
-    def date_is_today(self):
-        return self.expiredDate == timezone.now().date()
+    def get_sup_id_in_order_if_exist(self):
+        try:
+            order = self.supply_for_order
+            supsInOrder = order.supplyinorder_set.get(lot=self.supplyLot,
+                                                      date_expired=self.expiredDate)
+            return supsInOrder.id
+        except:
+            return 0
 
     def __str__(self):
         return self.general_supply.name
@@ -461,10 +460,6 @@ class StatusNPParselFromDoucmentID(models.Model):
     announcedPrice = models.CharField(max_length=50, blank=True, null=True)
 
 
-
-
-
-
 class SupplyInAgreement(models.Model):
     count_in_agreement = models.PositiveIntegerField(null=True, blank=True)
     generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.SET_NULL, null=True, blank=True)
@@ -510,8 +505,6 @@ class SupplyInAgreement(models.Model):
         return self.getAlreadyDeliveredCount() == self.count_in_agreement
 
 
-
-
 class SupplyInPreorder(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True)
     count_in_order_current = models.PositiveIntegerField(default=0)
@@ -536,10 +529,10 @@ class SupplyInPreorder(models.Model):
         verbose_name_plural = 'Товари в Передзамовленнях'
 
 
-
 class SupplyInOrder(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True)
-    generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.SET_NULL, null=True, blank=True, related_name='inGeneralSupp')
+    generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.SET_NULL, null=True, blank=True,
+                                      related_name='inGeneralSupp')
     supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True, related_name='inSupply')
     supply_in_preorder = models.ForeignKey(SupplyInPreorder, on_delete=models.SET_NULL, null=True, blank=True)
     supply_for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
@@ -557,7 +550,6 @@ class SupplyInOrder(models.Model):
 
     def date_is_today(self):
         return self.date_expired == timezone.now().date()
-
 
     def hasSupply(self):
         return self.supply.inSupply.exists()
@@ -577,7 +569,6 @@ class SupplyInOrder(models.Model):
             supname = self.supply.name
         except:
             supname = 'No Name'
-
 
         return f'ID order: {orderId} | name: {name}'
 
@@ -619,10 +610,10 @@ class SupplyInOrderInCart(models.Model):
     def __str__(self):
         return f'Товар: для замовлення в коризні '
 
-
     class Meta:
         verbose_name = 'Товар в замовленні в корзині'
         verbose_name_plural = 'Товари в замовленні в коризні'
+
 
 class PreorderInCart(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
@@ -655,10 +646,8 @@ class SupplyInPreorderInCart(models.Model):
     date_created = models.DateField(null=True, blank=True)
     general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True, blank=True)
 
-
     def __str__(self):
         return f'Товар: для передзамовлення в коризні '
-
 
     class Meta:
         verbose_name = 'Товар в передзамовленні в корзині'
@@ -681,7 +670,8 @@ class Device(models.Model):
     serial_number = models.CharField(max_length=50, null=True, blank=True)
     in_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     date_installed = models.DateField(null=True, blank=True)
-    image = CloudinaryField("Image", overwrite=True, resource_type="image", transformation={"quality": "auto:eco"}, format="jpg", null=True, default=None, blank=True, folder='device_media')
+    image = CloudinaryField("Image", overwrite=True, resource_type="image", transformation={"quality": "auto:eco"},
+                            format="jpg", null=True, default=None, blank=True, folder='device_media')
     in_city = models.ForeignKey(City, on_delete=models.CASCADE, null=True)
 
     def __str__(self):

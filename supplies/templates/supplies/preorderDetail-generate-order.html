@@ -1,5 +1,6 @@
 {% extends 'supplies/base_for_home.html' %}
 {% load mathfilters %}
+{% load crispy_forms_filters %}
     {% block title %}
 {{ title }}
 {% endblock %}
@@ -167,13 +168,16 @@
              <div id="error"></div>
 {% endif %}
 
-     <div class="my-3">
-  <label for="exampleFormControlTextarea1" class="form-label">Коментар</label>
-  <textarea class="form-control" id="exampleFormControlTextarea1" name="comment_for_order" rows="2"></textarea>
-</div>
+     <div class="container py-4 mt-4 shadow-sm rounded" style="background-color: rgba(234,233,233,0.77)">
 
+          <div style="width: 250px">{{ orderForm.dateToSend|as_crispy_field }}</div>
+          {{ orderForm.comment|as_crispy_field }}
 
          <button class="btn btn-outline-primary my-2" type="submit">Створити замовлення</button>
+           </div>
+
+
+
 </div>
 
         </form>

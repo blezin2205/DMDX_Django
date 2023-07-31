@@ -54,7 +54,7 @@
 
      <tr>
      <td>{{ el.get_action_type_value }} {% if el.supply_for_order %}
-     <a href="{% url 'orderDetail' order_id=el.supply_for_order.id sup_id=0 %}?next={{ request.get_full_path|urlencode }}" {% if not el.supply_for_order.isComplete %} class="link-warning" {% endif %} >№{{ el.supply_for_order.id }}</a>
+     <a href="{% url 'orderDetail' order_id=el.supply_for_order.id sup_id=el.get_sup_id_in_order_if_exist %}?next={{ request.get_full_path|urlencode }}" {% if not el.supply_for_order.isComplete %} class="link-warning" {% endif %} >№{{ el.supply_for_order.id }}</a>
 
      {% endif %}</td>
       <th scope="row" style="text-align: left">{{ el.general_supply.name }}</th>

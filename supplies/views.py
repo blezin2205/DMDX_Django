@@ -1766,6 +1766,7 @@ def orderUpdateStatus(request, order_id):
             suppForHistory = supp.get_supp_for_history()
             suppForHistory.action_type = 'added-order'
             suppForHistory.supply_for_order = order
+            suppForHistory.count = countInOrder
             supp.countOnHold -= countInOrder
             supp.count -= countInOrder
             supp.save(update_fields=['countOnHold', 'count'])
@@ -3028,6 +3029,7 @@ def preorderDetail_generateOrder(request, order_id):
     order = get_object_or_404(PreOrder, pk=order_id)
     supplies_in_order = order.supplyinpreorder_set.all().order_by('id')
     cartCountData = countCartItemsHelper(request)
+    orderForm = OrderInCartForm(request.POST or None)
 
     if request.method == 'POST':
         checkBoxSuppIdList = request.POST.getlist('flexCheckDefault')
@@ -3055,6 +3057,12 @@ def preorderDetail_generateOrder(request, order_id):
 
         if supDict:
             new_order = Order(userCreated=request.user, for_preorder=order, place=order.place, comment=comment_for_order)
+            if orderForm.is_valid():
+                comment = orderForm.cleaned_data['comment']
+                dateToSend = orderForm.cleaned_data['dateToSend']
+                new_order.comment = comment
+                new_order.dateToSend = dateToSend
+
             new_order.save()
             for key, value in supDict.items():
                 print("------------------------")
@@ -3080,8 +3088,8 @@ def preorderDetail_generateOrder(request, order_id):
                     s.countOnHold += s.count
                     s.save(update_fields=['countOnHold'])
 
-            t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
-            t.start()
+            # t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
+            # t.start()
             return redirect('/orders')
 
         else:
@@ -3089,7 +3097,7 @@ def preorderDetail_generateOrder(request, order_id):
 
 
     return render(request, 'supplies/preorderDetail-generate-order.html',
-                  {'title': f'Передзамовлення № {order_id}', 'order': order, 'supplies': supplies_in_order,
+                  {'title': f'Передзамовлення № {order_id}', 'order': order, 'orderForm': orderForm, 'supplies': supplies_in_order,
                    'cartCountData': cartCountData, 'isOrders': True})
 
 
