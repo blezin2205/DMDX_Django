@@ -1320,6 +1320,8 @@ def childSupply(request):
 
         columns_table = [{'header': '№'},
                          {'header': 'Назва товару'},
+                         {'header': 'Пакування/Тести'},
+                         {'header': 'SMN Code'},
                          {'header': 'REF'},
                          {'header': 'LOT'},
                          {'header': 'К-ть'},
@@ -1338,6 +1340,8 @@ def childSupply(request):
         for row in supplies:
             row_num += 1
             name = ''
+            smn = ''
+            package = ''
             ref = ''
             lot = ''
             category = ''
@@ -1345,8 +1349,16 @@ def childSupply(request):
                 name = row.name
             if row.general_supply:
                 name = row.general_supply.name
-                ref = row.general_supply.ref
                 category = row.general_supply.category.name
+                ref = row.general_supply.ref
+                smn = row.general_supply.SMN_code
+                package = row.general_supply.package_and_tests
+                if ref == 'None' or 'nan' or None:
+                    ref = ''
+                if smn == 'None' or 'nan' or None:
+                    smn = ''
+                if package == 'None' or 'nan' or None:
+                    package = ''
 
             if row.supplyLot:
                 lot = row.supplyLot
@@ -1354,7 +1366,7 @@ def childSupply(request):
             date_expired = row.expiredDate.strftime("%d.%m.%Y")
             date_created = row.dateCreated.strftime("%d.%m.%Y")
 
-            val_row = [name, ref, lot, count, date_expired, category, date_created]
+            val_row = [name, package, smn, ref, lot, count, date_expired, category, date_created]
 
             for col_num in range(len(val_row)):
                 ws.write(row_num, 0, row_num - 3)
@@ -1362,9 +1374,9 @@ def childSupply(request):
 
         ws.set_column(0, 0, 5)
         ws.set_column(1, 1, 35)
-        ws.set_column(2, 3, 15)
-        ws.set_column(4, 5, 10)
-        ws.set_column(6, 7, 12)
+        ws.set_column(2, 5, 15)
+        ws.set_column(6, 7, 10)
+        ws.set_column(7, 8, 12)
 
         ws.add_table(3, 0, suppFilter.qs.count() + 3, len(columns_table) - 1, {'columns': columns_table})
         wb.close()
