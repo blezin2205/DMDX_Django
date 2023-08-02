@@ -1350,15 +1350,13 @@ def childSupply(request):
             if row.general_supply:
                 name = row.general_supply.name
                 category = row.general_supply.category.name
-                ref = row.general_supply.ref
-                smn = row.general_supply.SMN_code
                 package = row.general_supply.package_and_tests
-                if ref == 'None' or 'nan' or None:
-                    ref = ''
-                if smn == 'None' or 'nan' or None:
-                    smn = ''
-                if package == 'None' or 'nan' or None:
-                    package = ''
+                if row.general_supply.ref:
+                    ref = row.general_supply.ref
+                if row.general_supply.SMN_code:
+                    smn = row.general_supply.SMN_code
+                if row.general_supply.package_and_tests:
+                    package = row.general_supply.package_and_tests
 
             if row.supplyLot:
                 lot = row.supplyLot
