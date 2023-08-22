@@ -36,8 +36,9 @@ import pymsteams
 import plotly.express as px
 from django.db.models import Sum, F
 
-
-async def httpRequest(request):
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def httpRequest(request):
     param = {'apiKey': '99f738524ca3320ece4b43b10f4181b1',
              'modelName': 'Counterparty',
              'calledMethod': 'getCounterpartyContactPersons',
