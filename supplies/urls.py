@@ -17,6 +17,7 @@ urlpatterns = [
 
      path('update-cart-item-count/', views.updateCartItemCount, name='cart-count'),
      path('update-precart-item-count/', views.updatePreCartItemCount, name='precart-count'),
+     path('np-info', views.httpRequest),
 
 
 
