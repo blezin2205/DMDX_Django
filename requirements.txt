@@ -133,7 +133,7 @@ sqlparse==0.4.2
 svglib==1.2.1
 tinycss2==1.1.1
 tqdm==4.64.0
-tzdata==2022.1
+tzdata==2023.3
 tzlocal==4.2
 uritemplate==4.1.1
 uritools==4.0.0
