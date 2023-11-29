@@ -25,6 +25,7 @@ urlpatterns = [
     path('childSupply', views.childSupply, name='childSupply'),
     path('historySupply', views.historySupply, name='historySupply'),
     path('load_xms_data', views.load_xms_data, name='load_xms_data'),
+    path('celery-test', views.celery_test, name='celery_test'),
 
 
      path('count-on-hold-make', views.countOnHoldMake, name='countOnHoldMake'),
