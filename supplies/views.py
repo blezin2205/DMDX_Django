@@ -35,6 +35,15 @@ import csv
 import pymsteams
 import plotly.express as px
 from django.db.models import Sum, F
+from .tasks import *
+
+# @login_required(login_url='login')
+# @allowed_users(allowed_roles=['admin'])
+# def receive_and_load_new_supplies_order(request):
+
+def celery_test(request):
+    task = go_to_sleep.delay(1)
+    return render(request, 'supplies/celery-test.html', {'task_id': task.task_id})
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])

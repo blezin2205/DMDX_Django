@@ -62,7 +62,9 @@ INSTALLED_APPS = [
     # 'cloudinary_storage',
     'cloudinary',
     # 'widget_tweaks'
-    'django_htmx'
+    'django_htmx',
+    'django_celery_results',
+    'celery_progress',
 ]
 
 MIDDLEWARE = [
@@ -236,3 +238,9 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'blezin2205@gmail.com'
 EMAIL_HOST_PASSWORD = 'Rohlikos31'
+
+CELERY_BROKER_URL = 'rediss://:pe0ff32c5420845f7f82ecadf2729cf8051ae3f185ad1dd6e26617e5ca57fe3dd@ec2-3-212-47-171.compute-1.amazonaws.com:31260'
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'django-db'
