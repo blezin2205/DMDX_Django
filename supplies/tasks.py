@@ -44,7 +44,7 @@ def go_to_sleep(self, duration):
     for i in range(20):
         sleep(duration)
         progress_recorder.set_progress(i + 1, 20, f'On iteration {i}')
-    return HttpResponseRedirect("/")
+    return HttpResponse("DONE!")
 
 
 
