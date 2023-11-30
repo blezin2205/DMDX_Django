@@ -11,7 +11,8 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
 from pathlib import Path
-import  os
+import os
+import django_heroku
 
 import dj_database_url
 import cloudinary
@@ -238,9 +239,22 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'blezin2205@gmail.com'
 EMAIL_HOST_PASSWORD = 'Rohlikos31'
+#
+# CELERY_BROKER_URL = 'rediss://:pe0ff32c5420845f7f82ecadf2729cf8051ae3f185ad1dd6e26617e5ca57fe3dd@ec2-35-168-134-227.compute-1.amazonaws.com:16129'
+#
+# CELERY_ACCEPT_CONTENT = ['json']
+# CELERY_TASK_SERIALIZER = 'json'
+# CELERY_RESULT_BACKEND = 'django-db'
 
-CELERY_BROKER_URL = 'rediss://:pe0ff32c5420845f7f82ecadf2729cf8051ae3f185ad1dd6e26617e5ca57fe3dd@ec2-35-168-134-227.compute-1.amazonaws.com:16129'
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379')
+BROKER_CONNECTION_MAX_RETRIES = os.environ.get('BROKER_CONNECTION_MAX_RETRIES', None)
+BROKER_POOL_LIMIT = os.environ.get('BROKER_POOL_LIMIT', None)
 
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_BACKEND = 'django-db'
+# CELERY CONFIG
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', REDIS_URL)
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', REDIS_URL)
+CELERY_REDIS_MAX_CONNECTIONS = os.environ.get('CELERY_REDIS_MAX_CONNECTIONS', 5)
+CELERYD_CONCURRENCY = os.environ.get('CELERYD_CONCURRENCY', 1)
+
+# Configure Django App for Heroku.
+django_heroku.settings(locals())
