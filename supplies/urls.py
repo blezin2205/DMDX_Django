@@ -17,7 +17,7 @@ urlpatterns = [
 
      path('update-cart-item-count/', views.updateCartItemCount, name='cart-count'),
      path('update-precart-item-count/', views.updatePreCartItemCount, name='precart-count'),
-     path('get_progress_for_upload_supplies_new_order/', view_upload.get_progress, name='get-progress'),
+     path('get_progress_for_upload_supplies_new_order/<task_id>/', view_upload.get_progress, name='get-progress'),
      path('upload_supplies_for_new_delivery/', view_upload.upload_supplies_for_new_delivery, name='upload_supplies_for_new_delivery'),
      path('np-info', views.httpRequest),
 
