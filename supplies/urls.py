@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, NPViews
+from . import views, NPViews, view_upload
 from . import apiViews
 from .NPModels import *
 
@@ -17,6 +17,8 @@ urlpatterns = [
 
      path('update-cart-item-count/', views.updateCartItemCount, name='cart-count'),
      path('update-precart-item-count/', views.updatePreCartItemCount, name='precart-count'),
+     path('get_progress_for_upload_supplies_new_order/', view_upload.get_progress, name='get-progress'),
+     path('upload_supplies_for_new_delivery/', view_upload.upload_supplies_for_new_delivery, name='upload_supplies_for_new_delivery'),
      path('np-info', views.httpRequest),
 
 
@@ -25,7 +27,7 @@ urlpatterns = [
     path('childSupply', views.childSupply, name='childSupply'),
     path('historySupply', views.historySupply, name='historySupply'),
     path('load_xms_data', views.load_xms_data, name='load_xms_data'),
-    path('celery-test', views.celery_test, name='celery_test'),
+    path('celery-test', view_upload.celery_test, name='celery_test'),
 
 
      path('count-on-hold-make', views.countOnHoldMake, name='countOnHoldMake'),
