@@ -187,7 +187,12 @@ class Supply(models.Model):
                                 expiredDate=self.expiredDate)
 
     def __str__(self):
-        return self.general_supply.name
+        name = "No name"
+        try:
+            name = self.general_supply.name
+        except:
+            pass
+        return name
 
     class Meta:
         verbose_name = 'Товар'
@@ -683,9 +688,10 @@ class Device(models.Model):
 
 
 class DeliverySupplyInCart(models.Model):
-    description = models.CharField(max_length=300, null=True, blank=True)
+    barcode = models.CharField(max_length=300, null=True, blank=True)
     general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True)
     supplyLot = models.CharField(max_length=50, null=True, blank=True)
     count = models.PositiveIntegerField(null=True, blank=True)
-    expiredDate = models.DateField(null=True)
+    expiredDate = models.CharField(max_length=50, null=True, blank=True)
     isRecognized = models.BooleanField(default=False)
+    supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True)

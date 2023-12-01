@@ -50,11 +50,16 @@ def celery_test(request):
 
 
 def get_progress(request, task_id):
-    print("GET PROgRESS")
     progress = Progress(AsyncResult(task_id))
     percent_complete = int(progress.get_info()['progress']['percent'])
     if percent_complete == 100:
-        return redirect('/')
+        supplies = DeliverySupplyInCart.objects.all()
+        supDict = {}
+        for d in supplies:
+            t = supDict.setdefault(d.isRecognized, [])
+            t.append(d)
+        return render(request, 'supplies/delivery_cart.html', {'delivery_data': supplies})
+
     print(task_id)
     print(percent_complete)
     context = {'task_id': task_id, 'value': percent_complete}
@@ -67,23 +72,8 @@ def upload_supplies_for_new_delivery(request):
         form = NewDeliveryForm(request.POST)
         if form.is_valid():
             string_data = form.cleaned_data['description']
-            makeDataUpload(string_data)
+            task = makeDataUpload.delay(string_data)
+            context = {'task_id': task.task_id, 'value': 0}
+            return render(request, 'supplies/upload_supplies_new_delivery_progress.html', context)
 
-    # task = go_to_sleep.delay(1)
-    # context = {'task_id': task.task_id, 'value': 0}
     return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form})
-
-
-def makeDataUpload(string_data):
-    result_array = string_data.split()
-    for item in result_array:
-        arr_item = item.split(',')
-        if len(arr_item) == 1:
-            barcode_str = arr_item[0]
-            smn = barcode_str[32:-6]
-            lot = barcode_str[18:-25]
-            date_expired = barcode_str[23:-17]
-            print('---------------')
-            print(smn)
-            print(lot)
-            print(date_expired)

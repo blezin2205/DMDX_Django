@@ -753,7 +753,6 @@ def cartDetailForClient(request):
     for d in supplies:
         t = supDict.setdefault(d.general_supply.category, [])
         t.append(d)
-    print(supDict)
 
 
     if isClient:
