@@ -1,0 +1,21 @@
+{% extends 'supplies/base.html' %}
+{% load myapp_extras %}
+{% load crispy_forms_filters %}
+{% load bootstrap %}
+{% load static %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<form method="post" action="">
+  {% csrf_token %}
+<div class="container w-50 p-3">
+    {{ form.description|as_crispy_field }}
+</div>
+
+
+<button class="btn btn-outline-primary my-5" type="submit">Зберегти</button>
+</form>
+{#{% include 'partials/progress-bar.html' %}#}
+{% endblock %}

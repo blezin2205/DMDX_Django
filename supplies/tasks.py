@@ -41,9 +41,9 @@ from time import sleep
 @shared_task(bind=True)
 def go_to_sleep(self, duration):
     progress_recorder = ProgressRecorder(self)
-    for i in range(20):
+    for i in range(5):
         sleep(duration)
-        progress_recorder.set_progress(i + 1, 20, f'On iteration {i}')
+        progress_recorder.set_progress(i + 1, 5, f'On iteration {i}')
     return HttpResponse("DONE!")
 
 

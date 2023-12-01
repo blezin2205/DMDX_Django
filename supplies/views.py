@@ -1925,8 +1925,10 @@ def serviceNotesForClient(request, client_id):
 @allowed_users(allowed_roles=['admin', 'engineer'])
 def createNote(request):
     form = ServiceNoteForm()
+    form.fields.pop("for_place")
     if request.method == 'POST':
         form = ServiceNoteForm(request.POST)
+
         if form.is_valid():
             obj = form.save(commit=False)
             obj.from_user = CustomUser.objects.get(pk=request.user.id)

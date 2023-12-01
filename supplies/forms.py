@@ -155,6 +155,13 @@ class LoginForm(AuthenticationForm):
       fields = '__all__'
 
 
+class NewDeliveryForm(forms.Form):
+    description = forms.CharField(widget=forms.Textarea(attrs={'rows': 15, 'cols': 40}))
+    def __init__(self, *args, **kwargs):
+        super(NewDeliveryForm, self).__init__(*args, **kwargs)
+        self.fields['description'].label = 'Відскановані штрих-коди з розділом "пробіл"'
+
+
 class ServiceNoteForm(ModelForm):
     class Meta:
       model = ServiceNote

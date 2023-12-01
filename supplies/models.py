@@ -680,3 +680,12 @@ class Device(models.Model):
     class Meta:
         verbose_name = 'Прилад'
         verbose_name_plural = 'Прилади'
+
+
+class DeliverySupplyInCart(models.Model):
+    description = models.CharField(max_length=300, null=True, blank=True)
+    general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True)
+    supplyLot = models.CharField(max_length=50, null=True, blank=True)
+    count = models.PositiveIntegerField(null=True, blank=True)
+    expiredDate = models.DateField(null=True)
+    isRecognized = models.BooleanField(default=False)
