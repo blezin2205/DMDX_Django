@@ -687,11 +687,28 @@ class Device(models.Model):
         verbose_name_plural = 'Прилади'
 
 
+class DeliveryOrder(models.Model):
+    date_created = models.DateField(null=True, blank=True, auto_now_add=True)
+    comment = models.TextField(null=True, blank=True)
+
+
 class DeliverySupplyInCart(models.Model):
     barcode = models.CharField(max_length=300, null=True, blank=True)
+    SMN_code = models.CharField(max_length=300, null=True, blank=True)
     general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True)
     supplyLot = models.CharField(max_length=50, null=True, blank=True)
     count = models.PositiveIntegerField(null=True, blank=True)
     expiredDate = models.CharField(max_length=50, null=True, blank=True)
     isRecognized = models.BooleanField(default=False)
     supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True)
+    delivery_order = models.ForeignKey(DeliveryOrder, on_delete=models.CASCADE, null=True)
+
+    def __str__(self):
+        return f'{self.general_supply}'
+
+    class Meta:
+        verbose_name = 'Додані товари з поставки'
+        verbose_name_plural = 'Додані товари з поставки'
+
+
+

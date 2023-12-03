@@ -47,8 +47,12 @@ def go_to_sleep(self, duration):
     return HttpResponse("DONE!")
 
 @shared_task(bind=True)
-def makeDataUpload(self, string_data):
+def makeDataUpload(self, string_data, for_delivery_order_id):
+    for_delivery_order = DeliveryOrder.objects.get(id=for_delivery_order_id)
+    progress_recorder = ProgressRecorder(self)
+    i = 0
     result_array = string_data.split()
+    total_requests = len(result_array)
     for item in result_array:
         arr_item = item.split(',')
         if len(arr_item) == 1:
@@ -58,15 +62,17 @@ def makeDataUpload(self, string_data):
             lot = barcode_str[18:-25]
             date_expired = barcode_str[23:-17]
             date_expired = date_expired[-6:]
-            create_supply_objects(item, smn, lot, date_expired)
+            create_supply_objects(item, smn, lot, date_expired, for_delivery_order)
         if len(arr_item) == 3:
             smn = arr_item[0]
             lot = arr_item[1]
             date_expired = arr_item[2]
-            create_supply_objects(item, smn, lot, date_expired, True)
+            create_supply_objects(item, smn, lot, date_expired, for_delivery_order, True)
+        i += 1
+        progress_recorder.set_progress(i, total_requests, f'On iteration {i}')
 
 
-def create_supply_objects(barcode, smn, lot, date_expired, search_by_ref=False):
+def create_supply_objects(barcode, smn, lot, date_expired, for_delivery_order, search_by_ref=False):
 
     try:
         date_expired_date = datetime.datetime.strptime(date_expired, '%y%m%d')
@@ -90,14 +96,16 @@ def create_supply_objects(barcode, smn, lot, date_expired, search_by_ref=False):
                          expiredDate=date_expired_date)
 
         try:
-            sup_delivery = DeliverySupplyInCart.objects.get(general_supply=gen_sup, supply=sup)
+            sup_delivery = DeliverySupplyInCart.objects.get(supply=sup, delivery_order=for_delivery_order)
             sup_delivery.count += 1
         except:
             sup_delivery = DeliverySupplyInCart(
                 barcode=barcode,
+                SMN_code=smn,
                 supplyLot=lot,
                 count=1,
-                expiredDate=date_expired)
+                expiredDate=date_expired,
+                delivery_order=for_delivery_order)
 
         sup_delivery.general_supply = gen_sup
         sup_delivery.isRecognized = True
@@ -107,14 +115,16 @@ def create_supply_objects(barcode, smn, lot, date_expired, search_by_ref=False):
 
     except:
         try:
-            sup_delivery = DeliverySupplyInCart.objects.get(barcode=barcode)
+            sup_delivery = DeliverySupplyInCart.objects.get(barcode=barcode, delivery_order=for_delivery_order)
             sup_delivery.count += 1
         except:
             sup_delivery = DeliverySupplyInCart(
                 barcode=barcode,
+                SMN_code=smn,
                 supplyLot=lot,
                 count=1,
-                expiredDate=date_expired)
+                expiredDate=date_expired,
+                delivery_order=for_delivery_order)
         sup_delivery.save()
 
 

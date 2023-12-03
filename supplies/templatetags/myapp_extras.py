@@ -17,9 +17,17 @@ def my_url(value, field_name, urlencode=None):
     return url
 
 
+@register.filter(name='total_values_count')
+def total_values_count(dictionary):
+    if isinstance(dictionary, dict):
+        return sum(len(value) if isinstance(value, (list, tuple)) else 1 for value in dictionary.values())
+    return 0
+
+
 @register.filter(name='has_group')
 def has_group(user, group_name):
     return user.groups.filter(name=group_name).exists()
+
 
 @register.filter(name='in_cart')
 def has_group(supId, user):

@@ -1,0 +1,41 @@
+{% extends 'supplies/base.html' %}
+{% load myapp_extras %}
+{% load crispy_forms_filters %}
+{% load static %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+
+{% block content %}
+<div class="container w-50">
+    <a href="/upload_supplies_for_new_delivery" class="btn btn-primary" aria-current="page">Створити нову поставку</a>
+
+    <div class="listOrders">
+        {% for order in deliveries %}
+            <div class="mb-3" style="border-radius: 1rem;">
+             <a href="{% url 'delivery_detail' order.id %}?next={{ request.get_full_path }}" class="list-group-item list-group-item-action custom-list-item" aria-current="true">
+                <div class="d-flex flex-column w-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Поставка №: {{order.id}}</h6>
+                        <div>
+                            <p class="opacity-60 text-nowrap date"><span class="text-muted">Дата створення:</span> {{order.date_created|date:"d.m.Y"}}</p>
+                            <p class="opacity-60 text-nowrap date"><span class="text-muted">Створив:</span> {{ request.user.first_name }} {{ request.user.last_name }}</p>
+                        </div>
+
+                    </div>
+
+                    {% if order.comment %}
+                        <div><span class="text-muted">Коментар:</span> {{order.comment}}</div>
+                    {% endif %}
+
+
+                </div>
+            </a>
+            </div>
+
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

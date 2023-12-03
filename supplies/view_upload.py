@@ -36,6 +36,7 @@ import pymsteams
 import plotly.express as px
 from django.db.models import Sum, F
 from .tasks import *
+from .views import *
 from celery_progress.backend import Progress
 from celery.result import AsyncResult
 
@@ -49,20 +50,26 @@ def celery_test(request):
     return render(request, 'supplies/celery-test.html', {'task_id': task.task_id})
 
 
-def get_progress(request, task_id):
+def get_progress(request, task_id, for_delivery_order_id):
     progress = Progress(AsyncResult(task_id))
     percent_complete = int(progress.get_info()['progress']['percent'])
     if percent_complete == 100:
-        supplies = DeliverySupplyInCart.objects.all()
+        cartCountData = countCartItemsHelper(request)
+        delivery_order = DeliveryOrder.objects.get(id=for_delivery_order_id)
+        supplies = delivery_order.deliverysupplyincart_set.all()
+        form = NewDeliveryForm()
+        form.fields['description'].label = "Коментар"
+
         supDict = {}
         for d in supplies:
             t = supDict.setdefault(d.isRecognized, [])
             t.append(d)
-        return render(request, 'supplies/delivery_cart.html', {'delivery_data': supplies})
+        supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
+        return render(request, 'supplies/delivery_cart.html', {'cartCountData': cartCountData, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
 
     print(task_id)
     print(percent_complete)
-    context = {'task_id': task_id, 'value': percent_complete}
+    context = {'task_id': task_id, 'for_delivery_order_id': for_delivery_order_id, 'value': percent_complete}
     return render(request, 'partials/progress-bar.html', context)
 
 
@@ -72,8 +79,67 @@ def upload_supplies_for_new_delivery(request):
         form = NewDeliveryForm(request.POST)
         if form.is_valid():
             string_data = form.cleaned_data['description']
-            task = makeDataUpload.delay(string_data)
-            context = {'task_id': task.task_id, 'value': 0}
+            for_delivery_order = DeliveryOrder()
+            for_delivery_order.save()
+            task = makeDataUpload.delay(string_data, for_delivery_order.id)
+            context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': for_delivery_order.id}
             return render(request, 'supplies/upload_supplies_new_delivery_progress.html', context)
 
     return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form})
+
+
+def save_delivery(request, delivery_order_id):
+    if request.method == 'POST':
+        delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
+        form = NewDeliveryForm(request.POST)
+        if form.is_valid():
+            string_data = form.cleaned_data['description']
+            delivery_order.comment = string_data
+            delivery_order.save()
+        return redirect("/all_deliveries")
+
+
+def all_deliveries(request):
+    cartCountData = countCartItemsHelper(request)
+    deliveries = DeliveryOrder.objects.all().order_by('-id')
+
+    return render(request, 'supplies/all_deliveries_list.html', {'cartCountData': cartCountData, 'deliveries': deliveries})
+
+
+def delete_delivery_action(request, delivery_order_id):
+    if request.method == 'POST':
+        delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
+        sups_for_delivery_order = delivery_order.deliverysupplyincart_set.all()
+        if 'delete_delivery' in request.POST:
+            delivery_order.delete()
+            print('delete_delivery')
+
+        if 'delete_all' in request.POST:
+            for item in sups_for_delivery_order.exclude(supply=None):
+                count_in_delivery = item.count
+                org_sup = item.supply
+                org_sup.count -= count_in_delivery
+                if org_sup.count == 0:
+                    org_sup.delete()
+                else:
+                    org_sup.save()
+            delivery_order.delete()
+            print('delete_all')
+
+        return redirect("/all_deliveries")
+
+
+def delivery_detail(request, delivery_id):
+    cartCountData = countCartItemsHelper(request)
+    delivery_order = DeliveryOrder.objects.get(id=delivery_id)
+    supplies = delivery_order.deliverysupplyincart_set.all()
+    form = NewDeliveryForm()
+    form.initial['description'] = delivery_order.comment
+    form.fields['description'].label = "Коментар"
+
+    supDict = {}
+    for d in supplies:
+        t = supDict.setdefault(d.isRecognized, [])
+        t.append(d)
+    supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
+    return render(request, 'supplies/delivery_detail.html', {'cartCountData': cartCountData, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})

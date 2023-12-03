@@ -3,19 +3,35 @@
 {% load crispy_forms_filters %}
 {% load bootstrap %}
 {% load static %}
-    {% block title %}
-{{ title }}
+
+{% block title %}
+  {{ title }}
 {% endblock %}
 
 {% block content %}
-<form method="post" action="">
+<form method="post" action="" id="myForm" onsubmit="return showAlert();">
   {% csrf_token %}
-<div class="container w-50 p-3">
+  <div class="container w-50 p-3">
     {{ form.description|as_crispy_field }}
-</div>
+  </div>
 
-
-<button class="btn btn-outline-primary my-5" type="submit">Зберегти</button>
+  <button class="btn btn-outline-primary my-5" type="submit">Зберегти</button>
 </form>
-{#{% include 'partials/progress-bar.html' %}#}
+
+{# JavaScript to show the alert #}
+<script>
+  function showAlert() {
+    // You can customize the alert message here
+    if (confirm('Кожного разу ця дія запускає створення нової поставки!' +
+        '\nСтворити нову поставку та додати всі товари до неї?' +
+        '\n\n(Якщо потрібно додати товари до вже існуючої поставки, будь-ласка, оберіть' +
+        ' поставку зі списку!)')) {
+      return true; // Continue with the form submission
+    } else {
+      return false; // Cancel the form submission
+    }
+  }
+</script>
+
+{# {% include 'partials/progress-bar.html' %} #}
 {% endblock %}

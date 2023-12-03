@@ -1,22 +1,40 @@
+{% load mathfilters %}
+{% load myapp_extras %}
+{% load bootstrap %}
+{% load static %}
+{% load crispy_forms_filters %}
+{#<form method="POST" action="">#}
 
-<form method="POST" action="">
+<section class="h-100 shadow p-3 mb-5 rounded row d-flex justify-content-between" style="background-color: #eee;">
+<div class="d-flex justify-content-between">
+    <h6>Створив: {{ request.user.first_name  }} {{ request.user.last_name  }}</h6>
+    <h3>Поставка №{{ delivery_order.id}}</h3>
+    <h6>Дата створення: <u>{{ delivery_order.date_created|date:"d.m.Y" }}</u> </h6>
+</div>
 
-<section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #eee;">
-  <div class="container h-100 py-3">
+<div class="container w-auto">
+    <h5>Всього: {{ supDict|total_values_count }} шт.</h5>
+</div>
+
+  <div class="container h-100 pb-3">
     <div class="row d-flex justify-content-center align-items-center h-100">
       <section class="col-10">
       {% for key, value in supDict.items %}
 
           <section class="h-100 p-3 my-4 row d-flex shadow-sm rounded" style="background-color: #f8f8f8;">
-          <h6><div class="row d-flex justify-content-center align-items-center h-100">  {{ key }}</div></h6>
+          {% if key %}
+          <h5 style="font-weight: bold"><div class="row d-flex justify-content-center align-items-center h-100" style="color: darkgreen; font-weight: bold">Додано успішно ({{ value|length }} шт.)</div></h5>
+          {% else %}
+              <h5><div class="row d-flex justify-content-center align-items-center h-100" style="color: orangered; font-weight: bold">  Не знайдено ({{ value|length }} шт.)</div></h5>
+          {% endif %}
 
           {% for item in value %}
         <div class="card rounded-5 mt-3">
-          <div class="card-body px-3">
-            <div class="row d-flex justify-content-between align-items-center">
-              <div class="col-md-2 col-lg-4 col-xl-4">
+          <div class="card-body px-3 d-flex justify-content-between align-items-center">
+            {% if item.general_supply %}
+                <div class="col">
                {% if item.general_supply %}
-              <div class="mb-2" style="font-size: large">{{ item.general_supply.name }}</div>
+              <div style="font-size: large">{{ item.general_supply.name }}</div>
                   {% if item.general_supply.ref %}
                       <div class="text-muted" style="font-size: small">REF: {{ item.general_supply.ref }}</div>
                   {% endif %}
@@ -29,21 +47,40 @@
               {% endif %}
 
               </div>
+
+                <div class="col">
+                <h6 style="font-size: medium"><span class="text-muted">LOT:</span> {{ item.supply.supplyLot }}</h6>
+                <h6 style="color:{% if item.supply.date_is_good %}blue{% elif item.supply.date_is_today %}orange{% else %}red{% endif %}; font-size: medium"><span class="text-muted">Термін:</span> {{ item.supply.expiredDate|date:"d.m.Y" }}</h6>
+
+
+                </div>
 {#              <div class="col-md-3 col-lg-3 col-xl-2 d-flex">#}
 {#                <input id="form1{{ item.id }}" min="0" name="count_{{ item.id }}" value="{{ item.count_in_order }}" type="number"#}
 {#                  class="form-control form-control-sm" hx-trigger="keyup changed delay:1000ms" hx-post="{% url 'update_count_in_preorder_cart' item.id %}" hx-target="#precart-badge"/>#}
 {#                  <input type="hidden" id="hidden{{ item.id }}" name="count_id_{{ item.id }}" value="{{ item.id }}">#}
 {##}
 {#              </div>#}
-              <div class="col-md-2 col-lg-2 col-xl-2 offset-lg-1">
+              <div class="col">
                   {% if item.general_supply.package_and_tests %}
-                      <span class="text-muted"> Пакування / Тести:</span> <span>{{ item.general_supply.package_and_tests }}</span>
+                      <h5 style="font-size: medium"><span class="text-muted">Pcg:</span> {{ item.general_supply.package_and_tests }}</h5>
                   {% endif %}
               </div>
+                      <h4><span class="badge bg-secondary">{{ item.count }}</span></h4>
+
+            {% else %}
+                <div class="col" style="font-size: small">
+                <div style="font-size: medium"><span class="text-muted">Barcode: </span>{{ item.barcode }}</div>
+                <div style="font-size: small"><span class="text-muted">SMN Code: </span> {{ item.SMN_code }}</div>
+                <div style="font-size: small"><span class="text-muted">LOT: </span> {{ item.supplyLot }}</div>
+                <div style="font-size: small"><span class="text-muted">EXP DATE: </span> {{ item.expiredDate }}</div>
+                </div>
+
+                      <h4><span class="badge bg-secondary">{{ item.count }}</span></h4>
+            {% endif %}
+
 {#              <div class="col-md-1 col-lg-1 col-xl-1 text-end">#}
 {#                  <button data-product="{{ item.id }}" data-action="delete-delivery-item" class="btn btn-lg add-btn update-cart-detail text-danger" type="button"><i class="bi bi-trash"></i></button>#}
 {#              </div>#}
-            </div>
           </div>
         </div>
           {% endfor %}
@@ -58,15 +95,47 @@
 {#          {{ orderForm.isComplete|as_crispy_field }}#}
 {#      </div>#}
 
-      <style>
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-</style>
+          <form method="POST" action="{% url 'save-delivery' delivery_order.id %}">
+               <section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
+               {{ form.description|as_crispy_field }}
+              {% csrf_token %}
+          <button class="w-50 btn btn-primary my-2" type="submit" name="save">Зберегти коментар</button>
+              </section>
+               </form>
+
+</section>
+   <div class="card-body p-3 d-inline-flex justify-content-center align-items-center">
+
+       <div>
+    <form method="POST" action="{% url 'delete-delivery-action' delivery_order.id %}" onsubmit="return showAlertConfirmationDeleteDeliveryAction('Ви впевнені що хочете видалити цю поставку? \n\nЦя дія видаляє тільки запис поставки в базі, а також всі товари, які її належать. \nЦя дія не видалить товари на складі!');">
+        {% csrf_token %}
+        <button class="btn btn-outline-danger mx-3" type="submit" name="delete_delivery">Видалити поставку</button>
+    </form>
+</div>
+        <div>
+    <form method="POST" action="{% url 'delete-delivery-action' delivery_order.id %}" onsubmit="return showAlertConfirmationDeleteDeliveryAction('Ви впевнені що хочете видалити цю поставку? \n\nЦя дія також видалить зазначену кількість кожного товару на складі!');">
+        {% csrf_token %}
+        <button class="btn btn-outline-danger mx-3" type="submit" name="delete_all">Видалити поставку разом з товарами, доданими на склад</button>
+    </form>
+</div>
+
+
+</div>
 
       </div>
     </div>
+{#<button hx-get="{% url 'save-delivery' supp.id for_delivery_order_id %}" class="btn btn-sm btn-primary" type="submit" >Зберегти</button>#}
+<script>
+    function showAlertConfirmationDeleteDeliveryAction(message) {
+        // You can customize the alert message here using the 'message' parameter
+        if (confirm(message)) {
+            return true; // Continue with the form submission
+        } else {
+            return false; // Cancel the form submission
+        }
+    }
+</script>
+
 </section>
- </form>
+
+
