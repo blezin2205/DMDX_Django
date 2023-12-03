@@ -1,7 +1,7 @@
 
 <div id="results-section">
 <section class="section">
-    <div class="container" hx-get="{% url 'get-progress' task_id=task_id for_delivery_order_id=for_delivery_order_id %}" hx-target="#results-section" hx-swap="outerHTML" hx-trigger="load delay:300ms">
+    <div class="container" hx-get="{% url 'get-progress' task_id=task_id for_delivery_order_id=for_delivery_order_id %}" hx-target="#results-section" hx-swap="outerHTML" hx-trigger="load delay:250ms">
         <div class="progress">
   <div class="progress-bar" role="progressbar" style="width: {{ value }}%" aria-valuenow="{{ value }}" aria-valuemin="0" aria-valuemax="100"></div>
 </div>

@@ -24,6 +24,7 @@ urlpatterns = [
      path('np-info', views.httpRequest),
      path('all_deliveries/', view_upload.all_deliveries, name='all_deliveries'),
      path('all_deliveries/<int:delivery_id>', view_upload.delivery_detail, name='delivery_detail'),
+     path('all_deliveries/search-gen-sup-for-manual-add-in-delivery-order', view_upload.search_results_for_manual_add_in_delivery_order, name='search-gen-sup-for-manual-add-in-delivery-order'),
 
 
 

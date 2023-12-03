@@ -79,7 +79,7 @@ def upload_supplies_for_new_delivery(request):
         form = NewDeliveryForm(request.POST)
         if form.is_valid():
             string_data = form.cleaned_data['description']
-            for_delivery_order = DeliveryOrder()
+            for_delivery_order = DeliveryOrder(from_user=request.user)
             for_delivery_order.save()
             task = makeDataUpload.delay(string_data, for_delivery_order.id)
             context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': for_delivery_order.id}
@@ -143,3 +143,12 @@ def delivery_detail(request, delivery_id):
         t.append(d)
     supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
     return render(request, 'supplies/delivery_detail.html', {'cartCountData': cartCountData, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
+
+
+def search_results_for_manual_add_in_delivery_order(request):
+    search_text = request.POST.get('search')
+    results = None
+    if search_text != "":
+        results = GeneralSupply.objects.filter(Q(name__icontains=search_text) | Q(ref__icontains=search_text) | Q(SMN_code__icontains=search_text))
+    context = {"results": results}
+    return render(request, 'partials/search_results_for_manual_add_in_delivery_order.html', context)

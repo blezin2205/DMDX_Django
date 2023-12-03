@@ -690,6 +690,7 @@ class Device(models.Model):
 class DeliveryOrder(models.Model):
     date_created = models.DateField(null=True, blank=True, auto_now_add=True)
     comment = models.TextField(null=True, blank=True)
+    from_user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
 
 
 class DeliverySupplyInCart(models.Model):

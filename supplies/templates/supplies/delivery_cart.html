@@ -7,7 +7,7 @@
 
 <section class="h-100 shadow p-3 mb-5 rounded row d-flex justify-content-between" style="background-color: #eee;">
 <div class="d-flex justify-content-between">
-    <h6>Створив: {{ request.user.first_name  }} {{ request.user.last_name  }}</h6>
+    <h6>Створив: {{ delivery_order.from_user.first_name  }} {{ delivery_order.from_user.last_name  }}</h6>
     <h3>Поставка №{{ delivery_order.id}}</h3>
     <h6>Дата створення: <u>{{ delivery_order.date_created|date:"d.m.Y" }}</u> </h6>
 </div>
@@ -99,6 +99,23 @@
                <section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
                {{ form.description|as_crispy_field }}
               {% csrf_token %}
+               <div id="search-city-section">
+    {% csrf_token %}
+     <div class="mb-2">
+  <label for="exampleFormControlInput1" class="form-label">Додати товар вручну:</label>
+  <input  class="form-control" type="text"
+           id="search-city-section"
+           hx-post="{% url 'search-gen-sup-for-manual-add-in-delivery-order' %}"
+           hx-target='#results'
+           hx-trigger="keyup changed delay:1000ms"
+           name="search"
+           placeholder="Пошук товару за назвою / REF / SMN code...">
+</div>
+
+    <div id="results">
+        {% include 'partials/search_results_for_manual_add_in_delivery_order.html' %}
+    </div>
+ </div>
           <button class="w-50 btn btn-primary my-2" type="submit" name="save">Зберегти коментар</button>
               </section>
                </form>
