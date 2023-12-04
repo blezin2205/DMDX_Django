@@ -45,7 +45,7 @@
     </button>
 
           <button class="btn btn-primary" hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_save_action' %}" hx-vals='{"gen_sup_id": {{ item.id }}, "del_sup_id": "{{ del_sup.id }}", "delivery_order_id": {{ delivery_order_id }}}' hx-target="closest div .swap_to_delete_class" hx-swap="outerHTML">
-              <i class="bi bi-check"></i>
+             <i class="bi bi-plus-circle"></i>
           </button>
 
   </div>

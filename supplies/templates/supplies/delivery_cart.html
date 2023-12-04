@@ -9,7 +9,16 @@
 <div class="d-flex justify-content-between">
     <h6>Створив: {{ delivery_order.from_user.first_name  }} {{ delivery_order.from_user.last_name  }}</h6>
     <h3>Поставка №{{ delivery_order.id}}</h3>
-    <h6>Дата створення: <u>{{ delivery_order.date_created|date:"d.m.Y" }}</u> </h6>
+    <div style="align-content: end">
+        <h6>Дата створення: <u>{{ delivery_order.date_created|date:"d.m.Y" }}</u> </h6>
+        <form method="POST" action="{% url 'delivery_order_export_to_excel' delivery_order.id %}">
+            {% csrf_token %}
+        <button type="submit" class="btn btn-outline-primary w-100" name="xls_button">
+        Export to Excel
+    </button>
+            </form>
+    </div>
+
 </div>
 
 <div class="container w-auto">

@@ -192,10 +192,9 @@ def add_gen_sup_in_delivery_order_manual_list_save_action(request):
         date_expired_date = datetime.datetime.strptime(input_expired, '%Y%m%d')
         delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
         gen_sup = GeneralSupply.objects.get(id=gen_sup_id)
-        sup_set = delivery_order.deliverysupplyincart_set.all()
 
         try:
-            sup_delivery = sup_set.get(id=del_sup_id)
+            sup_delivery = delivery_order.deliverysupplyincart_set.get(id=del_sup_id)
             sup_delivery.supplyLot = input_lot
             sup_delivery.expiredDate = input_expired
             prev_count = sup_delivery.count
@@ -206,6 +205,24 @@ def add_gen_sup_in_delivery_order_manual_list_save_action(request):
             print("NEW COUNT", new_count)
             print("input_count", input_count)
             print("prev_count", prev_count)
+            try:
+                sup = gen_sup.general.get(supplyLot=input_lot, expiredDate=date_expired_date)
+                sup.count += new_count
+            except:
+                sup_delivery.supply.count -= int(prev_count)
+                if sup_delivery.supply.count == 0:
+                    sup_delivery.supply.delete()
+                else:
+                    sup_delivery.supply.save()
+                sup = Supply(name=gen_sup.name,
+                             general_supply=gen_sup,
+                             category=gen_sup.category,
+                             ref=gen_sup.ref,
+                             supplyLot=input_lot,
+                             count=int(input_count),
+                             expiredDate=date_expired_date)
+                sup_delivery.supply = sup
+
         except:
             try:
                 sup = gen_sup.general.get(supplyLot=input_lot, expiredDate=date_expired_date)
@@ -232,3 +249,74 @@ def add_gen_sup_in_delivery_order_manual_list_save_action(request):
         sup_delivery.save()
         context = {"item": sup_delivery}
         return render(request, 'partials/saved_instance_of_manual_added_sup_in_delivery.html', context)
+
+
+def delivery_order_export_to_excel(request, delivery_order_id):
+    del_order = DeliveryOrder.objects.get(id=delivery_order_id)
+    supplies = del_order.deliverysupplyincart_set.filter(isRecognized=True)
+    date_created = del_order.date_created.strftime("%d.%m.%Y")
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f"attachment; filename=Delivery_{del_order.id}_{date_created}.xlsx"
+
+    wb = Workbook(response, {'in_memory': True})
+    ws = wb.add_worksheet(f'Delivery_{del_order.id}_{date_created}')
+    format = wb.add_format({'bold': True})
+    format.set_font_size(16)
+
+    columns_table = [{'header': '№'},
+                     {'header': 'ACTION'},
+                     {'header': 'Назва товару'},
+                     {'header': 'REF'},
+                     {'header': 'LOT'},
+                     {'header': 'К-ть'},
+                     {'header': 'Тер.прид.'},
+                     {'header': 'Категорія'},
+                     {'header': 'Оновлено'},
+                     ]
+
+    ws.write(0, 0, f'Загальний список товарів поставки #{del_order.id} від {date_created}', format)
+
+    format = wb.add_format({'num_format': 'dd.mm.yyyy'})
+    format.set_font_size(12)
+
+    row_num = 3
+
+    for row in supplies:
+        row_num += 1
+        action = ''
+        name = ''
+        ref = ''
+        lot = ''
+        category = ''
+        if row.isHandleAdded:
+            action = 'Вручну'
+        else:
+            action = 'Скан'
+
+        if row.general_supply:
+            name = row.general_supply.name
+            ref = row.general_supply.ref
+            category = row.general_supply.category.name
+
+        if row.supply:
+            lot = row.supply.supplyLot
+        count = row.count
+        date_expired = row.supply.expiredDate.strftime("%d.%m.%Y")
+        date_created = row.supply.dateCreated.strftime("%d.%m.%Y")
+
+        val_row = [action, name, ref, lot, count, date_expired, category, date_created]
+
+        for col_num in range(len(val_row)):
+            ws.write(row_num, 0, row_num - 3)
+            ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
+
+    ws.set_column(0, 0, 5)
+    ws.set_column(1, 1, 15)
+    ws.set_column(2, 2, 35)
+    ws.set_column(3, 4, 15)
+    ws.set_column(5, 6, 10)
+    ws.set_column(7, 8, 12)
+
+    ws.add_table(3, 0, row_num, len(columns_table) - 1, {'columns': columns_table})
+    wb.close()
+    return response
