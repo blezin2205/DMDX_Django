@@ -1,0 +1,47 @@
+<div class="swap_to_delete_class">
+<form method="POST" action="">
+ {% csrf_token %}
+      <div class="card rounded-5 mt-3">
+
+          <div class="card-body px-3 d-flex justify-content-between align-items-center">
+{#        <a hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list' %}" hx-vals='{"gen_sup_id": {{ item.id }}}' hx-target="#results_choosed_gen_supps" hx-swap="beforeend" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" aria-current="true" style="cursor: pointer">#}
+
+  <div class="w-auto">
+      <div style="font-size: large">{{ item.general_supply.name }}</div>
+                  {% if  item.general_supply.ref %}
+                      <div class="text-muted" style="font-size: small">REF: {{ item.general_supply.ref }}</div>
+                  {% endif %}
+                   {% if item.general_supply.SMN_code %}
+                       <div class="text-muted" style="font-size: small">SMN: {{ item.general_supply.SMN_code }}</div>
+                  {% endif %}
+                   {% if item.general_supply.category %}
+                       <div class="text-muted" style="font-size: smaller"> Категорія: {{ item.general_supply.category }}</div>
+              {% endif %}
+  </div>
+              <div class="w-auto">
+                <h6 style="font-size: medium"><span class="text-muted">LOT:</span> {{ item.supply.supplyLot }}</h6>
+                <h6 style="color:{% if item.supply.date_is_good %}blue{% elif item.supply.date_is_today %}orange{% else %}red{% endif %}; font-size: medium"><span class="text-muted">Термін:</span> {{ item.supply.expiredDate|date:"d.m.Y" }}</h6>
+                </div>
+
+
+  <div class="w-auto">
+      {% if item.general_supply.package_and_tests %}
+                      <h5 style="font-size: medium"><span class="text-muted">Pcg:</span> {{ item.general_supply.package_and_tests }}</h5>
+                  {% endif %}
+  </div>
+          <h4><span class="badge bg-secondary">{{ item.count }}</span></h4>
+
+          <button class="btn btn-warning" hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_edit_action' %}" hx-vals='{"item_id": {{ item.id }}}' hx-target="closest div .swap_to_delete_class" hx-swap="outerHTML">
+              <i class="bi bi-pencil"></i>
+    </button>
+{#          <button class="btn btn-primary" type="submit" hx-target="closest div .swap_to_delete_class" hx-swap="outerHTML">#}
+{#      Save#}
+{#    </button>#}
+
+{#        </a>#}
+</div>
+</div>
+  </form>
+</div>
+
+

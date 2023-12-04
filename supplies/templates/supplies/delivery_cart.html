@@ -30,6 +30,10 @@
 
           {% for item in value %}
         <div class="card rounded-5 mt-3">
+        {% if item.general_supply and item.isHandleAdded %}
+            <i class="bi bi-keyboard"></i>
+        {% endif %}
+
           <div class="card-body px-3 d-flex justify-content-between align-items-center">
             {% if item.general_supply %}
                 <div class="col">
@@ -93,7 +97,7 @@
   <label for="exampleFormControlInput1" class="form-label">Додати товар вручну:</label>
   <input  class="form-control" type="text"
            id="search-city-section"
-           hx-post="{% url 'search-gen-sup-for-manual-add-in-delivery-order' %}"
+           hx-post="{% url 'search-gen-sup-for-manual-add-in-delivery-order' delivery_order.id %}"
            hx-target='#results'
            hx-trigger="keyup changed delay:1000ms"
            name="search"

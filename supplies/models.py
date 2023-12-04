@@ -712,6 +712,7 @@ class DeliverySupplyInCart(models.Model):
     count = models.PositiveIntegerField(null=True, blank=True)
     expiredDate = models.CharField(max_length=50, null=True, blank=True)
     isRecognized = models.BooleanField(default=False)
+    isHandleAdded = models.BooleanField(default=False)
     supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True)
     delivery_order = models.ForeignKey(DeliveryOrder, on_delete=models.CASCADE, null=True)
 

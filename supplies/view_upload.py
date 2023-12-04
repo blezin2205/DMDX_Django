@@ -145,22 +145,90 @@ def delivery_detail(request, delivery_id):
     return render(request, 'supplies/delivery_detail.html', {'cartCountData': cartCountData, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
 
 
-def search_results_for_manual_add_in_delivery_order(request):
+def search_results_for_manual_add_in_delivery_order(request, delivery_order_id):
     search_text = request.POST.get('search')
     results = None
     if search_text != "":
         results = GeneralSupply.objects.filter(Q(name__icontains=search_text) | Q(ref__icontains=search_text) | Q(SMN_code__icontains=search_text))
-    context = {"results": results}
+    context = {"results": results, 'delivery_order_id': delivery_order_id}
     return render(request, 'partials/search_results_for_manual_add_in_delivery_order.html', context)
 
 
 def add_gen_sup_in_delivery_order_manual_list(request):
     if request.method == 'POST':
         gen_sup_id = request.POST.get('gen_sup_id')
+        delivery_order_id = request.POST.get('delivery_order_id')
         gen_sup = GeneralSupply.objects.get(id=gen_sup_id)
-        context = {"item": gen_sup}
+        context = {"item": gen_sup, 'delivery_order_id': delivery_order_id}
         return render(request, 'partials/search_results_for_results_choosed_gen_supps.html', context)
 
 
 def add_gen_sup_in_delivery_order_manual_list_delete_action(request):
+    del_sup_id = request.POST.get('del_sup_id')
+    print(del_sup_id)
+
     return HttpResponse(status=200)
+
+
+def add_gen_sup_in_delivery_order_manual_list_edit_action(request):
+    if request.method == 'POST':
+        deliverySupplyInCart_id = request.POST.get('item_id')
+        del_sup = DeliverySupplyInCart.objects.get(id=deliverySupplyInCart_id)
+        gen_sup = del_sup.general_supply
+
+        context = {"item": gen_sup, 'delivery_order_id': del_sup.delivery_order_id, 'del_sup': del_sup}
+        return render(request, 'partials/search_results_for_results_choosed_gen_supps.html', context)
+
+
+def add_gen_sup_in_delivery_order_manual_list_save_action(request):
+    if request.method == 'POST':
+        delivery_order_id = request.POST.get('delivery_order_id')
+        del_sup_id = request.POST.get('del_sup_id')
+        gen_sup_id = request.POST.get('gen_sup_id')
+        input_lot = request.POST.get(f'lot_input_field_{gen_sup_id}').strip()
+        input_expired = request.POST.get(f'expired_input_field_{gen_sup_id}').strip()
+        input_count = request.POST.get(f'count_input_field_{gen_sup_id}').strip()
+
+        date_expired_date = datetime.datetime.strptime(input_expired, '%Y%m%d')
+        delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
+        gen_sup = GeneralSupply.objects.get(id=gen_sup_id)
+        sup_set = delivery_order.deliverysupplyincart_set.all()
+
+        try:
+            sup_delivery = sup_set.get(id=del_sup_id)
+            sup_delivery.supplyLot = input_lot
+            sup_delivery.expiredDate = input_expired
+            prev_count = sup_delivery.count
+            new_count = int(input_count) - int(prev_count)
+            sup = sup_delivery.supply
+            sup.count += new_count
+            sup_delivery.count = input_count
+            print("NEW COUNT", new_count)
+            print("input_count", input_count)
+            print("prev_count", prev_count)
+        except:
+            try:
+                sup = gen_sup.general.get(supplyLot=input_lot, expiredDate=date_expired_date)
+                sup.count += int(input_count)
+            except:
+                sup = Supply(name=gen_sup.name,
+                             general_supply=gen_sup,
+                             category=gen_sup.category,
+                             ref=gen_sup.ref,
+                             supplyLot=input_lot,
+                             count=input_count,
+                             expiredDate=date_expired_date)
+            sup_delivery = DeliverySupplyInCart(
+                general_supply=gen_sup,
+                SMN_code=gen_sup.SMN_code,
+                supplyLot=input_lot,
+                count=input_count,
+                expiredDate=input_expired,
+                delivery_order=delivery_order,
+                isRecognized=True,
+                isHandleAdded=True,
+                supply=sup)
+        sup.save()
+        sup_delivery.save()
+        context = {"item": sup_delivery}
+        return render(request, 'partials/saved_instance_of_manual_added_sup_in_delivery.html', context)
