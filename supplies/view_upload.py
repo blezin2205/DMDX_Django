@@ -152,3 +152,15 @@ def search_results_for_manual_add_in_delivery_order(request):
         results = GeneralSupply.objects.filter(Q(name__icontains=search_text) | Q(ref__icontains=search_text) | Q(SMN_code__icontains=search_text))
     context = {"results": results}
     return render(request, 'partials/search_results_for_manual_add_in_delivery_order.html', context)
+
+
+def add_gen_sup_in_delivery_order_manual_list(request):
+    if request.method == 'POST':
+        gen_sup_id = request.POST.get('gen_sup_id')
+        gen_sup = GeneralSupply.objects.get(id=gen_sup_id)
+        context = {"item": gen_sup}
+        return render(request, 'partials/search_results_for_results_choosed_gen_supps.html', context)
+
+
+def add_gen_sup_in_delivery_order_manual_list_delete_action(request):
+    return HttpResponse(status=200)

@@ -15,7 +15,10 @@ from cloudinary import uploader
 from cloudinary.models import CloudinaryField
 from django import forms
 import cloudinary
-
+from django.core.serializers import serialize
+from django.http import JsonResponse
+from django.forms.models import model_to_dict
+import json
 
 class CustomUser(AbstractUser):
     pass
@@ -132,6 +135,14 @@ class GeneralSupply(models.Model):
             name = "NO NAME"
 
         return name
+
+    def to_json(self):
+        general_supply_dict = model_to_dict(self)
+        serialized = json.dumps(general_supply_dict)
+
+        # Deserialize the JSON to a Python object (optional)
+        # deserialized_data = json.loads(json_data)
+        return serialized
 
     class Meta:
         verbose_name = 'Товар (назва)'

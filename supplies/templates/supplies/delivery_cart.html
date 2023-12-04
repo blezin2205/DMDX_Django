@@ -86,20 +86,8 @@
           {% endfor %}
           </section>
       {% endfor %}
-
-{#      <div>#}
-{#          {% if isClient %}#}
-{#          {{ orderForm.place|as_crispy_field }}#}
-{#      {% endif %}#}
-{#      {{ orderForm.comment|as_crispy_field }}#}
-{#          {{ orderForm.isComplete|as_crispy_field }}#}
-{#      </div>#}
-
-          <form method="POST" action="{% url 'save-delivery' delivery_order.id %}">
-               <section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
-               {{ form.description|as_crispy_field }}
-              {% csrf_token %}
-               <div id="search-city-section">
+      <section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
+      <div id="search-city-section">
     {% csrf_token %}
      <div class="mb-2">
   <label for="exampleFormControlInput1" class="form-label">Додати товар вручну:</label>
@@ -115,7 +103,24 @@
     <div id="results">
         {% include 'partials/search_results_for_manual_add_in_delivery_order.html' %}
     </div>
+          <hr>
+                   <div id="results_choosed_gen_supps">
+
+    </div>
  </div>
+</section>
+{#      <div>#}
+{#          {% if isClient %}#}
+{#          {{ orderForm.place|as_crispy_field }}#}
+{#      {% endif %}#}
+{#      {{ orderForm.comment|as_crispy_field }}#}
+{#          {{ orderForm.isComplete|as_crispy_field }}#}
+{#      </div>#}
+
+          <form method="POST" action="{% url 'save-delivery' delivery_order.id %}">
+               <section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
+               {{ form.description|as_crispy_field }}
+              {% csrf_token %}
           <button class="w-50 btn btn-primary my-2" type="submit" name="save">Зберегти коментар</button>
               </section>
                </form>
