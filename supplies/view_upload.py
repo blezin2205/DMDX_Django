@@ -44,14 +44,17 @@ from celery.result import AsyncResult
 # @login_required(login_url='login')
 # @allowed_users(allowed_roles=['admin'])
 # def receive_and_load_new_supplies_order(request):
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def celery_test(request):
     task = go_to_sleep.delay(1)
     return render(request, 'supplies/celery-test.html', {'task_id': task.task_id})
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def get_progress(request, task_id, for_delivery_order_id):
-    progress = Progress(AsyncResult(task_id))
+    result = AsyncResult(task_id)
+    progress = Progress(result)
     percent_complete = int(progress.get_info()['progress']['percent'])
     if percent_complete == 100:
         cartCountData = countCartItemsHelper(request)
@@ -66,14 +69,16 @@ def get_progress(request, task_id, for_delivery_order_id):
             t = supDict.setdefault(d.isRecognized, [])
             t.append(d)
         supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
-        return render(request, 'supplies/delivery_cart.html', {'cartCountData': cartCountData, 'supDict': supDict, 'delivery_order': delivery_order, 'total_count': total_count, 'form': form})
+        status_of_task = result.status
+        return render(request, 'supplies/delivery_cart.html', {'cartCountData': cartCountData, 'status_of_task': status_of_task, 'supDict': supDict, 'delivery_order': delivery_order, 'total_count': total_count, 'form': form})
 
     print(task_id)
     print(percent_complete)
     context = {'task_id': task_id, 'for_delivery_order_id': for_delivery_order_id, 'value': percent_complete}
     return render(request, 'partials/progress-bar.html', context)
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def upload_supplies_for_new_delivery(request):
     form = NewDeliveryForm()
     if request.method == 'POST':
@@ -88,13 +93,15 @@ def upload_supplies_for_new_delivery(request):
 
     return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form})
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def upload_sup_from_delivery_order_and_save_db(request, delivery_order_id):
     task = gen_sup_and_update_db.delay(delivery_order_id)
     context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': delivery_order_id}
     return render(request, 'supplies/upload_supplies_new_delivery_progress.html', context)
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def save_delivery(request, delivery_order_id):
     if request.method == 'POST':
         delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
@@ -105,14 +112,16 @@ def save_delivery(request, delivery_order_id):
             delivery_order.save()
         return redirect("/all_deliveries")
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def all_deliveries(request):
     cartCountData = countCartItemsHelper(request)
     deliveries = DeliveryOrder.objects.all().order_by('-id')
 
     return render(request, 'supplies/all_deliveries_list.html', {'cartCountData': cartCountData, 'deliveries': deliveries})
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def delete_delivery_action(request, delivery_order_id):
     if request.method == 'POST':
         delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
@@ -134,7 +143,8 @@ def delete_delivery_action(request, delivery_order_id):
             print('delete_all')
         return redirect("/all_deliveries")
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def delivery_detail(request, delivery_id):
     cartCountData = countCartItemsHelper(request)
     delivery_order = DeliveryOrder.objects.get(id=delivery_id)
@@ -151,7 +161,8 @@ def delivery_detail(request, delivery_id):
     supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
     return render(request, 'supplies/delivery_detail.html', {'cartCountData': cartCountData, 'total_count': total_count, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def search_results_for_manual_add_in_delivery_order(request, delivery_order_id):
     search_text = request.POST.get('search')
     results = None
@@ -160,7 +171,8 @@ def search_results_for_manual_add_in_delivery_order(request, delivery_order_id):
     context = {"results": results, 'delivery_order_id': delivery_order_id}
     return render(request, 'partials/search_results_for_manual_add_in_delivery_order.html', context)
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def add_gen_sup_in_delivery_order_manual_list(request):
     if request.method == 'POST':
         gen_sup_id = request.POST.get('gen_sup_id')
@@ -169,7 +181,8 @@ def add_gen_sup_in_delivery_order_manual_list(request):
         context = {"item": gen_sup, 'delivery_order_id': delivery_order_id}
         return render(request, 'partials/search_add_manual_results_for_results_choosed_gen_supps.html', context)
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def add_gen_sup_in_delivery_order_manual_list_delete_action(request):
     del_sup_id = request.POST.get('del_sup_id')
     try:
@@ -179,7 +192,8 @@ def add_gen_sup_in_delivery_order_manual_list_delete_action(request):
         pass
     return HttpResponse(status=200)
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def add_gen_sup_in_delivery_order_manual_list_edit_action(request):
     if request.method == 'POST':
         deliverySupplyInCart_id = request.POST.get('item_id')
@@ -189,7 +203,8 @@ def add_gen_sup_in_delivery_order_manual_list_edit_action(request):
         context = {"item": gen_sup, 'delivery_order_id': del_sup.delivery_order_id, 'del_sup': del_sup}
         return render(request, 'partials/search_results_for_results_choosed_gen_supps.html', context)
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def add_gen_sup_in_delivery_order_manual_list_save_action(request):
     if request.method == 'POST':
         delivery_order_id = request.POST.get('delivery_order_id')
@@ -221,7 +236,8 @@ def add_gen_sup_in_delivery_order_manual_list_save_action(request):
         context = {"item": sup_delivery}
         return render(request, 'partials/saved_instance_of_manual_added_sup_in_delivery.html', context)
 
-
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def delivery_order_export_to_excel(request, delivery_order_id):
     del_order = DeliveryOrder.objects.get(id=delivery_order_id)
     supplies = del_order.deliverysupplyincart_set.filter(isRecognized=True).order_by('general_supply__name')

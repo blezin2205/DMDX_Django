@@ -4,7 +4,9 @@
 {% load static %}
 {% load crispy_forms_filters %}
 {#<form method="POST" action="">#}
-
+  {% if status_of_task %}
+        <h2 class="{% if status_of_task == "SUCCESS" %} text-success {% else %} text-danger {% endif %}"><u>{{ status_of_task }}</u></h2>
+    {% endif %}
 <section class="h-100 shadow p-3 mb-5 rounded row d-flex justify-content-center align-items-center" style="background-color: #eee;">
 <div class="d-flex justify-content-between">
     <h6>Створив: {{ delivery_order.from_user.first_name  }} {{ delivery_order.from_user.last_name  }}</h6>
