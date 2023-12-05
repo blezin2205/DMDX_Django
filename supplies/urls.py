@@ -24,6 +24,7 @@ urlpatterns = [
      path('np-info', views.httpRequest),
      path('all_deliveries/', view_upload.all_deliveries, name='all_deliveries'),
      path('all_deliveries/<int:delivery_id>', view_upload.delivery_detail, name='delivery_detail'),
+     path('all_deliveries/<int:delivery_id>/add_more_scan_to_exist_delivery_order/', view_upload.add_more_scan_to_exist_delivery_order, name='add_more_scan_to_exist_delivery_order'),
      path('all_deliveries/search-gen-sup-for-manual-add-in-delivery-order/<int:delivery_order_id>', view_upload.search_results_for_manual_add_in_delivery_order, name='search-gen-sup-for-manual-add-in-delivery-order'),
      path('all_deliveries/add_gen_sup_in_delivery_order_manual_list', view_upload.add_gen_sup_in_delivery_order_manual_list, name='add_gen_sup_in_delivery_order_manual_list'),
      path('all_deliveries/add_gen_sup_in_delivery_order_manual_list_delete_action', view_upload.add_gen_sup_in_delivery_order_manual_list_delete_action, name='add_gen_sup_in_delivery_order_manual_list_delete_action'),

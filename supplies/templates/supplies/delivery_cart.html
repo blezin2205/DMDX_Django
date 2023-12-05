@@ -7,6 +7,7 @@
   {% if status_of_task %}
         <h2 class="{% if status_of_task == "SUCCESS" %} text-success {% else %} text-danger {% endif %}"><u>{{ status_of_task }}</u></h2>
     {% endif %}
+
 <section class="h-100 shadow p-3 mb-5 rounded row d-flex justify-content-center align-items-center" style="background-color: #eee;">
 <div class="d-flex justify-content-between">
     <h6>Створив: {{ delivery_order.from_user.first_name  }} {{ delivery_order.from_user.last_name  }}</h6>
@@ -54,6 +55,15 @@
       {% endfor %}
       {% if not delivery_order.isHasBeenSaved %}
       <section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
+
+<div class="container mb-4">
+    <form method="GET" action="{% url 'add_more_scan_to_exist_delivery_order' delivery_order.id %}">
+            {% csrf_token %}
+        <button type="submit" class="text-center btn btn-outline-primary w-100" name="xls_button">
+        Додати скан до поставки
+    </button>
+            </form>
+</div>
       <div id="search-city-section">
     {% csrf_token %}
      <div class="mb-2">

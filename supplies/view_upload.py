@@ -79,19 +79,29 @@ def get_progress(request, task_id, for_delivery_order_id):
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
-def upload_supplies_for_new_delivery(request):
+def upload_supplies_for_new_delivery(request, delivery_order_id=None):
     form = NewDeliveryForm()
     if request.method == 'POST':
         form = NewDeliveryForm(request.POST)
         if form.is_valid():
             string_data = form.cleaned_data['description']
-            for_delivery_order = DeliveryOrder(from_user=request.user)
-            for_delivery_order.save()
+            if delivery_order_id != None:
+                for_delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
+            else:
+                for_delivery_order = DeliveryOrder(from_user=request.user)
+                for_delivery_order.save()
             task = makeDataUpload.delay(string_data, for_delivery_order.id)
             context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': for_delivery_order.id}
             return render(request, 'supplies/upload_supplies_new_delivery_progress.html', context)
 
     return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form})
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def add_more_scan_to_exist_delivery_order(request, delivery_id):
+    return upload_supplies_for_new_delivery(request, delivery_id)
+
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
