@@ -13,11 +13,15 @@
 
     <div class="listOrders">
         {% for order in deliveries %}
-            <div class="mb-3" style="border-radius: 1rem;">
+            <div style="border-radius: 1rem;">
              <a href="{% url 'delivery_detail' order.id %}?next={{ request.get_full_path }}" class="list-group-item list-group-item-action custom-list-item" aria-current="true">
                 <div class="d-flex flex-column w-100">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="mb-0">Поставка №: {{order.id}}</h6>
+                    <div class="d-flex justify-content-between align-items-center m-2">
+                        <h6>Поставка №: {{order.id}}</h6>
+                        {% if not order.isHasBeenSaved %}
+                            <h6 class="text-danger"><i>Не додано на склад</i></h6>
+                        {% endif %}
+
                         <div>
                             <p class="opacity-60 text-nowrap date"><span class="text-muted">Дата створення:</span> {{order.date_created|date:"d.m.Y"}}</p>
                             <p class="opacity-60 text-nowrap date"><span class="text-muted">Створив:</span> {{ request.user.first_name }} {{ request.user.last_name }}</p>

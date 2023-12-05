@@ -644,9 +644,6 @@ def home(request):
         uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False).exists()
         html_page = 'supplies/home.html'
 
-
-
-
     if not suppFilter.data:
         suppFilter.data['ordering'] = SupplyFilter.EXIST_CHOICES.В_наявності
     supplies = suppFilter.qs

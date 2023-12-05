@@ -30,6 +30,7 @@ urlpatterns = [
      path('all_deliveries/add_gen_sup_in_delivery_order_manual_list_save_action', view_upload.add_gen_sup_in_delivery_order_manual_list_save_action, name='add_gen_sup_in_delivery_order_manual_list_save_action'),
      path('all_deliveries/add_gen_sup_in_delivery_order_manual_list_edit_action', view_upload.add_gen_sup_in_delivery_order_manual_list_edit_action, name='add_gen_sup_in_delivery_order_manual_list_edit_action'),
      path('all_deliveries/delivery_order_export_to_excel/<int:delivery_order_id>', view_upload.delivery_order_export_to_excel, name='delivery_order_export_to_excel'),
+     path('all_deliveries/save-delivery-and-add-to-db/<int:delivery_order_id>', view_upload.upload_sup_from_delivery_order_and_save_db, name='save-delivery-and-add-to-db'),
 
 
 

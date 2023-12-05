@@ -56,7 +56,8 @@ def get_progress(request, task_id, for_delivery_order_id):
     if percent_complete == 100:
         cartCountData = countCartItemsHelper(request)
         delivery_order = DeliveryOrder.objects.get(id=for_delivery_order_id)
-        supplies = delivery_order.deliverysupplyincart_set.all()
+        supplies = delivery_order.deliverysupplyincart_set.all().order_by('general_supply__name')
+        total_count = supplies.aggregate(total_count=Sum('count'))['total_count']
         form = NewDeliveryForm()
         form.fields['description'].label = "Коментар"
 
@@ -65,7 +66,7 @@ def get_progress(request, task_id, for_delivery_order_id):
             t = supDict.setdefault(d.isRecognized, [])
             t.append(d)
         supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
-        return render(request, 'supplies/delivery_cart.html', {'cartCountData': cartCountData, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
+        return render(request, 'supplies/delivery_cart.html', {'cartCountData': cartCountData, 'supDict': supDict, 'delivery_order': delivery_order, 'total_count': total_count, 'form': form})
 
     print(task_id)
     print(percent_complete)
@@ -86,6 +87,12 @@ def upload_supplies_for_new_delivery(request):
             return render(request, 'supplies/upload_supplies_new_delivery_progress.html', context)
 
     return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form})
+
+
+def upload_sup_from_delivery_order_and_save_db(request, delivery_order_id):
+    task = gen_sup_and_update_db.delay(delivery_order_id)
+    context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': delivery_order_id}
+    return render(request, 'supplies/upload_supplies_new_delivery_progress.html', context)
 
 
 def save_delivery(request, delivery_order_id):
@@ -125,14 +132,14 @@ def delete_delivery_action(request, delivery_order_id):
                     org_sup.save()
             delivery_order.delete()
             print('delete_all')
-
         return redirect("/all_deliveries")
 
 
 def delivery_detail(request, delivery_id):
     cartCountData = countCartItemsHelper(request)
     delivery_order = DeliveryOrder.objects.get(id=delivery_id)
-    supplies = delivery_order.deliverysupplyincart_set.all()
+    supplies = delivery_order.deliverysupplyincart_set.all().order_by('general_supply__name')
+    total_count = supplies.aggregate(total_count=Sum('count'))['total_count']
     form = NewDeliveryForm()
     form.initial['description'] = delivery_order.comment
     form.fields['description'].label = "Коментар"
@@ -142,7 +149,7 @@ def delivery_detail(request, delivery_id):
         t = supDict.setdefault(d.isRecognized, [])
         t.append(d)
     supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
-    return render(request, 'supplies/delivery_detail.html', {'cartCountData': cartCountData, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
+    return render(request, 'supplies/delivery_detail.html', {'cartCountData': cartCountData, 'total_count': total_count, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
 
 
 def search_results_for_manual_add_in_delivery_order(request, delivery_order_id):
@@ -160,13 +167,13 @@ def add_gen_sup_in_delivery_order_manual_list(request):
         delivery_order_id = request.POST.get('delivery_order_id')
         gen_sup = GeneralSupply.objects.get(id=gen_sup_id)
         context = {"item": gen_sup, 'delivery_order_id': delivery_order_id}
-        return render(request, 'partials/search_results_for_results_choosed_gen_supps.html', context)
+        return render(request, 'partials/search_add_manual_results_for_results_choosed_gen_supps.html', context)
 
 
 def add_gen_sup_in_delivery_order_manual_list_delete_action(request):
     del_sup_id = request.POST.get('del_sup_id')
-    print(del_sup_id)
-
+    sup_delivery = DeliverySupplyInCart.objects.get(id=del_sup_id)
+    sup_delivery.delete()
     return HttpResponse(status=200)
 
 
@@ -183,69 +190,30 @@ def add_gen_sup_in_delivery_order_manual_list_edit_action(request):
 def add_gen_sup_in_delivery_order_manual_list_save_action(request):
     if request.method == 'POST':
         delivery_order_id = request.POST.get('delivery_order_id')
-        del_sup_id = request.POST.get('del_sup_id')
+        del_sup_id = request.POST.get('del_sup_id') or None
         gen_sup_id = request.POST.get('gen_sup_id')
         input_lot = request.POST.get(f'lot_input_field_{gen_sup_id}').strip()
         input_expired = request.POST.get(f'expired_input_field_{gen_sup_id}').strip()
         input_count = request.POST.get(f'count_input_field_{gen_sup_id}').strip()
-
-        date_expired_date = datetime.datetime.strptime(input_expired, '%Y%m%d')
-        delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
         gen_sup = GeneralSupply.objects.get(id=gen_sup_id)
+        del_order = DeliveryOrder.objects.get(id=delivery_order_id)
 
+        date_expired_date = datetime.datetime.strptime(input_expired, '%Y-%m-%d').date()
         try:
-            sup_delivery = delivery_order.deliverysupplyincart_set.get(id=del_sup_id)
+            sup_delivery = DeliverySupplyInCart.objects.get(id=del_sup_id)
             sup_delivery.supplyLot = input_lot
-            sup_delivery.expiredDate = input_expired
-            prev_count = sup_delivery.count
-            new_count = int(input_count) - int(prev_count)
-            sup = sup_delivery.supply
-            sup.count += new_count
             sup_delivery.count = input_count
-            print("NEW COUNT", new_count)
-            print("input_count", input_count)
-            print("prev_count", prev_count)
-            try:
-                sup = gen_sup.general.get(supplyLot=input_lot, expiredDate=date_expired_date)
-                sup.count += new_count
-            except:
-                sup_delivery.supply.count -= int(prev_count)
-                if sup_delivery.supply.count == 0:
-                    sup_delivery.supply.delete()
-                else:
-                    sup_delivery.supply.save()
-                sup = Supply(name=gen_sup.name,
-                             general_supply=gen_sup,
-                             category=gen_sup.category,
-                             ref=gen_sup.ref,
-                             supplyLot=input_lot,
-                             count=int(input_count),
-                             expiredDate=date_expired_date)
-                sup_delivery.supply = sup
-
+            sup_delivery.expiredDate = date_expired_date
+            sup_delivery.expiredDate_desc = input_expired
         except:
-            try:
-                sup = gen_sup.general.get(supplyLot=input_lot, expiredDate=date_expired_date)
-                sup.count += int(input_count)
-            except:
-                sup = Supply(name=gen_sup.name,
-                             general_supply=gen_sup,
-                             category=gen_sup.category,
-                             ref=gen_sup.ref,
-                             supplyLot=input_lot,
-                             count=input_count,
-                             expiredDate=date_expired_date)
-            sup_delivery = DeliverySupplyInCart(
-                general_supply=gen_sup,
-                SMN_code=gen_sup.SMN_code,
-                supplyLot=input_lot,
-                count=input_count,
-                expiredDate=input_expired,
-                delivery_order=delivery_order,
-                isRecognized=True,
-                isHandleAdded=True,
-                supply=sup)
-        sup.save()
+            sup_delivery = DeliverySupplyInCart(general_supply=gen_sup,
+                                                supplyLot=input_lot,
+                                                count=input_count,
+                                                expiredDate_desc=input_expired,
+                                                expiredDate=date_expired_date,
+                                                isRecognized=True,
+                                                isHandleAdded=True,
+                                                delivery_order=del_order)
         sup_delivery.save()
         context = {"item": sup_delivery}
         return render(request, 'partials/saved_instance_of_manual_added_sup_in_delivery.html', context)
@@ -253,7 +221,7 @@ def add_gen_sup_in_delivery_order_manual_list_save_action(request):
 
 def delivery_order_export_to_excel(request, delivery_order_id):
     del_order = DeliveryOrder.objects.get(id=delivery_order_id)
-    supplies = del_order.deliverysupplyincart_set.filter(isRecognized=True)
+    supplies = del_order.deliverysupplyincart_set.filter(isRecognized=True).order_by('general_supply__name')
     date_created = del_order.date_created.strftime("%d.%m.%Y")
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f"attachment; filename=Delivery_{del_order.id}_{date_created}.xlsx"
@@ -271,7 +239,6 @@ def delivery_order_export_to_excel(request, delivery_order_id):
                      {'header': 'К-ть'},
                      {'header': 'Тер.прид.'},
                      {'header': 'Категорія'},
-                     {'header': 'Оновлено'},
                      ]
 
     ws.write(0, 0, f'Загальний список товарів поставки #{del_order.id} від {date_created}', format)
@@ -298,13 +265,11 @@ def delivery_order_export_to_excel(request, delivery_order_id):
             ref = row.general_supply.ref
             category = row.general_supply.category.name
 
-        if row.supply:
-            lot = row.supply.supplyLot
+        lot = row.supplyLot
         count = row.count
-        date_expired = row.supply.expiredDate.strftime("%d.%m.%Y")
-        date_created = row.supply.dateCreated.strftime("%d.%m.%Y")
+        date_expired = row.expiredDate.strftime("%d.%m.%Y")
 
-        val_row = [action, name, ref, lot, count, date_expired, category, date_created]
+        val_row = [action, name, ref, lot, count, date_expired, category]
 
         for col_num in range(len(val_row)):
             ws.write(row_num, 0, row_num - 3)
@@ -315,7 +280,7 @@ def delivery_order_export_to_excel(request, delivery_order_id):
     ws.set_column(2, 2, 35)
     ws.set_column(3, 4, 15)
     ws.set_column(5, 6, 10)
-    ws.set_column(7, 8, 12)
+    ws.set_column(7, 7, 12)
 
     ws.add_table(3, 0, row_num, len(columns_table) - 1, {'columns': columns_table})
     wb.close()

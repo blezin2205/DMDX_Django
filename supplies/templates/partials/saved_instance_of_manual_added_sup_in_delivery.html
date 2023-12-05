@@ -1,14 +1,10 @@
-<div class="swap_to_delete_class">
-<form method="POST" action="">
- {% csrf_token %}
-      <div class="card rounded-5 mt-3">
 
           <div class="card-body px-3 d-flex justify-content-between align-items-center">
-{#        <a hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list' %}" hx-vals='{"gen_sup_id": {{ item.id }}}' hx-target="#results_choosed_gen_supps" hx-swap="beforeend" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" aria-current="true" style="cursor: pointer">#}
-
-  <div class="w-auto">
-      <div style="font-size: large">{{ item.general_supply.name }}</div>
-                  {% if  item.general_supply.ref %}
+            {% if item.general_supply %}
+                <div class="col">
+               {% if item.general_supply %}
+              <div style="font-size: large">{{ item.general_supply.name }}</div>
+                  {% if item.general_supply.ref %}
                       <div class="text-muted" style="font-size: small">REF: {{ item.general_supply.ref }}</div>
                   {% endif %}
                    {% if item.general_supply.SMN_code %}
@@ -17,31 +13,48 @@
                    {% if item.general_supply.category %}
                        <div class="text-muted" style="font-size: smaller"> Категорія: {{ item.general_supply.category }}</div>
               {% endif %}
-  </div>
-              <div class="w-auto">
-                <h6 style="font-size: medium"><span class="text-muted">LOT:</span> {{ item.supply.supplyLot }}</h6>
-                <h6 style="color:{% if item.supply.date_is_good %}blue{% elif item.supply.date_is_today %}orange{% else %}red{% endif %}; font-size: medium"><span class="text-muted">Термін:</span> {{ item.supply.expiredDate|date:"d.m.Y" }}</h6>
+              {% endif %}
+
+              </div>
+
+                <div class="col">
+                <h6 style="font-size: medium"><span class="text-muted">LOT:</span> {{ item.supplyLot }}</h6>
+                <h6 style="color:{% if item.date_is_good %}blue{% elif item.date_is_today %}orange{% else %}red{% endif %}; font-size: medium"><span class="text-muted">Термін:</span> {{ item.expiredDate|date:"d.m.Y" }}</h6>
+
+
                 </div>
-
-
-  <div class="w-auto">
-      {% if item.general_supply.package_and_tests %}
+{#              <div class="col-md-3 col-lg-3 col-xl-2 d-flex">#}
+{#                <input id="form1{{ item.id }}" min="0" name="count_{{ item.id }}" value="{{ item.count_in_order }}" type="number"#}
+{#                  class="form-control form-control-sm" hx-trigger="keyup changed delay:1000ms" hx-post="{% url 'update_count_in_preorder_cart' item.id %}" hx-target="#precart-badge"/>#}
+{#                  <input type="hidden" id="hidden{{ item.id }}" name="count_id_{{ item.id }}" value="{{ item.id }}">#}
+{##}
+{#              </div>#}
+              <div class="col">
+                  {% if item.general_supply.package_and_tests %}
                       <h5 style="font-size: medium"><span class="text-muted">Pcg:</span> {{ item.general_supply.package_and_tests }}</h5>
                   {% endif %}
-  </div>
-          <h4><span class="badge bg-secondary">{{ item.count }}</span></h4>
+              </div>
+                {% if item.general_supply and item.isHandleAdded %}
+            <i class="bi bi-keyboard"></i>
+        {% endif %}
+                      <h4 class="mx-3"><span class="badge bg-secondary">{{ item.count }}</span></h4>
+                 <button class="btn btn-warning" hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_edit_action' %}" hx-vals='{"item_id": {{ item.id }}}' hx-target="closest div .sup_in_delivery_order_recg_card" hx-swap="innerHTML">
+              <i class="bi bi-pencil"></i>
+    </button>
 
-{#          <button class="btn btn-warning" hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_edit_action' %}" hx-vals='{"item_id": {{ item.id }}}' hx-target="closest div .swap_to_delete_class" hx-swap="outerHTML">#}
-{#              <i class="bi bi-pencil"></i>#}
-{#    </button>#}
-{#          <button class="btn btn-primary" type="submit" hx-target="closest div .swap_to_delete_class" hx-swap="outerHTML">#}
-{#      Save#}
-{#    </button>#}
+            {% else %}
+                <div class="col" style="font-size: small">
+                <div style="font-size: medium"><span class="text-muted">Barcode: </span>{{ item.barcode }}</div>
+                <div style="font-size: small"><span class="text-muted">SMN Code: </span> {{ item.SMN_code }}</div>
+                <div style="font-size: small"><span class="text-muted">LOT: </span> {{ item.supplyLot }}</div>
+                <div style="font-size: small"><span class="text-muted">EXP DATE: </span> {{ item.expiredDate }}</div>
+                </div>
 
-{#        </a>#}
-</div>
-</div>
-  </form>
-</div>
+                      <h4><span class="badge bg-secondary">{{ item.count }}</span></h4>
 
+            {% endif %}
 
+{#              <div class="col-md-1 col-lg-1 col-xl-1 text-end">#}
+{#                  <button data-product="{{ item.id }}" data-action="delete-delivery-item" class="btn btn-lg add-btn update-cart-detail text-danger" type="button"><i class="bi bi-trash"></i></button>#}
+{#              </div>#}
+          </div>

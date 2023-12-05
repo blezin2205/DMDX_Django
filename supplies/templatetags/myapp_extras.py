@@ -24,6 +24,13 @@ def total_values_count(dictionary):
     return 0
 
 
+@register.filter(name='total_counts')
+def has_group(sups_in_delivery_order_set):
+    total_count = sum(obj.count for obj in sups_in_delivery_order_set)
+    return total_count or 0
+
+
+
 @register.filter(name='has_group')
 def has_group(user, group_name):
     return user.groups.filter(name=group_name).exists()

@@ -63,7 +63,7 @@ def makeDataUpload(self, string_data, for_delivery_order_id):
             date_expired = barcode_str[23:-17]
             date_expired = date_expired[-6:]
             create_supply_objects(item, smn, lot, date_expired, for_delivery_order)
-        if len(arr_item) == 3:
+        elif len(arr_item) == 3:
             smn = arr_item[0]
             lot = arr_item[1]
             date_expired = arr_item[2]
@@ -81,41 +81,40 @@ def create_supply_objects(barcode, smn, lot, date_expired, for_delivery_order, s
         else:
             gen_sup = GeneralSupply.objects.get(SMN_code=smn)
 
-        try:
-            sup = Supply.objects.get(general_supply=gen_sup,
-                                     supplyLot=lot,
-                                     expiredDate=date_expired_date)
-            sup.count += 1
-        except:
-            sup = Supply(name=gen_sup.name,
-                         general_supply=gen_sup,
-                         category=gen_sup.category,
-                         ref=gen_sup.ref,
-                         supplyLot=lot,
-                         count=1,
-                         expiredDate=date_expired_date)
+        # try:
+        #     sup = Supply.objects.get(general_supply=gen_sup,
+        #                              supplyLot=lot,
+        #                              expiredDate=date_expired_date)
+        #     sup.count += 1
+        # except:
+        #     sup = Supply(name=gen_sup.name,
+        #                  general_supply=gen_sup,
+        #                  category=gen_sup.category,
+        #                  ref=gen_sup.ref,
+        #                  supplyLot=lot,
+        #                  count=1,
+        #                  expiredDate=date_expired_date)
+        # sup.save()
 
         try:
-            sup_delivery = DeliverySupplyInCart.objects.get(supply=sup, delivery_order=for_delivery_order)
+            sup_delivery = for_delivery_order.deliverysupplyincart_set.get(general_supply=gen_sup, supplyLot=lot, expiredDate=date_expired_date)
             sup_delivery.count += 1
         except:
             sup_delivery = DeliverySupplyInCart(
                 barcode=barcode,
                 SMN_code=smn,
+                general_supply=gen_sup,
                 supplyLot=lot,
                 count=1,
-                expiredDate=date_expired,
+                expiredDate_desc=date_expired_date.strftime('%Y-%m-%d'),
+                expiredDate=date_expired_date,
+                isRecognized=True,
                 delivery_order=for_delivery_order)
-
-        sup_delivery.general_supply = gen_sup
-        sup_delivery.isRecognized = True
-        sup_delivery.supply = sup
-        sup.save()
         sup_delivery.save()
 
     except:
         try:
-            sup_delivery = DeliverySupplyInCart.objects.get(barcode=barcode, delivery_order=for_delivery_order)
+            sup_delivery = for_delivery_order.deliverysupplyincart_set.get(barcode=barcode, delivery_order=for_delivery_order)
             sup_delivery.count += 1
         except:
             sup_delivery = DeliverySupplyInCart(
@@ -123,8 +122,34 @@ def create_supply_objects(barcode, smn, lot, date_expired, for_delivery_order, s
                 SMN_code=smn,
                 supplyLot=lot,
                 count=1,
-                expiredDate=date_expired,
+                expiredDate_desc=date_expired,
                 delivery_order=for_delivery_order)
         sup_delivery.save()
+
+
+@shared_task(bind=True)
+def gen_sup_and_update_db(self, del_order_id):
+    del_order = DeliveryOrder.objects.get(id=del_order_id)
+    sup_set = del_order.deliverysupplyincart_set.filter(isRecognized=True)
+    for item in sup_set:
+        if item.general_supply:
+            try:
+                sup = item.general_supply.general.get(supplyLot=item.supplyLot, expiredDate=item.expiredDate)
+                sup.count += item.count
+            except:
+                sup = Supply(name=item.general_supply.name,
+                             general_supply=item.general_supply,
+                             category=item.general_supply.category,
+                             ref=item.general_supply.ref,
+                             supplyLot=item.supplyLot,
+                             count=item.count,
+                             expiredDate=item.expiredDate)
+            item.supply = sup
+            sup.save()
+            item.save()
+    del_order.isHasBeenSaved = True
+    del_order.save()
+
+
 
 

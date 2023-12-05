@@ -702,6 +702,7 @@ class DeliveryOrder(models.Model):
     date_created = models.DateField(null=True, blank=True, auto_now_add=True)
     comment = models.TextField(null=True, blank=True)
     from_user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+    isHasBeenSaved = models.BooleanField(default=False)
 
 
 class DeliverySupplyInCart(models.Model):
@@ -710,11 +711,21 @@ class DeliverySupplyInCart(models.Model):
     general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True)
     supplyLot = models.CharField(max_length=50, null=True, blank=True)
     count = models.PositiveIntegerField(null=True, blank=True)
-    expiredDate = models.CharField(max_length=50, null=True, blank=True)
+    expiredDate_desc = models.CharField(max_length=50, null=True, blank=True)
+    expiredDate = models.DateField(null=True, blank=True)
     isRecognized = models.BooleanField(default=False)
     isHandleAdded = models.BooleanField(default=False)
     supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True)
     delivery_order = models.ForeignKey(DeliveryOrder, on_delete=models.CASCADE, null=True)
+
+    def date_is_good(self):
+        return self.expiredDate > self.delivery_order.date_created
+
+    def date_is_expired(self):
+        return self.expiredDate < self.delivery_order.date_created
+
+    def date_is_today(self):
+        return self.expiredDate == self.delivery_order.date_created
 
     def __str__(self):
         return f'{self.general_supply}'
