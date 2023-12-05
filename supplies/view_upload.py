@@ -172,8 +172,11 @@ def add_gen_sup_in_delivery_order_manual_list(request):
 
 def add_gen_sup_in_delivery_order_manual_list_delete_action(request):
     del_sup_id = request.POST.get('del_sup_id')
-    sup_delivery = DeliverySupplyInCart.objects.get(id=del_sup_id)
-    sup_delivery.delete()
+    try:
+        sup_delivery = DeliverySupplyInCart.objects.get(id=del_sup_id)
+        sup_delivery.delete()
+    except:
+        pass
     return HttpResponse(status=200)
 
 

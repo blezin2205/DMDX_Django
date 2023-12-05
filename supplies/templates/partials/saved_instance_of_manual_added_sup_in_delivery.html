@@ -52,7 +52,10 @@
                 <div style="font-size: small"><span class="text-muted">EXP DATE: </span> {{ item.expiredDate_desc }}</div>
                 </div>
 
-                      <h4><span class="badge bg-secondary">{{ item.count }}</span></h4>
+                      <h4 class="mx-3"><span class="badge bg-secondary">{{ item.count }}</span></h4>
+                <button class="btn btn-danger" hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_delete_action' %}" hx-vals='{"del_sup_id": "{{ item.id }}"}' hx-target="closest div .sup_in_delivery_order_recg_card" hx-swap="outerHTML">
+      <i class="bi bi-trash3"></i>
+    </button>
 
             {% endif %}
 
