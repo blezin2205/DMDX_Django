@@ -131,6 +131,9 @@ def create_supply_objects(barcode, smn, lot, date_expired, for_delivery_order, s
 def gen_sup_and_update_db(self, del_order_id):
     del_order = DeliveryOrder.objects.get(id=del_order_id)
     sup_set = del_order.deliverysupplyincart_set.filter(isRecognized=True)
+    progress_recorder = ProgressRecorder(self)
+    total_requests = len(sup_set)
+    i = 0
     for item in sup_set:
         if item.general_supply:
             try:
@@ -147,6 +150,8 @@ def gen_sup_and_update_db(self, del_order_id):
             item.supply = sup
             sup.save()
             item.save()
+        i += 1
+        progress_recorder.set_progress(i, total_requests, f'On iteration {i}')
     del_order.isHasBeenSaved = True
     del_order.save()
 
