@@ -1,12 +1,14 @@
-{% extends 'supplies/base_for_home.html' %}
+{% extends 'supplies/base.html' %}
 {% load crispy_forms_filters %}
 {% load bootstrap %}
+{% load myapp_extras %}
+{% load mathfilters %}
     {% block title %}
 {{ title }}
 {% endblock %}
 
 {% block content %}
-<div class="container py-1">
+{#<div class="container py-1">#}
 
 {#    <form method="get" class="form-inline justify-content-center">#}
 {#         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">#}
@@ -39,43 +41,107 @@
 {#    </button>#}
 {##}
 {#    </form>#}
+   <div class="w-auto text-center py-3">
+      <div style="font-size: large">{{ generalSupp.name }}</div>
+                  {% if generalSupp.ref %}
+                      <div class="text-muted" style="font-size: small">REF: {{ generalSupp.ref }}</div>
+                  {% endif %}
+                   {% if generalSupp.SMN_code %}
+                       <div class="text-muted" style="font-size: small">SMN: {{ generalSupp.SMN_code }}</div>
+                  {% endif %}
+   {% if generalSupp.package_and_tests %}
+                       <div class="text-muted" style="font-size: small">package/tests: {{ generalSupp.package_and_tests }}</div>
+                  {% endif %}
+                   {% if generalSupp.category %}
+                       <div class="text-muted" style="font-size: smaller"> Категорія: {{ generalSupp.category }}</div>
+              {% endif %}
+  </div>
+<section class="h-100 shadow p-3 mb-5 rounded row d-flex justify-content-center align-items-center" style="background-color: #eee;">
+{% if supplies %}
+<h4 class="text-center py-3">В замовленнях <span class="text-muted">(Всього: {{ total_count_in_orders }} шт.)</span></h4>
+<section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
 
 
         <table class="table centred mt-3 w-100 mx-auto">
   <thead class="thead-dark">
     <tr>
-      <th scope="col">({{supplies|length}} шт.) Дія</th>
-      <th scope="col">Опис</th>
+      <th scope="col">({{supplies|length}} шт.) Для: </th>
+{#      <th scope="col">Опис</th>#}
 {#        <th scope="col">Категорія</th>#}
 {#        <th scope="col">REF</th>#}
 {#        <th scope="col">SMN</th>#}
         <th scope="col">LOT</th>
         <th scope="col">Кількість</th>
         <th scope="col">Термін</th>
-        <th scope="col">Дата додавання</th>
+        <th scope="col">Дата cтворення</th>
     </tr>
   </thead>
   <tbody>
     {% for el in supplies %}
 
      <tr>
-      <th scope="row" style="text-align: left">{{ el.get_action_type_value }}</th>
-<td>{% if el.history_description %} {{ el.history_description }} {% endif %}</td>
+      <th scope="row" style="text-align: left" class="w-50"><a href="{% url 'orderDetail' order_id=el.supply_for_order.id sup_id=el.id %}?next={{ request.get_full_path|urlencode }}" {% if not el.supply_for_order.isComplete %} class="link-warning" {% endif %} >№{{ el.supply_for_order.id }}</a> <span>{{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span></th>
 
          <td class="supplyRow">
-                    {% if el.supplyLot is not none %}
-                        {{ el.supplyLot }}
+                    {% if el.lot is not none %}
+                        {{ el.lot }}
                 {% endif %}
                     </td>
 
-            <td>{{ el.count }}</td>
-            <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.expiredDate|date:"d.m.Y" }}
+            <td>{{ el.count_in_order }}</td>
+            <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}
 
                             </div></td>
-            <td>{{ el.dateCreated|date:"d.m.Y" }}</td>
+            <td>{{ el.date_created|date:"d.m.Y" }}</td>
     </tr>
    {% endfor %}
   </tbody>
 </table>
-</div>
+</section>
+{% endif %}
+{% if in_preorders %}
+<h4 class="text-center py-3">В передзамовленнях <span class="text-muted">(Всього: {{ total_count_in_preorders }} шт.)</span></h4>
+<section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
+
+
+        <table class="table centred mt-3 w-100 mx-auto">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">({{in_preorders|length}} шт.) Для: </th>
+{#      <th scope="col">Опис</th>#}
+{#        <th scope="col">Категорія</th>#}
+{#        <th scope="col">REF</th>#}
+{#        <th scope="col">SMN</th>#}
+        <th scope="col">Замовлено</th>
+        <th scope="col">Поставлено</th>
+        <th scope="col">Борг</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for el in in_preorders %}
+
+     <tr>
+      <th scope="row" style="text-align: left" class="w-50">
+          <a href="{% url 'preorderDetail' el.supply_for_order.id %}?next={{ request.get_full_path }}">Передзамовлення: № {{el.supply_for_order.id}}</a>
+          <span>{{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span>
+      </th>
+
+         <td>
+                    {{ el.count_in_order }}
+                    </td>
+
+            <td>{{ el.count_in_order_current }}</td>
+            <td>{{ el.count_in_order|sub:el.count_in_order_current }}</td>
+{#            <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}#}
+{##}
+{#                            </div></td>#}
+{#            <td>{{ el.date_created|date:"d.m.Y" }}</td>#}
+    </tr>
+   {% endfor %}
+  </tbody>
+</table>
+</section>
+{% endif %}
+</section>
+{#</div>#}
 {% endblock %}

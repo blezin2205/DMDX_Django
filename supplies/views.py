@@ -725,10 +725,10 @@ def sendTeamsMsg(order):
     if order.comment:
         comment = f'*коментар:*  **{order.comment}**'
         myTeamsMessage.text(f'{created}\n\n{comment};')
-        myTeamsMessage.send()
+        # myTeamsMessage.send()
     else:
         myTeamsMessage.text(f'{created}')
-        myTeamsMessage.send()
+        # myTeamsMessage.send()
 
 
 @login_required(login_url='login')
@@ -1062,10 +1062,10 @@ def sendTeamsMsgCart(order):
     if order.comment:
         comment = f'*комментарій:*  **{order.comment}**'
         myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
-        myTeamsMessage.send()
+        # myTeamsMessage.send()
     else:
         myTeamsMessage.text(f'{agreementString}\n\n{created}')
-        myTeamsMessage.send()
+        # myTeamsMessage.send()
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin', 'empl'])
@@ -2134,9 +2134,15 @@ def updateGeneralSupply(request, supp_id):
 def history_for_supply(request, supp_id):
     cartCountData = countCartItemsHelper(request)
     generalSupp = GeneralSupply.objects.get(id=supp_id)
-    supplies = generalSupp.supplyforhistory_set.all().order_by('-id')
+    # supplies = generalSupp.supplyforhistory_set.all().order_by('-id')
+    in_orders = generalSupp.inGeneralSupp.all()
+    total_count_in_orders = in_orders.aggregate(total_count=Sum('count_in_order'))['total_count']
+
+    in_preorders = generalSupp.supplyinpreorder_set.all()
+    total_count_in_preorders = in_preorders.aggregate(total_count=Sum('count_in_order'))['total_count']
+
     return render(request, 'supplies/history_for_supply_list.html',
-                  {'generalSupp': generalSupp, 'supplies': supplies, 'cartCountData': cartCountData})
+                  {'generalSupp': generalSupp, 'supplies': in_orders, 'in_preorders': in_preorders, 'total_count_in_orders': total_count_in_orders, 'total_count_in_preorders': total_count_in_preorders, 'cartCountData': cartCountData})
 
 
 
