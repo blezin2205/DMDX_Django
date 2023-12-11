@@ -42,18 +42,18 @@
 {##}
 {#    </form>#}
    <div class="w-auto text-center py-3">
-      <div style="font-size: large">{{ generalSupp.name }}</div>
+      <div style="font-size: x-large; font-weight: bolder">{{ generalSupp.name }}</div>
                   {% if generalSupp.ref %}
-                      <div class="text-muted" style="font-size: small">REF: {{ generalSupp.ref }}</div>
+                      <div class="text-muted" style="font-size: large">REF: {{ generalSupp.ref }}</div>
                   {% endif %}
                    {% if generalSupp.SMN_code %}
-                       <div class="text-muted" style="font-size: small">SMN: {{ generalSupp.SMN_code }}</div>
+                       <div class="text-muted" style="font-size: large">SMN: {{ generalSupp.SMN_code }}</div>
                   {% endif %}
    {% if generalSupp.package_and_tests %}
-                       <div class="text-muted" style="font-size: small">package/tests: {{ generalSupp.package_and_tests }}</div>
+                       <div class="text-muted" style="font-size: medium">package/tests: {{ generalSupp.package_and_tests }}</div>
                   {% endif %}
                    {% if generalSupp.category %}
-                       <div class="text-muted" style="font-size: smaller"> Категорія: {{ generalSupp.category }}</div>
+                       <div class="text-muted" style="font-size: medium"> Категорія: {{ generalSupp.category }}</div>
               {% endif %}
   </div>
 <section class="h-100 shadow p-3 mb-5 rounded row d-flex justify-content-center align-items-center" style="background-color: #eee;">
@@ -142,6 +142,55 @@
 </table>
 </section>
 {% endif %}
+
+{% if in_deliveries %}
+<h4 class="text-center py-3">В поставках <span class="text-muted">(Всього: {{ total_count_in_deliveries }} шт.)</span></h4>
+<section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
+
+
+        <table class="table centred mt-3 w-100 mx-auto">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">({{in_deliveries|length}} шт.) З поставки: </th>
+{#      <th scope="col">Опис</th>#}
+{#        <th scope="col">Категорія</th>#}
+{#        <th scope="col">REF</th>#}
+{#        <th scope="col">SMN</th>#}
+        <th scope="col">LOT</th>
+        <th scope="col">Кількість</th>
+        <th scope="col">Термін</th>
+{#        <th scope="col">Дата cтворення</th>#}
+    </tr>
+  </thead>
+  <tbody>
+    {% for el in in_deliveries %}
+
+     <tr>
+      <th scope="row" style="text-align: left">
+          <a href="{% url 'delivery_detail' el.delivery_order.id %}?next={{ request.get_full_path }}"> № {{el.delivery_order.id}} від {{ el.delivery_order.date_created|date:"d.m.Y" }}</a>
+{#          <span>{{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span>#}
+      </th>
+
+         <td>
+                    {{ el.supplyLot }}
+                    </td>
+
+            <td>{{ el.count }}</td>
+         <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.expiredDate|date:"d.m.Y" }}
+
+{#                            </div></td>#}
+{#     <td>{{ el.delivery_order.date_created|date:"d.m.Y" }}</td>#}
+{#            <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}#}
+{##}
+{#                            </div></td>#}
+{#            <td>{{ el.date_created|date:"d.m.Y" }}</td>#}
+    </tr>
+   {% endfor %}
+  </tbody>
+</table>
+</section>
+{% endif %}
+
 </section>
 {#</div>#}
 {% endblock %}

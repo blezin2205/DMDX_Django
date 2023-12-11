@@ -736,6 +736,7 @@ def cartDetailForClient(request):
     orderInCart = PreorderInCart.objects.get(userCreated=request.user, isComplete=False)
     cartCountData = countCartItemsHelper(request)
     supplies = orderInCart.supplyinpreorderincart_set.all()
+    total_count_in_cart = supplies.aggregate(total_count=Sum('count_in_order'))['total_count']
     cities = City.objects.all()
     orderForm = OrderInCartForm(request.POST or None)
     places = []
@@ -881,7 +882,7 @@ def cartDetailForClient(request):
         return redirect('/preorders')
 
     return render(request, 'supplies/preorder-cart.html',
-                  {'title': 'Корзина передзамовлення', 'order': orderInCart, 'cartCountData': cartCountData,
+                  {'title': f'Корзина передзамовлення ({total_count_in_cart} шт.)', 'order': orderInCart, 'cartCountData': cartCountData,
                    'supplies': supplies, 'cities': cities,
                    'orderForm': orderForm, 'places': places, 'placeChoosed': placeChoosed, 'preorders': preorders, 'isClient': isClient, 'supDict': supDict})
 
@@ -1073,6 +1074,7 @@ def cartDetail(request):
     orderInCart = OrderInCart.objects.first()
     cartCountData = countCartItemsHelper(request)
     supplies = orderInCart.supplyinorderincart_set.all()
+    total_count_in_cart = supplies.aggregate(total_count=Sum('count_in_order'))['total_count']
     orderForm = OrderInCartForm(request.POST or None)
     cities = City.objects.all()
     if request.method == 'POST':
@@ -1301,8 +1303,8 @@ def cartDetail(request):
 
 
     return render(request, 'supplies/cart.html',
-                  {'title': 'Корзина', 'order': orderInCart, 'cartCountData': cartCountData, 'supplies': supplies,
-                   'orderForm': orderForm, 'cities': cities,
+                  {'title': f'Корзина ({total_count_in_cart} шт.)', 'order': orderInCart, 'cartCountData': cartCountData, 'supplies': supplies,
+                   'orderForm': orderForm, 'cities': cities, 'total_count_in_cart': total_count_in_cart,
                    })
 
 
@@ -2141,8 +2143,18 @@ def history_for_supply(request, supp_id):
     in_preorders = generalSupp.supplyinpreorder_set.all()
     total_count_in_preorders = in_preorders.aggregate(total_count=Sum('count_in_order'))['total_count']
 
+    in_deliveries = generalSupp.deliverysupplyincart_set.all()
+    total_count_in_deliveries = in_deliveries.aggregate(total_count=Sum('count'))['total_count']
+
     return render(request, 'supplies/history_for_supply_list.html',
-                  {'generalSupp': generalSupp, 'supplies': in_orders, 'in_preorders': in_preorders, 'total_count_in_orders': total_count_in_orders, 'total_count_in_preorders': total_count_in_preorders, 'cartCountData': cartCountData})
+                  {'generalSupp': generalSupp,
+                   'supplies': in_orders,
+                   'in_preorders': in_preorders,
+                   'in_deliveries': in_deliveries,
+                   'total_count_in_orders': total_count_in_orders,
+                   'total_count_in_preorders': total_count_in_preorders,
+                   'total_count_in_deliveries': total_count_in_deliveries,
+                   'cartCountData': cartCountData})
 
 
 
