@@ -559,13 +559,13 @@ class SupplyInOrder(models.Model):
     internalRef = models.CharField(max_length=30, null=True, blank=True)
 
     def date_is_good(self):
-        return self.date_expired > timezone.now().date()
+        return self.date_expired > self.supply_for_order.dateCreated
 
     def date_is_expired(self):
-        return self.date_expired < timezone.now().date()
+        return self.date_expired < self.supply_for_order.dateCreated
 
     def date_is_today(self):
-        return self.date_expired == timezone.now().date()
+        return self.date_expired == self.supply_for_order.dateCreated
 
     def hasSupply(self):
         return self.supply.inSupply.exists()

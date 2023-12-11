@@ -73,7 +73,7 @@
         <th scope="col">LOT</th>
         <th scope="col">Кількість</th>
         <th scope="col">Термін</th>
-        <th scope="col">Дата cтворення</th>
+        <th scope="col">Замовлення від:</th>
     </tr>
   </thead>
   <tbody>
@@ -92,7 +92,7 @@
             <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}
 
                             </div></td>
-            <td>{{ el.date_created|date:"d.m.Y" }}</td>
+            <td>{{ el.supply_for_order.dateCreated|date:"d.m.Y" }}</td>
     </tr>
    {% endfor %}
   </tbody>
@@ -115,6 +115,7 @@
         <th scope="col">Замовлено</th>
         <th scope="col">Поставлено</th>
         <th scope="col">Борг</th>
+        <th scope="col">Передзавомлення від:</th>
     </tr>
   </thead>
   <tbody>
@@ -132,6 +133,7 @@
 
             <td>{{ el.count_in_order_current }}</td>
             <td>{{ el.count_in_order|sub:el.count_in_order_current }}</td>
+          <td>{{ el.supply_for_order.dateCreated|date:"d.m.Y" }}</td>
 {#            <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}#}
 {##}
 {#                            </div></td>#}

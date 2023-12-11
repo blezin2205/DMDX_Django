@@ -2137,13 +2137,13 @@ def history_for_supply(request, supp_id):
     cartCountData = countCartItemsHelper(request)
     generalSupp = GeneralSupply.objects.get(id=supp_id)
     # supplies = generalSupp.supplyforhistory_set.all().order_by('-id')
-    in_orders = generalSupp.inGeneralSupp.all()
+    in_orders = generalSupp.inGeneralSupp.all().order_by('-id')
     total_count_in_orders = in_orders.aggregate(total_count=Sum('count_in_order'))['total_count']
 
-    in_preorders = generalSupp.supplyinpreorder_set.all()
+    in_preorders = generalSupp.supplyinpreorder_set.all().order_by('-id')
     total_count_in_preorders = in_preorders.aggregate(total_count=Sum('count_in_order'))['total_count']
 
-    in_deliveries = generalSupp.deliverysupplyincart_set.all()
+    in_deliveries = generalSupp.deliverysupplyincart_set.all().order_by('-id')
     total_count_in_deliveries = in_deliveries.aggregate(total_count=Sum('count'))['total_count']
 
     return render(request, 'supplies/history_for_supply_list.html',
