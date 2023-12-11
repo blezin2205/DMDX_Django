@@ -123,8 +123,24 @@
 
      <tr>
       <th scope="row" style="text-align: left" class="w-50">
-          <a href="{% url 'preorderDetail' el.supply_for_order.id %}?next={{ request.get_full_path }}">Передзамовлення: № {{el.supply_for_order.id}}</a>
-          <span>{{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span>
+          <a href="{% url 'preorderDetail' el.supply_for_order.id %}?next={{ request.get_full_path }}">№ {{el.supply_for_order.id}}
+                <span>
+     {% if el.supply_for_order.state_of_delivery == 'Complete' %}
+        <span class="complete">(Повністю поставлено)</span>
+          {% elif el.supply_for_order.state_of_delivery == 'Partial' %}
+          <span style="color: #deb05b; font-weight: bold">(Частково поставлено)</span>
+           {% elif el.supply_for_order.state_of_delivery == 'awaiting_from_customer' %}
+          <span style="color: rgba(222,126,91,0.59); font-weight: bold">(Формується замовником)</span>
+           {% elif el.supply_for_order.state_of_delivery == 'accepted_by_customer' %}
+          <span style="color: #deb05b; font-weight: bold">(Підтверджено замовником)</span>
+        {% elif  el.supply_for_order.state_of_delivery == 'Awaiting' %}
+        <span style="color: #de925b; font-weight: bold">(Замовлено у виробника)</span>
+        {% endif %}
+
+</span>
+          </a>
+          <span class="mx-2">
+              {{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span>
       </th>
 
          <td>
