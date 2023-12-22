@@ -361,6 +361,36 @@ class PreOrder(models.Model):
         verbose_name_plural = 'Передзамовлення'
 
 
+class BookedOrder(models.Model):
+    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+    for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, blank=True)
+    place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
+    dateCreated = models.DateField(auto_now_add=True, null=True)
+    isComplete = models.BooleanField(default=False)
+    isPreorder = models.BooleanField(default=False, blank=True)
+    comment = models.CharField(max_length=300, null=True, blank=True)
+
+    STATE_CHOICES = (
+        ('Awaiting', 'Створено'),
+        ('Partial', 'Частково поставлено'),
+        ('Complete', 'Повністю поставлено'),
+    )
+    state_of_delivery = models.CharField(max_length=50, choices=STATE_CHOICES, default='Awaiting')
+
+    def __str__(self):
+        return f'Бронь № {self.id}, для {self.place.name}, от {self.dateCreated}'
+
+    def get_state_of_delivery_value(self):
+        return self.get_state_of_delivery_display()
+
+    def checkIfUncompletedDeliveryPreordersExist(self):
+        return PreOrder.objects.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial')).exists()
+
+    class Meta:
+        verbose_name = 'Бронювання'
+        verbose_name_plural = 'Бронювання'
+
+
 class Order(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, blank=True,
@@ -545,6 +575,52 @@ class SupplyInPreorder(models.Model):
         verbose_name_plural = 'Товари в Передзамовленнях'
 
 
+class SupplyInBookedOrder(models.Model):
+    count_in_order = models.PositiveIntegerField(null=True, blank=True)
+    generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True, blank=True)
+    supply = models.ForeignKey(Supply, on_delete=models.CASCADE, null=True, blank=True)
+    supply_in_booked_order = models.ForeignKey(BookedOrder, on_delete=models.CASCADE, null=True, blank=True)
+    lot = models.CharField(max_length=100, null=True, blank=True)
+    date_expired = models.DateField(null=True)
+    date_created = models.DateField(null=True, blank=True)
+    internalName = models.CharField(max_length=500, null=True, blank=True)
+    internalRef = models.CharField(max_length=100, null=True, blank=True)
+
+    def date_is_good(self):
+        return self.date_expired > self.supply_in_booked_order.dateCreated
+
+    def date_is_expired(self):
+        return self.date_expired < self.supply_in_booked_order.dateCreated
+
+    def date_is_today(self):
+        return self.date_expired == self.supply_in_booked_order.dateCreated
+
+    def hasSupply(self):
+        return self.supply.inSupply.exists()
+
+    def __str__(self):
+        try:
+            orderId = self.supply_in_booked_order.id
+        except:
+            orderId = 'No ID'
+
+        try:
+            name = self.generalSupply.name
+        except:
+            name = 'No Name'
+
+        try:
+            supname = self.supply.name
+        except:
+            supname = 'No Name'
+
+        return f'ID order: {orderId} | name: {name}'
+
+    class Meta:
+        verbose_name = 'Товар в бронюванні'
+        verbose_name_plural = 'Товари в бронюванні'
+
+
 class SupplyInOrder(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True)
     generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.SET_NULL, null=True, blank=True,
@@ -552,11 +628,11 @@ class SupplyInOrder(models.Model):
     supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True, related_name='inSupply')
     supply_in_preorder = models.ForeignKey(SupplyInPreorder, on_delete=models.SET_NULL, null=True, blank=True)
     supply_for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
-    lot = models.CharField(max_length=20, null=True, blank=True)
+    lot = models.CharField(max_length=100, null=True, blank=True)
     date_expired = models.DateField(null=True)
     date_created = models.DateField(null=True, blank=True)
-    internalName = models.CharField(max_length=50, null=True, blank=True)
-    internalRef = models.CharField(max_length=30, null=True, blank=True)
+    internalName = models.CharField(max_length=500, null=True, blank=True)
+    internalRef = models.CharField(max_length=100, null=True, blank=True)
 
     def date_is_good(self):
         return self.date_expired > self.supply_for_order.dateCreated

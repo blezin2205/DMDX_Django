@@ -3072,10 +3072,6 @@ def preorderDetail_generateOrder(request, order_id):
         count_list = request.POST.getlist('count_list')
         count_list_id = request.POST.getlist('count_list_id')
         comment_for_order = request.POST.get('comment_for_order')
-        print("POST ---")
-
-
-
         count_for_id_dict = dict(zip(count_list_id, count_list))
         result = {k: v for k, v in count_for_id_dict.items() if k in checkBoxSuppIdList}
 
@@ -3091,45 +3087,89 @@ def preorderDetail_generateOrder(request, order_id):
             t = supDict.setdefault(d.general_supply, [])
             t.append(d)
 
-        if supDict:
-            new_order = Order(userCreated=request.user, for_preorder=order, place=order.place, comment=comment_for_order)
-            if orderForm.is_valid():
-                comment = orderForm.cleaned_data['comment']
-                dateToSend = orderForm.cleaned_data['dateToSend']
-                new_order.comment = comment
-                new_order.dateToSend = dateToSend
+        if 'create_order' in request.POST:
+            if supDict:
+                new_order = Order(userCreated=request.user, for_preorder=order, place=order.place,
+                                  comment=comment_for_order)
+                if orderForm.is_valid():
+                    comment = orderForm.cleaned_data['comment']
+                    dateToSend = orderForm.cleaned_data['dateToSend']
+                    new_order.comment = comment
+                    new_order.dateToSend = dateToSend
 
-            new_order.save()
-            for key, value in supDict.items():
-                print("------------------------")
-                print(key)
-                allCount = 0
-                genSupInPreorder = supplies_in_order.get(generalSupply_id=key)
+                new_order.save()
+                for key, value in supDict.items():
+                    print("------------------------")
+                    print(key)
+                    allCount = 0
+                    genSupInPreorder = supplies_in_order.get(generalSupply_id=key)
 
-                for s in value:
-                    allCount += s.count
+                    for s in value:
+                        allCount += s.count
 
-                    supInOrder = SupplyInOrder(count_in_order=s.count,
-                                               generalSupply=s.general_supply,
-                                               supply=s,
-                                               supply_in_preorder=genSupInPreorder,
-                                               supply_for_order=new_order,
-                                               lot=s.supplyLot,
-                                               date_expired=s.expiredDate,
-                                               date_created=s.dateCreated,
-                                               internalName=s.general_supply.name,
-                                               internalRef=s.general_supply.ref
-                                               )
-                    supInOrder.save()
-                    s.countOnHold += s.count
-                    s.save(update_fields=['countOnHold'])
+                        supInOrder = SupplyInOrder(count_in_order=s.count,
+                                                   generalSupply=s.general_supply,
+                                                   supply=s,
+                                                   supply_in_preorder=genSupInPreorder,
+                                                   supply_for_order=new_order,
+                                                   lot=s.supplyLot,
+                                                   date_expired=s.expiredDate,
+                                                   date_created=s.dateCreated,
+                                                   internalName=s.general_supply.name,
+                                                   internalRef=s.general_supply.ref
+                                                   )
+                        supInOrder.save()
+                        s.countOnHold += s.count
+                        s.save(update_fields=['countOnHold'])
 
-            t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
-            t.start()
-            return redirect('/orders')
+                t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
+                t.start()
+                return redirect('/orders')
 
-        else:
-            messages.info(request, "Жодний товар не вибраний для формування замовлення!")
+            else:
+                messages.info(request, "Жодний товар не вибраний для формування замовлення!")
+
+        if 'create_booked_order' in request.POST:
+            if supDict:
+                new_order = BookedOrder(userCreated=request.user, for_preorder=order, place=order.place,
+                                  comment=comment_for_order)
+                if orderForm.is_valid():
+                    comment = orderForm.cleaned_data['comment']
+                    dateToSend = orderForm.cleaned_data['dateToSend']
+                    new_order.comment = comment
+
+                new_order.save()
+                for key, value in supDict.items():
+                    print("------------------------")
+                    print(key)
+                    allCount = 0
+                    genSupInPreorder = supplies_in_order.get(generalSupply_id=key)
+
+                    for s in value:
+                        allCount += s.count
+
+                        supInOrder = SupplyInBookedOrder(count_in_order=s.count,
+                                                   generalSupply=s.general_supply,
+                                                   supply=s,
+                                                   # supply_in_preorder=genSupInPreorder,
+                                                   supply_in_booked_order=new_order,
+                                                   lot=s.supplyLot,
+                                                   date_expired=s.expiredDate,
+                                                   date_created=s.dateCreated,
+                                                   internalName=s.general_supply.name,
+                                                   internalRef=s.general_supply.ref
+                                                   )
+                        supInOrder.save()
+                        s.countOnHold += s.count
+                        s.save(update_fields=['countOnHold'])
+
+                t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
+                t.start()
+                return redirect('/orders')
+
+            else:
+                messages.info(request, "Жодний товар не вибраний для формування замовлення!")
+
 
 
     return render(request, 'supplies/preorderDetail-generate-order.html',
