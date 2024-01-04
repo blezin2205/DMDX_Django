@@ -1781,17 +1781,12 @@ def orderUpdateStatus(request, order_id):
         for el in supps:
             countInOrder = el.count_in_order
             supp = el.supply
-            suppForHistory = supp.get_supp_for_history()
-            suppForHistory.action_type = 'added-order'
-            suppForHistory.supply_for_order = order
-            suppForHistory.count = countInOrder
             supp.countOnHold -= countInOrder
             if supp.countOnHold >= 0:
                 supp.save(update_fields=['countOnHold'])
             supp.count -= countInOrder
             if supp.count >= 0:
                 supp.save(update_fields=['count'])
-            suppForHistory.save()
             if supp.count == 0:
                 supp.delete()
 
