@@ -1786,8 +1786,11 @@ def orderUpdateStatus(request, order_id):
             suppForHistory.supply_for_order = order
             suppForHistory.count = countInOrder
             supp.countOnHold -= countInOrder
+            if supp.countOnHold >= 0:
+                supp.save(update_fields=['countOnHold'])
             supp.count -= countInOrder
-            supp.save(update_fields=['countOnHold', 'count'])
+            if supp.count >= 0:
+                supp.save(update_fields=['count'])
             suppForHistory.save()
             if supp.count == 0:
                 supp.delete()
