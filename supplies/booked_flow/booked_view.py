@@ -277,3 +277,30 @@ def delete_sup_from_booked_sups(request, sup_id):
     booked_sup.supply.save(update_fields=['countOnHold'])
     booked_sup.delete()
     return HttpResponse(status=200)
+
+
+def convert_order_to_booked_order(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+    supplies_in_order = order.supplyinorder_set.all()
+    for s in supplies_in_order:
+        try:
+            supInOrder = SupplyInBookedOrder.objects.get(supply=s.supply, supply_in_preorder=s.supply_in_preorder,
+                                                         supply_for_place=order.place)
+            supInOrder.count_in_order += s.count
+        except:
+            supInOrder = SupplyInBookedOrder(
+                count_in_order=s.count_in_order,
+                generalSupply=s.generalSupply,
+                supply=s.supply,
+                supply_for_place=order.place,
+                supply_in_preorder=s.supply_in_preorder,
+                lot=s.supply.supplyLot,
+                date_expired=s.supply.expiredDate,
+                internalName=s.generalSupply.name,
+                internalRef=s.generalSupply.ref
+            )
+        supInOrder.save()
+        s.delete()
+    if order.supplyinorder_set.count() == 0:
+       order.delete()
+    return redirect('/orders')

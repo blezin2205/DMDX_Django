@@ -79,7 +79,12 @@
 
 
 {#        <a href="{% url 'orderDetailPdf' order.id %}">PDF</a>#}
-    <a href="{% url 'orderDetailCsv' order.id %}">Export to Excel</a>
+    <div class="d-flex justify-content-between">
+         <a href="{% url 'orderDetailCsv' order.id %}">Export to Excel</a>
+        {% if not order.isComplete %}
+            <a style="color: #ff8000" href="{% url 'convert_order_to_booked_order' order.id %}">Конвертувати замовлення в бронювання</a>
+        {% endif %}
+    </div>
 </div>
 
     <table class="table centred mt-3 w-auto mx-auto">
