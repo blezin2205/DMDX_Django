@@ -29,14 +29,13 @@
 {% endif %}
 
     </div>
-      <div class="col d-flex justify-content-end" id="xls_preorder_print_buttons">
-        {% include 'partials/xls_preorders_print_buttons.html' %}
-    </div>
+
     </div>
     </div>
 {% endif %}
 {#     <form method="get" class="form-inline justify-content-center">#}
-         <div class="hstack w-auto gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between">
+     <div class="hstack gap-2">
+         <div class="hstack w-100 gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between">
              <div class="hstack gap-4">
 {#                 {{ preorderFilter.form.isComplete|as_crispy_field }}#}
                  {{ preorderFilter.form.state_of_delivery|as_crispy_field }}
@@ -49,6 +48,14 @@
              <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
 
 </div>
+     <div class="col d-flex justify-content-end" id="xls_preorder_print_buttons">
+        {% include 'partials/xls_preorders_print_buttons.html' %}
+    </div>
+
+     </div>
+
+
+
 
 {#        </form>#}
 

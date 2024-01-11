@@ -2,6 +2,7 @@ from django.urls import path
 from . import views, NPViews, view_upload
 from . import apiViews
 from .NPModels import *
+from .booked_flow import booked_view
 
 urlpatterns = [
 
@@ -36,6 +37,7 @@ urlpatterns = [
 
 
     path('', views.home, name='home'),
+    path('app_settings', views.app_settings, name='app_settings'),
     path('childSupply', views.childSupply, name='childSupply'),
     path('historySupply', views.historySupply, name='historySupply'),
     path('load_xms_data', views.load_xms_data, name='load_xms_data'),
@@ -104,6 +106,16 @@ urlpatterns = [
     path('clientsInfo/<int:client_id>/editInfo', views.editClientInfo, name='editClientInfo'),
     path('clientsInfo/<int:worker_id>/editWorkerInfo', views.editWorkerInfo, name='editWorkerInfo'),
     path('clientsInfo/<int:client_id>/add-new-device', views.addNewDeviceForClient, name='addNewDeviceForClient'),
+
+    path('clientsInfo/<int:client_id>/booked_supplies_list', booked_view.booked_supplies_list, name='booked_sups_list_for_client'),
+    path('add_sup_to_booked_cart/<int:sup_id>', booked_view.add_sup_to_booked_cart, name='add_sup_to_booked_cart'),
+    path('booked-cart-badge-count', booked_view.booked_cart_badge_count_refresh, name='booked-cart-badge-count'),
+    path('booked_cart_details/<int:booked_cart_id>', booked_view.booked_cart_details, name='booked_cart_details'),
+    path('booked_carts_list', booked_view.booked_carts_list, name='booked_carts_list'),
+    path('delete_sup_from_booked_cart_delete_action', booked_view.delete_sup_from_booked_cart_delete_action, name='delete_sup_from_booked_cart_delete_action'),
+    path('minus_from_booked_supply_list_item', booked_view.minus_from_booked_supply_list_item, name='minus_from_booked_supply_list_item'),
+    path('plus_from_booked_supply_list_item', booked_view.plus_from_booked_supply_list_item, name='plus_from_booked_supply_list_item'),
+    path('delete_sup_from_booked_sups/<int:sup_id>', booked_view.delete_sup_from_booked_sups, name='delete_sup_from_booked_sups'),
 
 
 

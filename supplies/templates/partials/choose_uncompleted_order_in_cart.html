@@ -34,6 +34,10 @@
         {% endif %}
                <input type="hidden" name="orderType" value="new_order">
     <input type="hidden" name="next" value="{{ request.GET.next }}">
-     <button class="btn btn-outline-primary my-2" style="width: 100px" type="submit" name="save">Зберегти</button>
+    <div class="d-flex justify-content-evenly">
+    <button class="btn btn-primary my-2 w-auto" type="submit" name="save">Замовлення</button>
+     <button class="btn btn-warning my-2 w-auto" type="submit" name="save_as_booked_order">Бронювання</button>
+    </div>
+
        {% endif %}
        {% endif %}

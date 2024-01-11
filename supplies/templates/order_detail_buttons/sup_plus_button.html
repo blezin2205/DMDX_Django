@@ -1,0 +1,1 @@
+ <button class="btn btn-sm add-btn {% if not el.check_if_has_plus_button %} disabled {% endif %}" style="border: none; background: none; color: blue; font-weight: bold" hx-post="{% url 'update_order_count' %}" hx-vals='{"del_sup_id": "{{ el.id }}", "counter": {{ counter }}, "action": "plus"}' hx-target="closest tr" hx-swap="outerHTML">+</button>

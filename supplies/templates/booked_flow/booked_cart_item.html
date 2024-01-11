@@ -1,0 +1,42 @@
+
+          <div class="card-body px-3 d-flex justify-content-center align-items-center">
+                <div class="col">
+              <div style="font-size: large">{{ item.supply.generalSupply.name }}</div>
+                  {% if item.supply.generalSupply.ref %}
+                      <div class="text-muted" style="font-size: small">REF: {{ item.supply.generalSupply.ref }}</div>
+                  {% endif %}
+                   {% if item.supply.generalSupply.SMN_code %}
+                       <div class="text-muted" style="font-size: small">SMN: {{ item.supply.generalSupply.SMN_code }}</div>
+                  {% endif %}
+                   {% if item.supply.generalSupply.category %}
+                       <div class="text-muted" style="font-size: smaller"> Категорія: {{ item.supply.generalSupply.category }}</div>
+              {% endif %}
+
+              </div>
+
+                <div class="col">
+                <h6 style="font-size: medium"><span class="text-muted">LOT:</span> {{ item.lot }}</h6>
+                <h6 style="color:{% if item.date_is_good %}blue{% elif item.date_is_today %}orange{% else %}red{% endif %}; font-size: medium"><span class="text-muted">Термін:</span> <span style="color:{% if item.date_is_good %}blue{% elif item.date_is_today %}orange{% else %}red{% endif %};">{{ item.date_expired|date:"d.m.Y" }}</span></h6>
+
+
+                </div>
+                {% if item.supply.generalSupply.package_and_tests %}
+              <div class="col">
+                      <h5 style="font-size: medium"><span class="text-muted">Pcg:</span> {{ item.supply.generalSupply.package_and_tests }}</h5>
+              </div>
+                {% endif %}
+
+<div class="col">
+               <div class="vstack">
+                  <label for="form1">Доступно: <b>{{ item.supply.count_in_order }}</b></label>
+                <input id="form1" style="width: 100px" min="0" name="count_{{ item.id }}" value="{{ item.count_in_order }}" type="number"
+                  class="form-control form-control-sm" />
+                  <input type="hidden" name="count_id_{{ item.id }}" value="{{ item.id }}">
+
+                  </div>
+              </div>
+
+<button class="btn btn-danger" hx-post="{% url 'delete_sup_from_booked_cart_delete_action' %}" hx-vals='{"del_sup_id": {{ item.id }}, "booked_cart_id": {{ booked_cart.id }}}' hx-target="closest div .sup_in_delivery_order_recg_card" hx-swap="outerHTML">
+      <i class="bi bi-trash3"></i>
+    </button>
+          </div>

@@ -73,6 +73,7 @@ def get_print_xls_for_preorders(request):
         selected_orders = request.POST.getlist('xls_preorder_print_buttons')
         cheked = len(selected_orders) > 0
         print(selected_orders)
+        print(cheked)
     return render(request, 'partials/xls_preorders_print_buttons.html', {'cheked': cheked})
 
 

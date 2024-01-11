@@ -1,0 +1,18 @@
+{% load mathfilters %}
+{% load myapp_extras %}
+
+<button hx-post="{% url 'add_sup_to_booked_cart' el.id %}"
+         hx-target="closest td"
+         hx-swap="innerHTML"
+         class="btn btn-sm add-btn {% if el.get_sub_el_with_in_cart %} disabled {% endif %}"
+         style="border-color: black; min-width: 35px; background-color: {% if el.bookedsupplyinorderincart %} #ff8800 {% else %} orange {% endif %}">
+    {% if el.bookedsupplyinorderincart %}{{ el.bookedsupplyinorderincart.count_in_order }}{% else %}<i class="bi bi-cart-plus"></i>{% endif %}
+</button>
+{% if request.user.is_staff %}
+<button hx-delete="{% url 'delete_sup_from_booked_sups' el.id %}"
+         hx-target="closest tr"
+         hx-swap="outerHTML"
+        hx-confirm="Видалити {{ el.count_in_order }}шт. {{ el.generalSupply.name }} з бронювання для: {{ el.supply_for_place.name }} ?"
+        style="border-color: black; min-width: 35px;"
+         class="btn btn-sm btn-danger ms-2"><i class="bi bi-trash"></i></button>
+{% endif %}

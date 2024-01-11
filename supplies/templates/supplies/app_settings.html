@@ -1,0 +1,59 @@
+{% extends 'supplies/base_for_home.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load bootstrap %}
+{% load mathfilters %}
+{% load myapp_extras %}
+
+    {% block title %}
+        <div class="container w-25">
+{{ title }}
+        </div>
+{% endblock %}
+{% block content %}
+      <form method="post" action="">
+    <div class="container w-25">
+    <section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #f5f5f5;">
+  <div class="container h-100 py-3">
+    <div class="row d-flex justify-content-center align-items-center h-100">
+        <h4>Settings</h4>
+<div class="container py-4 mt-4 shadow-sm rounded" style="background-color: rgb(255,255,255)">
+
+
+    {% csrf_token %}
+
+        <div class="form-check form-switch">
+            <div class="d-flex justify-content-between px-2">
+        {{ form.send_teams_msg }}
+        <label class="form-check-label" for="{{ form.send_teams_msg.id_for_label }}">MSTeams Notifications</label>
+    </div>
+    </div>
+    <hr>
+
+     <div class="d-flex justify-content-between">
+        Settings_2
+    </div>
+
+    <hr>
+
+     <div class="d-flex justify-content-between">
+         Settings_3
+    </div>
+
+    <hr>
+
+
+
+
+    </div>
+    </div>
+    </div>
+    </section>
+        <div class="container d-flex justify-content-center align-items-center">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+
+    </div>
+</form>
+{% endblock %}
+

@@ -99,6 +99,50 @@
 </table>
 </section>
 {% endif %}
+
+{% if in_booked_sup %}
+<h4 class="text-center py-3">В броньованих товарах <span class="text-muted">(Всього: {{ total_count_in_booked_sup }} шт.)</span></h4>
+<section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
+
+
+        <table class="table centred mt-3 w-100 mx-auto">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">({{in_booked_sup|length}} шт.) Для: </th>
+{#      <th scope="col">Опис</th>#}
+{#        <th scope="col">Категорія</th>#}
+{#        <th scope="col">REF</th>#}
+{#        <th scope="col">SMN</th>#}
+        <th scope="col">LOT</th>
+        <th scope="col">Кількість</th>
+        <th scope="col">Термін</th>
+        <th scope="col">Заброньовано: </th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for el in in_booked_sup %}
+
+     <tr>
+      <th scope="row" style="text-align: left" class="w-50"><span>{{ el.supply_for_place.name }}, {{ el.supply_for_place.city_ref.name }}</span></th>
+
+         <td class="supplyRow">
+                    {% if el.lot is not none %}
+                        {{ el.lot }}
+                {% endif %}
+                    </td>
+
+            <td>{{ el.count_in_order }}</td>
+            <td><div style="color:{% if el.supply.expiredDate %}blue{% elif el.supply.expiredDate %}orange{% else %}red{% endif %};">{{ el.supply.expiredDate|date:"d.m.Y" }}
+
+                            </div></td>
+            <td>{{ el.date_created|date:"d.m.Y" }}</td>
+    </tr>
+   {% endfor %}
+  </tbody>
+</table>
+</section>
+{% endif %}
+
 {% if in_preorders %}
 <h4 class="text-center py-3">В передзамовленнях <span class="text-muted">(Всього: {{ total_count_in_preorders }} шт.)</span></h4>
 <section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">

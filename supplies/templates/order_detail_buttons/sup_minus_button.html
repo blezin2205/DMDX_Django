@@ -1,0 +1,1 @@
+<button style="border: none; background: none; color: blue; font-weight: bold" hx-post="{% url 'update_order_count' %}" hx-vals='{"del_sup_id": "{{ el.id }}", "counter": {{ counter }}, "action": "minus"}' hx-target="closest tr" hx-swap="outerHTML">-</button>

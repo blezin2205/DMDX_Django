@@ -1,0 +1,69 @@
+{% load myapp_extras %}
+{% load mathfilters %}
+{% if forloop.counter %}
+    {% with counter=forloop.counter %}
+        <tr style="{% if el.id == highlighted_sup_id %} background-color: #eafff0 {% endif %}">
+      <th scope="row" style="text-align: left">{{counter}}. {% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</th>
+      <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.package_and_tests }}{% endif %}</td>
+      <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.category.name }}{% endif %}</td>
+      <td style="min-width: 100px">
+          {% if el.generalSupply.ref is not none %}
+                        {% if el.generalSupply %} {{ el.generalSupply.ref }} {% else %} {{ el.internalRef }} {% endif %}
+                {% endif %}
+      </td>
+     <td style="min-width: 100px">{% if el.generalSupply.SMN_code is not none %}{{ el.generalSupply.SMN_code }}{% endif %}</td>
+         <td style="min-width: 100px">{% if el.lot is not none %}{{ el.lot }}{% endif %}</td>
+            <td>
+                <div class="hstack gap-2 justify-content-center">
+                    {% if not order.isComplete and request.user.is_staff %}
+                    {% include 'order_detail_buttons/sup_minus_button.html' %}
+                    {% endif %}
+                    {{ el.count_in_order }}
+                {% if not order.isComplete and request.user.is_staff %}
+                    {% include 'order_detail_buttons/sup_plus_button.html' %}
+                    {% endif %}
+
+                </div>
+            </td>
+            <td style="min-width: 100px">{{ el.date_expired|date:"d.m.Y" }}</td>
+     {% if request.user|has_group:"empl" or request.user.is_staff %}
+          <td style="min-width: 100px">{{ el.date_created|date:"d.m.Y" }}</td>
+     {% endif %}
+     {% if not order.isComplete and request.user.is_staff %}
+     <td>{% include 'order_detail_buttons/sup_delete_button.html' %}</td>
+     {% endif %}
+    </tr>
+    {% endwith %}
+{% else %}
+    <tr style="{% if el.id == highlighted_sup_id %} background-color: #eafff0 {% endif %}">
+      <th scope="row" style="text-align: left">{{counter}}. {% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</th>
+      <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.package_and_tests }}{% endif %}</td>
+      <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.category.name }}{% endif %}</td>
+      <td style="min-width: 100px">
+          {% if el.generalSupply.ref is not none %}
+                        {% if el.generalSupply %} {{ el.generalSupply.ref }} {% else %} {{ el.internalRef }} {% endif %}
+                {% endif %}
+      </td>
+     <td style="min-width: 100px">{% if el.generalSupply.SMN_code is not none %}{{ el.generalSupply.SMN_code }}{% endif %}</td>
+         <td style="min-width: 100px">{% if el.lot is not none %}{{ el.lot }}{% endif %}</td>
+            <td>
+                <div class="hstack gap-2 justify-content-center">
+                    {% if not order.isComplete and request.user.is_staff %}
+                    {% include 'order_detail_buttons/sup_minus_button.html' %}
+                    {% endif %}
+                    {{ el.count_in_order }}
+                {% if not order.isComplete and request.user.is_staff %}
+                    {% include 'order_detail_buttons/sup_plus_button.html' %}
+                    {% endif %}
+
+                </div>
+            </td>
+            <td style="min-width: 100px">{{ el.date_expired|date:"d.m.Y" }}</td>
+     {% if request.user|has_group:"empl" or request.user.is_staff %}
+          <td style="min-width: 100px">{{ el.date_created|date:"d.m.Y" }}</td>
+     {% endif %}
+     {% if not order.isComplete and request.user.is_staff %}
+     <td>{% include 'order_detail_buttons/sup_delete_button.html' %}</td>
+     {% endif %}
+    </tr>
+{% endif %}

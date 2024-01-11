@@ -45,6 +45,22 @@ def celery_test(request):
     task = go_to_sleep.delay(1)
     return render(request, 'supplies/celery-test.html', {'task_id': task.task_id})
 
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def app_settings(request):
+    app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
+
+    if request.method == 'POST':
+        form = AppSettingsForm(request.POST, instance=app_settings)
+        if form.is_valid():
+            form.save()
+            return redirect('/')
+    else:
+        form = AppSettingsForm(instance=app_settings)
+
+    return render(request, 'supplies/app_settings.html', {'form': form})
+
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def httpRequest(request):
@@ -193,6 +209,25 @@ def countCartItemsHelper(request):
     preorders_await = 0
     preorders_partial = 0
     order_to_send_today = 0
+    is_one_cart = ''
+    booked_carts = BookedOrderInCart.objects.all()
+    carts_count = booked_carts.count()
+    if 2 > carts_count > 0:
+        is_one_cart = "IS_ONE"
+    elif carts_count > 1:
+        is_one_cart = "IS_MANY"
+    booked_cart_first = booked_carts.first()
+
+    if isClient:
+        booked_carts = booked_carts.filter(place__user=request.user)
+        carts_count = booked_carts.count()
+        if 2 > carts_count > 0:
+            is_one_cart = "IS_ONE"
+        elif carts_count > 1:
+            is_one_cart = "IS_MANY"
+        booked_cart_first = booked_carts.first()
+
+
 
     try:
         orderInCart = OrderInCart.objects.first()
@@ -230,8 +265,16 @@ def countCartItemsHelper(request):
 
 
 
-    return {'cart_items': cart_items, 'precart_items': precart_items, 'orders_incomplete': orders_incomplete,
-            'preorders_incomplete': preorders_incomplete, 'preorders_await': preorders_await, 'preorders_partial': preorders_partial, 'order_to_send_today': order_to_send_today}
+    return {'cart_items': cart_items,
+            'precart_items': precart_items,
+            'orders_incomplete': orders_incomplete,
+            'preorders_incomplete': preorders_incomplete,
+            'preorders_await': preorders_await,
+            'preorders_partial': preorders_partial,
+            'order_to_send_today': order_to_send_today,
+            'is_one_cart': is_one_cart,
+            'booked_cart_first': booked_cart_first
+            }
 
 @login_required(login_url='login')
 def full_image_view_for_device_image(request, device_id):
@@ -295,45 +338,38 @@ def deleteSupplyInOrderNPDocumentButton(request):
 
 @login_required(login_url='login')
 def deleteSupplyInOrder(request):
-    data = json.loads(request.body)
-    prodId = data['productId']
-    action = data['action']
+    prodId = request.POST.get('del_sup_id')
+    suppInOrder = SupplyInOrder.objects.get(id=prodId)
+    for_order = suppInOrder.supply_for_order
 
+    if suppInOrder.supply_in_booked_order:
+        suppInOrder.supply_in_booked_order.countOnHold -= suppInOrder.count_in_order
+        suppInOrder.supply_in_booked_order.save(update_fields=['countOnHold'])
+    elif suppInOrder.hasSupply():
+        supp_for_supp_in_order = suppInOrder.supply
+        supp_for_supp_in_order.countOnHold -= suppInOrder.count_in_order
+        supp_for_supp_in_order.save(update_fields=['countOnHold'])
 
-    if action == 'delete-npdocument':
-        print("NP DOCUMENT ACTION TO DELETE")
-        print(prodId)
+    for_preorder = suppInOrder.supply_for_order.for_preorder or None
 
-    if action == 'delete':
-        suppInOrder = SupplyInOrder.objects.get(id=prodId)
-        if suppInOrder.hasSupply():
-            supp_for_supp_in_order = suppInOrder.supply
-            supp_for_supp_in_order.countOnHold -= suppInOrder.count_in_order
-            supp_for_supp_in_order.save(update_fields=['countOnHold'])
+    if for_preorder:
+        sup_in_preorder = for_preorder.supplyinpreorder_set.get(generalSupply=suppInOrder.generalSupply)
+        sup_in_preorder.count_in_order_current -= suppInOrder.count_in_order
+        if sup_in_preorder.count_in_order_current >= sup_in_preorder.count_in_order:
+            sup_in_preorder.state_of_delivery = 'Complete'
+        elif sup_in_preorder.count_in_order_current != 0 and sup_in_preorder.count_in_order_current < sup_in_preorder.count_in_order:
+            sup_in_preorder.state_of_delivery = 'Partial'
+        else:
+            sup_in_preorder.state_of_delivery = 'Awaiting'
+
+        sup_in_preorder.save(update_fields=['count_in_order_current', 'state_of_delivery'])
+
+    if for_order.supplyinorder_set.count() == 0:
+       for_order.delete()
+    else:
         suppInOrder.delete()
 
-        for_preorder = suppInOrder.supply_for_order.for_preorder or None
-
-        if for_preorder:
-           sup_in_preorder = for_preorder.supplyinpreorder_set.get(generalSupply=suppInOrder.generalSupply)
-           sup_in_preorder.count_in_order_current -= suppInOrder.count_in_order
-           if sup_in_preorder.count_in_order_current >= sup_in_preorder.count_in_order:
-               sup_in_preorder.state_of_delivery = 'Complete'
-           elif sup_in_preorder.count_in_order_current != 0 and sup_in_preorder.count_in_order_current < sup_in_preorder.count_in_order:
-               sup_in_preorder.state_of_delivery = 'Partial'
-           else:
-               sup_in_preorder.state_of_delivery = 'Awaiting'
-
-           sup_in_preorder.save(update_fields=['count_in_order_current', 'state_of_delivery'])
-
-
-
-
-    elif action == 'delete-preorder':
-        suppInOrder = SupplyInPreorder.objects.get(id=prodId)
-        suppInOrder.delete()
-
-    return JsonResponse('Item was added', safe=False)
+    return HttpResponse(status=200)
 
 
 @login_required(login_url='login')
@@ -478,55 +514,56 @@ def updatePreCartItemCount(request):
 
 @login_required(login_url='login')
 def update_order_count(request):
-    data = json.loads(request.body)
-    prodId = data['productId']
-    action = data['action']
+    prodId = request.POST.get('del_sup_id')
+    action = request.POST.get('action')
+    counter = request.POST.get('counter')
 
     print('Action', action)
     print('id', prodId)
+    print('counter', counter)
+    supply = SupplyInOrder.objects.get(id=prodId)
+    for_order = supply.supply_for_order
 
-    if action == 'add':
-        supply = SupplyInOrder.objects.get(id=prodId)
-        supply.count_in_order = (supply.count_in_order + 1)
-        supply.supply.countOnHold += 1
-        supply.supply.save()
-        supply.save()
+    if action == 'plus':
+        if supply.supply_in_booked_order:
+            supply.count_in_order += 1
+            supply.supply_in_booked_order.countOnHold += 1
+            supply.supply_in_booked_order.save(update_fields=['countOnHold'])
+            supply.save(update_fields=['count_in_order'])
+        else:
+            supply.count_in_order += 1
+            supply.supply.countOnHold += 1
+            supply.supply.save(update_fields=['countOnHold'])
+            supply.save(update_fields=['count_in_order'])
 
+    elif action == 'minus':
+        if supply.supply_in_booked_order:
+            supply.count_in_order -= 1
+            supply.supply_in_booked_order.countOnHold -= 1
+            supply.supply_in_booked_order.save(update_fields=['countOnHold'])
+            supply.save(update_fields=['count_in_order'])
+        else:
+            supply.count_in_order -= 1
+            supply.supply.countOnHold -= 1
+            supply.supply.save(update_fields=['countOnHold'])
+            supply.save(update_fields=['count_in_order'])
         if supply.count_in_order <= 0:
             supply.delete()
-    elif action == 'remove':
-        supply = SupplyInOrder.objects.get(id=prodId)
-        supply.count_in_order = (supply.count_in_order - 1)
-        supply.supply.countOnHold -= 1
-        supply.supply.save()
-        supply.save()
+            return HttpResponse(status=200)
+        if for_order.supplyinorder_set.count() == 0:
+           for_order.delete()
+           return HttpResponse(status=200)
 
-        if supply.count_in_order <= 0:
-            supply.delete()
-    elif action == 'add-preorder':
-        supp_preorder = SupplyInPreorder.objects.get(id=prodId)
-        supp_preorder.count_in_order = (supp_preorder.count_in_order + 1)
-        supp_preorder.save()
-        if supp_preorder.count_in_order <= 0:
-            supp_preorder.delete()
-
-    elif action == 'remove-preorder':
-        supp_preorder = SupplyInPreorder.objects.get(id=prodId)
-        supp_preorder.count_in_order = (supp_preorder.count_in_order - 1)
-        supp_preorder.save()
-        if supp_preorder.count_in_order <= 0:
-            supp_preorder.delete()
-
-    return JsonResponse('Item was added', safe=False)
+    return render(request, 'partials/orderDetail_cell_item.html', {'el': supply, 'counter': counter})
 
 
 @login_required(login_url='login')
 def orderTypeDescriptionField(request):
     orderType = request.POST.get('orderType')
     isAgreement = orderType == 'Agreement'
-    return render(request, 'partials/orderTypeDescriptionField.html', {'isAgreement': isAgreement})@login_required(login_url='login')
+    return render(request, 'partials/orderTypeDescriptionField.html', {'isAgreement': isAgreement})
 
-
+@login_required(login_url='login')
 def add_to_exist_order_from_cart(request):
     orderType = request.POST.get('orderType')
     isAdd_to_exist_order = orderType == 'add_to_Exist_order'
@@ -712,23 +749,25 @@ def update_count_in_preorder_cart(request, itemId):
 
 
 import threading
-def sendTeamsMsg(order):
-    myTeamsMessage = pymsteams.connectorcard(
-        "https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/3a448e3eaf974db19d8940ba81e9bcad/3894266e-3403-44b0-a8e4-5a568f2b70a4")
-    myTeamsMessage.title(f'Передамовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
+def sendTeamsMsg(request, order):
+    app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
+    if app_settings.send_teams_msg:
+        myTeamsMessage = pymsteams.connectorcard(
+            "https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/3a448e3eaf974db19d8940ba81e9bcad/3894266e-3403-44b0-a8e4-5a568f2b70a4")
+        myTeamsMessage.title(f'Передамовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
 
-    myTeamsMessage.addLinkButton("Деталі замовлення",
-                                 f'https://dmdxstorage.herokuapp.com/preorders/{order.id}')
-    myTeamsMessage.addLinkButton("Excel",
-                                 f'https://dmdxstorage.herokuapp.com/preorder-detail-csv/{order.id}')
-    created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
-    if order.comment:
-        comment = f'*коментар:*  **{order.comment}**'
-        myTeamsMessage.text(f'{created}\n\n{comment};')
-        # myTeamsMessage.send()
-    else:
-        myTeamsMessage.text(f'{created}')
-        # myTeamsMessage.send()
+        myTeamsMessage.addLinkButton("Деталі замовлення",
+                                     f'https://dmdxstorage.herokuapp.com/preorders/{order.id}')
+        myTeamsMessage.addLinkButton("Excel",
+                                     f'https://dmdxstorage.herokuapp.com/preorder-detail-csv/{order.id}')
+        created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
+        if order.comment:
+            comment = f'*коментар:*  **{order.comment}**'
+            myTeamsMessage.text(f'{created}\n\n{comment};')
+            myTeamsMessage.send()
+        else:
+            myTeamsMessage.text(f'{created}')
+            myTeamsMessage.send()
 
 
 @login_required(login_url='login')
@@ -836,7 +875,7 @@ def cartDetailForClient(request):
 
                     suppInOrder.save()
 
-                t = threading.Thread(target=sendTeamsMsg, args=[order], daemon=True)
+                t = threading.Thread(target=sendTeamsMsg, args=[request, order], daemon=True)
                 t.start()
 
             elif orderType == 'add_to_Exist_preorder':
@@ -1048,25 +1087,29 @@ def get_agreement_for_place_for_city_in_cart(request):
     return render(request, 'partials/choose_agreement_forplace_incart.html', {'agreements': agreements, 'isPendingPreorderExist': agreements.exists(), 'isPlaceChoosed': True})
 
 
-def sendTeamsMsgCart(order):
-    agreementString = ''
-    if order.for_preorder:
-        agreementString = f'Передзамовлення № {order.for_preorder.id}'
+def sendTeamsMsgCart(request, order):
+    app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
+    if app_settings.send_teams_msg:
+        agreementString = ''
+        if order.for_preorder:
+            agreementString = f'Передзамовлення № {order.for_preorder.id}'
 
-    myTeamsMessage = pymsteams.connectorcard(
-        "https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/c6694506a800419ab9aa040b09d0a5b1/3894266e-3403-44b0-a8e4-5a568f2b70a4")
-    myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
+        myTeamsMessage = pymsteams.connectorcard(
+            "https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/c6694506a800419ab9aa040b09d0a5b1/3894266e-3403-44b0-a8e4-5a568f2b70a4")
+        myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
 
-    myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}/0')
-    myTeamsMessage.addLinkButton("Excel", f'https://dmdxstorage.herokuapp.com/order-detail-csv/{order.id}')
-    created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
-    if order.comment:
-        comment = f'*комментарій:*  **{order.comment}**'
-        myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
-        # myTeamsMessage.send()
-    else:
-        myTeamsMessage.text(f'{agreementString}\n\n{created}')
-        # myTeamsMessage.send()
+        myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}/0')
+        myTeamsMessage.addLinkButton("Excel", f'https://dmdxstorage.herokuapp.com/order-detail-csv/{order.id}')
+        created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
+        if order.comment:
+            comment = f'*комментарій:*  **{order.comment}**'
+            myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
+            myTeamsMessage.send()
+        else:
+            myTeamsMessage.text(f'{agreementString}\n\n{created}')
+            myTeamsMessage.send()
+
+
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin', 'empl'])
@@ -1078,11 +1121,11 @@ def cartDetail(request):
     orderForm = OrderInCartForm(request.POST or None)
     cities = City.objects.all()
     if request.method == 'POST':
+        place_id = request.POST.get('place_id')
+        place = Place.objects.get(id=place_id)
         if 'save' in request.POST:
             orderType = request.POST.get('orderType')
             if orderForm.is_valid():
-                place_id = request.POST.get('place_id')
-                place = Place.objects.get(id=place_id)
                 comment = orderForm.cleaned_data['comment']
                 dateToSend = orderForm.cleaned_data['dateToSend']
                 try:
@@ -1136,7 +1179,7 @@ def cartDetail(request):
                                 supply.countOnHold = countOnHold + countInOrder
                                 supply.save(update_fields=['countOnHold'])
 
-                    t = threading.Thread(target=sendTeamsMsgCart, args=[order], daemon=True)
+                    t = threading.Thread(target=sendTeamsMsgCart, args=[request, order], daemon=True)
                     t.start()
 
 
@@ -1295,6 +1338,29 @@ def cartDetail(request):
             orderInCart.delete()
             return redirect('/orders')
 
+        if 'save_as_booked_order' in request.POST:
+            for sup in supplies:
+                count = int(request.POST.get(f'count_{sup.id}'))
+                try:
+                    supInOrder = SupplyInBookedOrder.objects.get(supply=sup.supply, supply_for_place=place)
+                    supInOrder.count_in_order += count
+                except:
+                    supInOrder = SupplyInBookedOrder(
+                        count_in_order=count,
+                        generalSupply=sup.supply.general_supply,
+                        supply=sup.supply,
+                        supply_for_place=place,
+                        lot=sup.supply.supplyLot,
+                        date_expired=sup.supply.expiredDate,
+                        internalName=sup.supply.general_supply.name,
+                        internalRef=sup.supply.general_supply.ref
+                    )
+                supInOrder.save()
+                sup.supply.countOnHold += count
+                sup.supply.save(update_fields=['countOnHold'])
+
+            orderInCart.delete()
+            return redirect(f'/clientsInfo/{place_id}/booked_supplies_list')
 
         if 'delete' in request.POST:
             next = request.POST.get('next')
@@ -1610,7 +1676,7 @@ def orders(request):
 
 
 
-def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus = False):
+def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus = False, set_complete_ctatus = False):
     selected_ids = map(int, preorders_list)
     fileteredOredrs = PreOrder.objects.filter(pk__in=selected_ids)
     if withChangedStatus:
@@ -1618,6 +1684,12 @@ def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus =
             if ord.state_of_delivery == 'accepted_by_customer':
                 ord.state_of_delivery = 'Awaiting'
                 ord.save()
+    if set_complete_ctatus:
+        for ord in fileteredOredrs:
+            ord.state_of_delivery = 'Complete_Handle'
+            ord.save()
+        return
+
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f"attachment; filename=Preorders_List_{datetime.datetime.now().strftime('%d.%m.%Y  %H:%M')}.xlsx"
@@ -1635,7 +1707,7 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
     supplies_in_order_all = order.supplyinpreorder_set.all()
     supplies_in_order = []
     for sup in supplies_in_order_all:
-        if sup.count_in_order - sup.count_in_order_current > 0:
+        if sup.count_in_order - sup.count_in_order_current - sup.get_booked_count() > 0:
             supplies_in_order.append(sup)
     row_num = 4
     init_row_num = row_num
@@ -1691,7 +1763,7 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
             category = row.generalSupply.category
         count_in_order = row.count_in_order
         current_delivery_count = row.count_in_order_current
-        count_borg = row.count_in_order - row.count_in_order_current
+        count_borg = row.count_in_order - row.count_in_order_current - row.get_booked_count()
         date_expired = ''
 
         val_row = [name, category, ref, smn, count_borg]
@@ -1722,6 +1794,8 @@ def preorders(request):
             return generate_list_of_xls_from_preorders_list(selected_orders)
         if 'print_choosed_and_status_updated' in request.POST:
             return generate_list_of_xls_from_preorders_list(selected_orders, True)
+        if 'mark_as_delivery_completed' in request.POST:
+            generate_list_of_xls_from_preorders_list(selected_orders, False, True)
 
     return render(request, 'supplies/preorders.html',
                   {'title': title, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData, 'isOrders': True,
@@ -1782,13 +1856,16 @@ def orderUpdateStatus(request, order_id):
             countInOrder = el.count_in_order
             supp = el.supply
             supp.countOnHold -= countInOrder
-            if supp.countOnHold >= 0:
-                supp.save(update_fields=['countOnHold'])
             supp.count -= countInOrder
-            if supp.count >= 0:
-                supp.save(update_fields=['count'])
-            if supp.count == 0:
-                supp.delete()
+
+            if el.supply_in_booked_order:
+                supply_in_booked_order = el.supply_in_booked_order
+                supply_in_booked_order.countOnHold -= countInOrder
+                supply_in_booked_order.count_in_order -= countInOrder
+                if supply_in_booked_order.count_in_order == 0:
+                    supply_in_booked_order.delete()
+                else:
+                    supply_in_booked_order.save(update_fields=['countOnHold', 'count_in_order'])
 
             genSupInPreorder = el.supply_in_preorder
             if genSupInPreorder:
@@ -1799,6 +1876,10 @@ def orderUpdateStatus(request, order_id):
                     genSupInPreorder.state_of_delivery = 'Partial'
                 genSupInPreorder.save()
 
+            if supp.count == 0:
+                supp.delete()
+            else:
+                supp.save(update_fields=['countOnHold', 'count'])
 
 
         order.isComplete = True
@@ -1863,6 +1944,15 @@ def agreementsForClient(request, client_id):
     orders = preorderFilter.qs
     cartCountData = countCartItemsHelper(request)
     title = f'Всі передзамовлення для клієнта: \n {place.name}, {place.city_ref.name}'
+
+    if request.method == 'POST':
+        selected_orders = request.POST.getlist('xls_preorder_print_buttons')
+        if 'print_choosed' in request.POST:
+            return generate_list_of_xls_from_preorders_list(selected_orders)
+        if 'print_choosed_and_status_updated' in request.POST:
+            return generate_list_of_xls_from_preorders_list(selected_orders, True)
+        if 'mark_as_delivery_completed' in request.POST:
+            generate_list_of_xls_from_preorders_list(selected_orders, False, True)
 
     return render(request, 'supplies/preorders.html',
            {'title': title, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData,
@@ -2144,12 +2234,17 @@ def history_for_supply(request, supp_id):
     in_deliveries = generalSupp.deliverysupplyincart_set.all().order_by('-id')
     total_count_in_deliveries = in_deliveries.aggregate(total_count=Sum('count'))['total_count']
 
+    in_booked_sup = generalSupp.supplyinbookedorder_set.all().order_by('-id')
+    total_count_in_booked_sup = in_booked_sup.aggregate(total_count=Sum('count_in_order'))['total_count']
+
     return render(request, 'supplies/history_for_supply_list.html',
                   {'generalSupp': generalSupp,
                    'supplies': in_orders,
                    'in_preorders': in_preorders,
                    'in_deliveries': in_deliveries,
+                   'in_booked_sup': in_booked_sup,
                    'total_count_in_orders': total_count_in_orders,
+                   'total_count_in_booked_sup': total_count_in_booked_sup,
                    'total_count_in_preorders': total_count_in_preorders,
                    'total_count_in_deliveries': total_count_in_deliveries,
                    'cartCountData': cartCountData})
@@ -3120,7 +3215,7 @@ def preorderDetail_generateOrder(request, order_id):
                         s.countOnHold += s.count
                         s.save(update_fields=['countOnHold'])
 
-                t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
+                t = threading.Thread(target=sendTeamsMsgCart, args=[request, new_order], daemon=True)
                 t.start()
                 return redirect('/orders')
 
@@ -3129,46 +3224,31 @@ def preorderDetail_generateOrder(request, order_id):
 
         if 'create_booked_order' in request.POST:
             if supDict:
-                new_order = BookedOrder(userCreated=request.user, for_preorder=order, place=order.place,
-                                  comment=comment_for_order)
-                if orderForm.is_valid():
-                    comment = orderForm.cleaned_data['comment']
-                    dateToSend = orderForm.cleaned_data['dateToSend']
-                    new_order.comment = comment
-
-                new_order.save()
                 for key, value in supDict.items():
-                    print("------------------------")
-                    print(key)
-                    allCount = 0
                     genSupInPreorder = supplies_in_order.get(generalSupply_id=key)
-
                     for s in value:
-                        allCount += s.count
-
-                        supInOrder = SupplyInBookedOrder(count_in_order=s.count,
-                                                   generalSupply=s.general_supply,
-                                                   supply=s,
-                                                   # supply_in_preorder=genSupInPreorder,
-                                                   supply_in_booked_order=new_order,
-                                                   lot=s.supplyLot,
-                                                   date_expired=s.expiredDate,
-                                                   date_created=s.dateCreated,
-                                                   internalName=s.general_supply.name,
-                                                   internalRef=s.general_supply.ref
-                                                   )
+                        try:
+                            supInOrder = SupplyInBookedOrder.objects.get(supply=s, supply_in_preorder=genSupInPreorder, supply_for_place=order.place)
+                            supInOrder.count_in_order += s.count
+                        except:
+                            supInOrder = SupplyInBookedOrder(
+                                count_in_order=s.count,
+                                generalSupply=s.general_supply,
+                                supply=s,
+                                supply_for_place=order.place,
+                                supply_in_preorder=genSupInPreorder,
+                                lot=s.supplyLot,
+                                date_expired=s.expiredDate,
+                                internalName=s.general_supply.name,
+                                internalRef=s.general_supply.ref
+                            )
                         supInOrder.save()
                         s.countOnHold += s.count
                         s.save(update_fields=['countOnHold'])
 
-                t = threading.Thread(target=sendTeamsMsgCart, args=[new_order], daemon=True)
-                t.start()
-                return redirect('/orders')
-
+                return redirect(f'/clientsInfo/{order.place.id}/booked_supplies_list')
             else:
                 messages.info(request, "Жодний товар не вибраний для формування замовлення!")
-
-
 
     return render(request, 'supplies/preorderDetail-generate-order.html',
                   {'title': f'Передзамовлення № {order_id}', 'order': order, 'orderForm': orderForm, 'supplies': supplies_in_order,

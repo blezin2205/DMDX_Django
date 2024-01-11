@@ -32,6 +32,12 @@
   </div>
       <div class="card-body">
 
+      {% if client.supplyinbookedorder_set.count > 0 %}
+            <a href="{% url 'booked_sups_list_for_client' client.id %}" class="icon-link me-3">
+          Заброньовані товари ({{ client.supplyinbookedorder_set.count }})
+        </a>
+        {% endif %}
+
         {% if client.preorder_set.count > 0 %}
             <a href="{% url 'agreementsForClient' client.id %}" class="icon-link me-3">
           Передзамовлення ({{ client.preorder_set.count }})

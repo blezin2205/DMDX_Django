@@ -12,6 +12,16 @@ from django.forms import formset_factory
 # from dynamic_forms import  DynamicField, DynamicFormMixin
 
 
+class AppSettingsForm(ModelForm):
+    class Meta:
+
+        model = AppSettings
+        fields = ['send_teams_msg']
+        widgets = {
+            'send_teams_msg': forms.CheckboxInput(attrs={'class': 'form-check-input', 'style': "transform: scale(1.6);"})
+        }
+
+
 class CreateNPParselForm(ModelForm):
 
     def __init__(self, *args, **kwargs):

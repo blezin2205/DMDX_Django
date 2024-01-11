@@ -40,6 +40,25 @@ class ChildSupplyFilter(django_filters.FilterSet):
             return queryset.order_by('-dateCreated').distinct()
 
 
+class BookedSuppliesFilter(django_filters.FilterSet):
+    name = CharFilter(field_name='generalSupply__name', lookup_expr='icontains', label='Назва товару')
+    smn = CharFilter(field_name='generalSupply__SMN_code', lookup_expr='icontains', label='SMN')
+    ref = CharFilter(field_name='generalSupply__ref', lookup_expr='icontains', label='REF')
+    category = django_filters.ModelChoiceFilter(
+        field_name='generalSupply__category',
+        to_field_name='id',
+        queryset=Category.objects.all(),
+        label='Category'
+    )
+
+    class Meta:
+        model = SupplyInBookedOrder
+        fields = ['category', 'ref', 'smn', 'name']
+
+    def filter_by_category(self, queryset, name, value):
+          return queryset.filter(general_supply__category__name__exact=value)
+
+
 class HistorySupplyFilter(django_filters.FilterSet):
 
     name = CharFilter(field_name='general_supply__name', lookup_expr='icontains', label='Назва товару')

@@ -1,0 +1,7 @@
+<button hx-post="{% url 'delete_supply_in_order' %}"
+         hx-target="closest tr"
+         hx-vals='{"del_sup_id": {{ el.id }}}'
+         hx-swap="outerHTML"
+        hx-confirm="Видалити {{ el.count_in_order }}шт. {{ el.generalSupply.name }} з замовлення для: {{ el.supply_for_place.name }} ?"
+        style="border-color: black; min-width: 35px;"
+         class="btn btn-sm btn-danger ms-2"><i class="bi bi-trash"></i></button>

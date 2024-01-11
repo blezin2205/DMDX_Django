@@ -18,7 +18,9 @@ import cloudinary
 from django.core.serializers import serialize
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
+from django.forms import ModelForm, Form
 import json
+
 
 class CustomUser(AbstractUser):
     pass
@@ -27,8 +29,26 @@ class CustomUser(AbstractUser):
     np_sender_ref = models.CharField(max_length=100, null=True)
     np_last_choosed_delivery_place_id = models.SmallIntegerField(blank=True, null=True)
 
+    def get_user_place_id(self):
+        try:
+            place_id = Place.objects.get(user=self).id
+        except:
+            place_id = ""
+        return place_id
+
+    def isClient(self):
+        return self.groups.filter(name='client').exists()
+
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
+
+
+class AppSettings(models.Model):
+    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+    send_teams_msg = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.userCreated
 
 
 class SenderNPPlaceInfo(models.Model):
@@ -229,6 +249,9 @@ class Place(models.Model):
     isPrivatePlace = models.BooleanField(default=False, blank=True)
     name_in_NP = models.CharField(max_length=200, null=True, blank=True)
 
+    def get_place_name(self):
+        return f'{self.name}, {self.city_ref.name}'
+
     def isHaveUncompletedPreorders(self):
         if self.preorder_set.exists():
             if self.preorder_set.filter(state_of_delivery='Awaiting').exists() or self.preorder_set.filter(
@@ -344,6 +367,7 @@ class PreOrder(models.Model):
         ('Awaiting', 'Замовлено у виробника'),
         ('Partial', 'Частково поставлено'),
         ('Complete', 'Повністю поставлено'),
+        ('Complete_Handle', 'Повністю поставлено(Закрито вручну)'),
     )
     state_of_delivery = models.CharField(max_length=50, choices=STATE_CHOICES, default='awaiting_from_customer')
 
@@ -361,34 +385,34 @@ class PreOrder(models.Model):
         verbose_name_plural = 'Передзамовлення'
 
 
-class BookedOrder(models.Model):
-    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
-    for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, blank=True)
-    place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
-    dateCreated = models.DateField(auto_now_add=True, null=True)
-    isComplete = models.BooleanField(default=False)
-    isPreorder = models.BooleanField(default=False, blank=True)
-    comment = models.CharField(max_length=300, null=True, blank=True)
-
-    STATE_CHOICES = (
-        ('Awaiting', 'Створено'),
-        ('Partial', 'Частково поставлено'),
-        ('Complete', 'Повністю поставлено'),
-    )
-    state_of_delivery = models.CharField(max_length=50, choices=STATE_CHOICES, default='Awaiting')
-
-    def __str__(self):
-        return f'Бронь № {self.id}, для {self.place.name}, от {self.dateCreated}'
-
-    def get_state_of_delivery_value(self):
-        return self.get_state_of_delivery_display()
-
-    def checkIfUncompletedDeliveryPreordersExist(self):
-        return PreOrder.objects.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial')).exists()
-
-    class Meta:
-        verbose_name = 'Бронювання'
-        verbose_name_plural = 'Бронювання'
+# class BookedOrder(models.Model):
+#     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+#     for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, blank=True)
+#     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
+#     dateCreated = models.DateField(auto_now_add=True, null=True)
+#     isComplete = models.BooleanField(default=False)
+#     isPreorder = models.BooleanField(default=False, blank=True)
+#     comment = models.CharField(max_length=300, null=True, blank=True)
+#
+#     STATE_CHOICES = (
+#         ('Awaiting', 'Створено'),
+#         ('Partial', 'Частково поставлено'),
+#         ('Complete', 'Повністю поставлено'),
+#     )
+#     state_of_delivery = models.CharField(max_length=50, choices=STATE_CHOICES, default='Awaiting')
+#
+#     def __str__(self):
+#         return f'Бронь № {self.id}, для {self.place.name}, от {self.dateCreated}'
+#
+#     def get_state_of_delivery_value(self):
+#         return self.get_state_of_delivery_display()
+#
+#     def checkIfUncompletedDeliveryPreordersExist(self):
+#         return PreOrder.objects.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial')).exists()
+#
+#     class Meta:
+#         verbose_name = 'Бронювання'
+#         verbose_name_plural = 'Бронювання'
 
 
 class Order(models.Model):
@@ -563,6 +587,13 @@ class SupplyInPreorder(models.Model):
     )
     state_of_delivery = models.CharField(max_length=20, choices=STATE_CHOICES, default='Awaiting')
 
+    def get_booked_count(self):
+        sups_booked_count = self.supplyinbookedorder_set.all().aggregate(total_count=Sum('count_in_order'))["total_count"]
+        if sups_booked_count:
+            return sups_booked_count
+        else:
+            return 0
+
     def __str__(self):
         name = None
         if self.generalSupply:
@@ -577,30 +608,34 @@ class SupplyInPreorder(models.Model):
 
 class SupplyInBookedOrder(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True)
+    countOnHold = models.PositiveIntegerField(null=True, blank=True, default=0)
     generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True, blank=True)
     supply = models.ForeignKey(Supply, on_delete=models.CASCADE, null=True, blank=True)
-    supply_in_booked_order = models.ForeignKey(BookedOrder, on_delete=models.CASCADE, null=True, blank=True)
+    supply_for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True, blank=True)
+    supply_in_preorder = models.ForeignKey(SupplyInPreorder, on_delete=models.SET_NULL, null=True, blank=True)
     lot = models.CharField(max_length=100, null=True, blank=True)
     date_expired = models.DateField(null=True)
-    date_created = models.DateField(null=True, blank=True)
+    date_created = models.DateField(null=True, auto_now_add=True)
     internalName = models.CharField(max_length=500, null=True, blank=True)
     internalRef = models.CharField(max_length=100, null=True, blank=True)
 
-    def date_is_good(self):
-        return self.date_expired > self.supply_in_booked_order.dateCreated
-
-    def date_is_expired(self):
-        return self.date_expired < self.supply_in_booked_order.dateCreated
-
-    def date_is_today(self):
-        return self.date_expired == self.supply_in_booked_order.dateCreated
+    @property
+    def get_sub_el_with_in_cart(self):
+        count_in_order_in_cart = 0
+        try:
+            sups_in_cart = BookedSupplyInOrderInCart.objects.get(supply=self)
+            count_in_order_in_cart = sups_in_cart.count_in_order
+        except:
+            pass
+        cond = self.count_in_order - self.countOnHold - count_in_order_in_cart
+        return cond <= 0
 
     def hasSupply(self):
         return self.supply.inSupply.exists()
 
     def __str__(self):
         try:
-            orderId = self.supply_in_booked_order.id
+            orderId = self.id
         except:
             orderId = 'No ID'
 
@@ -628,6 +663,7 @@ class SupplyInOrder(models.Model):
     supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True, related_name='inSupply')
     supply_in_preorder = models.ForeignKey(SupplyInPreorder, on_delete=models.SET_NULL, null=True, blank=True)
     supply_for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
+    supply_in_booked_order = models.ForeignKey(SupplyInBookedOrder, on_delete=models.SET_NULL, null=True, blank=True)
     lot = models.CharField(max_length=100, null=True, blank=True)
     date_expired = models.DateField(null=True)
     date_created = models.DateField(null=True, blank=True)
@@ -645,6 +681,13 @@ class SupplyInOrder(models.Model):
 
     def hasSupply(self):
         return self.supply.inSupply.exists()
+
+    def check_if_has_plus_button(self):
+        if self.supply_in_booked_order:
+            available = self.supply_in_booked_order.count_in_order - self.supply_in_booked_order.countOnHold
+            return available > 0
+        else:
+            return self.supply.count - self.supply.countOnHold > 0
 
     def __str__(self):
         try:
@@ -744,6 +787,54 @@ class SupplyInPreorderInCart(models.Model):
     class Meta:
         verbose_name = 'Товар в передзамовленні в корзині'
         verbose_name_plural = 'Товари в передзамовленні в коризні'
+
+
+class BookedOrderInCart(models.Model):
+    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+    place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
+    dateCreated = models.DateField(auto_now_add=True, null=True)
+    dateSent = models.DateField(null=True, blank=True)
+    isComplete = models.BooleanField(default=False)
+    comment = models.CharField(max_length=300, null=True, blank=True)
+
+    def __str__(self):
+        return f'Заказ № {self.id}'
+
+    class Meta:
+        verbose_name = 'Бронювання в корзині'
+        verbose_name_plural = 'Бронювання в корзині'
+
+    @property
+    def get_cart_items(self):
+        orderitems = self.bookedsupplyinorderincart_set.all()
+        total = sum([item.count_in_order for item in orderitems])
+        return total
+
+
+
+class BookedSupplyInOrderInCart(models.Model):
+    count_in_order = models.PositiveIntegerField(null=True, blank=True, default=0)
+    supply = models.OneToOneField(SupplyInBookedOrder, on_delete=models.SET_NULL, null=True, blank=True)
+    supply_for_order = models.ForeignKey(BookedOrderInCart, on_delete=models.CASCADE, null=True)
+    lot = models.CharField(max_length=20, null=True, blank=True)
+    date_expired = models.DateField(null=True)
+    date_created = models.DateField(null=True, blank=True, auto_now_add=True)
+
+    def __str__(self):
+        return f'Товар: для Бронюванні в коризні '
+
+    def date_is_good(self):
+        return self.date_expired > timezone.now().date()
+
+    def date_is_expired(self):
+        return self.date_expired < timezone.now().date()
+
+    def date_is_today(self):
+        return self.date_expired == timezone.now().date()
+
+    class Meta:
+        verbose_name = 'Товар в Бронюванні в корзині'
+        verbose_name_plural = 'Товари в Бронюванні в коризні'
 
 
 class GeneralDevice(models.Model):

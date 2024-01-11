@@ -1,0 +1,62 @@
+{% extends 'supplies/base_for_home.html' %}
+{% load crispy_forms_filters %}
+{% load bootstrap %}
+{% load mathfilters %}
+{% load myapp_extras %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+
+    {% if request.user.isClient %}
+            <div class="container py-1">
+  <div class="btn-group my-3">
+  <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+  <a href="{% url 'booked_sups_list_for_client' request.user.get_user_place_id %}" class="btn btn-primary mx-2 {% if isBookedList %} active {% endif %}">Список заброньованих товарів</a>
+</div>
+    {% endif %}
+
+<div class="container py-1">
+    <form method="get" class="form-inline justify-content-center">
+         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
+             <div class="hstack gap-2">
+                 {{ suppFilter.form.category|as_crispy_field }}
+                 {{ suppFilter.form.ref|as_crispy_field }}
+                 {{ suppFilter.form.smn|as_crispy_field }}
+                 {{ suppFilter.form.name|as_crispy_field }}
+
+             </div>
+             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
+
+</div>
+<button type="submit" class="btn btn-outline-primary" name="xls_button">
+        Export to Excel
+    </button>
+        </form>
+
+</div>
+        <table class="table centred mt-3 w-auto mx-auto">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">{{supplies|length}} Назва товару</th>
+      <th scope="col">Пакування / Тести</th>
+        <th scope="col">Категорія</th>
+        <th scope="col">REF</th>
+        <th scope="col">SMN</th>
+        <th scope="col">LOT</th>
+        <th scope="col">Кількість</th>
+        <th scope="col">Термін</th>
+        <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for el in supplies %}
+<div class="booked_supply_list_item_card">
+     {% include 'booked_flow/booked_supply_list_item.html' %}
+        </div>
+   {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

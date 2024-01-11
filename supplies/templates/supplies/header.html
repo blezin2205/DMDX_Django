@@ -65,8 +65,11 @@
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
                 <div class="hstack gap-2 justify-content-between">
-
                     {% if request.user %}
+                        <div id="booked-cart-badge" hx-get="{% url 'booked-cart-badge-count' %}" hx-trigger="subscribe-booked-cart-badge-count from:body">
+                             {% include 'booked_flow/booked-cart-badge.html' %}
+                        </div>
+
                         <div id="precart-badge" hx-get="{% url 'precart-count' %}" hx-trigger="subscribe_precart from:body">
                             {% include 'partials/precart-badge.html' %}
                         </div>
@@ -104,6 +107,9 @@
       <a class="dropdown-item" href="{% url 'add-new-city' %}">Додати місто</a>
       <a class="dropdown-item" href="{% url 'add-new-supply-category' %}">Додати категорію товара</a>
       <a class="dropdown-item" href="{% url 'add-general-supply' %}">Додати назву товара</a>
+      <div class="dropdown-divider"></div>
+      <a class="dropdown-item" href="{% url 'app_settings' %}">Settings</a>
+
   </div>
 </div>
                             {% endif %}

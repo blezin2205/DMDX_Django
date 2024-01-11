@@ -28,6 +28,8 @@
           <p class="mb-2"><span>Статус поставки:</span> <span style="color: #deb05b; font-weight: bold">Підтверджено замовником</span></p>
         {% elif  order.state_of_delivery == 'Awaiting' %}
         <p class="mb-2"><span>Статус поставки:</span> <span style="color: #de925b; font-weight: bold">Замовлено у виробника</span></p>
+          {% elif  order.state_of_delivery == 'Complete_Handle' %}
+        <p class="mb-2"><span>Статус поставки:</span> <span style="color: rgba(3,111,59,0.91); font-weight: bold">Повністю поставлено(Закрито вручну)</span></p>
         {% endif %}
 
         {% if order.comment %}
