@@ -2843,152 +2843,153 @@ def render_to_xls(request, order_id):
     return response
 
 
+# def preorder_render_to_xls(request, order_id):
+#     order = get_object_or_404(PreOrder, pk=order_id)
+#     supplies_in_order_all = order.supplyinpreorder_set.all()
+#     supplies_in_order = []
+#     for sup in supplies_in_order_all:
+#         if sup.count_in_order - sup.count_in_order_current > 0:
+#             supplies_in_order.append(sup)
+#     print(supplies_in_order)
+#
+#     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+#     response['Content-Disposition'] = f"attachment; filename=Preorder_{order_id}.xlsx"
+#
+#     row_num = 9
+#
+#     wb = Workbook(response, {'in_memory': True})
+#     ws = wb.add_worksheet(f'Order №{order_id}')
+#     format = wb.add_format({'bold': True})
+#     format.set_font_size(16)
+#
+#     columns_table = [{'header': '№'},
+#                      {'header': 'Name'},
+#                      {'header': 'Category'},
+#                      {'header': 'REF'},
+#                      {'header': 'SMN code'},
+#                      {'header': 'Count in order'},
+#                      {'header': 'Delivered count'},
+#                      {'header': 'Awaiting count'},
+#                      # {'header': 'Index'}
+#                      ]
+#
+#     ws.write(0, 0,
+#              f'Замов. №{order_id} для {order.place.name[:30]}, {order.place.city_ref.name} від {order.dateCreated.strftime("%d-%m-%Y")}',
+#              format)
+#     if order.comment:
+#         format = wb.add_format()
+#         format.set_font_size(14)
+#         ws.write(1, 0, f'Коммент.: {order.comment}', format)
+#         ws.write(2, 0, f'Всього: {len(supplies_in_order)} шт.', format)
+#
+#     format = wb.add_format({'text_wrap': True})
+#     format.set_font_size(14)
+#
+#     supplyNotExistColor = '#fcd9d9'
+#     onlyGoodColor = '#fffcad'
+#     onlyGoodSixMonthColor = '#e3fad4'
+#     onlyExpiredColor = '#ffe1ad'
+#
+#     supplyNotExistColorIndex = 1
+#     onlyGoodColorIndex = 2
+#     onlyGoodSixMonthColorIndex = 3
+#     onlyExpiredColorIndex = 4
+#
+#     six_months = timezone.now().date() + relativedelta(months=+6)
+#
+#     format = wb.add_format({'bg_color': supplyNotExistColor})
+#     format.set_font_size(14)
+#     ws.write(4, 0, 'Немає на складі', format)
+#     ws.write(4, 1, '', format)
+#     ws.write(4, 2, '', format)
+#     ws.write(4, 3, supplyNotExistColorIndex, format)
+#
+#     format = wb.add_format({'bg_color': onlyGoodColor})
+#     format.set_font_size(14)
+#     ws.write(5, 0, 'Товар є на складі з терміном до 6-ти місяців', format)
+#     ws.write(5, 1, '', format)
+#     ws.write(5, 2, '', format)
+#     ws.write(5, 3, onlyGoodColorIndex, format)
+#
+#     format = wb.add_format({'bg_color': onlyGoodSixMonthColor})
+#     format.set_font_size(14)
+#     ws.write(6, 0, 'Товар є на складі з терміном більше 6-ти місяців', format)
+#     ws.write(6, 1, '', format)
+#     ws.write(6, 2, '', format)
+#     ws.write(6, 3, onlyGoodSixMonthColorIndex, format)
+#
+#     format = wb.add_format({'bg_color': onlyExpiredColor})
+#     format.set_font_size(14)
+#     ws.write(7, 0, 'Товар є на складі тільки прострочений', format)
+#     ws.write(7, 1, '', format)
+#     ws.write(7, 2, '', format)
+#     ws.write(7, 3, onlyExpiredColorIndex, format)
+#
+#     for row in supplies_in_order:
+#
+#         supplyNotExist = row.generalSupply.general.count() == 0
+#         onlyExpired = row.generalSupply.general.filter(expiredDate__lte=timezone.now().date()).count() > 0
+#         onlyGood = row.generalSupply.general.filter(expiredDate__range=[timezone.now().date(), six_months]).count() > 0
+#
+#         onlyGoodSixMonth = row.generalSupply.general.filter(expiredDate__gte=six_months).count() > 0
+#         suppd = row.generalSupply.general.filter(expiredDate__gte=six_months)
+#         good_and_expired = onlyGood and onlyExpired
+#
+#         format = wb.add_format({'text_wrap': True})
+#         format.set_font_size(14)
+#         colorIndex = 0
+#
+#         if supplyNotExist:
+#             format = wb.add_format({'text_wrap': True, 'bg_color': supplyNotExistColor})
+#             format.set_font_size(14)
+#             colorIndex = supplyNotExistColorIndex
+#         elif onlyGood:
+#             format = wb.add_format({'text_wrap': True, 'bg_color': onlyGoodColor})
+#             format.set_font_size(14)
+#             colorIndex = onlyGoodColorIndex
+#         elif onlyGoodSixMonth:
+#             format = wb.add_format({'text_wrap': True, 'bg_color': onlyGoodSixMonthColor})
+#             format.set_font_size(14)
+#             colorIndex = onlyGoodSixMonthColorIndex
+#         elif onlyExpired:
+#             format = wb.add_format({'text_wrap': True, 'bg_color': onlyExpiredColor})
+#             format.set_font_size(14)
+#             colorIndex = onlyExpiredColorIndex
+#
+#         row_num += 1
+#         name = row.generalSupply.name
+#         ref = ''
+#         if row.generalSupply.ref:
+#             ref = row.generalSupply.ref
+#         smn = ''
+#         if row.generalSupply.SMN_code:
+#             smn = row.generalSupply.SMN_code
+#         category = ''
+#         if row.generalSupply.category:
+#             category = row.generalSupply.category
+#         count_in_order = row.count_in_order
+#         current_delivery_count = row.count_in_order_current
+#         count_borg = row.count_in_order - row.count_in_order_current
+#         date_expired = ''
+#
+#         val_row = [name, category, ref, smn, count_in_order, current_delivery_count, count_borg]
+#
+#         for col_num in range(len(val_row)):
+#             ws.write(row_num, 0, row_num - 3)
+#             ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
+#
+#     ws.set_column(0, 0, 5)
+#     ws.set_column(1, 1, 35)
+#     ws.set_column(2, 4, 20)
+#     ws.set_column(4, 7, 15)
+#     # ws.set_column(8, 8, 5)
+#
+#     ws.add_table(9, 0, len(supplies_in_order) + 9, len(columns_table) - 1, {'columns': columns_table})
+#     wb.close()
+#
+#     return response
 def preorder_render_to_xls(request, order_id):
-    order = get_object_or_404(PreOrder, pk=order_id)
-    supplies_in_order_all = order.supplyinpreorder_set.all()
-    supplies_in_order = []
-    for sup in supplies_in_order_all:
-        if sup.count_in_order - sup.count_in_order_current > 0:
-            supplies_in_order.append(sup)
-    print(supplies_in_order)
-
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f"attachment; filename=Preorder_{order_id}.xlsx"
-
-    row_num = 9
-
-    wb = Workbook(response, {'in_memory': True})
-    ws = wb.add_worksheet(f'Order №{order_id}')
-    format = wb.add_format({'bold': True})
-    format.set_font_size(16)
-
-    columns_table = [{'header': '№'},
-                     {'header': 'Name'},
-                     {'header': 'Category'},
-                     {'header': 'REF'},
-                     {'header': 'SMN code'},
-                     {'header': 'Count in order'},
-                     {'header': 'Delivered count'},
-                     {'header': 'Awaiting count'},
-                     # {'header': 'Index'}
-                     ]
-
-    ws.write(0, 0,
-             f'Замов. №{order_id} для {order.place.name[:30]}, {order.place.city_ref.name} від {order.dateCreated.strftime("%d-%m-%Y")}',
-             format)
-    if order.comment:
-        format = wb.add_format()
-        format.set_font_size(14)
-        ws.write(1, 0, f'Коммент.: {order.comment}', format)
-        ws.write(2, 0, f'Всього: {len(supplies_in_order)} шт.', format)
-
-    format = wb.add_format({'text_wrap': True})
-    format.set_font_size(14)
-
-    supplyNotExistColor = '#fcd9d9'
-    onlyGoodColor = '#fffcad'
-    onlyGoodSixMonthColor = '#e3fad4'
-    onlyExpiredColor = '#ffe1ad'
-
-    supplyNotExistColorIndex = 1
-    onlyGoodColorIndex = 2
-    onlyGoodSixMonthColorIndex = 3
-    onlyExpiredColorIndex = 4
-
-    six_months = timezone.now().date() + relativedelta(months=+6)
-
-    format = wb.add_format({'bg_color': supplyNotExistColor})
-    format.set_font_size(14)
-    ws.write(4, 0, 'Немає на складі', format)
-    ws.write(4, 1, '', format)
-    ws.write(4, 2, '', format)
-    ws.write(4, 3, supplyNotExistColorIndex, format)
-
-    format = wb.add_format({'bg_color': onlyGoodColor})
-    format.set_font_size(14)
-    ws.write(5, 0, 'Товар є на складі з терміном до 6-ти місяців', format)
-    ws.write(5, 1, '', format)
-    ws.write(5, 2, '', format)
-    ws.write(5, 3, onlyGoodColorIndex, format)
-
-    format = wb.add_format({'bg_color': onlyGoodSixMonthColor})
-    format.set_font_size(14)
-    ws.write(6, 0, 'Товар є на складі з терміном більше 6-ти місяців', format)
-    ws.write(6, 1, '', format)
-    ws.write(6, 2, '', format)
-    ws.write(6, 3, onlyGoodSixMonthColorIndex, format)
-
-    format = wb.add_format({'bg_color': onlyExpiredColor})
-    format.set_font_size(14)
-    ws.write(7, 0, 'Товар є на складі тільки прострочений', format)
-    ws.write(7, 1, '', format)
-    ws.write(7, 2, '', format)
-    ws.write(7, 3, onlyExpiredColorIndex, format)
-
-    for row in supplies_in_order:
-
-        supplyNotExist = row.generalSupply.general.count() == 0
-        onlyExpired = row.generalSupply.general.filter(expiredDate__lte=timezone.now().date()).count() > 0
-        onlyGood = row.generalSupply.general.filter(expiredDate__range=[timezone.now().date(), six_months]).count() > 0
-
-        onlyGoodSixMonth = row.generalSupply.general.filter(expiredDate__gte=six_months).count() > 0
-        suppd = row.generalSupply.general.filter(expiredDate__gte=six_months)
-        good_and_expired = onlyGood and onlyExpired
-
-        format = wb.add_format({'text_wrap': True})
-        format.set_font_size(14)
-        colorIndex = 0
-
-        if supplyNotExist:
-            format = wb.add_format({'text_wrap': True, 'bg_color': supplyNotExistColor})
-            format.set_font_size(14)
-            colorIndex = supplyNotExistColorIndex
-        elif onlyGood:
-            format = wb.add_format({'text_wrap': True, 'bg_color': onlyGoodColor})
-            format.set_font_size(14)
-            colorIndex = onlyGoodColorIndex
-        elif onlyGoodSixMonth:
-            format = wb.add_format({'text_wrap': True, 'bg_color': onlyGoodSixMonthColor})
-            format.set_font_size(14)
-            colorIndex = onlyGoodSixMonthColorIndex
-        elif onlyExpired:
-            format = wb.add_format({'text_wrap': True, 'bg_color': onlyExpiredColor})
-            format.set_font_size(14)
-            colorIndex = onlyExpiredColorIndex
-
-        row_num += 1
-        name = row.generalSupply.name
-        ref = ''
-        if row.generalSupply.ref:
-            ref = row.generalSupply.ref
-        smn = ''
-        if row.generalSupply.SMN_code:
-            smn = row.generalSupply.SMN_code
-        category = ''
-        if row.generalSupply.category:
-            category = row.generalSupply.category
-        count_in_order = row.count_in_order
-        current_delivery_count = row.count_in_order_current
-        count_borg = row.count_in_order - row.count_in_order_current
-        date_expired = ''
-
-        val_row = [name, category, ref, smn, count_in_order, current_delivery_count, count_borg]
-
-        for col_num in range(len(val_row)):
-            ws.write(row_num, 0, row_num - 3)
-            ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
-
-    ws.set_column(0, 0, 5)
-    ws.set_column(1, 1, 35)
-    ws.set_column(2, 4, 20)
-    ws.set_column(4, 7, 15)
-    # ws.set_column(8, 8, 5)
-
-    ws.add_table(9, 0, len(supplies_in_order) + 9, len(columns_table) - 1, {'columns': columns_table})
-    wb.close()
-
-    return response
-
+    return generate_list_of_xls_from_preorders_list([order_id])
 
 @login_required(login_url='login')
 def devices_render_to_xls(request):
@@ -3058,22 +3059,23 @@ def orderDetail(request, order_id, sup_id):
     next = request.POST.get('next')
 
     if request.method == 'POST':
-
         if 'delete' in request.POST:
             next = request.POST.get('next')
             if not order.isComplete:
                 supps = order.supplyinorder_set.all()
-                for el in supps:
-                    if el.hasSupply():
-                        countInOrder = el.count_in_order
-                        supp = el.supply
-                        supp.countOnHold -= countInOrder
-                        supp.save(update_fields=['countOnHold'])
+                for suppInOrder in supps:
+                    if suppInOrder.supply_in_booked_order:
+                        suppInOrder.supply_in_booked_order.countOnHold -= suppInOrder.count_in_order
+                        suppInOrder.supply_in_booked_order.save(update_fields=['countOnHold'])
+                    elif suppInOrder.hasSupply():
+                        supp_for_supp_in_order = suppInOrder.supply
+                        supp_for_supp_in_order.countOnHold -= suppInOrder.count_in_order
+                        supp_for_supp_in_order.save(update_fields=['countOnHold'])
 
-                    for_preorder = el.supply_for_order.for_preorder or None
+                    for_preorder = suppInOrder.supply_for_order.for_preorder or None
                     if for_preorder:
-                        sup_in_preorder = for_preorder.supplyinpreorder_set.get(generalSupply=el.generalSupply)
-                        sup_in_preorder.count_in_order_current -= countInOrder
+                        sup_in_preorder = for_preorder.supplyinpreorder_set.get(generalSupply=suppInOrder.generalSupply)
+                        sup_in_preorder.count_in_order_current -= suppInOrder.count_in_order
                         if sup_in_preorder.count_in_order_current >= sup_in_preorder.count_in_order:
                             sup_in_preorder.state_of_delivery = 'Complete'
                         elif sup_in_preorder.count_in_order_current != 0 and sup_in_preorder.count_in_order_current < sup_in_preorder.count_in_order:

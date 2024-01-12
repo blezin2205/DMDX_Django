@@ -102,7 +102,9 @@
             </td>
 
      {% if order.isComplete %}
-         <td>{{ el.count_in_order_current }}</td>
+         <td>{{ el.count_in_order_current }}
+         {% if el.get_booked_count > 0 %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Заброньовно для цього передзамовлення">{{ el.get_booked_count }}</span> {% endif %}
+         </td>
          <td>{{ el.count_in_order|sub:el.count_in_order_current }}</td>
 
      {% endif %}
