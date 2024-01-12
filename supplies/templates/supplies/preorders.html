@@ -58,7 +58,18 @@
 
 
 {#        </form>#}
+<div class="col d-flex justify-content-end pe-2">
+    {% if isArchiveChoosed %}
+         <button type="submit" class="btn btn-outline-primary">
+        Сховати архів
+    </button>
+    {% else %}
+         <button type="submit" class="btn btn-outline-primary" name="get_archive_preorders">
+        Показати архів
+    </button>
+    {% endif %}
 
+    </div>
 
 {% if orders.count == 0 %}
 

@@ -153,6 +153,7 @@ class PreorderFilter(django_filters.FilterSet):
         model = PreOrder
         fields = ['state_of_delivery', 'isComplete', 'for_state_of_client', 'isPreorder', 'search_text']
 
+
     def filter_by_state_of_delivery(self, queryset, name, value):
         return queryset.filter(state_of_delivery=value)
 
@@ -246,6 +247,7 @@ class ServiceNotesFilter(django_filters.FilterSet):
         self.filters['for_place'].label = "Клієнт"
 
 
+
 class DeviceFilter(django_filters.FilterSet):
     serial_number = CharFilter(field_name='serial_number', lookup_expr='icontains', label='Серійний номер')
     class Meta:
@@ -265,23 +267,51 @@ class DeviceFilter(django_filters.FilterSet):
         self.filters['in_city'].label = "Місто"
 
 
+import django_filters
+
 class PlaceFilter(django_filters.FilterSet):
     PRIVATE_CHOICES = (
         ('1', 'Приватні'),
         ('0', 'Державні')
     )
 
-    isPrivatePlace = ChoiceFilter(choices=PRIVATE_CHOICES, label='Тип організації')
-    name = CharFilter(field_name='name', lookup_expr='icontains', label='Назва')
-    city = CharFilter(field_name='city', lookup_expr='icontains', label='Місто')
+    OPTIONS_BUTTON = (
+        ('booked_supplies', 'Заброньовані товари'),
+        ('preorders', 'Передзамовлення'),
+        ('orders', 'Замовлення'),
+        ('service_notes', 'Сервісні замітки'),
+        ('devices', 'Прилади'),
+    )
+
+    isPrivatePlace = django_filters.ChoiceFilter(choices=PRIVATE_CHOICES, label='Тип організації')
+    name = django_filters.CharFilter(field_name='name', lookup_expr='icontains', label='Назва')
+    city = django_filters.CharFilter(field_name='city', lookup_expr='icontains', label='Місто')
+    is_has_options_button = django_filters.MultipleChoiceFilter(choices=OPTIONS_BUTTON,
+                                                            widget=forms.CheckboxSelectMultiple(),
+                                                            method='filter_by_is_has_options_button')
 
     class Meta:
         model = Place
-        fields =  '__all__'
+        fields = ['isPrivatePlace', 'name', 'city_ref', 'is_has_options_button']
 
     def __init__(self, *args, **kwargs):
         super(PlaceFilter, self).__init__(*args, **kwargs)
         self.filters['city_ref'].label = "Місто"
+        self.filters['is_has_options_button'].label = "Наявність записів"
+
+    def filter_by_is_has_options_button(self, queryset, name, value):
+        if 'booked_supplies' in value:
+            queryset = queryset.filter(supplyinbookedorder__isnull=False).distinct()
+        if 'preorders' in value:
+            queryset = queryset.filter(preorder__isnull=False).distinct()
+        if 'orders' in value:
+            queryset = queryset.filter(order__isnull=False).distinct()
+        if 'service_notes' in value:
+            queryset = queryset.filter(servicenote__isnull=False).distinct()
+        if 'devices' in value:
+            queryset = queryset.filter(device__isnull=False).distinct()
+        return queryset
+
 
 
 class CityFilter(django_filters.FilterSet):

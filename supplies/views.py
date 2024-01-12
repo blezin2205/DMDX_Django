@@ -1676,18 +1676,25 @@ def orders(request):
 
 
 
-def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus = False, set_complete_ctatus = False):
+def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus = False, set_complete_ctatus = False, set_is_closed=False):
     selected_ids = map(int, preorders_list)
     fileteredOredrs = PreOrder.objects.filter(pk__in=selected_ids)
     if withChangedStatus:
         for ord in fileteredOredrs:
             if ord.state_of_delivery == 'accepted_by_customer':
                 ord.state_of_delivery = 'Awaiting'
-                ord.save()
+                ord.save(update_fields=['state_of_delivery'])
     if set_complete_ctatus:
         for ord in fileteredOredrs:
             ord.state_of_delivery = 'Complete_Handle'
-            ord.save()
+            ord.save(update_fields=['state_of_delivery'])
+        return
+    if set_is_closed:
+        for ord in fileteredOredrs:
+            ord.isClosed = True
+            ord.isComplete = True
+            ord.state_of_delivery = 'Complete_Handle'
+            ord.save(update_fields=['isClosed', 'isComplete', 'state_of_delivery'])
         return
 
 
@@ -1776,13 +1783,23 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
 @login_required(login_url='login')
 def preorders(request):
     cartCountData = countCartItemsHelper(request)
+    isArchiveChoosed = False
 
     isClient = request.user.groups.filter(name='client').exists()
     if isClient:
-        orders = PreOrder.objects.filter(place__user=request.user).order_by('-id')
+        if 'get_archive_preorders' in request.POST:
+            isArchiveChoosed = True
+            orders = PreOrder.objects.filter(place__user=request.user, isClosed=True).order_by('-id')
+        else:
+            orders = PreOrder.objects.filter(place__user=request.user, isClosed=False).order_by('-id')
         title = f'Всі передзамовлення для {request.user.first_name} {request.user.last_name}'
     else:
-        orders = PreOrder.objects.all().order_by('-state_of_delivery', '-id')
+        if 'get_archive_preorders' in request.POST:
+            isArchiveChoosed = True
+            orders = PreOrder.objects.filter(isClosed=True).order_by('-state_of_delivery', '-id')
+        else:
+            orders = PreOrder.objects.filter(isClosed=False).order_by('-state_of_delivery', '-id')
+
         title = 'Всі передзамовлення'
 
     preorderFilter = PreorderFilter(request.POST, queryset=orders)
@@ -1796,9 +1813,11 @@ def preorders(request):
             return generate_list_of_xls_from_preorders_list(selected_orders, True)
         if 'mark_as_delivery_completed' in request.POST:
             generate_list_of_xls_from_preorders_list(selected_orders, False, True)
+        if 'set_is_closed' in request.POST:
+            generate_list_of_xls_from_preorders_list(selected_orders, False, False, True)
 
     return render(request, 'supplies/preorders.html',
-                  {'title': title, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData, 'isOrders': True,
+                  {'title': title, 'isArchiveChoosed': isArchiveChoosed, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData, 'isOrders': True,
                    'isPreordersTab': True})
 
 
