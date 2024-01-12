@@ -1693,7 +1693,8 @@ def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus =
         for ord in fileteredOredrs:
             ord.isClosed = True
             ord.isComplete = True
-            ord.state_of_delivery = 'Complete_Handle'
+            if ord.state_of_delivery != 'Complete':
+                ord.state_of_delivery = 'Complete_Handle'
             ord.save(update_fields=['isClosed', 'isComplete', 'state_of_delivery'])
         return
 
@@ -1958,11 +1959,18 @@ def ordersForClient(request, client_id):
 @login_required(login_url='login')
 def agreementsForClient(request, client_id):
     place = get_object_or_404(Place, pk=client_id)
-    orders = place.preorder_set.all().order_by('-id')
-    preorderFilter = PreorderFilter(request.GET, queryset=orders)
-    orders = preorderFilter.qs
     cartCountData = countCartItemsHelper(request)
     title = f'Всі передзамовлення для клієнта: \n {place.name}, {place.city_ref.name}'
+    isArchiveChoosed = False
+    if 'get_archive_preorders' in request.POST:
+        isArchiveChoosed = True
+        orders = place.preorder_set.filter(isClosed=True).order_by('-state_of_delivery', '-id')
+    else:
+        orders = place.preorder_set.filter(isClosed=False).order_by('-state_of_delivery', '-id')
+
+    preorderFilter = PreorderFilter(request.GET, queryset=orders)
+    orders = preorderFilter.qs
+
 
     if request.method == 'POST':
         selected_orders = request.POST.getlist('xls_preorder_print_buttons')
@@ -1976,6 +1984,7 @@ def agreementsForClient(request, client_id):
     return render(request, 'supplies/preorders.html',
            {'title': title, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData,
             'isOrders': True,
+            'isArchiveChoosed': isArchiveChoosed,
             'isPreordersTab': True, 'fromClientList': True})
 
 
