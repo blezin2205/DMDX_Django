@@ -21,13 +21,15 @@
 
 
     {% csrf_token %}
-
         <div class="form-check form-switch">
-            <div class="d-flex justify-content-between px-2">
-        {{ form.send_teams_msg }}
-        <label class="form-check-label" for="{{ form.send_teams_msg.id_for_label }}">
-             <h6><img src="{% static 'images/teams.png' %}" width="25" height="25"> notifications</h6>
+            <div class="d-flex justify-content-between pe-4">
+                <label class="form-check-label" for="{{ form.send_teams_msg.id_for_label }}">
+             <h6>
+                 <img src="{% static 'images/teams.png' %}" width="25" height="25">
+                 notifications
+             </h6>
               </label>
+        {{ form.send_teams_msg }}
     </div>
     </div>
     <hr>
