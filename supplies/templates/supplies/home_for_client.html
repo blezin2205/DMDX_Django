@@ -13,7 +13,10 @@
     <div class="container py-1">
   <div class="btn-group my-3">
   <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
-  <a href="{% url 'booked_sups_list_for_client' request.user.get_user_place_id %}" class="btn btn-primary mx-2 {% if isChild %} active {% endif %}">Список заброньованих товарів</a>
+  {% if request.user.get_user_place_id != "NO EXIST" and booked_list_exist %}
+      <a href="{% url 'booked_sups_list_for_client' request.user.get_user_place_id %}" class="btn btn-primary mx-2 {% if isChild %} active {% endif %}">Список заброньованих товарів</a>
+  {% endif %}
+
 </div>
 
 <div class="container py-1">

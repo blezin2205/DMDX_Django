@@ -13,7 +13,10 @@
             <div class="container py-1">
   <div class="btn-group my-3">
   <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
-  <a href="{% url 'booked_sups_list_for_client' request.user.get_user_place_id %}" class="btn btn-primary mx-2 {% if isBookedList %} active {% endif %}">Список заброньованих товарів</a>
+   {% if request.user.get_user_place_id != "NO EXIST" %}
+      <a href="{% url 'booked_sups_list_for_client' request.user.get_user_place_id %}" class="btn btn-primary mx-2 {% if isBookedList %} active {% endif %}">Список заброньованих товарів</a>
+  {% endif %}
+
 </div>
     {% endif %}
 
@@ -44,14 +47,17 @@
         <th scope="col">Категорія</th>
         <th scope="col">REF</th>
         <th scope="col">SMN</th>
-        <th scope="col">LOT</th>
-        <th scope="col">Кількість</th>
-        <th scope="col">Термін</th>
-        <th scope="col"></th>
+        <th scope="col" >
+            <div class="d-flex justify-content-start">
+                <div style="width: 150px">LOT</div>
+            <div style="width: 100px">Кількість</div>
+            <div style="width: 100px">Термін</div>
+            </div>
+        </th>
     </tr>
   </thead>
   <tbody>
-    {% for el in supplies %}
+    {% for el in general_supply_list %}
 <div class="booked_supply_list_item_card">
      {% include 'booked_flow/booked_supply_list_item.html' %}
         </div>

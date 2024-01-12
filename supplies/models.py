@@ -33,7 +33,7 @@ class CustomUser(AbstractUser):
         try:
             place_id = Place.objects.get(user=self).id
         except:
-            place_id = ""
+            place_id = "NO EXIST"
         return place_id
 
     def isClient(self):
@@ -814,7 +814,7 @@ class BookedOrderInCart(models.Model):
 
 class BookedSupplyInOrderInCart(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True, default=0)
-    supply = models.OneToOneField(SupplyInBookedOrder, on_delete=models.SET_NULL, null=True, blank=True)
+    supply = models.OneToOneField(SupplyInBookedOrder, on_delete=models.CASCADE, null=True, blank=True)
     supply_for_order = models.ForeignKey(BookedOrderInCart, on_delete=models.CASCADE, null=True)
     lot = models.CharField(max_length=20, null=True, blank=True)
     date_expired = models.DateField(null=True)

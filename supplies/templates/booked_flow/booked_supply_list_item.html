@@ -1,53 +1,64 @@
 {% load mathfilters %}
 {% load myapp_extras %}
-<tr>
+<tr class="main_tr">
 {#<form method="POST" action="">#}
 {#{% csrf_token %}#}
-      <th scope="row" style="text-align: left">{{ el.generalSupply.name }}</th>
-      <td>{{ el.generalSupply.package_and_tests }}</td>
-     <td>{{ el.generalSupply.category }}</td>
+      <th scope="row" style="text-align: left">{{ el.name }}</th>
+      <td>{{ el.package_and_tests }}</td>
+     <td>{{ el.category }}</td>
       <td>
 
-          {% if el.generalSupply.ref is not none %}
-                        {{ el.generalSupply.ref }}
+          {% if el.ref is not none %}
+                        {{ el.ref }}
                 {% endif %}
       </td>
      <td>
 
-          {% if el.generalSupply.SMN_code is not none %}
-                        {{ el.generalSupply.SMN_code }}
+          {% if el.SMN_code is not none %}
+                        {{ el.SMN_code }}
                 {% endif %}
       </td>
 
-         <td class="supplyRow">
-                    {% if el.lot is not none %}
-                        {{ el.lot }}
-                {% endif %}
-                    </td>
+<td class="supplyRow">
 
-            <td>
+<table class="table table-borderless mb-0" style="background: rgb(245,245,245); border-radius: 8px;">
+  <tbody>
+   {% for supp in el.supplyinbookedorder_set.all %}
+    <tr class="d-flex justify-content-between">
+
+      <td style="width: 150px"><div>{% if supp.supply.supplyLot is not none %} {{ supp.supply.supplyLot }} {% endif %}</div></td>
+
+    <td style="width: 100px">
             {% if request.user.is_staff %}
 
-                <button style="border: none; background: none; color: blue; font-weight: bold" hx-post="{% url 'minus_from_booked_supply_list_item' %}" hx-vals='{"del_sup_id": "{{ el.id }}"}' hx-target="closest tr" hx-swap="outerHTML">-</button>
-                <span class="px-2">{{ el.count_in_order }}</span>
-                {% if el.countOnHold %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="В очікуванні в замовленні">{{ el.countOnHold }}</span> {% endif %}
+                <button style="border: none; background: none; color: blue; font-weight: bold" hx-post="{% url 'minus_from_booked_supply_list_item' %}" hx-vals='{"del_sup_id": "{{ supp.id }}"}' hx-target="closest tr.main_tr" hx-swap="outerHTML">-</button>
+                <span class="px-2">{{ supp.count_in_order }}</span>
+                {% if supp.countOnHold %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="В очікуванні в замовленні">{{ supp.countOnHold }}</span> {% endif %}
 
-                {% if el.supply.count|sub:el.supply.countOnHold > 0 %}
-                    <button style="border: none; background: none; color: blue; font-weight: bold" hx-post="{% url 'plus_from_booked_supply_list_item' %}" hx-vals='{"del_sup_id": "{{ el.id }}"}' hx-target="closest tr" hx-swap="outerHTML">+</button>
+                {% if supp.supply.count|sub:supp.supply.countOnHold > 0 %}
+                    <button style="border: none; background: none; color: blue; font-weight: bold" hx-post="{% url 'plus_from_booked_supply_list_item' %}" hx-vals='{"del_sup_id": "{{ supp.id }}"}' hx-target="closest tr.main_tr" hx-swap="outerHTML">+</button>
                 {% endif %}
 
             {% else %}
 
-                    <span class="px-2">{{ el.count_in_order }}</span>
-                {% if el.countOnHold %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="В очікуванні в замовленні">{{ el.countOnHold }}</span> {% endif %}
+                    <span class="px-2">{{ supp.count_in_order }}</span>
+                {% if supp.countOnHold %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="В очікуванні в замовленні">{{ supp.countOnHold }}</span> {% endif %}
 
             {% endif %}
             </td>
 
-            <td><div style="color:{% if el.supply.date_is_good %}blue{% elif el.supply.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}</div></td>
+      <td style="width: 100px"> <div style="color:{% if supp.supply.date_is_good %}blue{% elif supp.supply.date_is_today %}orange{% else %}red{% endif %};">{{ supp.date_expired|date:"d.m.Y" }}
+ </div>
+      </td>
 
-            <td>{% include 'booked_flow/cart_button.html' %}
+            <td class="px-4">{% include 'booked_flow/cart_button.html' %}
 
             </td>
+
+    </tr>
+     {% endfor %}
+  </tbody>
+</table>
+</td>
 {# </form>#}
     </tr>

@@ -655,16 +655,16 @@ from itertools import chain
 
 @login_required(login_url='login')
 def home(request):
-
     uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
     isClient = request.user.groups.filter(name='client').exists() and not request.user.is_staff
+    booked_list_exist = False
     if isClient:
-
         user_places = request.user.place_set.all()
         user_allowed_categories = set()
         for plc in user_places:
             categories = plc.allowed_categories.values_list('id', flat=True)
             # user_allowed_categories.add(categories.values())
+            booked_list_exist = SupplyInBookedOrder.objects.filter(supply_for_place=plc).exists()
             for quer in categories:
                 user_allowed_categories.add(quer)
 
@@ -726,6 +726,7 @@ def home(request):
                                                   'supplies': page_obj, 'suppFilter': suppFilter,
                                                   'isHome': True,
                                                   'isAll': True,
+                                                   'booked_list_exist': booked_list_exist,
                                                   'uncompleteOrdersExist': uncompleteOrdersExist,
                                                   'uncompletePreOrdersExist': uncompletePreOrdersExist})
 

@@ -47,7 +47,7 @@ def booked_supplies_list(request, client_id):
     cartCountData = countCartItemsHelper(request)
     suppFilter = BookedSuppliesFilter(request.GET, queryset=supplies_list)
     supplies_list = suppFilter.qs
-    print(isClient)
+    general_supply_list = GeneralSupply.objects.filter(supplyinbookedorder__in=supplies_list).distinct()
     if isClient:
         title = f'Всі ваші заброньовані товари'
         user_places = request.user.place_set.all()
@@ -134,7 +134,7 @@ def booked_supplies_list(request, client_id):
 
 
     return render(request, 'booked_flow/booked_supplies_list.html',
-                  {'title': title, 'isBookedList': True, 'isHome': True, 'suppFilter': suppFilter, 'supplies': supplies_list, 'for_place': place, 'cartCountData': cartCountData},
+                  {'title': title, 'isBookedList': True, 'isHome': True, 'suppFilter': suppFilter, 'supplies': supplies_list, 'general_supply_list': general_supply_list, 'for_place': place, 'cartCountData': cartCountData},
                   )
 
 @login_required(login_url='login')
@@ -160,7 +160,7 @@ def add_sup_to_booked_cart(request, sup_id):
         booked_sup_in_cart.save()
 
     response = render(request, 'booked_flow/cart_button.html',
-                      {'el': booked_sup, 'booked_sup_in_cart': booked_sup_in_cart})
+                      {'supp': booked_sup, 'booked_sup_in_cart': booked_sup_in_cart})
     trigger_client_event(response, 'subscribe-booked-cart-badge-count', {})
     return response
 
@@ -255,8 +255,10 @@ def minus_from_booked_supply_list_item(request):
         return HttpResponse(status=200)
     else:
         sup.save(update_fields=['count_in_order'])
-        return render(request, 'booked_flow/booked_supply_list_item.html',
-                      {'el': sup, })
+
+    gen_sup = sup.generalSupply
+    return render(request, 'booked_flow/booked_supply_list_item.html',
+                      {'el': gen_sup})
 
 
 def plus_from_booked_supply_list_item(request):
@@ -267,8 +269,9 @@ def plus_from_booked_supply_list_item(request):
     sup.supply.countOnHold += 1
     sup.supply.save(update_fields=['countOnHold'])
     sup.save(update_fields=['count_in_order', 'supply'])
+    gen_sup = sup.generalSupply
     return render(request, 'booked_flow/booked_supply_list_item.html',
-                  {'el': sup, })
+                  {'el': gen_sup, })
 
 
 def delete_sup_from_booked_sups(request, sup_id):
