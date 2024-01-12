@@ -4,7 +4,7 @@
 {% load bootstrap %}
 {% load mathfilters %}
 {% load myapp_extras %}
-
+{% load static %}
     {% block title %}
         <div class="container w-25">
 {{ title }}
@@ -25,7 +25,9 @@
         <div class="form-check form-switch">
             <div class="d-flex justify-content-between px-2">
         {{ form.send_teams_msg }}
-        <label class="form-check-label" for="{{ form.send_teams_msg.id_for_label }}">MSTeams Notifications</label>
+        <label class="form-check-label" for="{{ form.send_teams_msg.id_for_label }}">
+             <h6><img src="{% static 'images/teams.png' %}" width="25" height="25"> notifications</h6>
+              </label>
     </div>
     </div>
     <hr>
