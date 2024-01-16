@@ -1741,6 +1741,7 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
     columns_table = [{'header': '№'},
                      {'header': 'Name'},
                      {'header': 'Category'},
+                     {'header': 'Package / Tests'},
                      {'header': 'REF'},
                      {'header': 'SMN code'},
                      {'header': 'Awaiting count'},
@@ -1756,8 +1757,8 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
 
     ws.set_column(0, 0, 5)
     ws.set_column(1, 1, 35)
-    ws.set_column(2, 4, 20)
-    ws.set_column(4, 5, 15)
+    ws.set_column(2, 5, 20)
+    ws.set_column(5, 6, 15)
     # ws.set_column(8, 8, 5)
 
     ws.add_table(row_num, 0, len(supplies_in_order) + row_num, len(columns_table) - 1, {'columns': columns_table})
@@ -1773,23 +1774,28 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
     for row in supplies_in_order:
         row_num += 1
         name = ''
-        if row.generalSupply.name:
-            name = row.generalSupply.name
         ref = ''
-        if row.generalSupply.ref:
-            ref = row.generalSupply.ref
         smn = ''
-        if row.generalSupply.SMN_code:
-            smn = row.generalSupply.SMN_code
         category = ''
-        if row.generalSupply.category:
-            category = row.generalSupply.category
+        pckg_and_tests = ''
+        if row.generalSupply:
+            if row.generalSupply.name:
+                name = row.generalSupply.name
+            if row.generalSupply.ref:
+                ref = row.generalSupply.ref
+            if row.generalSupply.SMN_code:
+                smn = row.generalSupply.SMN_code
+            if row.generalSupply.category:
+                category = row.generalSupply.category
+            if row.generalSupply.package_and_tests:
+                pckg_and_tests = row.generalSupply.pckg_and_tests
+
         count_in_order = row.count_in_order
         current_delivery_count = row.count_in_order_current
         count_borg = row.count_in_order - row.count_in_order_current - row.get_booked_count()
         date_expired = ''
 
-        val_row = [name, category, ref, smn, count_borg]
+        val_row = [name, category, pckg_and_tests, ref, smn, count_borg]
 
         for col_num in range(len(val_row)):
             ws.write(row_num, 0, row_num - init_row_num)
@@ -2821,19 +2827,22 @@ def render_to_xls(request, order_id):
     for row in supplies_in_order:
         row_num += 1
         name = ''
-        if row.generalSupply.name:
-            name = row.generalSupply.name
-        category = row.generalSupply.category
+        name = ''
         ref = ''
-        if row.generalSupply.ref:
-            ref = row.generalSupply.ref
-        smn_code = ''
-        if row.generalSupply.SMN_code:
-            smn_code = row.generalSupply.SMN_code
+        smn = ''
+        category = ''
         packtests = ''
-        if row.generalSupply.package_and_tests:
-            packtests = row.generalSupply.package_and_tests
-
+        if row.generalSupply:
+            if row.generalSupply.name:
+                name = row.generalSupply.name
+            if row.generalSupply.ref:
+                ref = row.generalSupply.ref
+            if row.generalSupply.SMN_code:
+                smn = row.generalSupply.SMN_code
+            if row.generalSupply.category:
+                category = row.generalSupply.category
+            if row.generalSupply.package_and_tests:
+                packtests = row.generalSupply.package_and_tests
         lot = ''
         if row.lot:
             lot = row.lot
@@ -2841,7 +2850,7 @@ def render_to_xls(request, order_id):
 
         date_expired = row.date_expired.strftime("%d-%m-%Y")
 
-        val_row = [name, packtests, category, ref, smn_code, lot, count, date_expired]
+        val_row = [name, packtests, category, ref, smn, lot, count, date_expired]
 
         for col_num in range(len(val_row)):
             ws.write(row_num, 0, row_num - row_num_to_table)
