@@ -4,6 +4,7 @@ from django import forms
 from django_filters import CharFilter, ChoiceFilter, ModelChoiceFilter
 from django.db.models import Exists, OuterRef, Q, Prefetch
 from django.utils import timezone
+from django.forms.widgets import *
 
 
 class ChildSupplyFilter(django_filters.FilterSet):
@@ -189,9 +190,9 @@ class SupplyFilter(django_filters.FilterSet):
     CHOICES = (
         ('onlyExistChild', 'В наявності'), ('onlyNotExistChild', 'Немає в наявності')
     )
-    name = CharFilter(field_name='name', lookup_expr='icontains', label='Назва товару')
-    ref = CharFilter(field_name='ref', lookup_expr='icontains', label='REF')
-    SMN_code = CharFilter(field_name='SMN_code', lookup_expr='icontains', label='SMN')
+    name = CharFilter(field_name='name', lookup_expr='icontains', label='Назва', widget=TextInput(attrs={'style': 'min-width: 100px;'}))
+    ref = CharFilter(field_name='ref', lookup_expr='icontains', label='REF', widget=TextInput(attrs={'style': 'min-width: 70px;'}))
+    SMN_code = CharFilter(field_name='SMN_code', lookup_expr='icontains', label='SMN', widget=TextInput(attrs={'style': 'min-width: 70px;'}))
     ordering = ChoiceFilter(label='Сортування', choices=EXIST_CHOICES.choices, method='filter_by_order')
 
 

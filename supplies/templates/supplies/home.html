@@ -19,7 +19,7 @@
 </div>
 
      <form method="get" class="form-inline justify-content-center">
-         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
+         <div class="container hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
              <div class="hstack gap-2">
                  {{ suppFilter.form.ordering|as_crispy_field }}
                  {{ suppFilter.form.category|as_crispy_field }}
@@ -33,6 +33,7 @@
 
         </form>
      </div>
+    <div class="table-responsive">
     <table class="table centred mt-3 w-auto mx-auto">
   <thead class="thead-dark">
     <tr>
@@ -201,7 +202,7 @@
 
   </tbody>
 </table>
-
+</div>
     {% if supplies.paginator.num_pages > 1 %}
 <nav aria-label="Page navigation">
     <ul class="pagination justify-content-center">

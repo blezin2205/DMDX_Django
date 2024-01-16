@@ -150,7 +150,7 @@ urlpatterns = [
     path('api/places', apiViews.PlacesApiView.as_view()),
 
     # path('api/auth', views.RegistrationAPIView.as_view()),
-    # path('api/login', views.LoginAPIView.as_view()),
+    path('api/login', apiViews.LoginAPIView.as_view()),
 
     path('add_np_sender_place', views.add_np_sender_place, name='add_np_sender_place'),
 

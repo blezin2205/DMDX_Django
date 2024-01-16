@@ -8,6 +8,11 @@ from rest_framework.views import APIView
 from django.db.models import Q
 from django.http import Http404
 from .forms import *
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate, login
 
 
 
@@ -158,19 +163,25 @@ class RegistrationAPIView(APIView):
 
 
 class LoginAPIView(APIView):
-    """
-    Logs in an existing user.
-    """
-    permission_classes = [AllowAny]
-    serializer_class = LoginSerializer
+    def post(self, request, *args, **kwargs):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            password = serializer.validated_data['password']
+            user = authenticate(request, username=username, password=password)
 
-    def post(self, request):
-        """
-        Checks is user exists.
-        Email and password are required.
-        Returns a JSON web token.
-        """
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
+            if user:
+                login(request, user)
+                token, created = Token.objects.get_or_create(user=user)
+                # Serialize the User object
+                user_serializer = UserSerializer(user)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+                # Include the serialized User data in the response
+                response_data = {
+                    'token': token.key,
+                    'user': user_serializer.data,
+                }
+
+                return Response(response_data, status=status.HTTP_200_OK)
+
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)

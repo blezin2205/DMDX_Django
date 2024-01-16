@@ -187,6 +187,11 @@ class SupplyForm(ModelForm):
     class Meta:
         model = Supply
         fields = ['supplyLot', 'count', 'expiredDate']
+        widgets = {
+            'supplyLot': forms.TextInput(attrs={'style': 'min-width: 150px;'}),
+            'count': forms.NumberInput(attrs={'style': 'min-width: 50px;'}),
+            'expiredDate': forms.DateInput(attrs={'style': 'min-width: 150px;'}),
+        }
 
 
 class NewSupplyForm(ModelForm):

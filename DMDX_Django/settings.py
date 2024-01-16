@@ -16,6 +16,8 @@ import django_heroku
 
 import dj_database_url
 import cloudinary
+import firebase_admin
+from firebase_admin import credentials
 
 # Heroku: Update database configuration from $DATABASE_URL.
 
@@ -49,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'supplies',
     'admin_interface',
     'colorfield',
@@ -66,6 +69,7 @@ INSTALLED_APPS = [
     'django_htmx',
     'django_celery_results',
     'celery_progress',
+    'django_user_agents',
 ]
 
 MIDDLEWARE = [
@@ -77,7 +81,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_htmx.middleware.HtmxMiddleware'
+    'django_htmx.middleware.HtmxMiddleware',
+    'django_user_agents.middleware.UserAgentMiddleware',
 ]
 
 # CLOUDINARY_STORAGE = {
@@ -92,6 +97,18 @@ cloudinary.config(
   api_secret = "so7e0wlsMQUWafO-Yv1QeNcJGkg",
   secure = True
 )
+
+FIREBASE_CONFIG = {
+  "apiKey": "AIzaSyBANia_FqF-VmM5z0KfxOZCwrH66Co3sG0",
+  "authDomain": "dmdx-django.firebaseapp.com",
+  "projectId": "dmdx-django",
+  "storageBucket": "dmdx-django.appspot.com",
+  "messagingSenderId": "106138213160",
+  "appId": "1:106138213160:web:7a4575df49b4dc1226ce1d",
+  "measurementId": "G-V0KT30X5X8"
+}
+cred = credentials.Certificate(BASE_DIR / 'dmdx-django-firebase-adminsdk-jo7r9-ceae2ff3e5.json')
+firebase_admin.initialize_app(cred, FIREBASE_CONFIG)
 
 # DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 

@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 
+import firebase_admin
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse
 from django.urls import reverse
@@ -36,6 +37,9 @@ import pymsteams
 import plotly.express as px
 from django.db.models import Sum, F
 from .tasks import *
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from firebase_admin import storage, firestore, auth
 
 # @login_required(login_url='login')
 # @allowed_users(allowed_roles=['admin'])
@@ -91,7 +95,6 @@ def httpRequest(request):
 
     return render(request, "supplies/http_response.html", {'data': data["data"]})
 
-
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def chartOfSoldSupplies(request):
@@ -130,37 +133,37 @@ def chartOfSoldSupplies(request):
     context = {'chart': chart}
     return render(request, "supplies/chart-sold.html", context)
 
-
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def load_xms_data(request):
     print('Hello')
     counter = 0
 
+    blobs = storage.bucket().list_blobs()
+
+
+    files = []
+    for blob in blobs:
+        print(blob)
+        print(blob.public_url)
+
+    file_url = ''
+
+
     if request.POST:
-        excel_file = request.FILES["excel_file"]
-        catID = request.POST.get("category_id")
-        category_id = int(catID)
-        excel_data_df = pandas.read_excel(excel_file, sheet_name='Immulite', header=None, index_col=None)
-        wb = excel_data_df
-        vals = wb.values
-        for obj in vals:
-            print('----------------------------------')
-            smn = str(obj[1])
-            name = str(obj[2]).removeprefix("IMMULITE").strip()
-            packed = obj[3]
+        file = request.FILES["excel_file"]
+        file_name = default_storage.save(file.name, ContentFile(file.read()))
+        blob = storage.bucket().blob(file.name)
+        blob.upload_from_string(file.read(), content_type=file.content_type)
 
-            print(smn, name, packed)
-
-            if smn != "nan" or name != "nan":
-                new = GeneralSupply(name=name, SMN_code=smn, package_and_tests=packed, category_id=category_id)
-                new.save()
-                counter += 1
+        file_url = blob.generate_signed_url(expiration=3600)
+        print("FILE URL = ", file_url)
 
 
 
 
-    return render(request, 'supplies/load_xms_data.html', {'counter': counter})
+
+    return render(request, 'supplies/load_xms_data.html', {'counter': counter, 'file_url': file_url})
 
 
 
@@ -652,9 +655,18 @@ def logoutUser(request):
     return redirect('login')
 
 from itertools import chain
+from django_user_agents.utils import get_user_agent
 
 @login_required(login_url='login')
 def home(request):
+    user_agent = get_user_agent(request)
+
+    if user_agent.is_mobile:
+        # Render mobile template
+        print("MOBILE VERSION")
+    else:
+        print("DESKTOP VERSION")
+
     uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
     isClient = request.user.groups.filter(name='client').exists() and not request.user.is_staff
     booked_list_exist = False
