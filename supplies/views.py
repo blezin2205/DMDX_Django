@@ -1772,7 +1772,9 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
 
     for row in supplies_in_order:
         row_num += 1
-        name = row.generalSupply.name
+        name = ''
+        if row.generalSupply.name:
+            name = row.generalSupply.name
         ref = ''
         if row.generalSupply.ref:
             ref = row.generalSupply.ref
@@ -2818,7 +2820,9 @@ def render_to_xls(request, order_id):
 
     for row in supplies_in_order:
         row_num += 1
-        name = row.generalSupply.name
+        name = ''
+        if row.generalSupply.name:
+            name = row.generalSupply.name
         category = row.generalSupply.category
         ref = ''
         if row.generalSupply.ref:
