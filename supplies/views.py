@@ -660,7 +660,6 @@ from django_user_agents.utils import get_user_agent
 @login_required(login_url='login')
 def home(request):
     user_agent = get_user_agent(request)
-
     if user_agent.is_mobile:
         # Render mobile template
         print("MOBILE VERSION")

@@ -81,20 +81,27 @@ def get_progress(request, task_id, for_delivery_order_id):
 @allowed_users(allowed_roles=['admin'])
 def upload_supplies_for_new_delivery(request, delivery_order_id=None):
     form = NewDeliveryForm()
+    if delivery_order_id != None:
+        title = f'Додати штрих-коди до поставки № {delivery_order_id}'
+    else:
+        title = "Створити нову поставку"
     if request.method == 'POST':
+        barcode_type = request.POST.get('barcode_type')
         form = NewDeliveryForm(request.POST)
         if form.is_valid():
             string_data = form.cleaned_data['description']
             if delivery_order_id != None:
                 for_delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
+                title = f'Додати штрих-коди до поставки № {for_delivery_order.id}'
             else:
                 for_delivery_order = DeliveryOrder(from_user=request.user)
                 for_delivery_order.save()
-            task = makeDataUpload.delay(string_data, for_delivery_order.id)
+                title = "Створити нову поставку"
+            task = makeDataUpload.delay(string_data, for_delivery_order.id, barcode_type)
             context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': for_delivery_order.id}
             return render(request, 'supplies/upload_supplies_new_delivery_progress.html', context)
 
-    return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form})
+    return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form, 'title': title})
 
 
 @login_required(login_url='login')

@@ -47,7 +47,7 @@ def go_to_sleep(self, duration):
     return HttpResponse("DONE!")
 
 @shared_task(bind=True)
-def makeDataUpload(self, string_data, for_delivery_order_id):
+def makeDataUpload(self, string_data, for_delivery_order_id, barcode_type):
     for_delivery_order = DeliveryOrder.objects.get(id=for_delivery_order_id)
     progress_recorder = ProgressRecorder(self)
     i = 0
@@ -55,21 +55,29 @@ def makeDataUpload(self, string_data, for_delivery_order_id):
     total_requests = len(result_array)
     for item in result_array:
         arr_item = item.split(',')
-        if len(arr_item) == 1:
-            barcode_str = arr_item[0]
-            smn = barcode_str[32:-6]
-            smn = smn[-8:]
-            lot = barcode_str[18:-25]
-            date_expired = barcode_str[23:-17]
-            date_expired = date_expired[-6:]
-            create_supply_objects(item, smn, lot, date_expired, for_delivery_order)
-        elif len(arr_item) == 3:
-            smn = arr_item[0]
-            lot = arr_item[1]
-            date_expired = arr_item[2]
-            create_supply_objects(item, smn, lot, date_expired, for_delivery_order, True)
-        i += 1
-        progress_recorder.set_progress(i, total_requests, f'On iteration {i}')
+        if barcode_type == 'Siemens':
+            if len(arr_item) == 1:
+                barcode_str = arr_item[0]
+                smn = barcode_str[32:-6]
+                smn = smn[-8:]
+                lot = barcode_str[18:-25]
+                date_expired = barcode_str[23:-17]
+                date_expired = date_expired[-6:]
+                create_supply_objects(item, smn, lot, date_expired, for_delivery_order)
+            elif len(arr_item) == 3:
+                smn = arr_item[0]
+                lot = arr_item[1]
+                date_expired = arr_item[2]
+                create_supply_objects(item, smn, lot, date_expired, for_delivery_order, True)
+            i += 1
+            progress_recorder.set_progress(i, total_requests, f'On iteration {i}')
+        if barcode_type == 'Alegria':
+            if len(arr_item) == 1:
+                barcode_str = arr_item[0]
+                smn = barcode_str[2:16]
+                lot = barcode_str[-7:]
+                date_expired = barcode_str[26:-9]
+                create_supply_objects(item, smn, lot, date_expired, for_delivery_order)
 
 
 def create_supply_objects(barcode, smn, lot, date_expired, for_delivery_order, search_by_ref=False):
