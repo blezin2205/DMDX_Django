@@ -11,11 +11,11 @@
 {% if not fromClientList %}
      <div class="col">
       <div class="row">
-      <div class="col my-3">
-              <a href="/orders" class="btn btn-primary {% if isOrdersTab %} active {% endif %}" aria-current="page">Замовлення {% if cartCountData.orders_incomplete > 0 %} <span class="badge bg-warning ms-2">{{ cartCountData.orders_incomplete }}</span> {% endif %}</a>
-    {% if request.user|has_group:"empl" or request.user.is_staff %}
-         <a href="{% url 'agreements' %}" class="btn btn-primary {% if isAgreementsTab %} active {% endif %}" aria-current="page">Договори</a>
-     {% endif %}
+      <div class="col">
+              <a href="/orders" class="btn btn-primary m-2 {% if isOrdersTab %} active {% endif %}" aria-current="page">Замовлення {% if cartCountData.orders_incomplete > 0 %} <span class="badge bg-warning ms-2">{{ cartCountData.orders_incomplete }}</span> {% endif %}</a>
+{#    {% if request.user|has_group:"empl" or request.user.is_staff %}#}
+{#         <a href="{% url 'agreements' %}" class="btn btn-primary {% if isAgreementsTab %} active {% endif %}" aria-current="page">Договори</a>#}
+{#     {% endif %}#}
   <a href="/preorders" class="btn btn-primary {% if isPreordersTab %} active {% endif %}">Передзамовлення {% if cartCountData.preorders_incomplete > 0 %} <span class="badge ms-2" style="background: #5bc0de">{{ cartCountData.preorders_incomplete }}</span> {% endif %}</a>
 
     {% if messages %}

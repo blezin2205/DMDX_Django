@@ -1,0 +1,99 @@
+{% load mathfilters %}
+{% load myapp_extras %}
+<div class="my-4" id="order_preview_cell{{ order.id }}">
+    <div class="d-flex justify-content-center">
+    <a class="custom-link w-100" href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" role="button">
+        <div class="card">
+        <div class="card-body">
+    <h5 class="card-title">
+        <h5 class="mb-1">Замовлення №: {{order.id}}</h5>
+        <p class="fw-medium">Для: {{order.place.name}}, {{order.place.city_ref.name}}</p>
+     {% if order.for_agreement %}
+          <p class="mb-1">Договір: <b>№{{order.for_agreement.description}}</b></p>
+      {% endif %}
+
+     {% if order.for_preorder %}
+         {% if order.for_preorder.isPreorder %}
+             <p class="mb-1">Передзамовлення: <b>№{{order.for_preorder.id}}</b></p>
+             {% else %}
+             <p class="mb-1">Договір: <b>№{{order.for_preorder.id}}</b> {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }} {% endif %} </p>
+             {% endif %}
+      {% endif %}
+
+    </h5>
+    <h6 class="card-subtitle my-2 text-body-secondary">
+        {% if order.isComplete %}
+        <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span></p>
+        {% else %}
+        <p class="mb-2"><span>Статус:</span> <span class="waiting">В очікуванні</span></p>
+        {% endif %}
+
+      {% if order.npdeliverycreateddetailinfo_set.exists %}
+          <div id="np_delivery_detail_info_for_order" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
+          {% for detailInfo in order.statusnpparselfromdoucmentid_set.all %}
+              <p class="mb-2"><span>Статус НП:</span> <b style="color: {% if detailInfo.status_code == '9' %} green {% elif detailInfo.status_code == '2' %} red {% else %} orange {% endif %}">{{ detailInfo.status_desc }}</b>  </p>
+          {% endfor %}
+          </div>
+     {% endif %}
+
+
+        {% if order.comment %}
+            <p class="mb-0"> <span class="text-muted">Комментарiй:</span> {{order.comment}}</p>
+        {% endif %}
+
+    </h6>
+    <p class="card-text">
+        {% if request.user|has_group:"empl" or request.user.is_staff %}
+      {% if order.dateToSend and not order.isComplete %}
+{% now "d.m.Y" as current_date %}
+{% if order.dateToSend|date:"d.m.Y" == current_date %}
+    <p><div class="p-1 mb-1 bg-danger text-dark" style="border-radius: 4px"><b style="text-underline: #0b0b0b">Відправити</b>:
+   <b>Сьогодні</b>
+    </div></p>
+{% else %}
+    <p><div class="p-1 mb-1 bg-warning text-dark" style="border-radius: 4px"><b style="text-underline: #0b0b0b">Відправити</b>:
+    <b>{{order.dateToSend|date:"d.m.Y"}}</b>
+    </div></p>
+{% endif %}{% endif %}{% endif %}
+
+      <p class="opacity-60 text-nowrap date" >Дата створення: {{order.dateCreated|date:"d.m.Y"}}</p>
+         {% if order.isComplete %}
+      <p class="opacity-60 text-nowrap date">Дата відправки: {{order.dateSent|date:"d.m.Y"}}</p>
+          {% endif %}
+
+      {% if order.npdeliverycreateddetailinfo_set.exists %}
+          <div class="container" style="background: rgb(245,245,245); border-radius: 4px;">
+          <h6>Розрахункова дата доставки: </h6>
+      {% for detailInfo in order.npdeliverycreateddetailinfo_set.all %}
+          <div class="hstack gap-1 justify-content-between">
+           <h6 class="opacity-60 text-nowrap date">- {{ detailInfo.document_id }} ({{detailInfo.cost_on_site}} грн.): </h6>
+           <h6 class="opacity-60 text-nowrap date">{{ detailInfo.estimated_time_delivery }}</h6>
+          </div>
+      <h6 class="opacity-60 text-nowrap date">- {{ detailInfo.document_id }}: {{ detailInfo.estimated_time_delivery }}</h6>
+          {% endfor %}
+          </div>
+
+      {% endif %}
+
+    </p>
+  </div>
+  </div>
+    </a>
+    <div class="vstack gap-3 ps-2">
+
+        {% if request.user.is_staff and not order.isComplete %}
+    {% if order.place.address_NP and order.place.worker_NP %}
+        <div id="np_create_ID_button_subscribe" hx-get="{% url 'np_create_ID_button_subscribe' order.id %}" hx-trigger="np_create_ID_button_subscribe{{order.id}} from:body">
+                            {% include 'partials/np_create_ID_button.html' %}
+                        </div>
+
+        {% endif %}
+        <button class="btn btn-primary btn-lg add-btn" type="submit" hx-target="#order_preview_cell{{ order.id }}" hx-post="{% url 'orders_update_status' order.id %}"><i class="bi bi-send"></i></button>
+{#    <form action="" onsubmit="window.mytest()">#}
+{#        <button class="btn btn-danger btn-lg add-btn" type="submit" hx-target="#order_delete_cell" hx-delete="{% url 'order_delete' order.id %}" hx-confirm="Ви точно хочете видалити це замовлення?"><i class="bi bi-trash"></i></button>#}
+{#    </form>#}
+    {% endif %}
+    </div>
+    </div>
+
+</div>

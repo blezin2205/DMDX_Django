@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-     <div class="w-50 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
+     <div class="{% if request.user_agent.is_mobile %}w-100  {% else %} w-50 {% endif %} bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
      <form method="POST" action="">
 {% csrf_token %}
      {{ placeForm|crispy }}

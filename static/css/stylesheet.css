@@ -8,6 +8,16 @@
   font-style: normal;
 }
 
+.custom-link {
+    text-decoration: none; /* Remove underlining */
+    color: inherit;        /* Use the default color */
+}
+
+.list-group-item:hover {
+    background-color: lightgrey;
+    color: black;
+}
+
 .roboto-slab-general {
     font-family: "Public Sans", sans-serif;
   font-optical-sizing: auto;

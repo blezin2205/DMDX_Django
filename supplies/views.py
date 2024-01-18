@@ -1936,7 +1936,13 @@ def orderUpdateStatus(request, order_id):
                 preorder.state_of_delivery = 'Partial'
             preorder.save(update_fields=['state_of_delivery'])
 
-        return render(request, 'partials/order_preview_cel.html', {'order': order})
+        user_agent = get_user_agent(request)
+        if user_agent.is_mobile:
+            template = 'supplies_mobile/order_cell.html'
+        else:
+            template = 'partials/order_preview_cel.html'
+
+        return render(request, template, {'order': order})
 
     # elif action == 'delete' and request.user.groups.filter(name='admin').exists():
     #     order = Order.objects.get(id=prodId)

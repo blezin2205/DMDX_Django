@@ -21,7 +21,7 @@
 </div>
         </form>
 
-<div class="row row-cols-2 row-cols-lg-2 g-2 g-lg-3">
+{% if request.user_agent.is_mobile %}<div class="row row-cols-1 row-cols-lg-1 g-2 g-lg-3"> {% else %} <div class="row row-cols-2 row-cols-lg-2 g-2 g-lg-3"> {% endif %}
     {% for client in clients %}
     <div class="col">
 
