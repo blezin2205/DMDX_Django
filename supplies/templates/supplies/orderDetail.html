@@ -97,9 +97,9 @@
         <th scope="col">SMN</th>
         <th scope="col">LOT</th>
         <th scope="col">Кількість</th>
-        <th scope="col">Термін</th>
+        <th scope="col">Термін*</th>
       {% if request.user|has_group:"empl" or request.user.is_staff %}
-          <th scope="col">Оновлено</th>
+          <th scope="col">Оновлено**</th>
     {% endif %}
         {% if not order.isComplete and request.user.is_staff %}
         <th scope="col">Action</th>
@@ -112,6 +112,15 @@
    {% endfor %}
   </tbody>
 </table>
+    <div class="container d-flex flex-row-reverse">
+    <div class="fst-italic" style="font-size: small">* - термін зазначено відносно дати відправки цього замовлення</div>
+    </div>
+        <div class="container d-flex flex-row-reverse">
+    {% if request.user|has_group:"empl" or request.user.is_staff %}
+          <div class="fst-italic" style="font-size: small">** - дата додавання цього товару в базу</div>
+    {% endif %}
+    </div>
+
 <script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити це замовлення ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
 
 {% endblock %}

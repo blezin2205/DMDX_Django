@@ -58,7 +58,7 @@
 {#        {% else %}#}
 {#         #}
 {#        {% endif %}#}
-         <tr style="background-color:{% if el.state_of_delivery == 'Complete' %} #eafff0 {% elif el.state_of_delivery == 'Partial' %} #fffdea {% else %} #fff0ea{% endif %}">
+         <tr class="{% if order.isComplete %} {% if el.state_of_delivery == 'Complete' %} table-success {% elif el.state_of_delivery == 'Partial' %} table-warning {% else %} table-danger{% endif %}{% endif %}">
 
       <th scope="row" style="text-align: left; max-width: 350px">{{ el.generalSupply.name }}</th>
       <td> {{ el.generalSupply.category.name }}</td>
@@ -71,7 +71,7 @@
 
          <td class="supplyRow">
 
-<table class="table table-borderless mb-0" style="background: rgb(245,245,245); border-radius: 8px;">
+<table class="rounded-3 overflow-hidden table table-light table-borderless mb-0">
   <tbody>
    {% for supp in el.generalSupply.general.all %}
     <tr>
@@ -131,7 +131,7 @@
              {% if el.supplyinorder_set.all %}
                  <td class="supplyRow">
 
-<table class="table table-borderless mb-0" style="background: rgb(245,245,245); border-radius: 8px;">
+<table class="rounded-3 overflow-hidden table table-light table-borderless mb-0">
   <tbody>
    {% for supp in el.supplyinorder_set.all %}
     <tr>

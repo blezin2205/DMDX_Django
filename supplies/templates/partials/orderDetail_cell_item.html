@@ -2,7 +2,7 @@
 {% load mathfilters %}
 {% if forloop.counter %}
     {% with counter=forloop.counter %}
-        <tr style="{% if el.id == highlighted_sup_id %} background-color: #eafff0 {% endif %}">
+        <tr class="{% if el.id == highlighted_sup_id %} table-success {% endif %}">
       <th scope="row" style="text-align: left">{{counter}}. {% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</th>
       <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.package_and_tests }}{% endif %}</td>
       <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.category.name }}{% endif %}</td>
@@ -25,7 +25,7 @@
 
                 </div>
             </td>
-            <td style="min-width: 100px">{{ el.date_expired|date:"d.m.Y" }}</td>
+            <td style="width: 100px"><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}</td>
      {% if request.user|has_group:"empl" or request.user.is_staff %}
           <td style="min-width: 100px">{{ el.date_created|date:"d.m.Y" }}</td>
      {% endif %}
@@ -35,7 +35,7 @@
     </tr>
     {% endwith %}
 {% else %}
-    <tr style="{% if el.id == highlighted_sup_id %} background-color: #eafff0 {% endif %}">
+    <tr class="{% if el.id == highlighted_sup_id %} table-success {% endif %}">
       <th scope="row" style="text-align: left">{{counter}}. {% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</th>
       <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.package_and_tests }}{% endif %}</td>
       <td style="min-width: 100px">{% if el.generalSupply %}{{ el.generalSupply.category.name }}{% endif %}</td>
@@ -58,7 +58,7 @@
 
                 </div>
             </td>
-            <td style="min-width: 100px">{{ el.date_expired|date:"d.m.Y" }}</td>
+    <td style="width: 100px"><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}</td>
      {% if request.user|has_group:"empl" or request.user.is_staff %}
           <td style="min-width: 100px">{{ el.date_created|date:"d.m.Y" }}</td>
      {% endif %}

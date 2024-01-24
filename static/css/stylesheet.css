@@ -13,6 +13,12 @@
     color: inherit;        /* Use the default color */
 }
 
+.general-app-cell {
+    background-color: lightgrey;
+    border: black;
+    border-radius: 8px;
+}
+
 .list-group-item:hover {
     background-color: lightgrey;
     color: black;

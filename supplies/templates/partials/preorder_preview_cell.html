@@ -1,7 +1,7 @@
 {% load myapp_extras %}
 <div id="preorder_preview_cell{{ order.id }}" class="my-4">
     <div class="hstack gap-3">
- <a href="{% url 'preorderDetail' order.id %}?next={{ request.get_full_path }}" class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" style="border-radius: 1rem;">
+ <a href="{% url 'preorderDetail' order.id %}?next={{ request.get_full_path }}" class="list-group-item list-group-item-action bg-light border border-light-subtle d-flex gap-3 p-3" aria-current="true" style="border-radius: 1rem;">
     <div class="d-flex gap-2 w-100 justify-content-between">
       <div>
       {% if order.isPreorder %}

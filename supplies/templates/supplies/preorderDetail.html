@@ -67,7 +67,7 @@
   <tbody>
     {% for el in supplies %}
 
-     <tr {% if order.isComplete %} style="background-color:{% if el.state_of_delivery == 'Complete' %} #eafff0 {% elif el.state_of_delivery == 'Partial' %} #fffdea {% else %} #fff0ea{% endif %}" {% endif %}>
+     <tr class="{% if order.isComplete %} {% if el.state_of_delivery == 'Complete' %} table-success {% elif el.state_of_delivery == 'Partial' %} table-warning {% else %} table-danger{% endif %}{% endif %}">
       <td scope="row">{{forloop.counter}}.</td>
       <td style="text-align: left; font-weight: bolder">{% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</td>
      <td class="supplyRow">
@@ -111,7 +111,7 @@
 {% if order.isComplete %}
      <td class="supplyRow">
 
-<table class="table table-borderless mb-0" style="background: rgb(245,245,245); border-radius: 8px;">
+<table class="rounded-3 overflow-hidden table table-light table-borderless mb-0">
   <tbody>
    {% for supp in el.supplyinorder_set.all %}
 {#       {% if supp.supply_for_order.isComplete %}#}
