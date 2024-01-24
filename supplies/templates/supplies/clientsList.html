@@ -26,23 +26,23 @@
     <div class="col">
 
     <div class="card">
-<div class="card-header  {% if client.isPrivatePlace %} bg-warning bg-gradient bg-opacity-25 {% else %} bg-primary bg-gradient bg-opacity-25 {% endif %}">
+<div class="card-header px-0  {% if client.isPrivatePlace %} bg-warning bg-gradient bg-opacity-25 {% else %} bg-primary bg-gradient bg-opacity-25 {% endif %}">
 
-<div class="d-flex flex-column text-center align-items-center">
+<div class="d-flex flex-column text-center justify-content-between">
 <div class="flex-grow-1 pt-2">
 <span class="d-block text-muted">{{client.city_ref.name}}</span>
-<h5>{{client.name}}</h5>
-<div class="mb-1">
+<h5 class="px-4 py-2">{{client.name}}</h5>
+<div class=" d-flex justify-content-between align-items-center">
 
-<span class="badge rounded-pill {% if client.isPrivatePlace %} bg-warning {% else %} bg-primary {% endif %}">{% if client.isPrivatePlace %} Приватні {% else %} Державні {% endif %}</span>
-<a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm mx-2" role="button"><i class="bi bi-pencil"></i></a>
+<span class="badge rounded-end-5 px-4 {% if client.isPrivatePlace %} bg-warning {% else %} bg-primary {% endif %}">{% if client.isPrivatePlace %} Приватні {% else %} Державні {% endif %}</span>
+<a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-outline-dark mx-2" role="button"><i class="bi bi-pencil"></i></a>
 </div>
 </div>
-</div>
-
 </div>
 
-        <div class="card-body">
+</div>
+
+        <div class="card-body py-3">
 <div class="vstack">
           {% if client.address %}
 
