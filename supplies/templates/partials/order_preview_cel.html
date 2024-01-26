@@ -55,12 +55,12 @@
      <div class="card-footer py-0 px-0 border-top">
 <div class="row">
 
-{#     {% if order.comment %}#}
+     {% if order.comment %}
             <div class="col text-center p-1">
     <span class="d-block date text-muted">коментар: </span>
 <h5 class="fs-6 mb-1">{{order.comment}}</h5>
 </div>
-{#        {% endif %}#}
+        {% endif %}
 
  {% if order.npdeliverycreateddetailinfo_set.exists %}
      <div class="col text-center p-1 {% if order.comment %} border-start {% endif %} {% if order.npdeliverycreateddetailinfo_set.exists %} border-end {% endif %} ">
