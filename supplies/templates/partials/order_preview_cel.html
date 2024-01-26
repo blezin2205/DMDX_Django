@@ -5,7 +5,7 @@
 
     <div class="hstack gap-3">
      <a href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" class="list-group-item list-group-item-action" aria-current="true">
-     <div class="card my-link">
+     <div class="card  my-link">
 <div class="card-header px-0  {% if not order.isComplete %} bg-warning bg-gradient bg-opacity-25 {% else %} bg-primary bg-gradient bg-opacity-25 {% endif %}">
 
 <div class="d-flex flex-column text-center justify-content-between">
@@ -55,24 +55,24 @@
      <div class="card-footer py-0 px-0 border-top">
 <div class="row">
 
-     {% if order.comment %}
-            <div class="col text-center p-3">
-    <span class="d-block font-size-sm text-muted">коментар</span>
-<h5 class="fs-5 mb-1">{{order.comment}}</h5>
+{#     {% if order.comment %}#}
+            <div class="col text-center p-1">
+    <span class="d-block date text-muted">коментар: </span>
+<h5 class="fs-6 mb-1">{{order.comment}}</h5>
 </div>
-        {% endif %}
+{#        {% endif %}#}
 
  {% if order.npdeliverycreateddetailinfo_set.exists %}
-     <div class="col text-center {% if order.comment %} border-start {% endif %} {% if order.npdeliverycreateddetailinfo_set.exists %} border-end {% endif %} ">
-     <span class="date text-muted">статус НП: </span>
+     <div class="col text-center p-1 {% if order.comment %} border-start {% endif %} {% if order.npdeliverycreateddetailinfo_set.exists %} border-end {% endif %} ">
+     <span class="d-block date text-muted">статус НП: </span>
           <div id="np_delivery_detail_info_for_order" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
           {% for detailInfo in order.statusnpparselfromdoucmentid_set.all %}
 {% if detailInfo.status_code == '9' %}
-        <h4 class="fs-6 text-success">{{ detailInfo.status_desc }}</h4>
+        <h5 class="fs-6 mb-1 text-success">{{ detailInfo.status_desc }}</h5>
  {% elif detailInfo.status_code == '2' %}
-        <h4 class="fs-6 text-danger">{{ detailInfo.status_desc }}</h4>
+        <h5 class="fs-6 mb-1 text-danger">{{ detailInfo.status_desc }}</h5>
 {% else %}
-        <h4 class="fs-6 text-warning">{{ detailInfo.status_desc }}</h4>
+        <h5 class="fs-6 mb-1 text-warning">{{ detailInfo.status_desc }}</h5>
 {% endif %}
           {% endfor %}
           </div>
@@ -80,8 +80,8 @@
      {% endif %}
 
 
-<div class="col text-end">
-<div class="date p-2"><span class="text-muted">створив: </span>{{ order.userCreated.first_name  }} {{ order.userCreated.last_name  }} </div>
+<div class="col text-end p-1">
+<div class="date px-3"><span class="text-muted">створив: </span>{{ order.userCreated.first_name  }} {{ order.userCreated.last_name  }} </div>
 
     {% if order.npdeliverycreateddetailinfo_set.exists %}
       {% for detailInfo in order.npdeliverycreateddetailinfo_set.all %}
