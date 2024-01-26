@@ -1,3 +1,11 @@
 {% for detailInfo in parsels_status_data %}
-              <p class="mb-2"><span>Статус НП:</span> <b style="color: {% if detailInfo.status_code == '9' %} green {% elif detailInfo.status_code == '2' %} red {% else %} orange {% endif %}">{{ detailInfo.status_desc }}</b>  </p>
-          {% endfor %}
+
+    {% if detailInfo.status_code == '9' %}
+        <h5 class="fs-6 mb-1 text-success">{{ detailInfo.status_desc }}</h5>
+ {% elif detailInfo.status_code == '2' %}
+        <h5 class="fs-6 mb-1 text-danger">{{ detailInfo.status_desc }}</h5>
+{% else %}
+        <h5 class="fs-6 mb-1 text-warning">{{ detailInfo.status_desc }}</h5>
+{% endif %}
+
+{% endfor %}

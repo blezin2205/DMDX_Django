@@ -42,9 +42,9 @@
     <b>{{order.dateToSend|date:"d.m.Y"}}</b></p>
 
 {% endif %}
-      {% else %}<p class="rounded-start-5 opacity-0 px-2 bg-light text-muted date">Відправити:<b>Сьогодні</b></p>{% endif %}
+      {% else %}<div class="rounded-end-5 opacity-0 px-4 my-1 bg-light text-muted date">відправлено: 22.22.2222</div>{% endif %}
 
- {% else %}<p class="rounded-start-5 opacity-0 px-2 bg-light text-muted date">Відправити:<b>Сьогодні</b></p>{% endif %}
+ {% else %}<div class="rounded-end-5 opacity-0 px-4 my-1 bg-light text-muted date">відправлено: 22.22.2222</div>{% endif %}
 
 </div>
 <h5 class="px-4">{{order.place.name}}, {{order.place.city_ref.name}}</h5>
@@ -80,8 +80,8 @@
      {% endif %}
 
 
-<div class="col text-end p-1">
-<div class="date px-3"><span class="text-muted">створив: </span>{{ order.userCreated.first_name  }} {{ order.userCreated.last_name  }} </div>
+<div class="col text-end">
+<div class="date  p-1 px-3"><span class="text-muted">створив: </span>{{ order.userCreated.first_name  }} {{ order.userCreated.last_name  }} </div>
 
     {% if order.npdeliverycreateddetailinfo_set.exists %}
       {% for detailInfo in order.npdeliverycreateddetailinfo_set.all %}
