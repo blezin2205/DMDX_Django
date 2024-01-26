@@ -12,7 +12,7 @@
 
 {% if order.place.address_NP and order.place.worker_NP and order.get_parsel_delivery_status == 1 or order.get_parsel_delivery_status == 2 or order.place.address_NP and order.place.worker_NP and not order.statusnpparselfromdoucmentid_set.exists %}
 <a href="{% url 'create_np_document_for_order' order.id %}?next={{ request.get_full_path|urlencode }}">
-        <img src="{% static 'images/np_icon.png' %}" width="50" height="50" style="border-radius: 5px">
+        <img src="{% static 'images/np_icon.png' %}" width="50" height="49" style="border-radius: 10px">
 </a>
 {% endif %}
 </div>

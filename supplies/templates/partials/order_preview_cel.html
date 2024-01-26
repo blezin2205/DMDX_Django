@@ -34,7 +34,7 @@
       {% if order.dateToSend and not order.isComplete %}
 {% now "d.m.Y" as current_date %}
 {% if order.dateToSend|date:"d.m.Y" == current_date %}
-    <p class="rounded-start-5 px-4 bg-danger text-light fw-semibold">Відправити:
+    <p class="rounded-start-5 px-4 my-0 bg-danger text-light fw-semibold">Відправити:
    <b>Сьогодні</b>
     </p>
 {% else %}
