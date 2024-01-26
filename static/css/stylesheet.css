@@ -13,6 +13,23 @@
     color: inherit;        /* Use the default color */
 }
 
+
+.custom-link:hover {
+    background-color: #007bff; /* Change this to the desired background color */
+    color: #fff; /* Change this to the desired text color */     /* Use the default color */
+}
+
+  .my-link {
+    border: 1px solid #007bff; /* Set the default border color */
+    transition: border-color 0.3s, box-shadow 0.3s; /* Add a transition effect for smooth hover */
+    display: inline-block; /* Ensures the box shadow doesn't affect layout */
+  }
+
+  .my-link:hover {
+    border-color: #007bff; /* Change this to the desired border color on hover */
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.28); /* Set the box shadow properties on hover */
+  }
+
 .general-app-cell {
     background-color: lightgrey;
     border: black;
@@ -74,7 +91,8 @@ input[type=number] {
 }
 
 .date {
-    font-weight: 300;
+    font-weight: 500;
+    font-size: small;
 }
 
 .table {

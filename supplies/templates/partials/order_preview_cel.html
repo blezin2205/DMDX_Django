@@ -1,81 +1,98 @@
 {% load mathfilters %}
 {% load myapp_extras %}
-<div id="order_preview_cell{{ order.id }}" class="my-4">
+<div id="order_preview_cell{{ order.id }}" class="mt-5" style="margin-bottom: 50px">
 
 
     <div class="hstack gap-3">
-     <a href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" class="list-group-item list-group-item-action bg-light border border-light-subtle d-flex gap-3 p-3" aria-current="true" style="border-radius: 1rem;">
-     <div class="d-flex gap-2 w-100 justify-content-between">
-     <div>
-    <h6 class="mb-1">Замовлення №: {{order.id}}</h6>
-        <p class="mb-1">Для: {{order.place.name}}, {{order.place.city_ref.name}}</p>
-     {% if order.for_agreement %}
-          <p class="mb-1">Договір: <b>№{{order.for_agreement.description}}</b></p>
-      {% endif %}
+     <a href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" class="list-group-item list-group-item-action" aria-current="true">
+     <div class="card my-link">
+<div class="card-header px-0  {% if not order.isComplete %} bg-warning bg-gradient bg-opacity-25 {% else %} bg-primary bg-gradient bg-opacity-25 {% endif %}">
 
-     {% if order.for_preorder %}
+<div class="d-flex flex-column text-center justify-content-between">
+<div class="flex-grow-1">
+<div class="d-flex text-center justify-content-between">
+<div class="text-end">
+    <div class="rounded-end-5 px-4 bg-light text-muted date" >створено: {{order.dateCreated|date:"d.m.Y"}}</div>
+{% if order.isComplete %}
+      <div class="rounded-end-5 px-4 my-1 bg-light text-muted date">відправлено: {{order.dateSent|date:"d.m.Y"}}</div>
+{% endif %}
+</div>
+
+
+    <span class="d-block text-muted my-0"><u class="bg-light rounded-1 px-3 mx-4 py-1">Замовлення №: <b>{{order.id}}</b> </u></span>
+
+    {% if order.for_preorder %}
          {% if order.for_preorder.isPreorder %}
-             <p class="mb-1">Передзамовлення: <b>№{{order.for_preorder.id}}</b></p>
+             <p class="mb-1"><u class="text-muted bg-light rounded-1 px-3 mx-4 py-1">Передзамовлення: <b>№{{order.for_preorder.id}}</b></u></p>
              {% else %}
-             <p class="mb-1">Договір: <b>№{{order.for_preorder.id}}</b> {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }} {% endif %} </p>
+             <p class="mb-1"><u class="text-muted bg-light rounded-1 px-3 mx-4 py-1">Договір: <b>№{{order.for_preorder.id}}</b> {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }} {% endif %} </u></p>
              {% endif %}
       {% endif %}
 
-     {% if order.isComplete %}
-        <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span></p>
-        {% else %}
-        <p class="mb-2"><span>Статус:</span> <span class="waiting">В очікуванні</span></p>
+
+ {% if request.user|has_group:"empl" or request.user.is_staff %}
+      {% if order.dateToSend and not order.isComplete %}
+{% now "d.m.Y" as current_date %}
+{% if order.dateToSend|date:"d.m.Y" == current_date %}
+    <p class="rounded-start-5 px-4 bg-danger text-light fw-semibold">Відправити:
+   <b>Сьогодні</b>
+    </p>
+{% else %}
+    <p class="rounded-start-5 px-4 bg-warning  fw-semibold">Відправити:
+    <b>{{order.dateToSend|date:"d.m.Y"}}</b></p>
+
+{% endif %}
+      {% else %}<p class="rounded-start-5 opacity-0 px-2 bg-light text-muted date">Відправити:<b>Сьогодні</b></p>{% endif %}
+
+ {% else %}<p class="rounded-start-5 opacity-0 px-2 bg-light text-muted date">Відправити:<b>Сьогодні</b></p>{% endif %}
+
+</div>
+<h5 class="px-4">{{order.place.name}}, {{order.place.city_ref.name}}</h5>
+</div>
+</div>
+
+</div>
+     <div class="card-footer py-0 px-0 border-top">
+<div class="row">
+
+     {% if order.comment %}
+            <div class="col text-center p-3">
+    <span class="d-block font-size-sm text-muted">коментар</span>
+<h5 class="fs-5 mb-1">{{order.comment}}</h5>
+</div>
         {% endif %}
 
-      {% if order.npdeliverycreateddetailinfo_set.exists %}
+ {% if order.npdeliverycreateddetailinfo_set.exists %}
+     <div class="col text-center {% if order.comment %} border-start {% endif %} {% if order.npdeliverycreateddetailinfo_set.exists %} border-end {% endif %} ">
+     <span class="date text-muted">статус НП: </span>
           <div id="np_delivery_detail_info_for_order" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
           {% for detailInfo in order.statusnpparselfromdoucmentid_set.all %}
-              <p class="mb-2"><span>Статус НП:</span> <b style="color: {% if detailInfo.status_code == '9' %} green {% elif detailInfo.status_code == '2' %} red {% else %} orange {% endif %}">{{ detailInfo.status_desc }}</b>  </p>
+{% if detailInfo.status_code == '9' %}
+        <h4 class="fs-6 text-success">{{ detailInfo.status_desc }}</h4>
+ {% elif detailInfo.status_code == '2' %}
+        <h4 class="fs-6 text-danger">{{ detailInfo.status_desc }}</h4>
+{% else %}
+        <h4 class="fs-6 text-warning">{{ detailInfo.status_desc }}</h4>
+{% endif %}
           {% endfor %}
+          </div>
           </div>
      {% endif %}
 
 
-        {% if order.comment %}
-            <p class="mb-0"> <span class="text-muted">Комментарiй:</span> {{order.comment}}</p>
-        {% endif %}
+<div class="col text-end">
+<div class="date p-2"><span class="text-muted">створив: </span>{{ order.userCreated.first_name  }} {{ order.userCreated.last_name  }} </div>
 
-  </div>
-      <div>
-
-{% if request.user|has_group:"empl" or request.user.is_staff %}
-      {% if order.dateToSend and not order.isComplete %}
-{% now "d.m.Y" as current_date %}
-{% if order.dateToSend|date:"d.m.Y" == current_date %}
-    <p><div class="p-1 mb-1 bg-danger text-dark" style="border-radius: 4px"><b style="text-underline: #0b0b0b">Відправити</b>:
-   <b>Сьогодні</b>
-    </div></p>
-{% else %}
-    <p><div class="p-1 mb-1 bg-warning text-dark" style="border-radius: 4px"><b style="text-underline: #0b0b0b">Відправити</b>:
-    <b>{{order.dateToSend|date:"d.m.Y"}}</b>
-    </div></p>
-{% endif %}{% endif %}{% endif %}
-
-      <p class="opacity-60 text-nowrap date" >Дата створення: {{order.dateCreated|date:"d.m.Y"}}</p>
-         {% if order.isComplete %}
-      <p class="opacity-60 text-nowrap date">Дата відправки: {{order.dateSent|date:"d.m.Y"}}</p>
-          {% endif %}
-
-      {% if order.npdeliverycreateddetailinfo_set.exists %}
-          <div class="container" style="background: rgb(245,245,245); border-radius: 4px;">
-          <h6>Розрахункова дата доставки: </h6>
+    {% if order.npdeliverycreateddetailinfo_set.exists %}
       {% for detailInfo in order.npdeliverycreateddetailinfo_set.all %}
-          <div class="hstack gap-1 justify-content-between">
-           <h6 class="opacity-60 text-nowrap date">- {{ detailInfo.document_id }} ({{detailInfo.cost_on_site}} грн.): </h6>
-           <h6 class="opacity-60 text-nowrap date">{{ detailInfo.estimated_time_delivery }}</h6>
-          </div>
-{#      <h6 class="opacity-60 text-nowrap date">- {{ detailInfo.document_id }}: {{ detailInfo.estimated_time_delivery }}</h6>#}
+           <h6><span class="text-muted badge rounded-start-5 bg-secondary-subtle">{{ detailInfo.document_id }} ({{detailInfo.cost_on_site}} грн.): {{ detailInfo.estimated_time_delivery }}</span></h6>
           {% endfor %}
-          </div>
-
       {% endif %}
-     </div>
-     </div>
+
+</div>
+</div>
+</div>
+</div>
      </a>
     {% if request.user.is_staff and not order.isComplete %}
     {% if order.place.address_NP and order.place.worker_NP %}
@@ -91,3 +108,4 @@
     {% endif %}
     </div>
 </div>
+
