@@ -83,17 +83,19 @@ def booked_supplies_list(request, client_id):
             booked_cart.save()
 
         for booked_sup in supplies_list:
-            try:
-                booked_sup_in_cart = booked_cart.bookedsupplyinorderincart_set.get(supply=booked_sup)
-                booked_sup_in_cart.count_in_order = booked_sup.count_in_order
-                booked_sup_in_cart.save(update_fields=['count_in_order'])
-            except:
-                booked_sup_in_cart = BookedSupplyInOrderInCart(count_in_order=booked_sup.count_in_order,
-                                                               supply=booked_sup,
-                                                               supply_for_order=booked_cart,
-                                                               lot=booked_sup.lot,
-                                                               date_expired=booked_sup.date_expired)
-                booked_sup_in_cart.save()
+            count_in_cart = booked_sup.count_in_order - booked_sup.countOnHold
+            if count_in_cart > 0:
+                try:
+                    booked_sup_in_cart = booked_cart.bookedsupplyinorderincart_set.get(supply=booked_sup)
+                    booked_sup_in_cart.count_in_order = count_in_cart
+                    booked_sup_in_cart.save(update_fields=['count_in_order'])
+                except:
+                    booked_sup_in_cart = BookedSupplyInOrderInCart(count_in_order=count_in_cart,
+                                                                   supply=booked_sup,
+                                                                   supply_for_order=booked_cart,
+                                                                   lot=booked_sup.lot,
+                                                                   date_expired=booked_sup.date_expired)
+                    booked_sup_in_cart.save()
         return redirect(f'/booked_cart_details/{booked_cart.id}')
 
     if 'xls_button' in request.GET:

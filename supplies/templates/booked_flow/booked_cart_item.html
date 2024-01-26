@@ -1,4 +1,4 @@
-
+{% load mathfilters %}
           <div class="card-body px-3 d-flex justify-content-center align-items-center">
                 <div class="col">
               <div style="font-size: large">{{ item.supply.generalSupply.name }}</div>
@@ -28,7 +28,11 @@
 
 <div class="col">
                <div class="vstack">
-                  <label for="form1">Доступно: <b>{{ item.supply.count_in_order }}</b></label>
+                   {% if item.supply.countOnHold %}
+                         <label for="form1">Доступно: <b>{{ item.supply.count_in_order|sub:item.supply.countOnHold }}</b></label>
+                          {% else %}
+                          <label for="form1">Доступно: <b>{{ item.supply.count_in_order }}</b></label>
+                      {% endif %}
                 <input id="form1" style="width: 100px" min="0" name="count_{{ item.id }}" value="{{ item.count_in_order }}" type="number"
                   class="form-control form-control-sm" />
                   <input type="hidden" name="count_id_{{ item.id }}" value="{{ item.id }}">

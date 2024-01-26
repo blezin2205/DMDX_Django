@@ -29,8 +29,8 @@
              {% endif %}
       {% endif %}
 
-
- {% if request.user|has_group:"empl" or request.user.is_staff %}
+<div class="text-end">
+     {% if request.user|has_group:"empl" or request.user.is_staff %}
       {% if order.dateToSend and not order.isComplete %}
 {% now "d.m.Y" as current_date %}
 {% if order.dateToSend|date:"d.m.Y" == current_date %}
@@ -38,13 +38,20 @@
    <b>Сьогодні</b>
     </p>
 {% else %}
-    <p class="rounded-start-5 px-4 bg-warning  fw-semibold">Відправити:
+    <p class="rounded-start-5 px-4 my-0 bg-warning  fw-semibold">Відправити:
     <b>{{order.dateToSend|date:"d.m.Y"}}</b></p>
 
 {% endif %}
-      {% else %}<div class="rounded-end-5 opacity-0 px-4 my-1 bg-light text-muted date">відправлено: 22.22.2222</div>{% endif %}
+      {% else %}{% endif %}
+ {% else %}{% endif %}
+{% if order.isComplete %}
+    <p class="rounded-start-5 badge px-4 my-1 bg-primary fw-bold">Відправлено</p>
+{% else %}
+    <p class="rounded-start-5 badge px-4 my-1 bg-warning fw-bold">В очікуванні</p>
+{% endif %}
 
- {% else %}<div class="rounded-end-5 opacity-0 px-4 my-1 bg-light text-muted date">відправлено: 22.22.2222</div>{% endif %}
+</div>
+
 
 </div>
 <h5 class="px-4">{{order.place.name}}, {{order.place.city_ref.name}}</h5>
