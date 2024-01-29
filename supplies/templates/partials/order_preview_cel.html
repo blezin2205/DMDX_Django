@@ -11,11 +11,8 @@
 <div class="d-flex flex-column text-center justify-content-between">
 <div class="flex-grow-1">
 <div class="d-flex text-center justify-content-between">
-<div class="text-end">
-    <div class="rounded-end-5 px-4 bg-light text-muted date" >створено: {{order.dateCreated|date:"d.m.Y"}}</div>
-{% if order.isComplete %}
-      <div class="rounded-end-5 px-4 my-1 bg-light text-muted date">відправлено: {{order.dateSent|date:"d.m.Y"}}</div>
-{% endif %}
+<div class="text-end" style="width: 200px">
+    <div class="rounded-end-5 pe-4 bg-light text-muted date">створено: {{order.dateCreated|date:"d.m.Y"}}</div>
 </div>
 
 
@@ -29,32 +26,33 @@
              {% endif %}
       {% endif %}
 
-<div class="text-end">
+<div class="text-start " style="width: 200px">
      {% if request.user|has_group:"empl" or request.user.is_staff %}
       {% if order.dateToSend and not order.isComplete %}
 {% now "d.m.Y" as current_date %}
 {% if order.dateToSend|date:"d.m.Y" == current_date %}
-    <p class="rounded-start-5 px-4 my-0 bg-danger text-light fw-semibold">Відправити:
+    <p class="rounded-start-5 text-center px-2 mb-1 bg-danger text-light fw-semibold">відправка:
    <b>Сьогодні</b>
     </p>
 {% else %}
-    <p class="rounded-start-5 px-4 my-0 bg-warning  fw-semibold">Відправити:
+    <p class="rounded-start-5 text-center px-1 mb-1 bg-warning  fw-semibold">відправка:
     <b>{{order.dateToSend|date:"d.m.Y"}}</b></p>
 
 {% endif %}
       {% else %}{% endif %}
  {% else %}{% endif %}
+
 {% if order.isComplete %}
-    <p class="rounded-start-5 badge px-4 my-1 bg-primary fw-bold">Відправлено</p>
+    <div class="rounded-start-5  text-center px-3 my-0 bg-primary text-light date">відправлено: {{order.dateSent|date:"d.m.Y"}}</div>
 {% else %}
-    <p class="rounded-start-5 badge px-4 my-1 bg-warning fw-bold">В очікуванні</p>
+    <div class="rounded-start-5 text-center flex-wrap px-3 my-0 bg-warning date">в очікуванні</div>
 {% endif %}
 
 </div>
 
 
 </div>
-<h5 class="px-4">{{order.place.name}}, {{order.place.city_ref.name}}</h5>
+<h5 class="px-4 pt-2">{{order.place.name}}, {{order.place.city_ref.name}}</h5>
 </div>
 </div>
 
