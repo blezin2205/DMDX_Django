@@ -3237,9 +3237,13 @@ def preorderDetail_generateOrder(request, order_id):
         checkBoxSuppIdList = request.POST.getlist('flexCheckDefault')
         count_list = request.POST.getlist('count_list')
         count_list_id = request.POST.getlist('count_list_id')
+        booked_items_id = request.POST.getlist('booked_items_id')
         comment_for_order = request.POST.get('comment_for_order')
         count_for_id_dict = dict(zip(count_list_id, count_list))
         result = {k: v for k, v in count_for_id_dict.items() if k in checkBoxSuppIdList}
+
+        print("-------------------- booked_items_id ----------------------")
+        print(booked_items_id)
 
         chekedSups = []
         for sup in checkBoxSuppIdList:
@@ -3253,8 +3257,11 @@ def preorderDetail_generateOrder(request, order_id):
             t = supDict.setdefault(d.general_supply, [])
             t.append(d)
 
+
+        sup_in_preorder_checked_for_booked = supplies_in_order.filter(id__in=booked_items_id)
+
         if 'create_order' in request.POST:
-            if supDict:
+            if supDict or sup_in_preorder_checked_for_booked.count() > 0:
                 new_order = Order(userCreated=request.user, for_preorder=order, place=order.place,
                                   comment=comment_for_order)
                 if orderForm.is_valid():
@@ -3262,38 +3269,58 @@ def preorderDetail_generateOrder(request, order_id):
                     dateToSend = orderForm.cleaned_data['dateToSend']
                     new_order.comment = comment
                     new_order.dateToSend = dateToSend
-
                 new_order.save()
-                for key, value in supDict.items():
-                    print("------------------------")
-                    print(key)
-                    allCount = 0
-                    genSupInPreorder = supplies_in_order.get(generalSupply_id=key)
 
-                    for s in value:
-                        allCount += s.count
+                if sup_in_preorder_checked_for_booked.count() > 0:
+                    for sup_in_booked in sup_in_preorder_checked_for_booked:
+                        booked_sups = sup_in_booked.supplyinbookedorder_set.all()
+                        for sup in booked_sups:
+                            sup.countOnHold += sup.count_in_order
+                            suppInOrder = SupplyInOrder(count_in_order=sup.count_in_order,
+                                                        supply=sup.supply,
+                                                        generalSupply=sup.supply.general_supply,
+                                                        supply_for_order=new_order,
+                                                        supply_in_preorder=sup_in_booked,
+                                                        supply_in_booked_order=sup,
+                                                        lot=sup.lot,
+                                                        date_created=sup.date_created,
+                                                        date_expired=sup.date_expired,
+                                                        internalName=sup.supply.general_supply.name,
+                                                        internalRef=sup.supply.general_supply.ref)
+                            suppInOrder.save()
+                            sup.save(update_fields=['countOnHold'])
 
-                        supInOrder = SupplyInOrder(count_in_order=s.count,
-                                                   generalSupply=s.general_supply,
-                                                   supply=s,
-                                                   supply_in_preorder=genSupInPreorder,
-                                                   supply_for_order=new_order,
-                                                   lot=s.supplyLot,
-                                                   date_expired=s.expiredDate,
-                                                   date_created=s.dateCreated,
-                                                   internalName=s.general_supply.name,
-                                                   internalRef=s.general_supply.ref
-                                                   )
-                        supInOrder.save()
-                        s.countOnHold += s.count
-                        s.save(update_fields=['countOnHold'])
+                if supDict:
+                    for key, value in supDict.items():
+                        print("------------------------")
+                        print(key)
+                        allCount = 0
+                        genSupInPreorder = supplies_in_order.get(generalSupply_id=key)
+
+                        for s in value:
+                            allCount += s.count
+
+                            supInOrder = SupplyInOrder(count_in_order=s.count,
+                                                       generalSupply=s.general_supply,
+                                                       supply=s,
+                                                       supply_in_preorder=genSupInPreorder,
+                                                       supply_for_order=new_order,
+                                                       lot=s.supplyLot,
+                                                       date_expired=s.expiredDate,
+                                                       date_created=s.dateCreated,
+                                                       internalName=s.general_supply.name,
+                                                       internalRef=s.general_supply.ref
+                                                       )
+                            supInOrder.save()
+                            s.countOnHold += s.count
+                            s.save(update_fields=['countOnHold'])
 
                 t = threading.Thread(target=sendTeamsMsgCart, args=[request, new_order], daemon=True)
                 t.start()
                 return redirect('/orders')
 
             else:
-                messages.info(request, "Жодний товар не вибраний для формування замовлення!")
+               messages.info(request, "Жодний товар не вибраний для формування замовлення!")
 
         if 'create_booked_order' in request.POST:
             if supDict:

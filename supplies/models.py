@@ -596,6 +596,9 @@ class SupplyInPreorder(models.Model):
         else:
             return 0
 
+    def check_if_in_sup_in_rder_exist_booked_sup(self):
+       return self.supplyinorder_set.filter(supply_in_booked_order__isnull=False).exists()
+
     def __str__(self):
         name = None
         if self.generalSupply:

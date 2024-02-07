@@ -120,9 +120,17 @@
          </td>
           <td>
              <h5><span class="badge bg-secondary">{{ el.count_in_order_current }}
-             {% if el.get_booked_count > 0 %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Заброньовно для цього передзамовлення">{{ el.get_booked_count }}</span> {% endif %}
+             {% if el.get_booked_count > 0 and not el.check_if_in_sup_in_rder_exist_booked_sup %}  <span class="px-2 rounded-2" style="background-color: orange; font-weight: 600">
+                 {{ el.get_booked_count }}
+             <input class="form-check-input m-0 p-0" type="checkbox" value="{{ el.id }}" id="flexCheckDefault" name="booked_items_id">
+             </span>
 
-             </span></h5>
+
+             {% endif %}
+
+             </span>
+             </h5>
+
          </td>
           <td>
              <h5><span class="badge bg-secondary">{{ el.count_in_order }}</span></h5>
