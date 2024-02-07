@@ -208,12 +208,18 @@ def load_xms_data(request):
 
 @login_required(login_url='login')
 def countCartItemsHelper(request):
+    app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
     isClient = request.user.groups.filter(name='client').exists()
     preorders_await = 0
     preorders_partial = 0
     order_to_send_today = 0
     is_one_cart = ''
-    booked_carts = BookedOrderInCart.objects.all()
+
+    if app_settings.enable_show_other_booked_cart:
+        booked_carts = BookedOrderInCart.objects.all()
+    else:
+        booked_carts = BookedOrderInCart.objects.filter(place__user=request.user)
+
     carts_count = booked_carts.count()
     if 2 > carts_count > 0:
         is_one_cart = "IS_ONE"
@@ -353,19 +359,19 @@ def deleteSupplyInOrder(request):
         supp_for_supp_in_order.countOnHold -= suppInOrder.count_in_order
         supp_for_supp_in_order.save(update_fields=['countOnHold'])
 
-    for_preorder = suppInOrder.supply_for_order.for_preorder or None
-
-    if for_preorder:
-        sup_in_preorder = for_preorder.supplyinpreorder_set.get(generalSupply=suppInOrder.generalSupply)
-        sup_in_preorder.count_in_order_current -= suppInOrder.count_in_order
-        if sup_in_preorder.count_in_order_current >= sup_in_preorder.count_in_order:
-            sup_in_preorder.state_of_delivery = 'Complete'
-        elif sup_in_preorder.count_in_order_current != 0 and sup_in_preorder.count_in_order_current < sup_in_preorder.count_in_order:
-            sup_in_preorder.state_of_delivery = 'Partial'
-        else:
-            sup_in_preorder.state_of_delivery = 'Awaiting'
-
-        sup_in_preorder.save(update_fields=['count_in_order_current', 'state_of_delivery'])
+    # for_preorder = suppInOrder.supply_for_order.for_preorder or None
+    #
+    # if for_preorder:
+    #     sup_in_preorder = for_preorder.supplyinpreorder_set.get(generalSupply=suppInOrder.generalSupply)
+    #     sup_in_preorder.count_in_order_current -= suppInOrder.count_in_order
+    #     if sup_in_preorder.count_in_order_current >= sup_in_preorder.count_in_order:
+    #         sup_in_preorder.state_of_delivery = 'Complete'
+    #     elif sup_in_preorder.count_in_order_current != 0 and sup_in_preorder.count_in_order_current < sup_in_preorder.count_in_order:
+    #         sup_in_preorder.state_of_delivery = 'Partial'
+    #     else:
+    #         sup_in_preorder.state_of_delivery = 'Awaiting'
+    #
+    #     sup_in_preorder.save(update_fields=['count_in_order_current', 'state_of_delivery'])
 
     if for_order.supplyinorder_set.count() == 0:
        for_order.delete()
@@ -763,7 +769,7 @@ def update_count_in_preorder_cart(request, itemId):
 import threading
 def sendTeamsMsg(request, order):
     app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
-    if app_settings.send_teams_msg:
+    if app_settings.send_teams_msg_preorders:
         myTeamsMessage = pymsteams.connectorcard(
             "https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/3a448e3eaf974db19d8940ba81e9bcad/3894266e-3403-44b0-a8e4-5a568f2b70a4")
         myTeamsMessage.title(f'Передамовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
@@ -1114,7 +1120,7 @@ def sendTeamsMsgCart(request, order):
         myTeamsMessage.addLinkButton("Excel", f'https://dmdxstorage.herokuapp.com/order-detail-csv/{order.id}')
         created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
         if order.comment:
-            comment = f'*комментарій:*  **{order.comment}**'
+            comment = f'*коментар:*  **{order.comment}**'
             myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
             myTeamsMessage.send()
         else:
@@ -3102,18 +3108,18 @@ def orderDetail(request, order_id, sup_id):
                         supp_for_supp_in_order.countOnHold -= suppInOrder.count_in_order
                         supp_for_supp_in_order.save(update_fields=['countOnHold'])
 
-                    for_preorder = suppInOrder.supply_for_order.for_preorder or None
-                    if for_preorder:
-                        sup_in_preorder = for_preorder.supplyinpreorder_set.get(generalSupply=suppInOrder.generalSupply)
-                        sup_in_preorder.count_in_order_current -= suppInOrder.count_in_order
-                        if sup_in_preorder.count_in_order_current >= sup_in_preorder.count_in_order:
-                            sup_in_preorder.state_of_delivery = 'Complete'
-                        elif sup_in_preorder.count_in_order_current != 0 and sup_in_preorder.count_in_order_current < sup_in_preorder.count_in_order:
-                            sup_in_preorder.state_of_delivery = 'Partial'
-                        else:
-                            sup_in_preorder.state_of_delivery = 'Awaiting'
-
-                        sup_in_preorder.save(update_fields=['count_in_order_current', 'state_of_delivery'])
+                    # for_preorder = suppInOrder.supply_for_order.for_preorder or None
+                    # if for_preorder:
+                    #     sup_in_preorder = for_preorder.supplyinpreorder_set.get(generalSupply=suppInOrder.generalSupply)
+                    #     sup_in_preorder.count_in_order_current -= suppInOrder.count_in_order
+                    #     if sup_in_preorder.count_in_order_current >= sup_in_preorder.count_in_order:
+                    #         sup_in_preorder.state_of_delivery = 'Complete'
+                    #     elif sup_in_preorder.count_in_order_current != 0 and sup_in_preorder.count_in_order_current < sup_in_preorder.count_in_order:
+                    #         sup_in_preorder.state_of_delivery = 'Partial'
+                    #     else:
+                    #         sup_in_preorder.state_of_delivery = 'Awaiting'
+                    #
+                    #     sup_in_preorder.save(update_fields=['count_in_order_current', 'state_of_delivery'])
 
             if order.npdeliverycreateddetailinfo_set.exists():
                 docrefs = order.npdeliverycreateddetailinfo_set.values_list('ref')

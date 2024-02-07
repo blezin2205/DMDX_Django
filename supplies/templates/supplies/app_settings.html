@@ -6,9 +6,7 @@
 {% load myapp_extras %}
 {% load static %}
     {% block title %}
-        <div class="container w-25">
-{{ title }}
-        </div>
+Settings
 {% endblock %}
 {% block content %}
       <form method="post" action="">
@@ -26,7 +24,7 @@
                 <label class="form-check-label" for="{{ form.send_teams_msg.id_for_label }}">
              <h6>
                  <img src="{% static 'images/teams.png' %}" width="25" height="25">
-                 notifications
+                 notifications (Замовлення)
              </h6>
               </label>
         {{ form.send_teams_msg }}
@@ -34,14 +32,32 @@
     </div>
     <hr>
 
-     <div class="d-flex justify-content-between">
-        Settings_2
+    <div class="form-check form-switch">
+            <div class="d-flex justify-content-between pe-4">
+                <label class="form-check-label" for="{{ form.send_teams_msg_preorders.id_for_label }}">
+             <h6>
+                 <img src="{% static 'images/teams.png' %}" width="25" height="25">
+                 notifications (Передзамовлення)
+             </h6>
+              </label>
+        {{ form.send_teams_msg_preorders }}
+    </div>
     </div>
 
     <hr>
 
-     <div class="d-flex justify-content-between">
-         Settings_3
+     <div class="form-check form-switch">
+            <div class="d-flex justify-content-between pe-4">
+                <label class="form-check-label" for="{{ form.enable_show_other_booked_cart.id_for_label }}">
+             <h6>
+                  <div class="btn" style="background-color: orange">
+  <i class="bi bi-cart3"></i> <span class="badge bg-danger ms-2"></span>
+</div>
+                 Показувати корзини броньованих товарів інших користувачів
+             </h6>
+              </label>
+        {{ form.enable_show_other_booked_cart }}
+    </div>
     </div>
 
     <hr>

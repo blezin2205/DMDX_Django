@@ -46,6 +46,8 @@ class CustomUser(AbstractUser):
 class AppSettings(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     send_teams_msg = models.BooleanField(default=True)
+    send_teams_msg_preorders = models.BooleanField(default=True)
+    enable_show_other_booked_cart = models.BooleanField(default=False)
 
     def __str__(self):
         return self.userCreated
