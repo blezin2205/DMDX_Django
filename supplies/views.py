@@ -67,12 +67,27 @@ def app_settings(request):
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
+def np_info_sync_ref_post_request(request):
+    np_ref = request.POST.get('np_ref')
+    print(np_ref)
+    button = '<button class="btn btn-sm btn-success ms-2"><i class="bi bi-check-square"></i></button>'
+    return HttpResponse(button)
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
 def httpRequest(request):
+    user = request.user
+
+    if request.method == 'POST':
+        np_ref = request.POST.get('np_ref')
+        user.np_contact_sender_ref = np_ref
+        user.save(update_fields=['np_contact_sender_ref'])
+
+    current_ref = user.np_contact_sender_ref
     param = {'apiKey': '99f738524ca3320ece4b43b10f4181b1',
              'modelName': 'Counterparty',
              'calledMethod': 'getCounterpartyContactPersons',
              'methodProperties': {'Ref': '3b0e7317-2a6b-11eb-8513-b88303659df5'}}
-
     getListOfCitiesParams = {
         "apiKey": "99f738524ca3320ece4b43b10f4181b1",
         "modelName": "Address",
@@ -83,17 +98,8 @@ def httpRequest(request):
     }
 
     data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(param)).json()
-    # cityData = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(getListOfCitiesParams)).json()
-    # cityDataCount = cityData["data"]
-    # cities = []
-    # for city in cityDataCount:
-    #     cityName = city["Description"]
-    #     cities.append(City(name=cityName))
-    #     print(cityName)
-    #
-    # print(len(cities))
 
-    return render(request, "supplies/http_response.html", {'data': data["data"]})
+    return render(request, "supplies/http_response.html", {'data': data["data"], 'current_ref': current_ref})
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])

@@ -1,12 +1,19 @@
 {% extends 'supplies/base.html' %}
 
 {% block content %}
+
+    <div class="container w-auto text-center my-3">
+    <h5>Your current REF: <span class="fw-bold mx-3">{{ current_ref }}</span></h5>
+
+    </div>
+
     <table class="table">
   <thead>
     <tr>
       <th scope="col">name</th>
       <th scope="col">phone</th>
       <th scope="col">ref</th>
+      <th scope="col">Sync REF with myself</th>
     </tr>
   </thead>
   <tbody>
@@ -15,9 +22,24 @@
       <td>{{ postalUser.LastName }} {{ postalUser.FirstName }}</td>
       <td>{{ postalUser.Phones }}</td>
       <td><b>{{ postalUser.Ref }}</b></td>
+    <td>
+        {% if postalUser.Ref != current_ref %}
+            <form method="POST" action="">
+               {% csrf_token %}
+        <input type="hidden" name="np_ref" value="{{ postalUser.Ref }}">
+        <button type="submit"
+        style="border-color: black; min-width: 35px;"
+         class="btn btn-sm btn-primary ms-2"><i class="bi bi-arrow-repeat"></i></button>
+     </form>
+            {% else %}
+            CURRENT!
+        {% endif %}
+
+    </td>
     </tr>
 {% endfor %}
 
   </tbody>
 </table>
+
 {% endblock %}
