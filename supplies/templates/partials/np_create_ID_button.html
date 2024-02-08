@@ -1,6 +1,6 @@
 {% load static %}
 
-<div class="hstack gap-1 {% if order.get_parsel_delivery_status == 1 %} p-2 bg-secondary-subtle rounded"{% endif %}>
+<div class="hstack gap-1 {% if order.get_parsel_delivery_status == 1 %} p-2 bg-secondary-subtle rounded{% endif %}">
 
 {% if order.get_parsel_delivery_status == 1 %}
     <div class="form-check">
