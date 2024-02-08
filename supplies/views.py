@@ -25,7 +25,7 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 from django.conf import settings
 from django.core.mail import send_mail
-
+from collections import defaultdict
 import os
 from xlsxwriter.workbook import Workbook
 from django_htmx.http import trigger_client_event
@@ -211,6 +211,15 @@ def load_xms_data(request):
         #     print(name, ref, packed)
         #     genSup = GeneralSupply(name=name, ref=ref, package_and_tests=packed, category_id=5)
         #     genSup.save()
+
+@login_required(login_url='login')
+def register_exls_selected_buttons(request):
+    cheked = False
+    if request.method == 'POST':
+        selected_orders = request.POST.getlist('register_exls_selected_buttons')
+        cheked = len(selected_orders) > 0
+        print(selected_orders)
+    return render(request, 'partials/register_butons_for_seelcted_orders.html', {'cheked': cheked})
 
 @login_required(login_url='login')
 def countCartItemsHelper(request):
@@ -1613,22 +1622,102 @@ def agreements(request):
                    'isAgreementsTab': True})
 
 
+def get_selected_xls_orders_sups(supply_in_order_list: defaultdict):
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f"attachment; filename=Selected_Orders_List_{datetime.datetime.now().strftime('%d.%m.%Y  %H:%M')}.xlsx"
+    wb = Workbook(response, {'in_memory': True})
+
+    for order_list_info in supply_in_order_list:
+        print(order_list_info)
+        render_to_xls_selected_order(order_list_info[0][1], order_list_info[0][0], order_list_info[1], wb)
+    wb.close()
+    return response
+
+
+def render_to_xls_selected_order(table_header, place, supplies_in_order, wb):
+
+    row_num = 3
+    row_num_to_table = 3
+
+    ws = wb.add_worksheet(f'№{place.id}')
+    format = wb.add_format({'bold': True})
+    format.set_font_size(16)
+
+    columns_table = [{'header': '№'},
+                     {'header': 'Назва товару'},
+                     {'header': 'Пакування / Тести'},
+                     {'header': 'Категорія'},
+                     {'header': 'REF'},
+                     {'header': 'SMN Code'},
+                     {'header': 'LOT'},
+                     {'header': 'К-ть'},
+                     {'header': 'Тер.прид.'},
+                     ]
+    ws.set_column(0, 0, 5)
+    ws.set_column(1, 1, 35)
+    ws.set_column(2, 3, 15)
+    ws.set_column(4, 5, 20)
+    ws.set_column(6, 6, 15)
+    ws.set_column(7, 7, 5)
+    ws.set_column(8, 8, 12)
+
+    ws.write(0, 0,
+             f'{place.name}, {place.city_ref.name}. Замовлення №: {table_header}',
+             format)
+    ws.write(2, 0, f'Всього: {len(supplies_in_order)} шт.', format)
+
+    format = wb.add_format()
+    format.set_font_size(14)
+    ws.add_table(row_num, 0, len(supplies_in_order) + row_num, len(columns_table) - 1, {'columns': columns_table})
+
+    for row in supplies_in_order:
+        row_num += 1
+        name = ''
+        name = ''
+        ref = ''
+        smn = ''
+        category = ''
+        packtests = ''
+        if row.general_supply:
+            if row.general_supply.name:
+                name = row.general_supply.name
+            if row.general_supply.ref:
+                ref = row.general_supply.ref
+            if row.general_supply.SMN_code:
+                smn = row.general_supply.SMN_code
+            if row.general_supply.category:
+                category = row.general_supply.category
+            if row.general_supply.package_and_tests:
+                packtests = row.general_supply.package_and_tests
+        lot = ''
+        if row.supplyLot:
+            lot = row.supplyLot
+        count = row.count
+
+        date_expired = row.expiredDate.strftime("%d-%m-%Y")
+
+        val_row = [name, packtests, category, ref, smn, lot, count, date_expired]
+
+        for col_num in range(len(val_row)):
+            ws.write(row_num, 0, row_num - row_num_to_table)
+            ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
+
 @login_required(login_url='login')
 def orders(request):
     cartCountData = countCartItemsHelper(request)
 
     isClient = request.user.groups.filter(name='client').exists()
     if isClient:
-        orders = Order.objects.filter(place__user=request.user).order_by('-id')
-        totalCount = orders.count()
+        ordersObj = Order.objects.filter(place__user=request.user).order_by('-id')
+        totalCount = ordersObj.count()
         title = f'Всі замовлення для {request.user.first_name} {request.user.last_name}. ({totalCount} шт.)'
 
     else:
-        orders = Order.objects.all().order_by('isComplete', 'dateToSend', '-id')
-        totalCount = orders.count()
+        ordersObj = Order.objects.all().order_by('isComplete', 'dateToSend', '-id')
+        totalCount = ordersObj.count()
         title = f'Всі замовлення. ({totalCount} шт.)'
 
-    orderFilter = OrderFilter(request.POST or None, queryset=orders)
+    orderFilter = OrderFilter(request.POST or None, queryset=ordersObj)
     orders = orderFilter.qs
     paginator = Paginator(orders, 20)
     page_number = request.GET.get('page')
@@ -1652,6 +1741,37 @@ def orders(request):
             print('---------------------PRINT CHOOSED --------------------------------')
             np_link_print = f'https://my.novaposhta.ua/orders/printMarking85x85/orders/{listToStr}/type/pdf8/apiKey/99f738524ca3320ece4b43b10f4181b1'
             return redirect(np_link_print)
+
+        if 'export_to_excel_choosed' in request.POST:
+            print('---------------------export_to_excel_choosed--------------------------------')
+            selected_orders = request.POST.getlist('register_exls_selected_buttons')
+            selected_orders = ordersObj.filter(id__in=selected_orders)
+            # Step 1: Group orders by place
+            orders_by_place = defaultdict(list)
+            for order in selected_orders:
+                orders_by_place[order.place].append(order)
+
+            # Step 2: Iterate over each group of orders
+            supply_in_order_list = defaultdict(list)
+            for place, sel_orders in orders_by_place.items():
+                supply_in_order_dict = defaultdict(int)
+                sel_orders_ids = []
+                for sel_order in sel_orders:
+                    sel_orders_ids.append(str(sel_order.id))
+                    # Step 2a: Collect associated SupplyInOrder instances and sum count_in_order
+                    supply_in_orders = SupplyInOrder.objects.filter(supply_for_order=sel_order)
+                    for supply_in_order in supply_in_orders:
+                        key = supply_in_order.supply
+                        supply_in_order_dict[key] += supply_in_order.count_in_order
+
+                sel_orders_ids = ",".join(sel_orders_ids)
+                # Step 3: Compile the result for each group into a single list
+                for key, count in supply_in_order_dict.items():
+                    supply_in_order = key
+                    supply_in_order.count = count
+                    supply_in_order_list[(place, sel_orders_ids)].append(supply_in_order)
+            return get_selected_xls_orders_sups(supply_in_order_list.items())
+
 
         if 'add_to_register_choosed' in request.POST:
             list_of_refs = list(map(str, documentsIdFromOrders))
@@ -2883,6 +3003,8 @@ def render_to_xls(request, order_id):
     wb.close()
 
     return response
+
+
 
 
 # def preorder_render_to_xls(request, order_id):

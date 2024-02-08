@@ -99,7 +99,14 @@
 </div>
 </div>
      </a>
+
+
     {% if request.user.is_staff and not order.isComplete %}
+         <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="{{ order.id }}" id="register_exls_selected_buttons" name="register_exls_selected_buttons" hx-target="#register_exls_selected_buttons" hx-post="{% url 'register_exls_selected_buttons' %}" hx-trigger="click">
+  <label class="form-check-label" for="register_exls_selected_buttons">
+  </label>
+</div>
     {% if order.place.address_NP and order.place.worker_NP %}
         <div id="np_create_ID_button_subscribe" hx-get="{% url 'np_create_ID_button_subscribe' order.id %}" hx-trigger="np_create_ID_button_subscribe{{order.id}} from:body">
                             {% include 'partials/np_create_ID_button.html' %}
@@ -110,6 +117,7 @@
 {#    <form action="" onsubmit="window.mytest()">#}
 {#        <button class="btn btn-danger btn-lg add-btn" type="submit" hx-target="#order_delete_cell" hx-delete="{% url 'order_delete' order.id %}" hx-confirm="Ви точно хочете видалити це замовлення?"><i class="bi bi-trash"></i></button>#}
 {#    </form>#}
+
     {% endif %}
     </div>
 </div>

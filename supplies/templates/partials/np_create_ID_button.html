@@ -1,6 +1,7 @@
 {% load static %}
 
-<div class="hstack gap-3">
+<div class="hstack gap-1 {% if order.get_parsel_delivery_status == 1 %} p-2 bg-secondary-subtle rounded"{% endif %}>
+
 {% if order.get_parsel_delivery_status == 1 %}
     <div class="form-check">
   <input class="form-check-input" type="checkbox" value="{{ order.id }}" id="register_print_buttons" name="register_print_buttons" hx-target="#register_print_buttons" hx-post="{% url 'get_register_for_orders' %}" hx-trigger="click">
