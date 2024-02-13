@@ -25,10 +25,14 @@
                 <div class="hstack gap-1 justify-content-center">
                     {% if order.isAvailableToEdit %}
                     <button style="border: none; background: none; color: blue; font-weight: bold" hx-get="{% url 'minus_from_preorders_detail_general_item' %}" hx-vals='{"el_id": "{{ el.id }}", "for_preorder_id": "{{ order.id }}"}' hx-target="closest tr" hx-swap="outerHTML">-</button>
+                        {% elif order.state_of_delivery == 'Partial' and request.user.is_staff %}
+                         <button style="border: none; background: none; color: blue; font-weight: bold" hx-get="{% url 'minus_from_preorders_detail_general_item' %}" hx-vals='{"el_id": "{{ el.id }}", "for_preorder_id": "{{ order.id }}"}' hx-target="closest tr" hx-swap="outerHTML">-</button>
                     {% endif %}
                     {{ el.count_in_order }}
                 {% if order.isAvailableToEdit %}
                     <button style="border: none; background: none; color: blue; font-weight: bold" hx-get="{% url 'plus_from_preorders_detail_general_item' %}" hx-vals='{"el_id": "{{ el.id }}", "for_preorder_id": "{{ order.id }}"}' hx-target="closest tr" hx-swap="outerHTML">+</button>
+                     {% elif order.state_of_delivery == 'Partial' and request.user.is_staff %}
+                     <button style="border: none; background: none; color: blue; font-weight: bold" hx-get="{% url 'plus_from_preorders_detail_general_item' %}" hx-vals='{"el_id": "{{ el.id }}", "for_preorder_id": "{{ order.id }}"}' hx-target="closest tr" hx-swap="outerHTML">+</button>
                 {% endif %}
 
                 </div>
@@ -69,6 +73,13 @@
 
          {% if order.isAvailableToEdit %}
      <td><button hx-delete="{% url 'delete_from_preorders_detail_general_item' el.id %}"
+         hx-target="closest tr"
+         hx-swap="outerHTML"
+        hx-confirm="Видалити {{ el.count_in_order }}шт. {{ el.generalSupply.name }} з передзамовлення для: {{ order.place.name }} ?"
+        style="border-color: black; min-width: 35px;"
+         class="btn btn-sm btn-danger ms-2"><i class="bi bi-trash"></i></button></td>
+             {% elif order.state_of_delivery == 'Partial' and request.user.is_staff %}
+              <td><button hx-delete="{% url 'delete_from_preorders_detail_general_item' el.id %}"
          hx-target="closest tr"
          hx-swap="outerHTML"
         hx-confirm="Видалити {{ el.count_in_order }}шт. {{ el.generalSupply.name }} з передзамовлення для: {{ order.place.name }} ?"
