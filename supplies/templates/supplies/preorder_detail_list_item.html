@@ -1,0 +1,79 @@
+{% load myapp_extras %}
+{% load mathfilters %}
+ <tr class="{% if order.isComplete %} {% if el.state_of_delivery == 'Complete' %} table-success {% elif el.state_of_delivery == 'Partial' %} table-warning {% else %} table-danger{% endif %}{% endif %}">
+      <td scope="row">{{forloop.counter}}.</td>
+      <td style="text-align: left; font-weight: bolder">{% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</td>
+     <td class="supplyRow">
+                    {% if el.generalSupply.package_and_tests is not none %}
+                        {{ el.generalSupply.package_and_tests }}
+                {% endif %}
+                    </td>
+     <td>{{ el.generalSupply.category.name }}</td>
+      <td>
+          {% if el.generalSupply.ref is not none %}
+                        {% if el.generalSupply %} {{ el.generalSupply.ref }} {% else %} {{ el.internalRef }} {% endif %}
+                {% endif %}
+      </td>
+
+         <td class="supplyRow">
+                    {% if el.generalSupply.SMN_code is not none %}
+                        {{ el.generalSupply.SMN_code }}
+                {% endif %}
+                    </td>
+
+            <td>
+                <div class="hstack gap-1 justify-content-center">
+                    {% if order.isAvailableToEdit %}
+                    <button style="border: none; background: none; color: blue; font-weight: bold" hx-get="{% url 'minus_from_preorders_detail_general_item' %}" hx-vals='{"el_id": "{{ el.id }}", "for_preorder_id": "{{ order.id }}"}' hx-target="closest tr" hx-swap="outerHTML">-</button>
+                    {% endif %}
+                    {{ el.count_in_order }}
+                {% if order.isAvailableToEdit %}
+                    <button style="border: none; background: none; color: blue; font-weight: bold" hx-get="{% url 'plus_from_preorders_detail_general_item' %}" hx-vals='{"el_id": "{{ el.id }}", "for_preorder_id": "{{ order.id }}"}' hx-target="closest tr" hx-swap="outerHTML">+</button>
+                {% endif %}
+
+                </div>
+            </td>
+
+     {% if order.isComplete %}
+         <td>{{ el.count_in_order_current }}
+         {% if el.get_booked_count > 0 %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="Заброньовно для цього передзамовлення">{{ el.get_booked_count }}</span> {% endif %}
+         </td>
+         <td>{{ el.count_in_order|sub:el.count_in_order_current }}</td>
+
+     {% endif %}
+{% if order.isComplete %}
+     <td class="supplyRow">
+
+<table class="rounded-3 overflow-hidden table table-light table-borderless mb-0">
+  <tbody>
+   {% for supp in el.supplyinorder_set.all %}
+{#       {% if supp.supply_for_order.isComplete %}#}
+           <tr>
+
+
+      <td  style="width: 120px"><div>{% if supp.lot is not none %} {{ supp.lot }} {% endif %}</div></td>
+      <td style="width: 110px"><div>{{ supp.count_in_order }}</div> </td>
+      <td style="width: 100px"><div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">{{ supp.date_expired|date:"d.m.Y" }}
+ </div>
+      </td>
+           <td style="width: 50px">
+           <a href="{% url 'orderDetail' order_id=supp.supply_for_order.id sup_id=supp.id %}?next={{ request.get_full_path|urlencode }}" {% if not supp.supply_for_order.isComplete %} class="link-warning" {% endif %} >№{{ supp.supply_for_order.id }}</a></td>
+</tr>
+{#      {% endif %}#}
+
+     {% endfor %}
+  </tbody>
+</table>
+</td>
+     {% endif %}
+
+         {% if order.isAvailableToEdit %}
+     <td><button hx-delete="{% url 'delete_from_preorders_detail_general_item' el.id %}"
+         hx-target="closest tr"
+         hx-swap="outerHTML"
+        hx-confirm="Видалити {{ el.count_in_order }}шт. {{ el.generalSupply.name }} з передзамовлення для: {{ order.place.name }} ?"
+        style="border-color: black; min-width: 35px;"
+         class="btn btn-sm btn-danger ms-2"><i class="bi bi-trash"></i></button></td>
+     {% endif %}
+
+ </tr>

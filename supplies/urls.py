@@ -97,6 +97,7 @@ urlpatterns = [
     path('delete_preorder_sup_in_preorder_cart/<int:sup_id>/<int:order_id>', views.delete_preorder_sup_in_preorder_cart, name='delete-preorder-sup-in-preorder-cart'),
     path('update-preorder-status/<int:order_id>', views.updatePreorderStatus, name='updatePreorderStatus'),
     path('orders_update_status/<int:order_id>', views.orderUpdateStatus, name='orders_update_status'),
+    path('minus_from_preorders_detail_general_item', views.minus_from_preorders_detail_general_item, name='minus_from_preorders_detail_general_item'),
 
     path('clientsInfo', views.clientsInfo, name='clientsInfo'),
     path('clientsInfo/<int:client_id>/orders', views.ordersForClient, name='ordersForClient'),
@@ -115,6 +116,8 @@ urlpatterns = [
     path('booked_carts_list', booked_view.booked_carts_list, name='booked_carts_list'),
     path('delete_sup_from_booked_cart_delete_action', booked_view.delete_sup_from_booked_cart_delete_action, name='delete_sup_from_booked_cart_delete_action'),
     path('minus_from_booked_supply_list_item', booked_view.minus_from_booked_supply_list_item, name='minus_from_booked_supply_list_item'),
+    path('plus_from_preorders_detail_general_item', booked_view.plus_from_preorders_detail_general_item, name='plus_from_preorders_detail_general_item'),
+    path('delete_from_preorders_detail_general_item/<int:el_id>', booked_view.delete_from_preorders_detail_general_item, name='delete_from_preorders_detail_general_item'),
     path('plus_from_booked_supply_list_item', booked_view.plus_from_booked_supply_list_item, name='plus_from_booked_supply_list_item'),
     path('delete_sup_from_booked_sups/<int:sup_id>', booked_view.delete_sup_from_booked_sups, name='delete_sup_from_booked_sups'),
 

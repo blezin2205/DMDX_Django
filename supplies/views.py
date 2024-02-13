@@ -604,7 +604,7 @@ def orderTypeDescriptionField_for_client(request):
     orderType = request.POST.get('orderType')
     place_id_Selected = request.POST.get('place_id')
     isAddedToExistPreorder = orderType == 'add_to_Exist_preorder'
-    preorders = PreOrder.objects.filter(isComplete=False, place_id=place_id_Selected)
+    preorders = PreOrder.objects.filter(place_id=place_id_Selected).filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer') | Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial'))
 
     return render(request, 'partials/orderTypeDescriptionField_for_client.html', {'isAddedToExistPreorder': isAddedToExistPreorder, 'preorders': preorders})
 
@@ -927,8 +927,6 @@ def cartDetailForClient(request):
                 selectedPreorder.save()
 
                 sups_in_preorder = selectedPreorder.supplyinpreorder_set.all()
-                print("----||||||||---------")
-                print(sups_in_preorder)
 
                 for index, sup in enumerate(supplies):
                     count = request.POST.get(f'count_{sup.id}')
@@ -937,11 +935,8 @@ def cartDetailForClient(request):
 
                     try:
                         exist_sup = sups_in_preorder.get(generalSupply=general_sup)
-                        print("-------------------")
-                        print(exist_sup)
                         exist_sup.count_in_order += int(count)
                         exist_sup.save()
-                        print("--------/////////----")
                     except:
                         suppInOrder = SupplyInPreorder(count_in_order=count,
                                                        generalSupply=general_sup,
@@ -1108,6 +1103,39 @@ def choose_place_in_cart_not_precart(request):
 
     return render(request, 'partials/choose_uncompleted_order_in_cart.html', {'orders': orders, 'place': place, 'preorders': preorders, 'isPlaceChoosed': place != None})
 
+@login_required(login_url='login')
+def minus_from_preorders_detail_general_item(request):
+    el_id = request.GET.get('el_id')
+    for_preorder_id = request.GET.get('for_preorder_id')
+    gen_sup_in_preorder = SupplyInPreorder.objects.get(id=el_id, supply_for_order_id=for_preorder_id)
+    gen_sup_in_preorder.count_in_order -= 1
+    if gen_sup_in_preorder.count_in_order == 0:
+        gen_sup_in_preorder.delete()
+        return HttpResponse(status=200)
+    else:
+        gen_sup_in_preorder.save(update_fields=['count_in_order'])
+
+    print(el_id)
+    print(for_preorder_id)
+    return render(request, 'supplies/preorder_detail_list_item.html', {'el': gen_sup_in_preorder, 'order': gen_sup_in_preorder.supply_for_order})
+
+@login_required(login_url='login')
+def plus_from_preorders_detail_general_item(request):
+    el_id = request.GET.get('el_id')
+    for_preorder_id = request.GET.get('for_preorder_id')
+    gen_sup_in_preorder = SupplyInPreorder.objects.get(id=el_id, supply_for_order_id=for_preorder_id)
+    gen_sup_in_preorder.count_in_order += 1
+    gen_sup_in_preorder.save(update_fields=['count_in_order'])
+
+    print(el_id)
+    print(for_preorder_id)
+    return render(request, 'supplies/preorder_detail_list_item.html', {'el': gen_sup_in_preorder, 'order': gen_sup_in_preorder.supply_for_order})
+
+@login_required(login_url='login')
+def delete_from_preorders_detail_general_item(request, el_id):
+    gen_sup_in_preorder = SupplyInPreorder.objects.get(id=el_id)
+    gen_sup_in_preorder.delete()
+    return HttpResponse(status=200)
 
 
 @login_required(login_url='login')
@@ -1115,7 +1143,7 @@ def choose_place_in_cart_not_precart(request):
 def get_agreement_for_place_for_city_in_cart(request):
     place_id = request.GET.get('place_id')
     place = Place.objects.get(pk=place_id)
-    agreements = place.preorder_set.filter(isComplete=False)
+    agreements = place.preorder_set.filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer'))
 
     return render(request, 'partials/choose_agreement_forplace_incart.html', {'agreements': agreements, 'isPendingPreorderExist': agreements.exists(), 'isPlaceChoosed': True})
 

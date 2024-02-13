@@ -382,6 +382,10 @@ class PreOrder(models.Model):
     def checkIfUncompletedDeliveryPreordersExist(self):
         return PreOrder.objects.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial')).exists()
 
+    def isAvailableToEdit(self):
+        return (self.state_of_delivery == 'awaiting_from_customer' or self.state_of_delivery == 'accepted_by_customer')
+
+
     class Meta:
         verbose_name = 'Передзамовлення'
         verbose_name_plural = 'Передзамовлення'
