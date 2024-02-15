@@ -277,7 +277,8 @@ def search_warehouse(request):
             "Page": "1",
             "Limit": "25",
             "Language": "UA",
-            "WarehouseId": search_text.capitalize()
+            # "WarehouseId": search_text.capitalize(),
+            "FindByString": search_text.capitalize()
         }
     }
     data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()

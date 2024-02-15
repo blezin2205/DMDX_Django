@@ -1,10 +1,12 @@
 {% if results %}
     {% csrf_token %}
-    <div style="height: 300px" class="overflow-auto">
+    <div style="max-height: 300px" class="overflow-auto">
     {% for city in results %}
-        <a hx-post="{% url 'choosed-city' %}" hx-vals='{"cityType": "{{ city.settlementTypeDescription }}", "cityName": "{{ city.name }}", "cityRef": "{{ city.ref }}"}' hx-target="#search-city-section" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" aria-current="true" style="cursor: pointer">
+        <div class="card my-link my-2">
+        <a hx-post="{% url 'choosed-city' %}" hx-vals='{"cityType": "{{ city.settlementTypeDescription }}", "cityName": "{{ city.name }}", "cityRef": "{{ city.ref }}"}' hx-target="#search-city-section" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center m-2" aria-current="true" style="cursor: pointer">
            {{ city.settlementTypeDescription }} {{ city.name }}
         </a>
+        </div>
     {% endfor %}
     </div>
 {% endif %}
