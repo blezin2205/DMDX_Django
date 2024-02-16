@@ -63,14 +63,14 @@
      {% if order.comment %}
             <div class="col text-center p-1">
     <span class="d-block date text-muted">коментар: </span>
-<h5 class="fs-6 mb-1">{{order.comment}}</h5>
+<h5 class="fs-6 mb-1 mx-4">{{order.comment}}</h5>
 </div>
         {% endif %}
 
  {% if order.npdeliverycreateddetailinfo_set.exists %}
      <div class="col text-center p-1 {% if order.comment %} border-start {% endif %} {% if order.npdeliverycreateddetailinfo_set.exists %} border-end {% endif %} ">
      <span class="d-block date text-muted">статус НП: </span>
-          <div id="np_delivery_detail_info_for_order" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
+          <div id="np_delivery_detail_info_for_order mx-3" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
           {% for detailInfo in order.statusnpparselfromdoucmentid_set.all %}
 {% if detailInfo.status_code == '9' %}
         <h5 class="fs-6 mb-1 text-success">{{ detailInfo.status_desc }}</h5>

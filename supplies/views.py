@@ -2225,7 +2225,7 @@ def serviceNotesForClient(request, client_id):
 @allowed_users(allowed_roles=['admin', 'engineer'])
 def createNote(request):
     form = ServiceNoteForm()
-    form.fields.pop("for_place")
+    # form.fields.pop("for_place")
     if request.method == 'POST':
         form = ServiceNoteForm(request.POST)
 
@@ -2240,6 +2240,30 @@ def createNote(request):
     return render(request, 'supplies/createNote.html',
                   {'title': f'Створити новий запис', 'form': form, 'cartCountData': cartCountData,
                    'isService': True})
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'engineer'])
+def createNote_for_client(request, client_id):
+    client = Place.objects.get(id=client_id)
+    form = ServiceNoteForm(initial={'for_place': client})
+    # form.fields.pop("for_place")
+
+    if request.method == 'POST':
+        form = ServiceNoteForm(request.POST, initial={'for_place': client})
+
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.from_user = CustomUser.objects.get(pk=request.user.id)
+            obj.for_place = client
+            obj.save()
+            return redirect('/serviceNotes')
+
+    cartCountData = countCartItemsHelper(request)
+
+    return render(request, 'supplies/createNote.html',
+                  {'title': f'Створити новий запис', 'form': form, 'cartCountData': cartCountData,
+                   'isHiddenPlace': True})
 
 
 @login_required(login_url='login')
@@ -2707,6 +2731,21 @@ def editWorkerInfo(request, worker_id):
     return render(request, 'supplies/addNewWorkerForClient.html',
                   {'title': f'Редагувати працівника для: \n{place.name}, {place.city_ref.name}', 'form': form,
                    'cartCountData': cartCountData, 'orgRefExist': orgRefExist})
+
+
+@login_required(login_url='login')
+def worker_card_info_delete_worker(request):
+    worker_id = request.POST.get('worker_id')
+    worker = Workers.objects.get(id=worker_id)
+    worker.delete()
+    return HttpResponse(status=200)
+
+@login_required(login_url='login')
+def worker_card_info_edit_action(request):
+    worker_id = request.POST.get('worker_id')
+    worker = Workers.objects.get(id=worker_id)
+    return render(request, 'supplies/editClientDetail_worker_edit_view.html',
+                  {'worker': worker})
 
 
 @login_required(login_url='login')

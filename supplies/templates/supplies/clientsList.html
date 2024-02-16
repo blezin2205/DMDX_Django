@@ -35,7 +35,13 @@
 <div class=" d-flex justify-content-between align-items-center">
 
 <span class="badge rounded-end-5 px-4 {% if client.isPrivatePlace %} bg-warning {% else %} bg-primary {% endif %}">{% if client.isPrivatePlace %} Приватні {% else %} Державні {% endif %}</span>
-<a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-outline-dark mx-2" role="button"><i class="bi bi-pencil"></i></a>
+<div class=" d-flex justify-content-end align-items-center">
+  <a href="{% url 'newWorkerForPlace' client.id %}" class="btn btn-sm btn-outline-dark" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати нового працівника" ><i class="bi bi-person-plus"></i></a>
+  <a href="{% url 'addNewDeviceForClient' client.id %}" class="btn btn-sm btn-outline-dark mx-2" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати прилад"><i class="bi bi-device-ssd"></i></a>
+  <a href="{% url 'create_note_for_client' client.id %}" class="btn btn-sm btn-outline-dark me-2" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати сервісну замітку"><i class="bi bi-journal-text"></i></a>
+<a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-outline-dark mx-2" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Редагувати"><i class="bi bi-pencil"></i></a>
+</div>
+
 </div>
 </div>
 </div>

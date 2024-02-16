@@ -1,0 +1,54 @@
+{% load mathfilters %}
+<form method="POST" action="">
+          <div class="card-body px-3 d-flex justify-content-center align-items-center worker_card_info">
+                <div class="col px-2">
+              <div class="w-auto">
+              <span class="text-muted">Ім'я: </span>
+              <input id="form1" min="0" name="worker_name" value="{{worker.name}}" type="text"
+                  class="form-control form-control-sm" />
+          </div>
+          <div class="w-auto">
+              <span class="text-muted">По-батькові: </span>
+              <input id="form1" min="0" name="worker_middleName" value="{{worker.middleName}}" type="text"
+                  class="form-control form-control-sm" />
+          </div>
+          <div class="w-auto">
+              <span class="text-muted">Прізвище: </span>
+              <input id="form1" min="0" name="worker_secondName" value="{{worker.secondName}}" type="text"
+                  class="form-control form-control-sm" />
+          </div>
+
+              </div>
+
+{#                <div class="col">#}
+{#                <h6 style="font-size: medium"><span class="text-muted">LOT:</span> {{ item.lot }}</h6>#}
+{#                <h6 style="color:{% if item.date_is_good %}blue{% elif item.date_is_today %}orange{% else %}red{% endif %}; font-size: medium"><span class="text-muted">Термін:</span> <span style="color:{% if item.date_is_good %}blue{% elif item.date_is_today %}orange{% else %}red{% endif %};">{{ item.date_expired|date:"d.m.Y" }}</span></h6>#}
+{##}
+{##}
+{#                </div>#}
+              <div class="col px-2">
+                      <div class="w-auto">
+              <span class="text-muted">посада: </span>
+              <input id="form1" min="0" name="worker_position" value="{{worker.position}}" type="text"
+                  class="form-control form-control-sm" />
+          </div>
+              </div>
+
+<div class="col px-2">
+     <div class="w-auto">
+              <span class="text-muted">тел.: </span>
+              <input id="form1" min="0" max="12" name="worker_telNumber" value="{{worker.telNumber}}" type="text"
+                  class="form-control form-control-sm" />
+          </div>
+
+              </div>
+
+{#            <button class="btn btn-warning" hx-post="{% url 'worker_card_info_edit_action' %}" hx-vals='{"worker_id": {{ worker.id }}}' hx-target="closest div .sup_in_delivery_order_recg_card" hx-swap="innerHTML">#}
+{#              <i class="bi bi-pencil"></i>#}
+{#    </button>#}
+
+{#<button class="btn btn-danger" hx-post="{% url 'worker_card_info_delete_worker' %}" hx-confirm="Видалити працівника?" hx-vals='{"worker_id": {{ worker.id }}}' hx-target="closest div .sup_in_delivery_order_recg_card" hx-swap="outerHTML">#}
+{#      <i class="bi bi-trash3"></i>#}
+{#    </button>#}
+          </div>
+  </form>

@@ -49,6 +49,7 @@
       </div>
         </section>
 
+
 {% if messages %}
 <ul class="messages my-4" style="color: red">
     {% for message in messages %}
@@ -56,6 +57,23 @@
     {% endfor %}
 </ul>
 {% endif %}
+{#{% if place.workers.all %}#}
+{#    <section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #f5f5f5;">#}
+{#  <div class="container h-100 py-3">#}
+{#    <div class="row d-flex justify-content-center align-items-center h-100">#}
+{#      <div class="col-10">#}
+{#          {% for worker in place.workers.all %}#}
+{#               <div class="sup_in_delivery_order_recg_card card rounded mt-3">#}
+{#              {% include 'supplies/editClientDetail_worker_cell.html' %}#}
+{#              </div>#}
+{#          {% endfor %}#}
+{##}
+{#    </div>#}
+{#  </div>#}
+{#</div>#}
+{#</section>#}
+{#{% endif %}#}
+
 
 <input type="hidden" name="next" value="{{ request.GET.next }}">
 <button class="btn btn-outline-primary my-5" type="submit" name="generalSave">Зберегти</button>

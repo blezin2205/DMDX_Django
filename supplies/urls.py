@@ -108,6 +108,8 @@ urlpatterns = [
     path('clientsInfo/<int:client_id>/editInfo', views.editClientInfo, name='editClientInfo'),
     path('clientsInfo/<int:worker_id>/editWorkerInfo', views.editWorkerInfo, name='editWorkerInfo'),
     path('clientsInfo/<int:client_id>/add-new-device', views.addNewDeviceForClient, name='addNewDeviceForClient'),
+    path('clientsInfo/worker_card_info_delete_worker', views.worker_card_info_delete_worker, name='worker_card_info_delete_worker'),
+    path('clientsInfo/worker_card_info_edit_action', views.worker_card_info_edit_action, name='worker_card_info_edit_action'),
 
     path('clientsInfo/<int:client_id>/booked_supplies_list', booked_view.booked_supplies_list, name='booked_sups_list_for_client'),
     path('add_sup_to_booked_cart/<int:sup_id>', booked_view.add_sup_to_booked_cart, name='add_sup_to_booked_cart'),
@@ -126,6 +128,7 @@ urlpatterns = [
 
     path('serviceNotes', views.serviceNotes, name='clientsInfo'),
     path('serviceNotes/create', views.createNote, name='create_note'),
+    path('serviceNotes/create_for_client/<int:client_id>', views.createNote_for_client, name='create_note_for_client'),
     path('serviceNotes/delete/<int:note_id>', views.deleteServiceNote, name='deleteNote'),
     path('serviceNotes/update/<int:note_id>', views.updateNote, name='updateNote'),
 

@@ -1,0 +1,36 @@
+{% load mathfilters %}
+          <div class="card-body px-3 d-flex justify-content-center align-items-center worker_card_info">
+                <div class="col">
+              <div style="font-size: large">{{ worker.get_full_name }}</div>
+
+                   {% if worker.get_np_status %}
+                       <div class="text-muted" style="font-size: smaller"> НП категорія: {{ worker.get_np_status }}</div>
+              {% endif %}
+
+              </div>
+
+{#                <div class="col">#}
+{#                <h6 style="font-size: medium"><span class="text-muted">LOT:</span> {{ item.lot }}</h6>#}
+{#                <h6 style="color:{% if item.date_is_good %}blue{% elif item.date_is_today %}orange{% else %}red{% endif %}; font-size: medium"><span class="text-muted">Термін:</span> <span style="color:{% if item.date_is_good %}blue{% elif item.date_is_today %}orange{% else %}red{% endif %};">{{ item.date_expired|date:"d.m.Y" }}</span></h6>#}
+{##}
+{##}
+{#                </div>#}
+              <div class="col">
+                      {% if worker.position %}
+                       <div class="text-muted" style="font-size: small">{{ worker.position }}</div>
+                  {% endif %}
+              </div>
+
+<div class="col">
+<div class="text-muted" style="font-size: medium">тел.: <span class="text-black">{{ worker.telNumber }}</span></div>
+
+              </div>
+
+            <button class="btn btn-warning" hx-post="{% url 'worker_card_info_edit_action' %}" hx-vals='{"worker_id": {{ worker.id }}}' hx-target="closest div .sup_in_delivery_order_recg_card" hx-swap="innerHTML">
+              <i class="bi bi-pencil"></i>
+    </button>
+
+{#<button class="btn btn-danger" hx-post="{% url 'worker_card_info_delete_worker' %}" hx-confirm="Видалити працівника?" hx-vals='{"worker_id": {{ worker.id }}}' hx-target="closest div .sup_in_delivery_order_recg_card" hx-swap="outerHTML">#}
+      <i class="bi bi-trash3"></i>
+    </button>
+          </div>

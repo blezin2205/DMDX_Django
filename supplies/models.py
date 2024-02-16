@@ -315,6 +315,24 @@ class Workers(models.Model):
             telNumber = ''
         return f'{self.name} {self.secondName}{user_np_type} {telNumber}'
 
+    def get_full_name(self):
+        full_name = self.name
+        if self.middleName:
+            full_name += " " + self.middleName
+        if self.secondName:
+            full_name += " " + self.secondName
+
+        return full_name
+
+    def get_np_status(self):
+        counterpartyRef = self.ref_counterparty_NP
+        user_np_type = None
+        if counterpartyRef is not None and counterpartyRef == '3b13350b-2a6b-11eb-8513-b88303659df5':
+            user_np_type = 'Приватна особа'
+        elif counterpartyRef is not None:
+            user_np_type = 'Організація'
+        return  user_np_type
+
     class Meta:
         verbose_name = 'Працівник'
         verbose_name_plural = 'Працівники'
