@@ -153,15 +153,15 @@ def create_np_document_for_order(request, order_id):
                     "RecipientAddress": recipient_address.address_ref_NP,
                     "ContactRecipient": recipient_worker.ref_NP,
                     "RecipientsPhone": recipient_worker.telNumber,
-                    "OptionsSeat": [
-                        {
-                            "volumetricVolume": str(volumeGeneral),
-                            "volumetricWidth": width,
-                            "volumetricLength": length,
-                            "volumetricHeight": height,
-                            "weight": str(weight)
-                        }
-                    ],
+                    # "OptionsSeat": [
+                    #     {
+                    #         "volumetricVolume": str(volumeGeneral),
+                    #         "volumetricWidth": width,
+                    #         "volumetricLength": length,
+                    #         "volumetricHeight": height,
+                    #         "weight": str(weight)
+                    #     }
+                    # ],
                 }
             }
             data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
