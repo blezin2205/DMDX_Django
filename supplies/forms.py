@@ -39,7 +39,7 @@ class CreateNPParselForm(ModelForm):
         self.fields['length'].label = "Довжина (см)"
         self.fields['height'].label = "Висота (см)"
         self.fields['weight'].label = "Фактична вага (кг)"
-        self.fields['seatsAmount'].label = "Кількість місць"
+        # self.fields['seatsAmount'].label = "Кількість місць"
         self.fields['description'].label = "Опис"
         self.fields['cost'].label = "Оціночна вартість (грн)"
         self.fields['dateDelivery'].label = "Дата відправки"
@@ -52,7 +52,7 @@ class CreateNPParselForm(ModelForm):
 
     class Meta:
         model = CreateParselModel
-        fields = '__all__'
+        exclude = ['seatsAmount']
 
 
 

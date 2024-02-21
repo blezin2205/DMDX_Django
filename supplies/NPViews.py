@@ -77,6 +77,13 @@ def get_print_xls_for_preorders(request):
     return render(request, 'partials/xls_preorders_print_buttons.html', {'cheked': cheked})
 
 
+def add_more_np_places_input_group(request):
+    return render(request, 'partials/add_more_np_places_input_group.html', {})
+
+def minus_add_more_np_places_input_group(request):
+    return HttpResponse(status=200)
+
+
 def create_np_document_for_order(request, order_id):
 
     order = Order.objects.get(id=order_id)
@@ -115,7 +122,7 @@ def create_np_document_for_order(request, order_id):
             length = inputForm.cleaned_data['length']
             height = inputForm.cleaned_data['height']
             weight = inputForm.cleaned_data['weight']
-            seatsAmount = inputForm.cleaned_data['seatsAmount']
+            seatsAmount = 1
             description = inputForm.cleaned_data['description']
             cost = inputForm.cleaned_data['cost']
             sender_ref = "3b0e7317-2a6b-11eb-8513-b88303659df5"
@@ -126,7 +133,43 @@ def create_np_document_for_order(request, order_id):
             recipient_address = placeForm.cleaned_data['address_NP']
             recipient_worker = placeForm.cleaned_data['worker_NP']
 
+            weight_input_field_list = request.POST.getlist('weight_input_field') or []
+            width_input_field_list = request.POST.getlist('width_input_field') or []
+            length_input_field_list = request.POST.getlist('length_input_field') or []
+            height_input_field_list = request.POST.getlist('height_input_field') or []
 
+            options_seat_list = [
+                {
+                        "volumetricVolume": str(volumeGeneral),
+                        "volumetricWidth": width,
+                        "volumetricLength": length,
+                        "volumetricHeight": height,
+                        "weight": str(weight)
+                    }
+            ]
+
+            # Iterate over the indices of the input lists assuming they are of the same length
+            for i in range(len(weight_input_field_list)):
+                # Extract values from input lists
+                weight = weight_input_field_list[i]
+                width = width_input_field_list[i]
+                length = length_input_field_list[i]
+                height = height_input_field_list[i]
+
+                # Calculate volumetric volume
+                volumetric_volume = float(width) / 100 * float(length) / 100 * float(height) / 100
+
+                # Create dictionary for the current set of values
+                options_seat = {
+                    "volumetricVolume": str(volumetric_volume),
+                    "volumetricWidth": width,
+                    "volumetricLength": length,
+                    "volumetricHeight": height,
+                    "weight": str(weight)
+                }
+
+                # Append the dictionary to the list
+                options_seat_list.append(options_seat)
 
             params = {
                 "apiKey": "99f738524ca3320ece4b43b10f4181b1",
@@ -137,10 +180,10 @@ def create_np_document_for_order(request, order_id):
                     "PaymentMethod": payment_money_type,
                     "DateTime": dateSend,
                     "CargoType": "Parcel",
-                    "VolumeGeneral": str(volumeGeneral),
-                    "Weight": str(weight),
+                    # "VolumeGeneral": str(volumeGeneral),
+                    # "Weight": str(general_weight),
                     "ServiceType": f'{sender_place.deliveryType}{deliveryType}',
-                    "SeatsAmount": str(seatsAmount),
+                    # "SeatsAmount": str(seatsAmount),
                     "Description": description,
                     "Cost": str(cost),
                     "CitySender": sender_np_place.city_ref_NP,
@@ -153,17 +196,10 @@ def create_np_document_for_order(request, order_id):
                     "RecipientAddress": recipient_address.address_ref_NP,
                     "ContactRecipient": recipient_worker.ref_NP,
                     "RecipientsPhone": recipient_worker.telNumber,
-                    # "OptionsSeat": [
-                    #     {
-                    #         "volumetricVolume": str(volumeGeneral),
-                    #         "volumetricWidth": width,
-                    #         "volumetricLength": length,
-                    #         "volumetricHeight": height,
-                    #         "weight": str(weight)
-                    #     }
-                    # ],
+                    "OptionsSeat": options_seat_list,
                 }
             }
+
             data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
             print(data)
             workr_postition = ''

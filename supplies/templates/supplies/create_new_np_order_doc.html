@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-     <div class="{% if request.user_agent.is_mobile %}w-100  {% else %} w-50 {% endif %} bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
+     <div class="{% if request.user_agent.is_mobile %}w-100  {% else %} w-75 {% endif %} bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
      <form method="POST" action="">
 {% csrf_token %}
      {{ placeForm|crispy }}
@@ -21,8 +21,9 @@
     {{ inputForm.payment_money_type|as_crispy_field }}
   </div>
 </div>
-         <div class="row g-3">
-             <div class="col-sm">
+         <div class="row bg-light rounded p-2 m-2">
+             <div class="hstack gap-2">
+                              <div class="col-sm">
     {{ inputForm.weight|as_crispy_field }}
   </div>
   <div class="col-sm">
@@ -35,13 +36,18 @@
     {{ inputForm.height|as_crispy_field }}
   </div>
 
+                 <button class="btn btn-primary" hx-post="{% url 'add_more_np_places_input_group' %}" hx-target="#add_more_places_input_group" hx-swap="beforebegin"><i class="bi bi-plus-circle"></i></button>
+             </div>
+
+
 </div>
+
+              <div id="add_more_places_input_group">
+</div>
+
          <div class="row g-3">
-  <div class="col-sm-7">
-    {{ inputForm.description|as_crispy_field }}
-  </div>
   <div class="col-sm">
-    {{ inputForm.seatsAmount|as_crispy_field }}
+    {{ inputForm.description|as_crispy_field }}
   </div>
 </div>
 
@@ -67,7 +73,7 @@
              <div id="error"></div>
 {% endif %}
 <input type="hidden" name="next" value="{{ request.GET.next }}">
-     <div class="hstack gap-2">
+     <div class="hstack gap-4 justify-content-center m-4">
 <button class="btn btn-primary" type="submit" name="save_and_print"><i class="bi bi-printer"></i> Зберегти та друкувати</button>
      <button class="btn btn-primary" type="submit" name="save_and_add"><i class="bi bi-file-earmark-plus"></i> Зберегти та додати інший</button>
      <button class="btn btn-primary" type="submit" name="save_and_exit"><i class="bi bi-x-square"></i> Зберегти та вийти</button>

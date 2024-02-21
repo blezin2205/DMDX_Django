@@ -175,6 +175,9 @@ urlpatterns = [
     path('get_register_for_orders', NPViews.get_register_for_orders, name='get_register_for_orders'),
     path('register_exls_selected_buttons', views.register_exls_selected_buttons, name='register_exls_selected_buttons'),
     path('get_print_xls_for_preorders', NPViews.get_print_xls_for_preorders, name='get_print_xls_for_preorders'),
+    path('get_print_xls_for_preorders', NPViews.get_print_xls_for_preorders, name='get_print_xls_for_preorders'),
+    path('add_more_np_places_input_group', NPViews.add_more_np_places_input_group, name='add_more_np_places_input_group'),
+    path('minus_add_more_np_places_input_group', NPViews.minus_add_more_np_places_input_group, name='minus_add_more_np_places_input_group'),
 
     path('nova_poshta_registers', NPViews.nova_poshta_registers, name='nova_poshta_registers')
 

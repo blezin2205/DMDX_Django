@@ -1,0 +1,34 @@
+         <div class="row row-cell-add-more-parcels bg-light rounded p-2 m-2">
+              <div class="hstack gap-2">
+                              <div class="col-sm">
+    <div class="w-auto">
+              <span class="text-muted">вага: </span>
+              <input id="form1" min="0" name="weight_input_field" value="" type="number"
+                  class="form-control form-control-sm" />
+          </div>
+  </div>
+  <div class="col-sm">
+      <div class="w-auto">
+              <span class="text-muted">ширина: </span>
+              <input id="form1" min="0" name="width_input_field" value="" type="number"
+                  class="form-control form-control-sm" />
+          </div>
+  </div>
+  <div class="col-sm">
+      <div class="w-auto">
+              <span class="text-muted">довжина: </span>
+              <input id="form1" min="0" name="length_input_field" value="" type="number"
+                  class="form-control form-control-sm" />
+          </div>
+  </div>
+             <div class="col-sm">
+                 <div class="w-auto">
+              <span class="text-muted">висота: </span>
+              <input id="form1" min="0" name="height_input_field" value="" type="number"
+                  class="form-control form-control-sm" />
+          </div>
+  </div>
+                  <button class="btn btn-danger" hx-post="{% url 'minus_add_more_np_places_input_group' %}" hx-target="closest .row-cell-add-more-parcels" hx-swap="outerHTML"><i class="bi bi-trash"></i></button>
+             </div>
+
+</div>
