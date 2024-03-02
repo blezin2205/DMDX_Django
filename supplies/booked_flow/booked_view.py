@@ -283,6 +283,7 @@ def minus_from_booked_supply_list_item(request):
     sup.supply.countOnHold -= 1
     sup.supply.save(update_fields=['countOnHold'])
     if sup.count_in_order == 0:
+        sup.delete()
         return HttpResponse(status=200)
     else:
         sup.save(update_fields=['count_in_order'])

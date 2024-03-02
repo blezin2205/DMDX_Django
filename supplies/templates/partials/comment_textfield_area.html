@@ -1,0 +1,16 @@
+            <div class="">
+                {% if order.comment %}
+    <span class="d-block date text-muted px-2">коментар: </span>
+<h5 class="fs-6 my-2 mx-4">{{order.comment}}</h5>
+                {% endif %}
+</div>
+
+<div class="p-3">
+    {% if order.comment %}
+        <button class="btn btn-sm btn-warning" role="button" hx-post="{% url 'orderDetail_add_comment' %}" hx-vals='{"order_id": {{ order.id }}, "comment": "{{ order.comment }}"}' hx-target="#comment_input_textfield_area"><i class="bi bi-pencil"></i></button>
+
+        {% else %}
+        <button class="btn btn-sm btn-primary" role="button" hx-post="{% url 'orderDetail_add_comment' %}" hx-vals='{"order_id": {{ order.id }}}' hx-target="#comment_input_textfield_area"><i class="bi bi-plus">додати коментар</i></button>
+    {% endif %}
+
+</div>

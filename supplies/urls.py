@@ -145,6 +145,8 @@ urlpatterns = [
     path('convert_order_to_booked_order/<int:order_id>', booked_view.convert_order_to_booked_order, name='convert_order_to_booked_order'),
 
     path('order_delete_order_previews_cell/<int:order_id>', views.order_delete, name='order_delete'),
+    path('orderDetail_add_comment', views.orderDetail_add_comment, name='orderDetail_add_comment'),
+    path('orderDetail_save_comment', views.orderDetail_save_comment, name='orderDetail_save_comment'),
 
 
     path('api/supplies', apiViews.SuppliesApiView.as_view()),

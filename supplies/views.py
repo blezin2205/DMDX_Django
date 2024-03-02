@@ -3281,6 +3281,26 @@ def devices_render_to_xls(request):
 
     return response
 
+@login_required(login_url='login')
+def orderDetail_add_comment(request):
+    order_id = request.POST.get("order_id")
+    comment = request.POST.get("comment") or ""
+    print("order_id = ", order_id)
+    print("comment = ", comment)
+    return render(request, 'partials/comment_input_textfield_area.html', {'order_id': order_id, 'comment': comment})
+
+
+@login_required(login_url='login')
+def orderDetail_save_comment(request):
+    order_id = request.POST.get("order_id")
+    comment_textfield = request.POST.get("comment_textfield")
+    order = Order.objects.get(id=order_id)
+    order.comment = comment_textfield
+    order.save(update_fields=["comment"])
+
+    print("order_id = ", order_id)
+    print("comment_textfield = ", comment_textfield)
+    return render(request, 'partials/comment_textfield_area.html', {'order': order})
 
 @login_required(login_url='login')
 def orderDetail(request, order_id, sup_id):
