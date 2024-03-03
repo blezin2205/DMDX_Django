@@ -462,6 +462,9 @@ class Order(models.Model):
     def get_parsel_delivery_status(self):
         return int(self.statusnpparselfromdoucmentid_set.first().status_code)
 
+    def isClientCreated(self):
+        return self.userCreated.isClient()
+
     def __str__(self):
         return f'Заказ № {self.id}, для {self.place.name}, от {self.dateSent}'
 

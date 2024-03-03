@@ -17,7 +17,7 @@
 
  <div class="d-flex justify-content-end">
     {% if not order.isComplete %}
-            <a style="color: #ff8000" href="{% url 'convert_order_to_booked_order' order.id %}" class="px-lg-4 mx-4">Конвертувати замовлення в бронювання</a>
+           <a style="color: #ff8000" href="#" onclick="confirmConversion('{{ order.id }}')" class="px-lg-4 mx-4">Конвертувати замовлення в бронювання</a>
         {% endif %}
 <form method="POST" action="" onsubmit="window.mytest()">
   {% csrf_token %}
@@ -38,7 +38,7 @@
 <div class="d-flex text-center justify-content-between">
 <div class="text-end" style="width: 200px">
     <div class="rounded-end-5 pe-4 bg-light text-muted date">створено: {{order.dateCreated|date:"d.m.Y"}}</div>
-    <div class="rounded-end-5 pe-4 mt-1 bg-light text-muted date"><span class="text-muted">створив: </span>{{ order.userCreated.first_name  }} {{ order.userCreated.last_name  }}</div>
+    <div class="rounded-end-5 pe-4 mt-1 {% if order.isClientCreated %}  bg-warning-subtle {% else %} bg-light {% endif %} text-muted date">створив: {{ order.userCreated.first_name  }} {{ order.userCreated.last_name  }}</div>
 </div>
 
 
@@ -48,7 +48,7 @@
          {% if order.for_preorder.isPreorder %}
              <a href="{% url 'preorderDetail' order.for_preorder.id %}?next={{ request.get_full_path }}">Передзамовлення: <b>№ {{order.for_preorder.id}}</b></a>
              {% else %}
-             <p class="mb-1"><u class="text-muted bg-light rounded-1 px-3 mx-4 py-1">Договір: <b>№{{order.for_preorder.id}}</b> {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }} {% endif %} </u></p>
+             <a href="{% url 'preorderDetail' order.for_preorder.id %}?next={{ request.get_full_path }}">Договір: <b>№ {{order.for_preorder.id}}</b> {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }} {% endif %} </a>
              {% endif %}
       {% endif %}
 
@@ -313,6 +313,13 @@
 {#    </div>#}
 {##}
 <script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити це замовлення ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
+    <script>
+  function confirmConversion(orderId) {
+    if (confirm("Всі товари в цьому замовленні будуть перенесені в бронювання для цієї організації, а замовлення буде видалено та більше недоступно. \n\nПродовжити?")) {
+      window.location.href = "{% url 'convert_order_to_booked_order' 0 %}".replace('0', orderId);
+    }
+  }
+</script>
 {##}
 {% endblock %}
 
