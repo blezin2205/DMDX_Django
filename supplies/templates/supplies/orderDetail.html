@@ -30,7 +30,7 @@
 
     </div>
 
-     <div class="card">
+     <div class="card flex-wrap">
 <div class="card-header px-0  {% if not order.isComplete %} bg-warning bg-gradient bg-opacity-25 {% else %} bg-primary bg-gradient bg-opacity-25 {% endif %}">
 
 <div class="d-flex flex-column text-center justify-content-between">
@@ -150,7 +150,7 @@
           <table class="table centred my-3 w-auto mx-auto">
   <thead class="thead-dark">
     <tr>
-      <th scope="col" class="textAlignLeft" style="min-width: 400px">({{supplies|length}}) Назва товару</th>
+      <th scope="col" class="textAlignLeft" style="min-width: 100px">({{supplies|length}}) Назва товару</th>
       <th scope="col">Пакування / Тести</th>
         <th scope="col">Категорія</th>
         <th scope="col">REF</th>
@@ -160,6 +160,9 @@
         <th scope="col">Термін*</th>
       {% if request.user|has_group:"empl" or request.user.is_staff %}
           <th scope="col">Оновлено**</th>
+    {% endif %}
+    {% if order.isForPreorderOrItemHasPreorder %}
+<th scope="col">preorder</th>
     {% endif %}
         {% if not order.isComplete and request.user.is_staff %}
         <th scope="col">Action</th>

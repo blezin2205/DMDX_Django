@@ -331,7 +331,7 @@ class Workers(models.Model):
             user_np_type = 'Приватна особа'
         elif counterpartyRef is not None:
             user_np_type = 'Організація'
-        return  user_np_type
+        return user_np_type
 
     class Meta:
         verbose_name = 'Працівник'
@@ -403,7 +403,6 @@ class PreOrder(models.Model):
     def isAvailableToEdit(self):
         return (self.state_of_delivery == 'awaiting_from_customer' or self.state_of_delivery == 'accepted_by_customer')
 
-
     class Meta:
         verbose_name = 'Передзамовлення'
         verbose_name_plural = 'Передзамовлення'
@@ -451,6 +450,9 @@ class Order(models.Model):
     documentsId = ArrayField(models.CharField(max_length=200), blank=True, null=True)
     for_agreement = models.ForeignKey(Agreement, on_delete=models.SET_NULL, null=True, blank=True)
     dateToSend = models.DateField(null=True, blank=True)
+
+    def isForPreorderOrItemHasPreorder(self):
+        return (self.for_preorder is None) and self.supplyinorder_set.filter(supply_in_preorder__isnull=False)
 
     def get_np_DocumetsIdList(self):
         set = self.npdeliverycreateddetailinfo_set.all()
@@ -615,14 +617,15 @@ class SupplyInPreorder(models.Model):
     state_of_delivery = models.CharField(max_length=20, choices=STATE_CHOICES, default='Awaiting')
 
     def get_booked_count(self):
-        sups_booked_count = self.supplyinbookedorder_set.all().aggregate(total_count=Sum('count_in_order'))["total_count"]
+        sups_booked_count = self.supplyinbookedorder_set.all().aggregate(total_count=Sum('count_in_order'))[
+            "total_count"]
         if sups_booked_count:
             return sups_booked_count
         else:
             return 0
 
     def check_if_in_sup_in_rder_exist_booked_sup(self):
-       return self.supplyinorder_set.filter(supply_in_booked_order__isnull=False).exists()
+        return self.supplyinorder_set.filter(supply_in_booked_order__isnull=False).exists()
 
     def __str__(self):
         name = None
@@ -841,7 +844,6 @@ class BookedOrderInCart(models.Model):
         return total
 
 
-
 class BookedSupplyInOrderInCart(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True, default=0)
     supply = models.OneToOneField(SupplyInBookedOrder, on_delete=models.CASCADE, null=True, blank=True)
@@ -930,6 +932,3 @@ class DeliverySupplyInCart(models.Model):
     class Meta:
         verbose_name = 'Додані товари з поставки'
         verbose_name_plural = 'Додані товари з поставки'
-
-
-
