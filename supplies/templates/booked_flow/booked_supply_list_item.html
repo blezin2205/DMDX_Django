@@ -23,7 +23,7 @@
 
 <table class="rounded-3 overflow-hidden table table-light table-borderless mb-0 ">
   <tbody>
-   {% for supp in el.supplyinbookedorder_set.all %}
+   {% for supp in supply_list %}
     <tr class="d-flex justify-content-between">
 
       <td style="width: 150px"><div>{% if supp.supply.supplyLot is not none %} {{ supp.supply.supplyLot }} {% endif %}</div></td>

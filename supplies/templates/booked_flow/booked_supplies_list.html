@@ -70,7 +70,7 @@
     </tr>
   </thead>
   <tbody>
-    {% for el in general_supply_list %}
+    {% for el, supply_list in general_supply_list.items %}
 <div class="booked_supply_list_item_card">
      {% include 'booked_flow/booked_supply_list_item.html' %}
         </div>

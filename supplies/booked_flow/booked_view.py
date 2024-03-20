@@ -42,12 +42,25 @@ from ..views import *
 def booked_supplies_list(request, client_id):
     isClient = request.user.isClient()
     place = Place.objects.get(id=client_id)
-    supplies_list = SupplyInBookedOrder.objects.filter(supply_for_place=place).order_by('generalSupply__name')
+    # Prefetch GeneralSupply related to SupplyInBookedOrder to minimize DB queries
+    supplies_list = SupplyInBookedOrder.objects.filter(supply_for_place=place) \
+        .order_by('generalSupply__name') \
+        .select_related('generalSupply')
+
+    # Group SupplyInBookedOrder objects by GeneralSupply name
+    grouped_supplies = {}
+    for supply in supplies_list:
+        general_supply_name = supply.generalSupply
+        if general_supply_name not in grouped_supplies:
+            grouped_supplies[general_supply_name] = []
+        grouped_supplies[general_supply_name].append(supply)
+
     title = f'Всі бронювання для: \n{place.name}, {place.city_ref.name}'
     cartCountData = countCartItemsHelper(request)
     suppFilter = BookedSuppliesFilter(request.GET, queryset=supplies_list)
     supplies_list = suppFilter.qs
-    general_supply_list = GeneralSupply.objects.filter(supplyinbookedorder__in=supplies_list).distinct().order_by('name')
+    general_supply_list = grouped_supplies
+
     if isClient:
         title = f'Всі ваші заброньовані товари'
         user_places = request.user.place_set.all()
