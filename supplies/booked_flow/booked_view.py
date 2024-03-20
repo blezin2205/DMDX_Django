@@ -47,6 +47,10 @@ def booked_supplies_list(request, client_id):
         .order_by('generalSupply__name') \
         .select_related('generalSupply')
 
+    title = f'Всі бронювання для: \n{place.name}, {place.city_ref.name}'
+    cartCountData = countCartItemsHelper(request)
+    suppFilter = BookedSuppliesFilter(request.GET, queryset=supplies_list)
+    supplies_list = suppFilter.qs
     # Group SupplyInBookedOrder objects by GeneralSupply name
     grouped_supplies = {}
     for supply in supplies_list:
@@ -55,10 +59,6 @@ def booked_supplies_list(request, client_id):
             grouped_supplies[general_supply_name] = []
         grouped_supplies[general_supply_name].append(supply)
 
-    title = f'Всі бронювання для: \n{place.name}, {place.city_ref.name}'
-    cartCountData = countCartItemsHelper(request)
-    suppFilter = BookedSuppliesFilter(request.GET, queryset=supplies_list)
-    supplies_list = suppFilter.qs
     general_supply_list = grouped_supplies
 
     if isClient:
