@@ -43,6 +43,7 @@
                  {{ orderFilter.form.isComplete|as_crispy_field }}
                  {% if request.user|has_group:"empl" or request.user.is_staff %}
                  {{ orderFilter.form.for_state_of_client|as_crispy_field }}
+                 {{ orderFilter.form.for_np_delivery_state|as_crispy_field }}
                  {% endif %}
              </div>
              <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>

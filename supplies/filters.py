@@ -96,11 +96,17 @@ class OrderFilter(django_filters.FilterSet):
         ('0', 'Державні')
     )
 
+    NP_DELIVERY_STATE = (
+        ('1', 'Одержані'),
+        ('0', 'В очікуванні')
+    )
+
     for_state_of_client = ChoiceFilter(choices=PRIVATE_CHOICES, label='Тип організації', method='filter_by_state_of_client')
+    for_np_delivery_state = ChoiceFilter(choices=NP_DELIVERY_STATE, label='НП Статус', method='filter_by_state_of_np')
 
     class Meta:
         model = Order
-        fields = ['isComplete', 'for_state_of_client']
+        fields = ['isComplete', 'for_state_of_client', 'for_np_delivery_state']
 
     def __init__(self, *args, **kwargs):
         super(OrderFilter, self).__init__(*args, **kwargs)
@@ -109,6 +115,8 @@ class OrderFilter(django_filters.FilterSet):
             {'empty_label': 'Всі'})
         self.filters['for_state_of_client'].extra.update(
             {'empty_label': 'Всі'})
+        self.filters['for_np_delivery_state'].extra.update(
+            {'empty_label': 'Всі'})
 
     def filter_by_state_of_client(self, queryset, name, value):
         if value == '1':
@@ -116,6 +124,12 @@ class OrderFilter(django_filters.FilterSet):
         elif value == '0':
             return queryset.filter(place__isPrivatePlace=False)
 
+    def filter_by_state_of_np(self, queryset, name, value):
+        if value == '1':
+            return queryset.filter(statusnpparselfromdoucmentid__status_code=9)
+        elif value == '0':
+            excluded_status_codes = [1, 2, 3, 4, 41, 5, 6, 7, 8, 10, 11, 12, 101, 102, 103, 104, 105, 106, 111, 112]
+            return queryset.filter(statusnpparselfromdoucmentid__status_code__in=excluded_status_codes)
 
 
 class PreorderFilter(django_filters.FilterSet):

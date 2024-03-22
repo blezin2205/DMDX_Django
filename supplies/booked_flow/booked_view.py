@@ -44,6 +44,7 @@ def booked_supplies_list(request, client_id):
     place = Place.objects.get(id=client_id)
     # Prefetch GeneralSupply related to SupplyInBookedOrder to minimize DB queries
     supplies_list = SupplyInBookedOrder.objects.filter(supply_for_place=place) \
+        .order_by('id') \
         .order_by('generalSupply__name') \
         .select_related('generalSupply')
 
@@ -295,15 +296,17 @@ def minus_from_booked_supply_list_item(request):
     sup.count_in_order -= 1
     sup.supply.countOnHold -= 1
     sup.supply.save(update_fields=['countOnHold'])
+    gen_sup = sup.generalSupply
+    supply_list = gen_sup.supplyinbookedorder_set.filter(supply_for_place=sup.supply_for_place).order_by('id')
     if sup.count_in_order == 0:
         sup.delete()
-        return HttpResponse(status=200)
+        if supply_list.count() == 0:
+            return HttpResponse(status=200)
     else:
         sup.save(update_fields=['count_in_order'])
 
-    gen_sup = sup.generalSupply
     return render(request, 'booked_flow/booked_supply_list_item.html',
-                      {'el': gen_sup})
+                      {'el': gen_sup, 'supply_list': supply_list})
 
 
 def plus_from_booked_supply_list_item(request):
@@ -315,8 +318,9 @@ def plus_from_booked_supply_list_item(request):
     sup.supply.save(update_fields=['countOnHold'])
     sup.save(update_fields=['count_in_order', 'supply'])
     gen_sup = sup.generalSupply
+    supply_list = gen_sup.supplyinbookedorder_set.filter(supply_for_place=sup.supply_for_place).order_by('id')
     return render(request, 'booked_flow/booked_supply_list_item.html',
-                  {'el': gen_sup, })
+                  {'el': gen_sup, 'supply_list': supply_list})
 
 
 def delete_sup_from_booked_sups(request, sup_id):
