@@ -30,7 +30,21 @@
           <div style="width: 250px">{{ orderForm.dateToSend|as_crispy_field }}</div>
           {{ orderForm.comment|as_crispy_field }}
 
+{% if uncompleted_orders.count > 0 %}
+               <div class="btn-group pt-3" role="group" aria-label="Basic radio toggle button group" style="width: fit-content">
+  <input type="radio" class="btn-check" name="orderType" value="new_order" id="btnradio1" autocomplete="off" checked hx-post="{% url 'add_to_exist_order_from_booked_cart' %}" hx-trigger="click" hx-target="#orderType">
+  <label class="btn btn-outline-primary" for="btnradio1">Нове замовлення</label>
 
+  <input type="radio" class="btn-check" name="orderType" value="add_to_Exist_order" id="btnradio2" autocomplete="off" hx-vals='{ "place_id": {{ booked_cart.place.id }}  }' hx-post="{% url 'add_to_exist_order_from_booked_cart' %}" hx-trigger="click" hx-target="#orderType">
+  <label class="btn btn-outline-primary" for="btnradio2">Додати до існуючого</label>
+</div>
+
+     <div id="orderType">
+               {% include 'booked_flow/add_to_exist_order_from_booked_cart.html' %}
+    </div>
+{% else %}
+    <input type="hidden" name="orderType" value="new_order">
+       {% endif %}
 
 
       </div>

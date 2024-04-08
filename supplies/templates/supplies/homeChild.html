@@ -73,7 +73,7 @@
                 {% endif %}
                     </td>
 
-            <td>{{ el.count }}</td>
+             <td style="width: 150px"><div><span style="font-weight: 600">{{ el.count }}</span>  {% if el.countOnHold %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2">{{ el.countOnHold }}</span> {% endif %} {% if el.preCountOnHold %}  <span style="background-color: #5bc0de; font-weight: 600" class="px-2 rounded-2">{{ el.preCountOnHold }}</span> {% endif %} </div> </td>
             <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.expiredDate|date:"d.m.Y" }}
 
                             </div></td>

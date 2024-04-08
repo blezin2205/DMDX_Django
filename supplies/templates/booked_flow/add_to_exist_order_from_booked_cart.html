@@ -1,0 +1,8 @@
+{% if isAdd_to_exist_order %}
+    <select class="form-select my-3" aria-label="Default select example" name="selected_non_completed_order">
+  <option selected>Вибрати замовлення</option>
+             {% for order in orders %}
+                 <option value="{{order.id}}">Замовлення №{{ order.id }}, для: {{ order.place.name }}, {{ order.place.city_ref.name }}, від {{ order.dateCreated|date:"d.m.Y" }}</option>
+             {% endfor %}
+</select>
+{% endif %}

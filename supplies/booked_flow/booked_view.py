@@ -222,11 +222,26 @@ def booked_cart_badge_count_refresh(request):
     return render(request, 'booked_flow/booked-cart-badge.html', {'cartCountData': cartCountData})
 
 
+@login_required(login_url='login')
+def add_to_exist_order_from_booked_cart(request):
+    orderType = request.POST.get('orderType')
+    isAdd_to_exist_order = orderType == 'add_to_Exist_order'
+    orders = []
+    if isAdd_to_exist_order:
+        place_id = request.POST.get('place_id')
+        print("PLACE ID = ", place_id)
+        place = Place.objects.get(pk=place_id)
+        orders = place.order_set.filter(isComplete=False)
+    return render(request, 'booked_flow/add_to_exist_order_from_booked_cart.html', {'isAdd_to_exist_order': isAdd_to_exist_order, 'orders': orders})
+
 def booked_cart_details(request, booked_cart_id):
     booked_cart = BookedOrderInCart.objects.get(id=booked_cart_id)
     sups_in_booked_cart = booked_cart.bookedsupplyinorderincart_set.all()
     cartCountData = countCartItemsHelper(request)
     orderForm = OrderInCartForm(request.POST or None)
+
+    uncompleted_orders = booked_cart.place.order_set.filter(isComplete=False)
+
     if request.method == 'POST':
 
         if 'delete' in request.POST:
@@ -235,37 +250,93 @@ def booked_cart_details(request, booked_cart_id):
             return HttpResponseRedirect(next)
         else:
             if orderForm.is_valid():
+                orderType = request.POST.get('orderType')
                 comment = orderForm.cleaned_data['comment']
                 dateToSend = orderForm.cleaned_data['dateToSend']
-                order = Order(userCreated=request.user, place=booked_cart.place,
-                              comment=comment, dateToSend=dateToSend)
-                order.save()
-                for sup in sups_in_booked_cart:
-                    count = int(request.POST.get(f'count_{sup.id}'))
-                    if count > sup.supply.count_in_order:
-                        count = sup.supply.count_in_order
-                    sup.supply.countOnHold += count
-                    suppInOrder = SupplyInOrder(count_in_order=count,
-                                                supply=sup.supply.supply,
-                                                generalSupply=sup.supply.generalSupply,
-                                                supply_for_order=order,
-                                                supply_in_preorder=sup.supply.supply_in_preorder,
-                                                supply_in_booked_order=sup.supply,
-                                                lot=sup.lot,
-                                                date_created=sup.date_created,
-                                                date_expired=sup.date_expired,
-                                                internalName=sup.supply.generalSupply.name,
-                                                internalRef=sup.supply.generalSupply.ref)
-                    suppInOrder.save()
-                    sup.supply.save(update_fields=['countOnHold'])
+                if orderType == 'new_order':
 
-                t = threading.Thread(target=sendTeamsMsgCart, args=[request, order], daemon=True)
-                t.start()
-                booked_cart.delete()
+                    order = Order(userCreated=request.user, place=booked_cart.place,
+                                  comment=comment, dateToSend=dateToSend)
+                    order.save()
+                    for sup in sups_in_booked_cart:
+                        count = int(request.POST.get(f'count_{sup.id}'))
+                        if count > sup.supply.count_in_order:
+                            count = sup.supply.count_in_order
+                        sup.supply.countOnHold += count
+                        suppInOrder = SupplyInOrder(count_in_order=count,
+                                                    supply=sup.supply.supply,
+                                                    generalSupply=sup.supply.generalSupply,
+                                                    supply_for_order=order,
+                                                    supply_in_preorder=sup.supply.supply_in_preorder,
+                                                    supply_in_booked_order=sup.supply,
+                                                    lot=sup.lot,
+                                                    date_created=sup.date_created,
+                                                    date_expired=sup.date_expired,
+                                                    internalName=sup.supply.generalSupply.name,
+                                                    internalRef=sup.supply.generalSupply.ref)
+                        suppInOrder.save()
+                        sup.supply.save(update_fields=['countOnHold'])
+
+                    t = threading.Thread(target=sendTeamsMsgCart, args=[request, order], daemon=True)
+                    t.start()
+                    booked_cart.delete()
+                elif orderType == 'add_to_Exist_order':
+                    selected_non_completed_order = request.POST.get('selected_non_completed_order')
+                    selectedOrder = Order.objects.get(id=selected_non_completed_order)
+
+                    selectedOrder.dateSent = dateToSend
+                    if selectedOrder.comment and comment:
+                        selectedOrder.comment += f' / {comment}'
+                    elif comment:
+                        selectedOrder.comment = comment
+                    selectedOrder.save()
+
+                    sups_in_order = selectedOrder.supplyinorder_set.all()
+                    # print("----||||||||---------")
+                    # print(sups_in_preorder)
+                    sups_in_order_arr = []
+                    sups_in_order_arr = list(sups_in_order)
+
+                    for sup in sups_in_booked_cart:
+                        count = int(request.POST.get(f'count_{sup.id}'))
+                        if count > sup.supply.count_in_order:
+                            count = sup.supply.count_in_order
+                        sup.supply.countOnHold += count
+                        general_sup = sup.supply.supply.general_supply
+                        try:
+                            exist_sup = sups_in_order.get(supply=sup.supply.supply)
+                            exist_sup.count_in_order += int(count)
+                            exist_sup.save()
+                            sup.supply.save(update_fields=['countOnHold'])
+                            supply = exist_sup.supply
+                            sups_in_order_arr.remove(exist_sup)
+                            print('------------removed-------------')
+
+                        except:
+                            try:
+                                sup_in_preorder = selectedOrder.for_preorder.supplyinpreorder_set.get(
+                                    generalSupply=general_sup)
+                            except:
+                                sup_in_preorder = None
+                            suppInOrder = SupplyInOrder(count_in_order=count,
+                                                        supply=sup.supply.supply,
+                                                        generalSupply=general_sup,
+                                                        supply_for_order=selectedOrder,
+                                                        supply_in_preorder=sup_in_preorder,
+                                                        supply_in_booked_order=sup.supply,
+                                                        lot=sup.lot,
+                                                        date_created=sup.date_created,
+                                                        date_expired=sup.date_expired,
+                                                        internalName=general_sup.name,
+                                                        internalRef=general_sup.ref)
+                            suppInOrder.save()
+                            sup.supply.save(update_fields=['countOnHold'])
+                    booked_cart.delete()
+
                 return redirect('/orders')
 
     return render(request, 'booked_flow/booked_cart.html',
-                  {'booked_cart': booked_cart, 'orderForm': orderForm, 'sups_in_booked_cart': sups_in_booked_cart, 'cartCountData': cartCountData})
+                  {'booked_cart': booked_cart, 'orderForm': orderForm, 'sups_in_booked_cart': sups_in_booked_cart, 'cartCountData': cartCountData, 'uncompleted_orders': uncompleted_orders})
 
 
 def booked_carts_list(request):

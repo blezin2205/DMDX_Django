@@ -594,6 +594,7 @@ def add_to_exist_order_from_cart(request):
     orders = []
     if isAdd_to_exist_order:
         place_id = request.POST.get('place_id')
+        print("PLACE ID = ", place_id)
         place = Place.objects.get(pk=place_id)
         orders = place.order_set.filter(isComplete=False)
     return render(request, 'partials/add_to_exist_order_from_cart.html', {'isAdd_to_exist_order': isAdd_to_exist_order, 'orders': orders})
@@ -1442,6 +1443,10 @@ def childSupply(request):
     supplies = suppFilter.qs
 
     if 'xls_button' in request.GET:
+        supplies = supplies.annotate(available_count=ExpressionWrapper(
+        F('count') - F('countOnHold'),
+        output_field=IntegerField(),
+        )).filter(available_count__gt=0).order_by('name')
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f"attachment; filename=Supply_List.xlsx"
@@ -1495,7 +1500,7 @@ def childSupply(request):
 
             if row.supplyLot:
                 lot = row.supplyLot
-            count = row.count
+            count = row.count - row.countOnHold
             date_expired = row.expiredDate.strftime("%d.%m.%Y")
             date_created = row.dateCreated.strftime("%d.%m.%Y")
 

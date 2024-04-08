@@ -843,6 +843,9 @@ class BookedOrderInCart(models.Model):
         total = sum([item.count_in_order for item in orderitems])
         return total
 
+    def has_uncomplete_orders(self):
+        return self.place.order_set.filter(isComplete=False).exists()
+
 
 class BookedSupplyInOrderInCart(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True, default=0)
