@@ -273,8 +273,9 @@ def address_getCities(request):
         areaDescription = city["AreaDescription"]
         newCity = NPCity(name=cityName, ref=ref, area=area, settlementType=settlementType, cityID=cityID, settlementTypeDescription=settlementTypeDescription, areaDescription=areaDescription)
         newCity.save()
+    description = f'Міста Нової пошти були оновлені. Всього записів: {NPCity.objects.count()}'
 
-    return render(request, "supplies/http_response.html", {'data': "Updated"})
+    return render(request, "partials/any_response.html", {'description': description})
 
 
 def search_city(request):
@@ -374,7 +375,11 @@ def radioAddClientTONP(request):
 
     return render(request, 'partials/radioButtonsWorkerTypeGroup.html', {'cheked': isShow, 'orgRefExist': orgExist})
 
-
+def delete_my_np_sender_place(request):
+    del_sender_place_id = request.POST.get('del_sender_place_id')
+    sup_info = SenderNPPlaceInfo.objects.get(id=del_sender_place_id)
+    sup_info.delete()
+    return HttpResponse(status=200)
 
 def np_delivery_detail_info_for_order(request, order_id):
 

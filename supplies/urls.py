@@ -163,9 +163,10 @@ urlpatterns = [
     path('api/login', apiViews.LoginAPIView.as_view()),
 
     path('add_np_sender_place', views.add_np_sender_place, name='add_np_sender_place'),
+    path('delete_my_np_sender_place', NPViews.delete_my_np_sender_place, name='delete_my_np_sender_place'),
 
     path('chart-sold', views.chartOfSoldSupplies),
-    path('address_getCities', NPViews.address_getCities),
+    path('address_getCities', NPViews.address_getCities, name='address_getCities'),
     path('search-city-np', NPViews.search_city, name='search-city-np'),
     path('choosed-city', NPViews.choosed_city, name='choosed-city'),
     path('choosed-street', NPViews.choosed_street, name='choosed-street'),

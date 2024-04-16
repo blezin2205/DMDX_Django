@@ -8,13 +8,26 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container">
+    <div class="d-flex justify-content-between">
+     <div>
     <h4 style="">Ваші адреси відправки:</h4>
     {% for place in places %}
-<li style="font-weight: 400; padding-bottom: 4px">{{ place.cityName }}, {{ place.addressName }}</li>
+<div class="d-flex justify-content-between py-2">
+ <li style="font-weight: 700; padding-bottom: 4px">{{ place.cityName }}, {{ place.addressName }}</li>
+        <button hx-post="{% url 'delete_my_np_sender_place' %}"
+         hx-target="closest div"
+         hx-vals='{"del_sender_place_id": {{ place.id }}}'
+         hx-swap="outerHTML"
+         class="btn btn-sm btn-outline-danger ms-2"><i class="bi bi-trash"></i></button>
+        </div>
     {% endfor %}
     </div>
 
+    <div>
+        <a class="btn btn-primary" href="{% url 'address_getCities' %}" role="button">Оновити міста Нової Пошти</a>
+    </div>
+
+    </div>
 
 <form method="POST" action="">
   {% csrf_token %}
