@@ -181,6 +181,7 @@ urlpatterns = [
     path('get_print_xls_for_preorders', NPViews.get_print_xls_for_preorders, name='get_print_xls_for_preorders'),
     path('get_print_xls_for_preorders', NPViews.get_print_xls_for_preorders, name='get_print_xls_for_preorders'),
     path('add_more_np_places_input_group', NPViews.add_more_np_places_input_group, name='add_more_np_places_input_group'),
+    path('copy_np_places_input_group', NPViews.copy_np_places_input_group, name='copy_np_places_input_group'),
     path('minus_add_more_np_places_input_group', NPViews.minus_add_more_np_places_input_group, name='minus_add_more_np_places_input_group'),
 
     path('nova_poshta_registers', NPViews.nova_poshta_registers, name='nova_poshta_registers')

@@ -9,6 +9,45 @@
 {% endblock %}
 
 {% block content %}
+<section class="h-100 shadow p-3 mb-5 rounded align-content-center" style="background-color: #f5f5f5; display: flex; justify-content: center; align-items: center;">
+
+
+    <div class="d-flex justify-content-around w-100">
+        <div>
+            <figure style="background-color: white; border-radius: 16px; text-align: center; padding: 20px; margin: 20px">
+            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903384/syncMode_cr1ova.png" alt="alldata" style="width: 300px; height: 80px;">
+            <figcaption class="fw-bold">Synchronous Mode</figcaption>
+        </figure>
+        <figure style="background-color: white; border-radius: 16px; text-align: center; padding: 20px; margin: 20px">
+            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903295/storeMode_mohdkj.png" alt="alldata" style="width: 300px; height: 80px;">
+            <figcaption class="fw-bold">Storage Mode</figcaption>
+        </figure>
+        </div>
+
+         <div>
+            <figure style="background-color: white; border-radius: 16px; text-align: center; padding: 20px; margin: 20px">
+            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903286/uploadAllData_g0mul9.png" alt="alldata" style="width: 300px; height: 80px;">
+            <figcaption class="fw-bold">Upload All Data</figcaption>
+        </figure>
+        <figure style="background-color: white; border-radius: 16px; text-align: center; padding: 20px; margin: 20px">
+            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903277/totalCount_hvm7zt.png" alt="alldata" style="width: 300px; height: 80px;">
+            <figcaption class="fw-bold">Total Data Count</figcaption>
+        </figure>
+             <figure style="background-color: white; border-radius: 16px; text-align: center; padding: 20px; margin: 20px">
+            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714902868/clearAllData_niur7l.png" alt="alldata" style="width: 300px; height: 80px;">
+            <figcaption class="fw-bold">Clear All Data</figcaption>
+        </figure>
+        </div>
+
+
+    </div>
+</section>
+
+
+
+
+
+    
     <section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #f5f5f5;">
 <form method="post" action="" id="myForm" onsubmit="return showAlert();">
   {% csrf_token %}
@@ -52,4 +91,6 @@
 
 {# {% include 'partials/progress-bar.html' %} #}
     </section>
+    
+    
 {% endblock %}

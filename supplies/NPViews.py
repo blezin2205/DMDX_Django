@@ -84,6 +84,15 @@ def minus_add_more_np_places_input_group(request):
     return HttpResponse(status=200)
 
 
+def copy_np_places_input_group(request):
+    width = request.POST.get('width')
+    length = request.POST.get('length')
+    height = request.POST.get('height')
+    weight = request.POST.get('weight')
+    data = { 'width': width, 'length': length, 'height': height, 'weight': weight }
+    return render(request, 'partials/add_more_np_places_input_group.html', data)
+
+
 def create_np_document_for_order(request, order_id):
 
     order = Order.objects.get(id=order_id)

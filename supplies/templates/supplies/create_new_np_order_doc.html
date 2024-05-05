@@ -36,7 +36,8 @@
     {{ inputForm.height|as_crispy_field }}
   </div>
 
-                 <button class="btn btn-primary" hx-post="{% url 'add_more_np_places_input_group' %}" hx-target="#add_more_places_input_group" hx-swap="beforebegin"><i class="bi bi-plus-circle"></i></button>
+                 <button class="btn btn-outline-primary" hx-post="{% url 'add_more_np_places_input_group' %}" hx-target="#add_more_places_input_group" hx-swap="beforebegin"><i class="bi bi-plus-circle"></i></button>
+                 <button class="btn btn-outline-warning" hx-post="{% url 'copy_np_places_input_group' %}" hx-vals='{ "weight": {{ inputForm.weight }}, "width": {{ inputForm.width }}, "length": {{ inputForm.length }}, "height": {{ inputForm.height }}  }' hx-target="#add_more_places_input_group" hx-swap="beforebegin"><i class="bi bi-clipboard2-fill"></i></button>
              </div>
 
 
