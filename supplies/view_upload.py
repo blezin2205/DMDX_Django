@@ -39,7 +39,7 @@ from .tasks import *
 from .views import *
 from celery_progress.backend import Progress
 from celery.result import AsyncResult
-
+import threading
 
 # @login_required(login_url='login')
 # @allowed_users(allowed_roles=['admin'])
@@ -103,6 +103,46 @@ def upload_supplies_for_new_delivery(request, delivery_order_id=None):
 
     return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form, 'title': title})
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def upload_supplies_for_new_delivery_noncelery(request, delivery_order_id=None):
+    form = NewDeliveryForm()
+    if delivery_order_id != None:
+        title = f'Додати штрих-коди до поставки № {delivery_order_id}'
+    else:
+        title = "Створити нову поставку"
+    if request.method == 'POST':
+        barcode_type = request.POST.get('barcode_type')
+        form = NewDeliveryForm(request.POST)
+        if form.is_valid():
+            string_data = form.cleaned_data['description']
+            if delivery_order_id != None:
+                for_delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
+                title = f'Додати штрих-коди до поставки № {for_delivery_order.id}'
+            else:
+                for_delivery_order = DeliveryOrder(from_user=request.user)
+                for_delivery_order.save()
+                title = "Створити нову поставку"
+                # threading_create_delivery_async(request, string_data, for_delivery_order.id, barcode_type)
+            t = threading.Thread(target=threading_create_delivery_async, args=[request, string_data, for_delivery_order.id, barcode_type, form], daemon=True)
+            t.start()
+            return redirect('/all_deliveries')
+    return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form, 'title': title})
+
+def threading_create_delivery_async(request, string_data, delivery_order_id, barcode_type, form):
+    for_delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
+    makeDataUpload_nonCelery(string_data, delivery_order_id, barcode_type)
+    cartCountData = countCartItemsHelper(request)
+    supplies = for_delivery_order.deliverysupplyincart_set.all().order_by('general_supply__name')
+    total_count = supplies.aggregate(total_count=Sum('count'))['total_count']
+    supDict = {}
+    for d in supplies:
+        t = supDict.setdefault(d.isRecognized, [])
+        t.append(d)
+    supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
+    return render(request, 'supplies/delivery_detail.html',
+                  {'cartCountData': cartCountData, 'supDict': supDict,
+                   'delivery_order': for_delivery_order, 'total_count': total_count, 'form': form})
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
