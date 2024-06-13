@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import math
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse
@@ -90,6 +91,15 @@ def upload_files(request):
 class CreateFolderForm(forms.Form):
     folder_name = forms.CharField(label='New Folder Name', max_length=100)
 
+def convert_size(size_bytes):
+    # Function to convert bytes to a human-readable format (KB, MB, GB)
+    if size_bytes == 0:
+        return "0 B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s %s" % (s, size_name[i])
 
 def list_files(request, path=''):
     bucket = storage.bucket()
@@ -131,7 +141,8 @@ def list_files(request, path=''):
             file_name = os.path.basename(blob.name)
             if file_name:  # Check if the file name is not empty
                 file_url = blob.public_url
-                files.append((file_name, file_url))
+                file_size = convert_size(blob.size)
+                files.append((file_name, file_url, file_size))
 
     context = {
         'folders': sorted(folders),  # Sort folders for better readability

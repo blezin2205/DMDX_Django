@@ -114,7 +114,7 @@ cred = credentials.Certificate(BASE_DIR / 'dmdx-django-firebase-adminsdk-jo7r9-c
 firebase_admin.initialize_app(cred, FIREBASE_CONFIG)
 
 # DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10240 * 1024 * 1024  # 10 GB in bytes
 WKHTMLTOPDF_CMD = '/usr/local/bin/wkhtmltopdf'
 WKHTMLTOPDF_CMD_OPTIONS = {
     'quiet': True,

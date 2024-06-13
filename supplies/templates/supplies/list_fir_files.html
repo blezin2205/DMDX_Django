@@ -45,12 +45,17 @@
 {% if files %}
     <section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #eee;">
     <div class="row mt-4">
-        {% for file, url in files %}
+        {% for file, url, file_size in files %}
             <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
 
                 <div class="card text-center">
                     <div style="position: relative;">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="folder-name mx-2 text-sm-center opacity-0">{{ file_size }}</h6>
                         <img src="{% static file|get_file_icon_url %}" class="card-img-top file-icon m-2" alt="File Icon" style="width: 80px; height: auto;">
+                        <h6 class="folder-name m-2 text-sm-center text-muted">{{ file_size }}</h6>
+                    </div>
+
                         {% if file|endswith:".pdf" %}
                             <a href="{{ url }}" target="_blank"><h5 class="folder-name mx-2">{{ file }}</h5></a>
                         {% else %}
