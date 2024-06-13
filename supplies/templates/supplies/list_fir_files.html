@@ -9,8 +9,12 @@
 
 {% block content %}
 <h1>Firebase Storage Browser</h1>
+    <a href="https://console.cloud.google.com/storage/browser/dmdx-django.appspot.com" class="fs-2" target="_blank">Our Bucket</a>
+    {% if current_path %}
+        <h2>Current Path: {{ current_path }}</h2>
+    {% endif %}
 
-<h2>Current Path: {{ current_path }}</h2>
+<h4>Directory used: {{  total_size }}</h4>
 
     {% if folders %}
         <section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #eee;">

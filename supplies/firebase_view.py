@@ -125,9 +125,12 @@ def list_files(request, path=''):
     else:
         form = CreateFolderForm()
 
+    total_size = 0
+
     for blob in blobs:
         # Get the relative path to the blob from the given path
         relative_path = blob.name[len(path):]
+        total_size += blob.size
 
         # Check if the relative path contains any slashes
         if '/' in relative_path:
@@ -144,11 +147,14 @@ def list_files(request, path=''):
                 file_size = convert_size(blob.size)
                 files.append((file_name, file_url, file_size))
 
+    total_size = convert_size(total_size)
+
     context = {
         'folders': sorted(folders),  # Sort folders for better readability
         'files': files,
         'current_path': path,
         'form': form,
+        'total_size': total_size,
     }
 
     return render(request, 'supplies/list_fir_files.html', context)
