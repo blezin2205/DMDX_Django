@@ -11,6 +11,8 @@ from crispy_forms.layout import Submit, Layout, MultiField, Div
 from django.forms import formset_factory
 # from dynamic_forms import  DynamicField, DynamicFormMixin
 
+class UploadFileForm(forms.Form):
+    file = forms.FileField()
 
 class AppSettingsForm(ModelForm):
     class Meta:

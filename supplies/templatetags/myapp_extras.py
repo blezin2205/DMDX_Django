@@ -23,6 +23,37 @@ def total_values_count(dictionary):
         return sum(len(value) if isinstance(value, (list, tuple)) else 1 for value in dictionary.values())
     return 0
 
+@register.filter(name='endswith')
+def endswith(value, arg):
+    return value.endswith(arg)
+
+
+@register.filter
+def get_file_icon_url(filename):
+    extension = filename.split('.')[-1].lower()  # Get file extension (convert to lowercase)
+
+    # Define a mapping of file extensions to their corresponding icon URLs
+    icon_map = {
+        'pdf': 'images/pdf-icon.png',
+        'doc': 'images/doc-icon.png',
+        'docx': 'images/docx-icon.png',
+        'xls': 'images/xls-icon.png',
+        'zip': 'images/zip-icon.png',
+        'rar': 'images/rar-icon.png',
+        'xlsx': 'images/xls-icon.png',
+        'ppt': 'images/ppt-icon.png',
+        'pptx': 'images/ppt-icon.png',
+        'jpg': 'images/img-icon.png',
+        'jpeg': 'images/img-icon.png',
+        'png': 'images/img-icon.png',
+        # Add more extensions and corresponding icons as needed
+    }
+
+    default_icon = 'images/default-icon.png'  # Default icon for unknown file types
+
+    # Return the icon URL corresponding to the file extension, or default icon if not found
+    return icon_map.get(extension, default_icon)
+
 
 @register.filter(name='total_counts')
 def has_group(sups_in_delivery_order_set):

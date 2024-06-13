@@ -1,0 +1,176 @@
+{% extends 'supplies/base.html' %}
+{% load myapp_extras %}
+{% load crispy_forms_filters %}
+{% load static %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<h1>Firebase Storage Browser</h1>
+
+<h2>Current Path: {{ current_path }}</h2>
+
+    {% if folders %}
+        <section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #eee;">
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createFolderModal">
+<i class="bi bi-folder-plus"></i>
+</button>
+<div class="row mt-4">
+    {% for folder in folders %}
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-4">
+    <a href="{% url 'list_files' path=current_path|add:folder %}" class="text-decoration-none">
+        <div class="card my-link text-center">
+            <div style="position: relative;">
+                <img src="{% static 'images/folder_icon.png' %}" class="card-img-top folder-icon" alt="Folder Icon" style="width: 80px">
+                <h5 class="folder-name mx-2 ">{{ folder }}</h5>
+            </div>
+        </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+        </section>
+        {% else %}
+        <button type="button" class="btn btn-primary my-3" data-toggle="modal" data-target="#createFolderModal">
+<i class="bi bi-folder-plus"></i>
+</button>
+    {% endif %}
+
+
+
+
+
+{% if files %}
+    <section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #eee;">
+    <div class="row mt-4">
+        {% for file, url in files %}
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+
+                <div class="card text-center">
+                    <div style="position: relative;">
+                        <img src="{% static file|get_file_icon_url %}" class="card-img-top file-icon m-2" alt="File Icon" style="width: 80px; height: auto;">
+                        {% if file|endswith:".pdf" %}
+                            <a href="{{ url }}" target="_blank"><h5 class="folder-name mx-2">{{ file }}</h5></a>
+                        {% else %}
+                            <h5 class="folder-name mx-2">{{ file }}</h5>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="btn-group mt-2" role="group" aria-label="File Actions">
+                            <a href="{{ url }}" class="btn btn-primary" download>Download</a>
+                            <button type="button" class="btn btn-secondary" onclick="copyToClipboard('{{ url }}')">Link</button>
+                            <button type="button" class="btn btn-danger" onclick="deleteFile('{{ file }}')">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    </section>
+{% endif %}
+<!-- Button to trigger modal -->
+
+
+    {% include 'supplies/firebase_upload.html' %}
+
+
+<!-- Modal -->
+<div class="modal fade" id="createFolderModal" tabindex="-1" role="dialog" aria-labelledby="createFolderModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createFolderModalLabel">Create New Folder</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="createFolderForm" method="post">
+          {% csrf_token %}
+          <div class="form-group">
+            <label for="folderNameInput">Folder Name:</label>
+            <input type="text" class="form-control" id="folderNameInput" name="folder_name" required>
+          </div>
+          <button type="submit" class="btn btn-primary mt-3">Create Folder</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <script>
+  // Ensure the form submission happens via JavaScript
+  document.getElementById('createFolderForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent normal form submission
+    var form = event.target;
+    var formData = new FormData(form);
+    fetch(form.action, {
+      method: form.method,
+      body: formData
+    })
+    .then(function(response) {
+      if (response.ok) {
+        // If successful, close the modal and reload the page to show the new folder
+        $('#createFolderModal').modal('hide');
+        location.reload();
+      } else {
+        // Handle error response
+        console.error('Error creating folder:', response.statusText);
+        alert('Failed to create folder. Please try again.');
+      }
+    })
+    .catch(function(error) {
+      console.error('Error creating folder:', error);
+      alert('An unexpected error occurred. Please try again.');
+    });
+  });
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text)
+            .then(function() {
+                console.log('URL copied to clipboard');
+                alert('Link copied to clipboard');
+            })
+            .catch(function(err) {
+                console.error('Failed to copy URL: ', err);
+                alert('Failed to copy link. Please copy manually.');
+            });
+    }
+
+    function deleteFile(fileName) {
+        if (confirm('Are you sure you want to delete ' + fileName + '?')) {
+            fetch('{% url 'delete_file' %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({
+                        file_name: fileName,
+                        current_path: '{{ current_path }}'  // Replace with actual current_path value
+                    })
+                })
+                .then(function(response) {
+                    if (response.ok) {
+                        // If successful, reload the page to reflect changes
+                        location.reload();
+                    } else {
+                        // Handle error response
+                        console.error('Error deleting file:', response.statusText);
+                        alert('Failed to delete file. Please try again.');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error deleting file:', error);
+                    alert('An unexpected error occurred. Please try again.');
+                });
+        }
+    }
+</script>
+
+{% endblock %}
+
+
+

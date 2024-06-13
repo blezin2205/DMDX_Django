@@ -1,5 +1,5 @@
-from django.urls import path
-from . import views, NPViews, view_upload
+from django.urls import path, re_path
+from . import views, NPViews, view_upload, firebase_view
 from . import apiViews
 from .NPModels import *
 from .booked_flow import booked_view
@@ -183,7 +183,9 @@ urlpatterns = [
     path('add_more_np_places_input_group', NPViews.add_more_np_places_input_group, name='add_more_np_places_input_group'),
     path('copy_np_places_input_group', NPViews.copy_np_places_input_group, name='copy_np_places_input_group'),
     path('minus_add_more_np_places_input_group', NPViews.minus_add_more_np_places_input_group, name='minus_add_more_np_places_input_group'),
-
+    re_path(r'^list/(?P<path>.*)$', firebase_view.list_files, name='list_files'),
+    path('upload/', firebase_view.upload_files, name='upload_files'),
+    path('delete_file/', firebase_view.delete_file, name='delete_file'),
     path('nova_poshta_registers', NPViews.nova_poshta_registers, name='nova_poshta_registers')
 
 ]

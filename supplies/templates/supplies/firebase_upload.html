@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Files {% if current_path %} in: {{ current_path }}{% endif %}</title>
+    <script src="https://cdn.jsdelivr.net/npm/@firebase/app@9.6.1/dist/firebase-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@firebase/storage@9.6.1/dist/firebase-storage.js"></script>
+    <style>
+        .progressBar {
+            width: 100%;
+            height: 30px;
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            line-height: 30px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Upload Files {% if current_path %} in: {{ current_path }}{% endif %}</h2>
+    <form id="uploadForm" method="post" enctype="multipart/form-data" action="{% url 'upload_files' %}">
+            {% csrf_token %}
+            <div class="form-group row">
+                <input type="hidden" id="currentPathInput" name="current_path" value="{{ current_path }}">
+                <div class="col-sm-8">
+                    <input class="form-control form-control-lg" type="file" id="fileInput" name="files" multiple required>
+                </div>
+                <div class="col-sm-4">
+                    <button class="btn btn-primary btn-block" type="submit">Upload</button>
+                </div>
+            </div>
+        </form>
+
+
+    <div id="progressContainer"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('uploadForm');
+            const fileInput = document.getElementById('fileInput');
+            const progressContainer = document.getElementById('progressContainer');
+            const currentPathInput = document.getElementById('currentPathInput');
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const formData = new FormData();
+                const files = fileInput.files;
+
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files', files[i]);
+                }
+
+                formData.append('current_path', currentPathInput.value);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload/', true);
+                xhr.setRequestHeader('X-CSRFToken', csrftoken);
+
+                xhr.upload.onloadstart = function(e) {
+                    // Create a progress bar for each file
+                    for (let i = 0; i < files.length; i++) {
+                        const progressBar = document.createElement('div');
+                        progressBar.className = 'progressBar';
+                        progressBar.id = `progressBar-${i}`;
+                        progressBar.innerHTML = `${files[i].name}: 0%`;
+                        progressContainer.appendChild(progressBar);
+                    }
+                };
+
+                xhr.upload.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        for (let i = 0; i < files.length; i++) {
+                            const percentComplete = (e.loaded / e.total) * 100;
+                            const progressBar = document.getElementById(`progressBar-${i}`);
+                            progressBar.style.width = percentComplete + '%';
+                            progressBar.innerHTML = `${files[i].name}: ${percentComplete.toFixed(2)}%`;
+                        }
+                    }
+                };
+
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        location.reload();  // You might want to handle this more gracefully
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.status === 'success') {
+                            // Handle success (e.g., display download URLs)
+                            console.log('Files uploaded successfully:');
+                        } else {
+                            // Handle error
+                            console.error('Error uploading files:', response.message);
+                        }
+                    } else {
+                        // Handle error
+                        console.error('Error uploading files. Server returned:', xhr.status);
+                    }
+                };
+
+                xhr.onerror = function() {
+                    // Handle network errors
+                    console.error('Network error while uploading files.');
+                };
+
+                xhr.send(formData);
+            });
+        });
+    </script>
+</body>
+</html>
