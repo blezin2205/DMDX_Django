@@ -1441,6 +1441,7 @@ def childSupply(request):
     supplies = Supply.objects.all().order_by('name')
     suppFilter = ChildSupplyFilter(request.GET, queryset=supplies)
     supplies = suppFilter.qs
+    print("HOME CHILD")
 
     if 'xls_button' in request.GET:
         supplies = supplies.annotate(available_count=ExpressionWrapper(
@@ -1471,7 +1472,7 @@ def childSupply(request):
                          ]
 
         ws.write(0, 0,
-                 f'Загальний список товарів',
+                 f'Загальний список товарів (Без броні)',
                  format)
 
         format = wb.add_format({'num_format': 'dd.mm.yyyy'})
@@ -1501,6 +1502,81 @@ def childSupply(request):
             if row.supplyLot:
                 lot = row.supplyLot
             count = row.count - row.countOnHold
+            date_expired = row.expiredDate.strftime("%d.%m.%Y")
+            date_created = row.dateCreated.strftime("%d.%m.%Y")
+
+            val_row = [name, package, smn, ref, lot, count, date_expired, category, date_created]
+
+            for col_num in range(len(val_row)):
+                ws.write(row_num, 0, row_num - 3)
+                ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
+
+        ws.set_column(0, 0, 5)
+        ws.set_column(1, 1, 35)
+        ws.set_column(2, 5, 15)
+        ws.set_column(6, 7, 10)
+        ws.set_column(7, 8, 12)
+
+        ws.add_table(3, 0, suppFilter.qs.count() + 3, len(columns_table) - 1, {'columns': columns_table})
+        wb.close()
+        return response
+
+    if 'all_xls_button' in request.GET:
+        print("all_xls_button")
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f"attachment; filename=Supply_List.xlsx"
+
+        row_num = 3
+
+        wb = Workbook(response, {'in_memory': True})
+        ws = wb.add_worksheet('Supply-List')
+        format = wb.add_format({'bold': True})
+        format.set_font_size(16)
+
+        columns_table = [{'header': '№'},
+                         {'header': 'Назва товару'},
+                         {'header': 'Пакування/Тести'},
+                         {'header': 'SMN Code'},
+                         {'header': 'REF'},
+                         {'header': 'LOT'},
+                         {'header': 'К-ть'},
+                         {'header': 'Тер.прид.'},
+                         {'header': 'Категорія'},
+                         {'header': 'Оновлено'},
+                         ]
+
+        ws.write(0, 0,
+                 f'Загальний список товарів (Всі товари)',
+                 format)
+
+        format = wb.add_format({'num_format': 'dd.mm.yyyy'})
+        format.set_font_size(12)
+
+        for row in supplies:
+            row_num += 1
+            name = ''
+            smn = ''
+            package = ''
+            ref = ''
+            lot = ''
+            category = ''
+            if row.name:
+                name = row.name
+            if row.general_supply:
+                name = row.general_supply.name
+                category = row.general_supply.category.name
+                package = row.general_supply.package_and_tests
+                if row.general_supply.ref:
+                    ref = row.general_supply.ref
+                if row.general_supply.SMN_code:
+                    smn = row.general_supply.SMN_code
+                if row.general_supply.package_and_tests:
+                    package = row.general_supply.package_and_tests
+
+            if row.supplyLot:
+                lot = row.supplyLot
+            count = row.count
             date_expired = row.expiredDate.strftime("%d.%m.%Y")
             date_created = row.dateCreated.strftime("%d.%m.%Y")
 
