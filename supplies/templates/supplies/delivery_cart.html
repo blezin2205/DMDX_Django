@@ -106,10 +106,10 @@
 </section>
    <div class="card-body p-3 d-inline-flex justify-content-between align-items-center">
 {% if not delivery_order.isHasBeenSaved %}
-       <form method="POST" action="{% url 'save-delivery-and-add-to-db' delivery_order.id %}" onsubmit="return showAlertConfirmationDeleteDeliveryAction('Ця дія додасть зазначену кількість кожного товару в цьому списку до основного списку товарів на складі!\n\n Продовжити?');">
-        {% csrf_token %}
-          <button class="w-100 btn btn-primary my-2" type="submit" name="save">Додати товари до складу</button>
-               </form>
+       <form id="deliveryForm" method="post" action="{% url 'save-delivery-and-add-to-db' delivery_order.id %}">
+    {% csrf_token %}
+    <button class="w-100 btn btn-primary my-2" type="submit" name="save">Додати товари до складу</button>
+</form>
 {% endif %}
        <div>
     <form method="POST" action="{% url 'delete-delivery-action' delivery_order.id %}" onsubmit="return showAlertConfirmationDeleteDeliveryAction('Ви впевнені що хочете видалити цю поставку? \n\nЦя дія видаляє тільки запис поставки в базі, а також всі товари, які її належать. \nЦя дія не видалить товари на складі!');">
@@ -133,14 +133,43 @@
     </div>
 {#<button hx-get="{% url 'save-delivery' supp.id for_delivery_order_id %}" class="btn btn-sm btn-primary" type="submit" >Зберегти</button>#}
 <script>
-    function showAlertConfirmationDeleteDeliveryAction(message) {
-        // You can customize the alert message here using the 'message' parameter
-        if (confirm(message)) {
-            return true; // Continue with the form submission
-        } else {
-            return false; // Cancel the form submission
-        }
+document.getElementById('deliveryForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission
+
+    const message = 'Ця дія додасть зазначену кількість кожного товару в цьому списку до основного списку товарів на складі!\n\n Продовжити?';
+    if (confirm(message)) {
+        const form = document.getElementById('deliveryForm');
+        const formData = new FormData(form);
+        fetch(form.action, {
+            method: form.method,
+            body: formData
+        })
+        .then(function(response) {
+            if (response.ok) {
+                return response.json(); // Parse the JSON response
+            } else {
+                throw new Error('Error creating folder: ' + response.statusText);
+            }
+        })
+        .then(function(data) {
+            // Process the data from the response
+            if (data.message === 'Success') {
+                alert('Success! \nDelivery order ID: ' + data.delivery_order_id + '\nTotal added: ' + data.total_count);
+                location.replace('/all_deliveries');
+            } else {
+                alert('An unexpected error occurred.');
+            }
+        })
+        .catch(function(error) {
+            console.error('Error creating folder:', error);
+            alert('An unexpected error occurred. ' + error);
+        });
+    } else {
+        // User cancelled the confirmation
+        return false;
     }
+});
 </script>
+
 
 </section>

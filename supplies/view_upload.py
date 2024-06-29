@@ -150,12 +150,52 @@ def add_more_scan_to_exist_delivery_order(request, delivery_id):
     return upload_supplies_for_new_delivery(request, delivery_id)
 
 
+# @login_required(login_url='login')
+# @allowed_users(allowed_roles=['admin'])
+# def upload_sup_from_delivery_order_and_save_db(request, delivery_order_id):
+#     task = gen_sup_and_update_db.delay(delivery_order_id)
+#     context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': delivery_order_id}
+#     return render(request, 'supplies/upload_supplies_new_delivery_progress.html', context)
+
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def upload_sup_from_delivery_order_and_save_db(request, delivery_order_id):
-    task = gen_sup_and_update_db.delay(delivery_order_id)
-    context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': delivery_order_id}
-    return render(request, 'supplies/upload_supplies_new_delivery_progress.html', context)
+    if request.method == 'POST':
+        # t = threading.Thread(target=gen_sup_and_update_db_async,
+        #                      args=[request, delivery_order_id], daemon=True)
+        # t.start()
+        del_order = DeliveryOrder.objects.get(id=delivery_order_id)
+        sup_set = del_order.deliverysupplyincart_set.filter(isRecognized=True)
+        total_requests = len(sup_set)
+        i = 0
+        for item in sup_set:
+            if item.general_supply:
+                try:
+                    sup = item.general_supply.general.get(supplyLot=item.supplyLot, expiredDate=item.expiredDate)
+                    sup.count += item.count
+                except:
+                    sup = Supply(name=item.general_supply.name,
+                                 general_supply=item.general_supply,
+                                 category=item.general_supply.category,
+                                 ref=item.general_supply.ref,
+                                 supplyLot=item.supplyLot,
+                                 count=item.count,
+                                 expiredDate=item.expiredDate)
+                item.supply = sup
+                sup.save()
+                item.save()
+            i += 1
+        del_order.isHasBeenSaved = True
+        del_order.save()
+        response_data = {
+            'message': 'Success',
+            'delivery_order_id': delivery_order_id,
+            'total_count': i
+        }
+        return JsonResponse(response_data)
+
+    # On failure or if not POST
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])

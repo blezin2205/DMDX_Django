@@ -197,5 +197,25 @@ def gen_sup_and_update_db(self, del_order_id):
     del_order.save()
 
 
-
+def gen_sup_and_update_db_async(request, del_order_id):
+    del_order = DeliveryOrder.objects.get(id=del_order_id)
+    sup_set = del_order.deliverysupplyincart_set.filter(isRecognized=True)
+    for item in sup_set:
+        if item.general_supply:
+            try:
+                sup = item.general_supply.general.get(supplyLot=item.supplyLot, expiredDate=item.expiredDate)
+                sup.count += item.count
+            except:
+                sup = Supply(name=item.general_supply.name,
+                             general_supply=item.general_supply,
+                             category=item.general_supply.category,
+                             ref=item.general_supply.ref,
+                             supplyLot=item.supplyLot,
+                             count=item.count,
+                             expiredDate=item.expiredDate)
+            item.supply = sup
+            sup.save()
+            item.save()
+    del_order.isHasBeenSaved = True
+    del_order.save()
 
