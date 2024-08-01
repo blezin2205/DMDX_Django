@@ -140,8 +140,6 @@ def upload_supplies_for_new_delivery_from_js_script(request):
         t = threading.Thread(target=threading_create_delivery_async,
                              args=[request, string_data, for_delivery_order.id, barcode_type, isUpdate], daemon=True)
         t.start()
-        messages.success(request, 'Обробка даних запущена в фоновому режимі.')
-
         return JsonResponse(response_data)
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
 
