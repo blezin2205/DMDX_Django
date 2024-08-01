@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     'django_celery_results',
     'celery_progress',
     'django_user_agents',
+    'channels'
 ]
 
 MIDDLEWARE = [
@@ -87,6 +88,12 @@ MIDDLEWARE = [
     'django_htmx.middleware.HtmxMiddleware',
     'django_user_agents.middleware.UserAgentMiddleware',
 ]
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 # CLOUDINARY_STORAGE = {
 #     'CLOUD_NAME': 'hmflrailz',
@@ -144,7 +151,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'DMDX_Django.wsgi.application'
-
+ASGI_APPLICATION = 'DMDX_Django.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
@@ -160,23 +167,23 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'dmdx',
-        'USER': 'blezin',
-        'PASSWORD': 'blezin',
+        'USER': 'postgres',
+        'PASSWORD': '4646',
         'HOST': 'localhost',
         'PORT': '5432',
     }
 }
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'dmdx',
-        'USER': 'postgres',
-        'PASSWORD': '4646',
-        'HOST': 'localhost',
-        'PORT': '5433',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'dmdx',
+#         'USER': 'postgres',
+#         'PASSWORD': '4646',
+#         'HOST': 'localhost',
+#         'PORT': '5433',
+#     }
+# }
 
 db_from_env = dj_database_url.config(conn_max_age=500)
 DATABASES['default'].update(db_from_env)

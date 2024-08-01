@@ -27,6 +27,7 @@ urlpatterns = [
      path('np-info-sync-ref-post-request', views.np_info_sync_ref_post_request, name='np_info_sync_ref_post_request'),
      path('all_deliveries/', view_upload.all_deliveries, name='all_deliveries'),
      path('all_deliveries/<int:delivery_id>', view_upload.delivery_detail, name='delivery_detail'),
+     path('upload_supplies_for_new_delivery_from_js_script', view_upload.upload_supplies_for_new_delivery_from_js_script, name='upload_supplies_for_new_delivery_from_js_script'),
      path('all_deliveries/<int:delivery_id>/add_more_scan_to_exist_delivery_order/', view_upload.add_more_scan_to_exist_delivery_order, name='add_more_scan_to_exist_delivery_order'),
      path('all_deliveries/search-gen-sup-for-manual-add-in-delivery-order/<int:delivery_order_id>', view_upload.search_results_for_manual_add_in_delivery_order, name='search-gen-sup-for-manual-add-in-delivery-order'),
      path('all_deliveries/add_gen_sup_in_delivery_order_manual_list', view_upload.add_gen_sup_in_delivery_order_manual_list, name='add_gen_sup_in_delivery_order_manual_list'),
@@ -68,6 +69,7 @@ urlpatterns = [
     path('allDevices/', views.devicesList, name='allDevices'),
     path('allDevices/full_image_view_for_device_image/<int:device_id>', views.full_image_view_for_device_image, name='full_image_view_for_device_image'),
     path('allDevices/export-to-xls', views.devices_render_to_xls, name='devices_render_to_xls'),
+
 
 
 

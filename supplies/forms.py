@@ -170,7 +170,7 @@ class LoginForm(AuthenticationForm):
 
 
 class NewDeliveryForm(forms.Form):
-    description = forms.CharField(widget=forms.Textarea(attrs={'rows': 15, 'cols': 40}))
+    description = forms.CharField(widget=forms.Textarea(attrs={'rows': 15, 'cols': 40, 'id': 'id_description'}))
     def __init__(self, *args, **kwargs):
         super(NewDeliveryForm, self).__init__(*args, **kwargs)
         self.fields['description'].label = 'Відскановані штрих-коди з розділом "пробіл"'

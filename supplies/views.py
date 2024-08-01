@@ -3651,6 +3651,9 @@ def clientsInfo(request):
     place = Place.objects.all().order_by('-id')
     placeFilter = PlaceFilter(request.GET, queryset=place)
     place = placeFilter.qs
+    paginator = Paginator(place, 20)
+    page_number = request.GET.get('page')
+    place = paginator.get_page(page_number)
     cartCountData = countCartItemsHelper(request)
     return render(request, 'supplies/clientsList.html',
                   {'title': f'Клієнти', 'clients': place, 'placeFilter': placeFilter, 'cartCountData': cartCountData,

@@ -49,7 +49,7 @@
 
     
     <section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #f5f5f5;">
-<form method="post" action="" id="myForm" onsubmit="return showAlert();">
+<form method="post" action="" id="upload_supplies_for_new_delivery">
   {% csrf_token %}
   <div class="container w-50 p-3 align-items-start">
       <div class="container w-100 p-3 my-3 align-items-start bg-light border shadow-sm">
@@ -68,26 +68,70 @@
 </div>
 </div>
     {{ form.description|as_crispy_field }}
-      <button class="btn btn-outline-primary my-5 w-100" type="submit">Зберегти</button>
+      <button class="btn btn-outline-primary my-5 w-100" type="submit" id="submitButton">Зберегти</button>
+        <button class="btn btn-primary my-5 w-100" type="button" id="loadingButton" style="display: none;" disabled>
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <span role="status">Loading...</span>
+        </button>
   </div>
 
 
 </form>
+ <script>
+        // Показати лоадінг кнопку
+        function showLoadingButton() {
+            document.getElementById('submitButton').style.display = 'none';
+            document.getElementById('loadingButton').style.display = 'block';
+        }
 
-{# JavaScript to show the alert #}
-<script>
-  function showAlert() {
-    // You can customize the alert message here
-    if (confirm('Кожного разу ця дія запускає створення нової поставки!' +
-        '\nСтворити нову поставку та додати всі товари до неї?' +
-        '\n\n(Якщо потрібно додати товари до вже існуючої поставки, будь-ласка, оберіть' +
-        ' поставку зі списку!)')) {
-      return true; // Continue with the form submission
-    } else {
-      return false; // Cancel the form submission
-    }
-  }
-</script>
+        // Показати попап і лоадінг кнопку перед відправкою форми
+        document.getElementById('upload_supplies_for_new_delivery').onsubmit = function(event) {
+    // Prevent the form from submitting normally
+    event.preventDefault();
+
+    // Get the values of the radio buttons and description
+    var barcodeType = document.querySelector('input[name="barcode_type"]:checked').value;
+    var description = document.getElementById('id_description').value; // Replace 'id_description' with the actual ID of your description field
+    var deliveryOrderId = "{{ delivery_order_id }}";
+    // Call the function with the selected value and description
+    callSomeViewFunction(deliveryOrderId, barcodeType, description);
+    showLoadingButton();
+};
+
+function callSomeViewFunction(deliveryOrderId = null, barcodeType, description) {
+    // Implement the function to send the data to the server
+    fetch('/upload_supplies_for_new_delivery_from_js_script', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ barcode_type: barcodeType, description: description, deliveryOrderId: deliveryOrderId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Handle the response from the server
+        console.log(data);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+        // Підключення до WebSocket
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/some_path/');
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            alert(data.message)
+            window.location.href = `/all_deliveries/${data.delivery_order_id}`; // Редірект після отримання повідомлення
+        };
+
+        socket.onclose = function(e) {
+            console.error('WebSocket closed unexpectedly');
+        };
+    </script>
+
 
 {# {% include 'partials/progress-bar.html' %} #}
     </section>

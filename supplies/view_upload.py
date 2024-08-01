@@ -39,6 +39,8 @@ from .tasks import *
 from .views import *
 from celery_progress.backend import Progress
 from celery.result import AsyncResult
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 import threading
 
 # @login_required(login_url='login')
@@ -105,9 +107,45 @@ def upload_supplies_for_new_delivery(request, delivery_order_id=None):
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
+def upload_supplies_for_new_delivery_from_js_script(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        barcode_type = data.get('barcode_type', '')
+        string_data = data.get('description', '')
+        delivery_id = data.get('deliveryOrderId', '')
+
+        # Process the data as needed
+        response_data = {
+            'status': 'success',
+            'barcode_type': barcode_type,
+            'description': string_data
+        }
+        print("delivery_id", delivery_id)
+        print(delivery_id == 'None')
+
+
+        if delivery_id == 'None':
+            for_delivery_order = DeliveryOrder(from_user=request.user)
+            for_delivery_order.save()
+            title = "Створити нову поставку"
+            isUpdate = False
+        else:
+            delivery_id = int(delivery_id)
+            for_delivery_order = DeliveryOrder.objects.get(id=delivery_id)
+            title = f'Додати штрих-коди до поставки № {for_delivery_order.id}'
+            isUpdate = True
+        print("START")
+        t = threading.Thread(target=threading_create_delivery_async,
+                             args=[request, string_data, for_delivery_order.id, barcode_type, isUpdate], daemon=True)
+        t.start()
+        messages.success(request, 'Обробка даних запущена в фоновому режимі.')
+
+        return JsonResponse(response_data)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+
 def upload_supplies_for_new_delivery_noncelery(request, delivery_order_id=None):
     form = NewDeliveryForm()
-    if delivery_order_id != None:
+    if delivery_order_id is not None:
         title = f'Додати штрих-коди до поставки № {delivery_order_id}'
     else:
         title = "Створити нову поставку"
@@ -116,20 +154,22 @@ def upload_supplies_for_new_delivery_noncelery(request, delivery_order_id=None):
         form = NewDeliveryForm(request.POST)
         if form.is_valid():
             string_data = form.cleaned_data['description']
-            if delivery_order_id != None:
+            if delivery_order_id is not None:
                 for_delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
                 title = f'Додати штрих-коди до поставки № {for_delivery_order.id}'
+
             else:
                 for_delivery_order = DeliveryOrder(from_user=request.user)
                 for_delivery_order.save()
                 title = "Створити нову поставку"
-                # threading_create_delivery_async(request, string_data, for_delivery_order.id, barcode_type)
-            t = threading.Thread(target=threading_create_delivery_async, args=[request, string_data, for_delivery_order.id, barcode_type, form], daemon=True)
+            t = threading.Thread(target=threading_create_delivery_async, args=[request, string_data, for_delivery_order.id, barcode_type], daemon=True)
             t.start()
-            return redirect('/all_deliveries')
-    return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form, 'title': title})
+            messages.success(request, 'Обробка даних запущена в фоновому режимі.')
+            return JsonResponse({'success': False, 'message': 'Форма не дійсна.'})
+            # return redirect('/all_deliveries')
+    return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form, 'title': title, 'delivery_order_id': delivery_order_id})
 
-def threading_create_delivery_async(request, string_data, delivery_order_id, barcode_type, form):
+def threading_create_delivery_async(request, string_data, delivery_order_id, barcode_type, isUpdate = False):
     for_delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
     makeDataUpload_nonCelery(string_data, delivery_order_id, barcode_type)
     cartCountData = countCartItemsHelper(request)
@@ -140,14 +180,22 @@ def threading_create_delivery_async(request, string_data, delivery_order_id, bar
         t = supDict.setdefault(d.isRecognized, [])
         t.append(d)
     supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
-    return render(request, 'supplies/delivery_detail.html',
-                  {'cartCountData': cartCountData, 'supDict': supDict,
-                   'delivery_order': for_delivery_order, 'total_count': total_count, 'form': form})
+
+    # Відправити повідомлення про завершення
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        'delivery_updates',
+        {
+            'type': 'delivery_complete',
+            'message': f'Поставка №{delivery_order_id} оновлена успішно!' if isUpdate else f'Поставка №{delivery_order_id} створена успішно!',
+            'delivery_order_id': delivery_order_id
+        }
+    )
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def add_more_scan_to_exist_delivery_order(request, delivery_id):
-    return upload_supplies_for_new_delivery(request, delivery_id)
+    return upload_supplies_for_new_delivery_noncelery(request, delivery_id)
 
 
 # @login_required(login_url='login')
