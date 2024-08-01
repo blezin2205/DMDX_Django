@@ -20,7 +20,7 @@ application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": AuthMiddlewareStack(
         URLRouter([
-            path('wss/some_path/', DeliveryConsumer.as_asgi()),
+            path('wss/add_new_delivery_loading/', DeliveryConsumer.as_asgi()),
         ])
     ),
 })

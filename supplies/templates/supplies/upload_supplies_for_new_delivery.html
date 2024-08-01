@@ -119,7 +119,7 @@ function callSomeViewFunction(deliveryOrderId = null, barcodeType, description) 
 }
 
         // Підключення до WebSocket
-        const socket = new WebSocket('ws://' + window.location.host + '/ws/some_path/');
+        const socket = new WebSocket('wss://' + window.location.host + '/wss/add_new_delivery_loading/');
 
         socket.onmessage = function(e) {
             const data = JSON.parse(e.data);
