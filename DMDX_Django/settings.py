@@ -128,6 +128,11 @@ WKHTMLTOPDF_CMD_OPTIONS = {
     'enable-local-file-access': True
 }
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://dmdxstorage.herokuapp.com',
+    # You can add other trusted origins as needed
+]
+
 STATIC_URL = '/static/'
 
 ROOT_URLCONF = 'DMDX_Django.urls'
