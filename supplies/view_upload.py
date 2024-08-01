@@ -82,6 +82,7 @@ def get_progress(request, task_id, for_delivery_order_id):
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def upload_supplies_for_new_delivery(request, delivery_order_id=None):
+    cartCountData = countCartItemsHelper(request)
     form = NewDeliveryForm()
     if delivery_order_id != None:
         title = f'Додати штрих-коди до поставки № {delivery_order_id}'
@@ -103,7 +104,8 @@ def upload_supplies_for_new_delivery(request, delivery_order_id=None):
             context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': for_delivery_order.id}
             return render(request, 'supplies/upload_supplies_new_delivery_progress.html', context)
 
-    return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form, 'title': title})
+    return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form, 'title': title,
+                                                                                                            'cartCountData': cartCountData})
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -144,6 +146,7 @@ def upload_supplies_for_new_delivery_from_js_script(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
 
 def upload_supplies_for_new_delivery_noncelery(request, delivery_order_id=None):
+    cartCountData = countCartItemsHelper(request)
     form = NewDeliveryForm()
     if delivery_order_id is not None:
         title = f'Додати штрих-коди до поставки № {delivery_order_id}'
@@ -164,10 +167,9 @@ def upload_supplies_for_new_delivery_noncelery(request, delivery_order_id=None):
                 title = "Створити нову поставку"
             t = threading.Thread(target=threading_create_delivery_async, args=[request, string_data, for_delivery_order.id, barcode_type], daemon=True)
             t.start()
-            messages.success(request, 'Обробка даних запущена в фоновому режимі.')
             return JsonResponse({'success': False, 'message': 'Форма не дійсна.'})
             # return redirect('/all_deliveries')
-    return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form, 'title': title, 'delivery_order_id': delivery_order_id})
+    return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form, 'cartCountData': cartCountData, 'title': title, 'delivery_order_id': delivery_order_id})
 
 def threading_create_delivery_async(request, string_data, delivery_order_id, barcode_type, isUpdate = False):
     for_delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
