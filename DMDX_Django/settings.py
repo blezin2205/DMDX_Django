@@ -193,6 +193,8 @@ DATABASES = {
 db_from_env = dj_database_url.config(conn_max_age=500)
 DATABASES['default'].update(db_from_env)
 
+django_heroku.settings(locals())
+DATABASES['default']['CONN_MAX_AGE'] = 0
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -278,15 +280,14 @@ EMAIL_HOST_PASSWORD = 'Rohlikos31'
 # CELERY_TASK_SERIALIZER = 'json'
 # CELERY_RESULT_BACKEND = 'django-db'
 
-REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379')
-BROKER_CONNECTION_MAX_RETRIES = os.environ.get('BROKER_CONNECTION_MAX_RETRIES', None)
-BROKER_POOL_LIMIT = os.environ.get('BROKER_POOL_LIMIT', None)
-
-# CELERY CONFIG
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', REDIS_URL)
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', REDIS_URL)
-CELERY_REDIS_MAX_CONNECTIONS = os.environ.get('CELERY_REDIS_MAX_CONNECTIONS', 5)
-CELERYD_CONCURRENCY = os.environ.get('CELERYD_CONCURRENCY', 1)
+# REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379')
+# BROKER_CONNECTION_MAX_RETRIES = os.environ.get('BROKER_CONNECTION_MAX_RETRIES', None)
+# BROKER_POOL_LIMIT = os.environ.get('BROKER_POOL_LIMIT', None)
+#
+# # CELERY CONFIG
+# CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', REDIS_URL)
+# CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', REDIS_URL)
+# CELERY_REDIS_MAX_CONNECTIONS = os.environ.get('CELERY_REDIS_MAX_CONNECTIONS', 5)
+# CELERYD_CONCURRENCY = os.environ.get('CELERYD_CONCURRENCY', 1)
 
 # Configure Django App for Heroku.
-django_heroku.settings(locals())
