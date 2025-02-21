@@ -29,9 +29,12 @@
         {%  endif %}
 
 
+        <div class="hstack gap-3">
+          {#        <a href="{% url 'orderDetailPdf' order.id %}">PDF</a>#}
+    <a href="{% url 'preorderDetailCsv' order.id %}">Export to Excel (До поставки)</a>
+    <a href="{% url 'preorderDetailCsvAll' order.id %}">Export to Excel (Весь список)</a>
+        </div>
 
-{#        <a href="{% url 'orderDetailPdf' order.id %}">PDF</a>#}
-    <a href="{% url 'preorderDetailCsv' order.id %}">Export to Excel</a>
 
 </div>
 

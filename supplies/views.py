@@ -1929,7 +1929,7 @@ def orders(request):
 
 
 
-def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus = False, set_complete_ctatus = False, set_is_closed=False):
+def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus = False, set_complete_ctatus = False, set_is_closed=False, all_items=False):
     selected_ids = map(int, preorders_list)
     fileteredOredrs = PreOrder.objects.filter(pk__in=selected_ids)
     if withChangedStatus:
@@ -1956,19 +1956,22 @@ def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus =
     response['Content-Disposition'] = f"attachment; filename=Preorders_List_{datetime.datetime.now().strftime('%d.%m.%Y  %H:%M')}.xlsx"
     wb = Workbook(response, {'in_memory': True})
     for preorder in fileteredOredrs:
-        preorder_render_to_xls_by_preorder(response, preorder, wb)
+        preorder_render_to_xls_by_preorder(response, preorder, wb, all_items)
     wb.close()
     return response
 
 
 
 
-def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
+def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook, all_items: bool):
     order_id = order.id
     supplies_in_order_all = order.supplyinpreorder_set.all()
     supplies_in_order = []
-    for sup in supplies_in_order_all:
-        if sup.count_in_order - sup.count_in_order_current - sup.get_booked_count() > 0:
+    if all_items:
+        supplies_in_order = supplies_in_order_all
+    else:
+        for sup in supplies_in_order_all:
+          if sup.count_in_order - sup.count_in_order_current - sup.get_booked_count() > 0:
             supplies_in_order.append(sup)
     row_num = 4
     init_row_num = row_num
@@ -1977,8 +1980,18 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
     ws = wb.add_worksheet(f'Order №{order_id}')
     format = wb.add_format({'bold': True})
     format.set_font_size(16)
-
-    columns_table = [{'header': '№'},
+    if all_items:
+        columns_table = [{'header': '№'},
+                     {'header': 'Name'},
+                     {'header': 'Category'},
+                     {'header': 'Package / Tests'},
+                     {'header': 'REF'},
+                     {'header': 'SMN code'},
+                     {'header': 'Count'},
+                     # {'header': 'Index'}
+                     ]
+    else:
+        columns_table = [{'header': '№'},
                      {'header': 'Name'},
                      {'header': 'Category'},
                      {'header': 'Package / Tests'},
@@ -1987,7 +2000,6 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
                      {'header': 'Awaiting count'},
                      # {'header': 'Index'}
                      ]
-
     ws.write(0, 0,
              f'Замов. №{order_id} для {order.place.name[:30]}, {order.place.city_ref.name} від {order.dateCreated.strftime("%d-%m-%Y")}',
              format)
@@ -2032,7 +2044,10 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook):
 
         count_in_order = row.count_in_order
         current_delivery_count = row.count_in_order_current
-        count_borg = row.count_in_order - row.count_in_order_current - row.get_booked_count()
+        if all_items:
+            count_borg = count_in_order
+        else:
+            count_borg = row.count_in_order - row.count_in_order_current - row.get_booked_count()
         date_expired = ''
 
         val_row = [name, category, pckg_and_tests, ref, smn, count_borg]
@@ -3303,6 +3318,9 @@ def render_to_xls(request, order_id):
 def preorder_render_to_xls(request, order_id):
     return generate_list_of_xls_from_preorders_list([order_id])
 
+def preorder_render_to_xls_all_items(request, order_id):
+    return generate_list_of_xls_from_preorders_list([order_id], all_items=True)
+
 @login_required(login_url='login')
 def devices_render_to_xls(request):
     translator = Translator()
@@ -3503,7 +3521,7 @@ def agreementDetail(request, agreement_id):
 @login_required(login_url='login')
 def preorderDetail(request, order_id):
     order = get_object_or_404(PreOrder, pk=order_id)
-    supplies_in_order = order.supplyinpreorder_set.all().order_by('id')
+    supplies_in_order = order.supplyinpreorder_set.all()
     cartCountData = countCartItemsHelper(request)
     if order.isPreorder:
         title = f'Передзамовлення № {order_id}'
