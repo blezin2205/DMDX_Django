@@ -62,7 +62,7 @@
                                 {% if order.isComplete %}
                                     <div class="badge bg-success d-flex align-items-center gap-2 p-2">
                                         <i class="bi bi-check-circle"></i>
-                                        <span>Відправлено {{order.dateSent|date:"d.m.Y"}}</span>
+                                        <span>{{order.dateSent|date:"d.m.Y"}}</span>
                                     </div>
                                 {% else %}
                                     <div class="badge bg-warning d-flex align-items-center gap-2 p-2">

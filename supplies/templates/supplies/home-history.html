@@ -7,34 +7,50 @@
 
 {% block content %}
 <div class="container py-1">
-     <div class="btn-group my-3">
-  <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
-  <a href="/childSupply" class="btn btn-primary mx-2 {% if isChild %} active {% endif %}">Список товарів</a>
-     <a href="/historySupply" class="btn btn-primary {% if isHistory %} active {% endif %}">Історія товарів</a>
-</div>
+     <div class="btn-group my-4 shadow-sm">
+        <a href="/" class="btn {% if isAll %} active {% endif %} custom-btn" aria-current="page">
+            <i class="bi bi-grid-3x3-gap me-2"></i>Всі
+        </a>
+        <a href="/childSupply" class="btn mx-1 {% if isChild %} active {% endif %} custom-btn">
+            <i class="bi bi-box-seam me-2"></i>Список товарів
+        </a>
+        <a href="/historySupply" class="btn {% if isHistory %} active {% endif %} custom-btn">
+            <i class="bi bi-clock-history me-2"></i>Історія товарів
+        </a>
+    </div>
 
     <form method="get" class="form-inline justify-content-center">
-         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
-             <div class="hstack gap-2">
-
-                  {{ suppFilter.form.action_type|as_crispy_field }}
-                 {{ suppFilter.form.category|as_crispy_field }}
-                 {{ suppFilter.form.ref|as_crispy_field }}
-                 {{ suppFilter.form.supplyLot|as_crispy_field }}
-                 {{ suppFilter.form.name|as_crispy_field }}
-
+         <div class="container bg-light border shadow p-3 mb-3 rounded-3">
+             <div class="d-flex flex-wrap gap-2 align-items-end">
+                 <div style="min-width: 200px; flex: 1;">
+                     {{ suppFilter.form.action_type|as_crispy_field }}
+                 </div>
+                 <div style="min-width: 180px; flex: 1;">
+                     {{ suppFilter.form.category|as_crispy_field }}
+                 </div>
+                 <div style="min-width: 120px; flex: 1;">
+                     {{ suppFilter.form.ref|as_crispy_field }}
+                 </div>
+                 <div style="min-width: 120px; flex: 1;">
+                     {{ suppFilter.form.supplyLot|as_crispy_field }}
+                 </div>
+                 <div style="min-width: 200px; flex: 1;">
+                     {{ suppFilter.form.name|as_crispy_field }}
+                 </div>
+                 <div class="d-flex gap-2">
+                    <button class="btn custom-btn btn-sm" type="submit">
+                        <i class="bi bi-search me-1"></i>Фільтр
+                    </button>
+                    <button type="submit" class="btn custom-btn btn-sm" name="xls_button">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+                    </button>
+                 </div>
              </div>
-             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
-
+        </div>
+    </form>
 </div>
-    {% csrf_token %}
-    <button type="submit" class="btn btn-outline-primary" name="xls_button">
-        Export to Excel
-    </button>
-        </form>
 
-</div>
-        <table class="table centred mt-3 w-auto mx-auto">
+<table class="table centred mt-3 w-auto mx-auto">
   <thead class="thead-dark">
     <tr>
         <th scope="col">Дія</th>
@@ -86,5 +102,96 @@
    {% endfor %}
   </tbody>
 </table>
+
+<style>
+.custom-btn {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+}
+
+.custom-btn:hover {
+    background-color: #e9ecef;
+    color: #212529;
+    transform: translateY(-1px);
+}
+
+.custom-btn.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.btn-group {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 0.5rem;
+    border-bottom-left-radius: 0.5rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+}
+
+/* Additional styles for the form buttons */
+form .custom-btn {
+    background-color: #ffffff;
+}
+
+form .custom-btn:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+
+/* Style for order links */
+.link-warning {
+    color: #ffc107;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.link-warning:hover {
+    color: #ffcd39;
+    text-decoration: underline;
+}
+
+/* Compact filter styles */
+.form-group {
+    margin-bottom: 0 !important;
+}
+
+.form-control, .form-select {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.form-label {
+    margin-bottom: 0.2rem;
+    font-size: 0.875rem;
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* Custom select styling */
+.form-select {
+    background-position: right 0.5rem center;
+}
+
+/* Ensure filter container doesn't get too wide */
+form .container {
+    max-width: 1400px;
+}
+</style>
 
 {% endblock %}

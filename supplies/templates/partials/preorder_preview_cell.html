@@ -1,77 +1,188 @@
 {% load myapp_extras %}
 <div id="preorder_preview_cell{{ order.id }}" class="my-4">
-    <div class="hstack gap-3">
- <a href="{% url 'preorderDetail' order.id %}?next={{ request.get_full_path }}" class="list-group-item list-group-item-action bg-light border border-light-subtle my-link d-flex gap-3 p-3" aria-current="true" style="border-radius: 1rem;">
-    <div class="d-flex gap-2 w-100 justify-content-between">
-      <div>
-      {% if order.isPreorder %}
-          <h6 class="mb-1">Передзамовлення №: {{order.id}} {% if order.isClosed %}<b style="padding-left: 10px"><u>АРХІВ</u></b> {% endif %}</h6>
-      {% else %}
-          <h6 class="mb-1">Договір №: {{order.id}}</h6>
-      {% endif %}
+    <div class="d-flex gap-3 align-items-center">
+        <a href="{% url 'preorderDetail' order.id %}?next={{ request.get_full_path|urlencode }}" class="text-decoration-none flex-grow-1">
+            <div class="card shadow-sm hover-shadow-md transition-all">
+                <div class="card-header position-relative p-3 border-0 {% if order.state_of_delivery == 'Complete' or order.state_of_delivery == 'Complete_Handle' %} bg-primary bg-opacity-10 {% else %} bg-warning bg-opacity-10 {% endif %}">
+                    <div class="row g-3">
+                        <!-- Left side - Creation info -->
+                        <div class="col-auto">
+                            <div class="d-flex flex-column gap-2">
+                                <div class="badge bg-light text-dark d-flex align-items-center gap-2">
+                                    <i class="bi bi-calendar3"></i>
+                                    <span>{{order.dateCreated|date:"d.m.Y"}}</span>
+                                </div>
+                                {% if order.userCreated %}
+                                <div class="badge bg-light text-dark d-flex align-items-center gap-2">
+                                    <i class="bi bi-person"></i>
+                                    <span>{{ order.userCreated.first_name }} {{ order.userCreated.last_name }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
 
-        <p class="mb-1">Для: {{order.place.name}}, {{order.place.city_ref.name}}</p>
+                        <!-- Center - Preorder info -->
+                        <div class="col text-center">
+                            {% if order.isPreorder %}
+                                <h5 class="mb-2 fw-bold">Передзамовлення №{{order.id}}
+                                    {% if order.isClosed %}
+                                        <span class="badge bg-secondary ms-2">АРХІВ</span>
+                                    {% endif %}
+                                </h5>
+                            {% else %}
+                                <h5 class="mb-2 fw-bold">Договір №{{order.id}}</h5>
+                            {% endif %}
+                            <h6 class="mt-3 text-muted">{{order.place.name}}, {{order.place.city_ref.name}}</h6>
+                        </div>
 
-{#        {% if order.isComplete %}#}
-{#        <p class="mb-2"><span>Статус:</span> <span class="complete">Підтверджено</span></p>#}
-{#        {% else %}#}
-{#        <p class="mb-2"><span>Статус:</span> <span style="color:  #deb05b; font-weight: bold">В очікуванні</span></p>#}
-{#        {% endif %}#}
+                        <!-- Right side - Status info -->
+                        <div class="col-auto">
+                            <div class="d-flex flex-column gap-2">
+                                {% if order.state_of_delivery == 'Complete' %}
+                                    <div class="badge bg-success d-flex align-items-center gap-2 p-2">
+                                        <i class="bi bi-check-circle"></i>
+                                        <span>Повністю поставлено</span>
+                                    </div>
+                                {% elif order.state_of_delivery == 'Complete_Handle' %}
+                                    <div class="badge bg-success d-flex align-items-center gap-2 p-2">
+                                        <i class="bi bi-check-circle"></i>
+                                        <span>Повністю поставлено (Закрито вручну)</span>
+                                    </div>
+                                {% elif order.state_of_delivery == 'Partial' %}
+                                    <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
+                                        <i class="bi bi-hourglass-split"></i>
+                                        <span>Частково поставлено</span>
+                                    </div>
+                                {% elif order.state_of_delivery == 'awaiting_from_customer' %}
+                                    <div class="badge bg-info d-flex align-items-center gap-2 p-2">
+                                        <i class="bi bi-pencil-square"></i>
+                                        <span>Формується замовником</span>
+                                    </div>
+                                {% elif order.state_of_delivery == 'accepted_by_customer' %}
+                                    <div class="badge bg-primary d-flex align-items-center gap-2 p-2">
+                                        <i class="bi bi-check2-all"></i>
+                                        <span>Підтверджено замовником</span>
+                                    </div>
+                                {% elif order.state_of_delivery == 'Awaiting' %}
+                                    <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
+                                        <i class="bi bi-truck"></i>
+                                        <span>Замовлено у виробника</span>
+                                    </div>
+                                {% endif %}
 
-      {% if order.state_of_delivery == 'Complete' %}
-        <p class="mb-2"><span>Статус поставки:</span> <span class="complete">Повністю поставлено</span></p>
-          {% elif order.state_of_delivery == 'Partial' %}
-          <p class="mb-2"><span>Статус поставки:</span> <span style="color: #deb05b; font-weight: bold">Частково поставлено</span></p>
-           {% elif order.state_of_delivery == 'awaiting_from_customer' %}
-          <p class="mb-2"><span>Статус поставки:</span> <span style="color: rgba(222,126,91,0.59); font-weight: bold">Формується замовником</span></p>
-           {% elif order.state_of_delivery == 'accepted_by_customer' %}
-          <p class="mb-2"><span>Статус поставки:</span> <span style="color: #deb05b; font-weight: bold">Підтверджено замовником</span></p>
-        {% elif  order.state_of_delivery == 'Awaiting' %}
-        <p class="mb-2"><span>Статус поставки:</span> <span style="color: #de925b; font-weight: bold">Замовлено у виробника</span></p>
-          {% elif  order.state_of_delivery == 'Complete_Handle' %}
-        <p class="mb-2"><span>Статус поставки:</span> <span style="color: rgba(3,111,59,0.91); font-weight: bold">Повністю поставлено(Закрито вручну)</span></p>
+                                {% if order.isComplete %}
+                                    <div class="badge bg-secondary d-flex align-items-center gap-2 p-2">
+                                        <i class="bi bi-calendar-check"></i>
+                                        <span>Відправлено {{order.dateSent|date:"d.m.Y"}}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if order.comment %}
+                    <div class="card-footer bg-light p-0 border-top-light">
+                        <div class="px-3 py-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <small class="text-muted">Коментар:</small>
+                                <span class="small fw-medium">{{order.comment}}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </a>
+
+        {% if not order.isClosed %}
+            <div class="d-flex gap-2">
+                {% if not order.isComplete %}
+                    <button class="btn btn-success d-flex align-items-center justify-content-center" 
+                            style="width: 50px; height: 49px; border-radius: 5px;"
+                            type="submit" 
+                            hx-target="#preorder_preview_cell{{ order.id }}" 
+                            hx-post="{% url 'updatePreorderStatus' order.id %}">
+                        <i class="bi bi-check2 fs-4"></i>
+                    </button>
+                {% else %}
+                    {% if request.user|has_group:"admin" or request.user.is_staff %}
+                        {% if order.state_of_delivery != 'Complete' or order.state_of_delivery != 'awaiting_from_customer' %}
+                            
+                            <a href="{% url 'preorderDetail-generate-order' order.id %}?next={{ request.get_full_path }}" 
+                               class="btn btn-primary d-flex align-items-center justify-content-center"
+                               style="width: 50px; height: 49px; border-radius: 5px;"
+                               role="button" 
+                               data-toggle="tooltip" 
+                               data-placement="top" 
+                               title="Згенерувати замовлення">
+                                <i class="bi bi-cart-plus-fill fs-4"></i>
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+
+                {% if order.state_of_delivery == 'awaiting_from_customer' or order.state_of_delivery == 'accepted_by_customer' %}
+                    <form action="" onsubmit="window.mytest()">
+                        <button class="btn btn-danger d-flex align-items-center justify-content-center"
+                                style="width: 50px; height: 49px; border-radius: 5px;"
+                                type="submit" 
+                                hx-delete="{% url 'delete-preorder' order.id %}"
+                                hx-target="#preorders-list"
+                                hx-confirm="Are you sure you wish to delete?">
+                            <i class="bi bi-trash fs-4"></i>
+                        </button>
+                    </form>
+                {% endif %}
+                {% if request.user|has_group:"admin" or request.user.is_staff %}
+                <div class="form-check d-flex align-items-center justify-content-center" style="width: 50px; height: 49px; margin: 0;">
+                  <input class="form-check-input custom-checkbox" 
+                         type="checkbox" 
+                         value="{{ order.id }}" 
+                         id="xls_preorder_print_buttons" 
+                         name="xls_preorder_print_buttons" 
+                         hx-target="#xls_preorder_print_buttons" 
+                         hx-post="{% url 'get_print_xls_for_preorders' %}" 
+                         style="width: 28px; height: 28px; margin: 0; cursor: pointer;">
+              </div>
+              {% endif %}
+            </div>
         {% endif %}
-
-        {% if order.comment %}
-            <p class="mb-0"> <span class="text-muted">Коментар:</span> {{order.comment}}</p>
-        {% endif %}
-
-      </div>
-      <div>
-          {% if order.isComplete %}
-      <p class="opacity-60 text-nowrap date">Дата відправки: {{order.dateSent|date:"d.m.Y"}}</p>
-          {% endif %}
-      <p class="opacity-60 text-nowrap date">Дата створення: {{order.dateCreated|date:"d.m.Y"}}</p>
-      </div>
-
     </div>
-  </a>
-{% if not order.isClosed %}
-{% if not order.isComplete %}
-
-<button class="btn btn-success btn-lg add-btn" type="submit" hx-target="#preorder_preview_cell{{ order.id }}" hx-post="{% url 'updatePreorderStatus' order.id %}"><i class="bi bi-check2"></i></button>
-    {% else %}
-    {% if request.user|has_group:"admin" or request.user.is_staff %}
-    {% if order.state_of_delivery != 'Complete' or order.state_of_delivery != 'awaiting_from_customer' %}
-        <div class="form-check">
-  <input class="form-check-input" type="checkbox" value="{{ order.id }}" id="xls_preorder_print_buttons" name="xls_preorder_print_buttons" hx-target="#xls_preorder_print_buttons" hx-post="{% url 'get_print_xls_for_preorders' %}" hx-trigger="click">
-  <label class="form-check-label" for="xls_preorder_print_buttons">
-  </label>
 </div>
-            <a href="{% url 'preorderDetail-generate-order' order.id %}?next={{ request.get_full_path }}" class="btn btn-primary btn-lg" role="button" data-toggle="tooltip" data-placement="top" title="Згенерувати замовлення"><i class="bi bi-cart-plus-fill"></i></a>
-        {% endif %}
-    {% endif %}
 
-{% endif %}
-    {% if order.state_of_delivery == 'awaiting_from_customer' or order.state_of_delivery == 'accepted_by_customer' %}
-        <form action="" onsubmit="window.mytest()">
-        <button class="btn btn-danger btn-lg add-btn update-order-status" type="submit" hx-delete="{% url 'delete-preorder' order.id %}"
-                    hx-target="#preorders-list"
-                    hx-confirm="Are you sure you wish to delete?"><i class="bi bi-trash"></i></button>
-    </form>
-    {% endif %}
-    {% endif %}
-
-
-  </div>
-  </div>
+<style>
+.hover-shadow-md {
+    transition: all 0.2s ease-in-out;
+}
+.hover-shadow-md:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+.transition-all {
+    transition: all 0.2s ease-in-out;
+}
+.badge {
+    border: 1px solid rgba(0,0,0,0.1);
+}
+.border-top-light {
+    border-top: 1px solid rgba(0,0,0,0.05) !important;
+}
+.custom-checkbox {
+    background-color: #fff;
+    border: 2px solid #0d6efd;
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+}
+.custom-checkbox:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+.custom-checkbox:hover {
+    border-color: #0a58ca;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+.custom-checkbox:focus {
+    border-color: #0a58ca;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>

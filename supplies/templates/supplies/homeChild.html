@@ -7,35 +7,40 @@
 
 {% block content %}
 <div class="container py-1">
-     <div class="btn-group my-3">
-  <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
-  <a href="/childSupply" class="btn btn-primary mx-2 {% if isChild %} active {% endif %}">Список товарів</a>
-     <a href="/historySupply" class="btn btn-primary {% if isHistory %} active {% endif %}">Історія товарів</a>
-</div>
+     <div class="btn-group my-4 shadow-sm">
+        <a href="/" class="btn {% if isAll %} active {% endif %} custom-btn" aria-current="page">
+            <i class="bi bi-grid-3x3-gap me-2"></i>Всі
+        </a>
+        <a href="/childSupply" class="btn mx-1 {% if isChild %} active {% endif %} custom-btn">
+            <i class="bi bi-box-seam me-2"></i>Список товарів
+        </a>
+        <a href="/historySupply" class="btn {% if isHistory %} active {% endif %} custom-btn">
+            <i class="bi bi-clock-history me-2"></i>Історія товарів
+        </a>
+    </div>
 
     <form method="get" class="form-inline justify-content-center">
-         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
-             <div class="hstack gap-2">
-
+         <div class="container bg-light border shadow p-4 mb-4 rounded-3">
+             <div class="hstack gap-3">
                   {{ suppFilter.form.ordering|as_crispy_field }}
                  {{ suppFilter.form.category|as_crispy_field }}
                  {{ suppFilter.form.ref|as_crispy_field }}
                  {{ suppFilter.form.supplyLot|as_crispy_field }}
                  {{ suppFilter.form.name|as_crispy_field }}
-
              </div>
-             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
-
-</div>
-<button type="submit" class="btn btn-outline-primary" name="xls_button">
-        Export to Excel (Без броні)
-    </button>
-
-        <button type="submit" class="btn btn-outline-primary  mx-4" name="all_xls_button">
-        Export to Excel (Всі товари)
-    </button>
-        </form>
-
+             <div class="d-flex gap-3 mt-4">
+                <button class="btn custom-btn" type="submit">
+                    <i class="bi bi-search me-2"></i>Застосувати
+                </button>
+                <button type="submit" class="btn custom-btn" name="xls_button">
+                    <i class="bi bi-file-earmark-excel me-2"></i>Export to Excel (Без броні)
+                </button>
+                <button type="submit" class="btn custom-btn" name="all_xls_button">
+                    <i class="bi bi-file-earmark-excel me-2"></i>Export to Excel (Всі товари)
+                </button>
+             </div>
+        </div>
+    </form>
 </div>
         <table class="table centred mt-3 w-auto mx-auto">
   <thead class="thead-dark">
@@ -86,5 +91,54 @@
    {% endfor %}
   </tbody>
 </table>
+
+<style>
+.custom-btn {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+}
+
+.custom-btn:hover {
+    background-color: #e9ecef;
+    color: #212529;
+    transform: translateY(-1px);
+}
+
+.custom-btn.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.btn-group {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 0.5rem;
+    border-bottom-left-radius: 0.5rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+}
+
+/* Additional styles for the form buttons */
+form .custom-btn {
+    background-color: #ffffff;
+}
+
+form .custom-btn:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+</style>
 
 {% endblock %}

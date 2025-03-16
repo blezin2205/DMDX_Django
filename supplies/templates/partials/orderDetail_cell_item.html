@@ -27,7 +27,7 @@
             </td>
             <td style="width: 100px"><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}</td>
      {% if request.user|has_group:"empl" or request.user.is_staff %}
-          <td style="min-width: 100px">{{ el.supply.dateCreated|date:"d.m.Y" }}</td>
+          <td style="min-width: 100px">{{ el.date_created|date:"d.m.Y" }}</td>
      {% endif %}
         {% if order.isForPreorderOrItemHasPreorder and el.supply_in_preorder %}
             <td>№ {{ el.supply_in_preorder.supply_for_order.id }} від {{ el.supply_in_preorder.supply_for_order.dateCreated|date:"d.m.Y" }}</td>

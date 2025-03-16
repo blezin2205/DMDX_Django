@@ -1,4 +1,3 @@
-
 {% load static %}
 <!doctype html>
 <html lang="en">
@@ -76,11 +75,58 @@ const csrftoken = getToken('csrftoken');
 
     <div class="w-auto">
     <div class="container">
-       <h3 class="my-4" style="white-space: pre-line">{{ title }}</h3>
+        {% if title %}
+        <div class="title-wrapper my-4 p-4 bg-white rounded-3 shadow-sm">
+            <div class="d-flex align-items-center">
+                {% if title_icon %}
+                    <i class="bi {{ title_icon }} me-3 title-icon"></i>
+                {% endif %}
+                <h3 class="title-text mb-0" style="white-space: pre-line">{{ title }}</h3>
+            </div>
+            {% if subtitle %}
+                <p class="text-muted mb-0 mt-2">{{ subtitle }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 
     {% block content %}{% endblock %}
     </div>
+
+    <style>
+        .title-wrapper {
+            border: 1px solid #e9ecef;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .title-wrapper:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        
+        .title-text {
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 1.75rem;
+            line-height: 1.3;
+        }
+        
+        .title-icon {
+            font-size: 2rem;
+            color: #4a5568;
+            opacity: 0.9;
+        }
+        
+        @media (max-width: 768px) {
+            .title-text {
+                font-size: 1.5rem;
+            }
+            
+            .title-icon {
+                font-size: 1.75rem;
+            }
+        }
+    </style>
 
 {% include 'supplies/footer.html' %}
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
