@@ -1,11 +1,5 @@
 {% for detailInfo in parsels_status_data %}
-
-    {% if detailInfo.status_code == '9' %}
-        <h5 class="fs-6 mb-1 text-success">{{ detailInfo.status_desc }}</h5>
- {% elif detailInfo.status_code == '2' %}
-        <h5 class="fs-6 mb-1 text-danger">{{ detailInfo.status_desc }}</h5>
-{% else %}
-        <h5 class="fs-6 mb-1 text-warning">{{ detailInfo.status_desc }}</h5>
-{% endif %}
-
+    <span class="small fw-medium {% if detailInfo.status_code == '9' %}np-status-success{% elif detailInfo.status_code == '2' %}np-status-error{% else %}np-status-pending{% endif %}">
+        {{ detailInfo.status_desc }}{% if not forloop.last %}; {% endif %}
+    </span>
 {% endfor %}

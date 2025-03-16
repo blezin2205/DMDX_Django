@@ -19,19 +19,31 @@
 </div>
 
      <form method="get" class="form-inline justify-content-center">
-         <div class="container hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
-             <div class="hstack gap-2">
-                 {{ suppFilter.form.ordering|as_crispy_field }}
-                 {{ suppFilter.form.category|as_crispy_field }}
-                 {{ suppFilter.form.ref|as_crispy_field }}
-                 {{ suppFilter.form.SMN_code|as_crispy_field }}
-                 {{ suppFilter.form.name|as_crispy_field }}
+         <div class="container bg-light border shadow p-4 mb-4 rounded-3">
+             <div class="row g-3">
+                 <div class="col-md">
+                     {{ suppFilter.form.ordering|as_crispy_field }}
+                 </div>
+                 <div class="col-md">
+                     {{ suppFilter.form.category|as_crispy_field }}
+                 </div>
+                 <div class="col-md">
+                     {{ suppFilter.form.ref|as_crispy_field }}
+                 </div>
+                 <div class="col-md">
+                     {{ suppFilter.form.SMN_code|as_crispy_field }}
+                 </div>
+                 <div class="col-md">
+                     {{ suppFilter.form.name|as_crispy_field }}
+                 </div>
              </div>
-             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
-
-</div>
-
-        </form>
+             <div class="d-flex justify-content-end mt-3">
+                 <button class="btn btn-primary px-4" type="submit">
+                     <i class="bi bi-search me-2"></i>Застосувати
+                 </button>
+             </div>
+         </div>
+     </form>
      </div>
     <div class="table-responsive">
     <table class="table centred mt-3 w-auto mx-auto">
@@ -88,9 +100,38 @@
 
 {% endif %}
       {% if request.user|has_group:"empl" or request.user.is_staff %}
-<a href="{% url 'history_for_supply' el.id %}?next={{ request.get_full_path|urlencode }}" class="text-decoration-none link-dark">
+<button hx-get="{% url 'history_for_supply' el.id %}" 
+        hx-target="#historyModalContent"
+        class="btn btn-link text-decoration-none link-dark p-0 border-0"
+        style="font-weight: 700;"
+        data-bs-toggle="modal" 
+        data-bs-target="#historyModal">
    {{ el.name }}
-</a>
+</button>
+
+<style>
+    .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.3) !important; /* Makes backdrop more transparent */
+    }
+    .modal-content {
+        background-color: rgba(255, 255, 255, 1); /* Slightly transparent modal content */
+    }
+</style>
+
+<!-- History Modal -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl" style="max-width: 90%; width: 90%;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="historyModalLabel">Історія товару</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="historyModalContent">
+        <!-- Content will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
       {% else %}
           {{ el.name }}
       {% endif %}</div> </th>
@@ -236,19 +277,31 @@
 </div>
 
      <form method="get" class="form-inline justify-content-center">
-         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
-             <div class="hstack gap-2">
-                 {{ suppFilter.form.ordering|as_crispy_field }}
-                 {{ suppFilter.form.category|as_crispy_field }}
-                 {{ suppFilter.form.ref|as_crispy_field }}
-                 {{ suppFilter.form.SMN_code|as_crispy_field }}
-                 {{ suppFilter.form.name|as_crispy_field }}
+         <div class="container bg-light border shadow p-4 mb-4 rounded-3">
+             <div class="row g-3">
+                 <div class="col-md">
+                     {{ suppFilter.form.ordering|as_crispy_field }}
+                 </div>
+                 <div class="col-md">
+                     {{ suppFilter.form.category|as_crispy_field }}
+                 </div>
+                 <div class="col-md">
+                     {{ suppFilter.form.ref|as_crispy_field }}
+                 </div>
+                 <div class="col-md">
+                     {{ suppFilter.form.SMN_code|as_crispy_field }}
+                 </div>
+                 <div class="col-md">
+                     {{ suppFilter.form.name|as_crispy_field }}
+                 </div>
              </div>
-             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
-
-</div>
-
-        </form>
+             <div class="d-flex justify-content-end mt-3">
+                 <button class="btn btn-primary px-4" type="submit">
+                     <i class="bi bi-search me-2"></i>Застосувати
+                 </button>
+             </div>
+         </div>
+     </form>
      </div>
     <table class="table centred mt-3 w-auto mx-auto">
   <thead class="thead-dark">

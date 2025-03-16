@@ -1,124 +1,203 @@
 {% load mathfilters %}
 {% load myapp_extras %}
-<div id="order_preview_cell{{ order.id }}" class="mt-5" style="margin-bottom: 50px">
-
-
-    <div class="hstack gap-3">
-     <a href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" class="list-group-item list-group-item-action" aria-current="true">
-     <div class="card my-link">
-<div class="card-header px-0 {% if not order.isComplete %} bg-warning bg-gradient bg-opacity-25 {% else %} bg-primary bg-gradient bg-opacity-25 {% endif %}">
-
-<div class="d-flex flex-column text-center justify-content-between">
-<div class="flex-grow-1">
-<div class="d-flex text-center justify-content-between">
-<div class="text-end" style="width: 200px">
-    <div class="rounded-end-5 pe-4 bg-light text-muted date">створено: {{order.dateCreated|date:"d.m.Y"}}</div>
-    <div class="rounded-end-5 pe-4 mt-1 {% if order.isClientCreated %}  bg-warning-subtle {% else %} bg-light {% endif %} text-muted date">створив: {{ order.userCreated.first_name  }} {{ order.userCreated.last_name  }}</div>
-</div>
-
-
-    <span class="d-block text-muted my-0"><u class="bg-light rounded-1 px-3 mx-4 py-1">Замовлення №: <b>{{order.id}}</b> </u></span>
-
-    {% if order.for_preorder %}
-         {% if order.for_preorder.isPreorder %}
-             <p class="mb-1"><u class="text-muted bg-light rounded-1 px-3 mx-4 py-1">Передзамовлення: <b>№{{order.for_preorder.id}}</b></u></p>
-             {% else %}
-             <p class="mb-1"><u class="text-muted bg-light rounded-1 px-3 mx-4 py-1">Договір: <b>№{{order.for_preorder.id}}</b> {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }} {% endif %} </u></p>
-             {% endif %}
-      {% endif %}
-
-<div class="text-start " style="width: 200px">
-     {% if request.user|has_group:"empl" or request.user.is_staff %}
-      {% if order.dateToSend and not order.isComplete %}
-{% now "d.m.Y" as current_date %}
-{% if order.dateToSend|date:"d.m.Y" == current_date %}
-    <p class="rounded-start-5 text-center px-2 mb-1 bg-danger text-light fw-semibold">відправка:
-   <b>Сьогодні</b>
-    </p>
-{% else %}
-    <p class="rounded-start-5 text-center px-1 mb-1 bg-warning  fw-semibold">відправка:
-    <b>{{order.dateToSend|date:"d.m.Y"}}</b></p>
-
-{% endif %}
-      {% else %}{% endif %}
- {% else %}{% endif %}
-
-{% if order.isComplete %}
-    <div class="rounded-start-5  text-center px-3 my-0 bg-primary text-light date">відправлено: {{order.dateSent|date:"d.m.Y"}}</div>
-{% else %}
-    <div class="rounded-start-5 text-center flex-wrap px-3 my-0 bg-warning date">в очікуванні</div>
-{% endif %}
-
-</div>
-
-
-</div>
-<h5 class="px-4 pt-2">{{order.place.name}}, {{order.place.city_ref.name}}</h5>
-</div>
-</div>
-
-</div>
-         <div class="card-footer py-1 px-1 border-top">
-<div class="row">
-     {% if order.comment %}
-            <div class="col text-center p-1">
-    <span class="d-block date text-muted">коментар: </span>
-<h5 class="fs-6 mb-1 mx-4">{{order.comment}}</h5>
-</div>
-        {% endif %}
-
- {% if order.npdeliverycreateddetailinfo_set.exists %}
-     <div class="col text-center p-1 {% if order.comment %} border-start {% endif %} {% if order.npdeliverycreateddetailinfo_set.exists %}  {% endif %} ">
-     <span class="d-block date text-muted">статус НП: </span>
-          <div id="np_delivery_detail_info_for_order mx-3" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
-          {% for detailInfo in order.statusnpparselfromdoucmentid_set.all %}
-{% if detailInfo.status_code == '9' %}
-        <h5 class="fs-6 mb-1 text-success">{{ detailInfo.status_desc }}</h5>
- {% elif detailInfo.status_code == '2' %}
-        <h5 class="fs-6 mb-1 text-danger">{{ detailInfo.status_desc }}</h5>
-{% else %}
-        <h5 class="fs-6 mb-1 text-warning">{{ detailInfo.status_desc }}</h5>
-{% endif %}
-          {% endfor %}
-          </div>
-          </div>
-     {% endif %}
-
-
-{#<div class="col text-end">#}
-{#<div class="date  p-1 px-3"><span class="text-muted">створив: </span>{{ order.userCreated.first_name  }} {{ order.userCreated.last_name  }} </div>#}
-{##}
-{#    {% if order.npdeliverycreateddetailinfo_set.exists %}#}
-{#      {% for detailInfo in order.npdeliverycreateddetailinfo_set.all %}#}
-{#           <h6><span class="text-muted badge rounded-start-5 bg-secondary-subtle">{{ detailInfo.document_id }} ({{detailInfo.cost_on_site}} грн.): {{ detailInfo.estimated_time_delivery }}</span></h6>#}
-{#          {% endfor %}#}
-{#      {% endif %}#}
-{##}
-{#</div>#}
-</div>
-</div>
-</div>
-     </a>
-
-
-    {% if request.user.is_staff and not order.isComplete %}
-         <div class="form-check">
-  <input class="form-check-input" type="checkbox" value="{{ order.id }}" id="register_exls_selected_buttons" name="register_exls_selected_buttons" hx-target="#register_exls_selected_buttons" hx-post="{% url 'register_exls_selected_buttons' %}" hx-trigger="click">
-  <label class="form-check-label" for="register_exls_selected_buttons">
-  </label>
-</div>
-    {% if order.place.address_NP and order.place.worker_NP %}
-        <div id="np_create_ID_button_subscribe" hx-get="{% url 'np_create_ID_button_subscribe' order.id %}" hx-trigger="np_create_ID_button_subscribe{{order.id}} from:body">
-                            {% include 'partials/np_create_ID_button.html' %}
+{% load static %}
+<div id="order_preview_cell{{ order.id }}" class="my-4">
+    <div class="d-flex gap-3 align-items-center">
+        <a href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" class="text-decoration-none flex-grow-1">
+            <div class="card shadow-sm hover-shadow-md transition-all">
+                <div class="card-header position-relative p-3 border-0 {% if not order.isComplete %} bg-warning bg-opacity-10 {% else %} bg-primary bg-opacity-10 {% endif %}">
+                    <div class="row g-3">
+                        <!-- Left side - Creation info -->
+                        <div class="col-auto">
+                            <div class="d-flex flex-column gap-2">
+                                <div class="badge bg-light text-dark d-flex align-items-center gap-2">
+                                    <i class="bi bi-calendar3"></i>
+                                    <span>{{order.dateCreated|date:"d.m.Y"}}</span>
+                                </div>
+                                <div class="badge {% if order.isClientCreated %} bg-warning-subtle text-warning-emphasis {% else %} bg-light text-dark {% endif %} d-flex align-items-center gap-2">
+                                    <i class="bi bi-person"></i>
+                                    <span>{{ order.userCreated.first_name }} {{ order.userCreated.last_name }}</span>
+                                </div>
+                            </div>
                         </div>
 
-        {% endif %}
-        <button class="btn btn-primary btn-lg add-btn" type="submit" hx-target="#order_preview_cell{{ order.id }}" hx-post="{% url 'orders_update_status' order.id %}"><i class="bi bi-send"></i></button>
-{#    <form action="" onsubmit="window.mytest()">#}
-{#        <button class="btn btn-danger btn-lg add-btn" type="submit" hx-target="#order_delete_cell" hx-delete="{% url 'order_delete' order.id %}" hx-confirm="Ви точно хочете видалити це замовлення?"><i class="bi bi-trash"></i></button>#}
-{#    </form>#}
+                        <!-- Center - Order info -->
+                        <div class="col text-center">
+                            <h5 class="mb-2 fw-bold">Замовлення №{{order.id}}</h5>
+                            {% if order.for_preorder %}
+                                {% if order.for_preorder.isPreorder %}
+                                    <div class="badge bg-info bg-opacity-10 text-info px-3 py-2">
+                                        Передзамовлення №{{order.for_preorder.id}}
+                                    </div>
+                                {% else %}
+                                    <div class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2">
+                                        Договір №{{order.for_preorder.id}}
+                                        {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }}{% endif %}
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                            <h6 class="mt-3 text-muted">{{order.place.name}}, {{order.place.city_ref.name}}</h6>
+                        </div>
 
-    {% endif %}
+                        <!-- Right side - Status info -->
+                        <div class="col-auto">
+                            <div class="d-flex flex-column gap-2">
+                                {% if request.user|has_group:"empl" or request.user.is_staff %}
+                                    {% if order.dateToSend and not order.isComplete %}
+                                        {% now "d.m.Y" as current_date %}
+                                        {% if order.dateToSend|date:"d.m.Y" == current_date %}
+                                            <div class="badge bg-danger d-flex align-items-center gap-2 p-2">
+                                                <i class="bi bi-exclamation-circle"></i>
+                                                <span>Відправка сьогодні</span>
+                                            </div>
+                                        {% else %}
+                                            <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
+                                                <i class="bi bi-clock"></i>
+                                                <span>{{order.dateToSend|date:"d.m.Y"}}</span>
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if order.isComplete %}
+                                    <div class="badge bg-success d-flex align-items-center gap-2 p-2">
+                                        <i class="bi bi-check-circle"></i>
+                                        <span>Відправлено {{order.dateSent|date:"d.m.Y"}}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
+                                        <i class="bi bi-hourglass-split"></i>
+                                        <span>В очікуванні</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if order.comment or order.npdeliverycreateddetailinfo_set.exists %}
+                    <div class="card-footer bg-light p-0 border-top-light">
+                        {% if order.comment %}
+                            <div class="px-3 py-2 border-bottom-light">
+                                <div class="d-flex align-items-center gap-2">
+                                    <small class="text-muted">Коментар:</small>
+                                    <span class="small fw-medium">{{order.comment}}</span>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if order.npdeliverycreateddetailinfo_set.exists %}
+                            <div class="px-3 py-2">
+                                <div class="hstack gap-2 align-items-center">
+                                    <img src="{% static 'images/np_icon.png' %}" class="np-icon" alt="NP">
+                                    <div id="np_delivery_detail_info_for_order"
+                                         class="d-flex align-items-center flex-wrap"
+                                         hx-trigger="load" 
+                                         hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
+                                        {% for detailInfo in order.statusnpparselfromdoucmentid_set.all %}
+                                            <span class="small fw-medium {% if detailInfo.status_code == '9' %}np-status-success{% elif detailInfo.status_code == '2' %}np-status-error{% else %}np-status-pending{% endif %}">
+                                                {{ detailInfo.status_desc }}{% if not forloop.last %}; {% endif %}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </a>
+
+        {% if request.user.is_staff and not order.isComplete %}
+            <div class="d-flex gap-2">
+                {% if order.place.address_NP and order.place.worker_NP %}
+                    <div id="np_create_ID_button_subscribe" 
+                         class="flex-grow-1"
+                         hx-get="{% url 'np_create_ID_button_subscribe' order.id %}" 
+                         hx-trigger="np_create_ID_button_subscribe{{order.id}} from:body">
+                        {% include 'partials/np_create_ID_button.html' %}
+                    </div>
+                {% endif %}
+
+                <button class="btn btn-primary  d-flex align-items-center justify-content-center" 
+                        style="width: 50px; height: 49px; border-radius: 5px;"
+                        type="submit" 
+                        hx-target="#order_preview_cell{{ order.id }}" 
+                        hx-post="{% url 'orders_update_status' order.id %}">
+                    <i class="bi bi-send fs-4"></i>
+                </button>
+
+                <div class="form-check d-flex align-items-center justify-content-center" style="width: 50px; height: 49px; margin: 0;">
+                    <input class="form-check-input custom-checkbox" 
+                           type="checkbox" 
+                           value="{{ order.id }}" 
+                           id="register_exls_selected_buttons" 
+                           name="register_exls_selected_buttons" 
+                           hx-target="#register_exls_selected_buttons" 
+                           hx-post="{% url 'register_exls_selected_buttons' %}" 
+                           hx-trigger="click"
+                           style="width: 28px; height: 28px; margin: 0; cursor: pointer;">
+                </div>
+            </div>
+        {% endif %}
     </div>
 </div>
+
+<style>
+.hover-shadow-md {
+    transition: all 0.2s ease-in-out;
+}
+.hover-shadow-md:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+.transition-all {
+    transition: all 0.2s ease-in-out;
+}
+.badge {
+    border: 1px solid rgba(0,0,0,0.1);
+}
+.border-top-light {
+    border-top: 1px solid rgba(0,0,0,0.05) !important;
+}
+.border-bottom-light {
+    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+}
+.np-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    display: inline-block;
+}
+.np-status-success {
+    color: #0d7a3f;
+}
+.np-status-error {
+    color: #b91c1c;
+}
+.np-status-pending {
+    color: #d77d17;
+}
+.custom-checkbox {
+    background-color: #fff;
+    border: 2px solid #0d6efd;
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+}
+
+.custom-checkbox:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.custom-checkbox:hover {
+    border-color: #0a58ca;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.custom-checkbox:focus {
+    border-color: #0a58ca;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
 
