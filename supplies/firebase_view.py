@@ -1,49 +1,18 @@
-import asyncio
-import datetime
 import math
-
-from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect, HttpResponse, FileResponse
+from django.shortcuts import render, redirect
 from django.urls import reverse
-from django.db.models import Prefetch, prefetch_related_objects
-from .decorators import unauthenticated_user, allowed_users
 from .models import *
 from .serializers import *
-from datetime import date
-from dateutil.relativedelta import relativedelta
-from django.contrib.auth import authenticate, login, logout
 from .filters import *
 from .forms import *
-from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 import json
-from django.core.paginator import Paginator
 from django.db.models import *
-from io import BytesIO
-from django.http import HttpResponse
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from django.conf import settings
-from django.core.mail import send_mail
 
 import os
-from xlsxwriter.workbook import Workbook
-from django_htmx.http import trigger_client_event
-from django.contrib import messages
-import requests
-import pandas
-import csv
-import pymsteams
-import plotly.express as px
-from django.db.models import Sum, F
 from .tasks import *
 from .views import *
-from celery_progress.backend import Progress
-from celery.result import AsyncResult
-import threading
-import firebase_admin
-from firebase_admin import credentials, storage
-from urllib.parse import quote_plus
+from firebase_admin import storage
 bucket = storage.bucket()
 
 def upload_to_storage(request):

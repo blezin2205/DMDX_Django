@@ -1,16 +1,11 @@
-import asyncio
 import datetime
-
-import firebase_admin
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect, HttpResponse, FileResponse
+from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
-from django.db.models import Prefetch, prefetch_related_objects
 from .decorators import unauthenticated_user, allowed_users
 from .models import *
 from .serializers import *
 from datetime import date
-from dateutil.relativedelta import relativedelta
 from django.contrib.auth import authenticate, login, logout
 from .filters import *
 from .forms import *
@@ -24,14 +19,12 @@ from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 from django.conf import settings
-from django.core.mail import send_mail
 from collections import defaultdict
 import os
 from xlsxwriter.workbook import Workbook
 from django_htmx.http import trigger_client_event
 from django.contrib import messages
 import requests
-import pandas
 import csv
 import pymsteams
 import plotly.express as px
@@ -39,7 +32,7 @@ from django.db.models import Sum, F
 from .tasks import *
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-from firebase_admin import storage, firestore, auth
+from firebase_admin import storage
 
 # @login_required(login_url='login')
 # @allowed_users(allowed_roles=['admin'])
