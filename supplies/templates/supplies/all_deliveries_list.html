@@ -9,38 +9,94 @@
 
 {% block content %}
 <div class="container w-50">
-    <a href="/upload_supplies_for_new_delivery" class="btn btn-primary my-3 w-100 rounded-pill" aria-current="page">Створити нову поставку</a>
+    <a href="/upload_supplies_for_new_delivery" class="btn btn-primary my-4 w-100 rounded-4 shadow-sm hover-shadow-md transition-all d-flex align-items-center justify-content-center gap-2" aria-current="page">
+        <i class="bi bi-plus-circle"></i>
+        <span>Створити нову поставку</span>
+    </a>
 
     <div class="listOrders">
         {% for order in deliveries %}
-            <div class="py-2" style="border-radius: 1rem;">
-             <a href="{% url 'delivery_detail' order.id %}?next={{ request.get_full_path }}" class="list-group-item list-group-item-action bg-light border border-light-subtle custom-list-item p-3" aria-current="true">
-                <div class="d-flex flex-column w-100">
-                    <div class="d-flex justify-content-between align-items-center m-2">
-                        <h6>Поставка №: {{order.id}}</h6>
-                        {% if not order.isHasBeenSaved %}
-                            <h6 class="text-danger"><i>Не додано на склад</i></h6>
-                            {% else %}
-                            <h6 class="text-success"><i>Закрито!</i></h6>
-                        {% endif %}
+            <div id="delivery_preview_cell{{ order.id }}" class="my-4">
+                <div class="d-flex gap-3 align-items-center">
+                    <a href="{% url 'delivery_detail' order.id %}?next={{ request.get_full_path|urlencode }}" class="text-decoration-none flex-grow-1">
+                        <div class="card shadow-sm hover-shadow-md transition-all">
+                            <div class="card-header position-relative p-3 border-0 {% if not order.isHasBeenSaved %} bg-warning bg-opacity-10 {% else %} bg-primary bg-opacity-10 {% endif %}">
+                                <div class="row g-3">
+                                    <!-- Left side - Creation info -->
+                                    <div class="col-auto">
+                                        <div class="d-flex flex-column gap-2">
+                                            <div class="badge bg-light text-dark d-flex align-items-center gap-2">
+                                                <i class="bi bi-calendar3"></i>
+                                                <span>{{order.date_created|date:"d.m.Y"}}</span>
+                                            </div>
+                                            <div class="badge bg-light text-dark d-flex align-items-center gap-2">
+                                                <i class="bi bi-person"></i>
+                                                <span>{{ order.from_user.first_name }} {{ order.from_user.last_name }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                        <div>
-                            <p class="opacity-60 text-nowrap date"><span class="text-muted">Дата створення:</span> {{order.date_created|date:"d.m.Y"}}</p>
-                            <p class="opacity-60 text-nowrap date"><span class="text-muted">Створив:</span> {{ order.from_user.first_name }} {{ order.from_user.last_name }}</p>
+                                    <!-- Center - Delivery info -->
+                                    <div class="col text-center">
+                                        <h5 class="mb-2 fw-bold">Поставка №{{order.id}}</h5>
+                                    </div>
+
+                                    <!-- Right side - Status info -->
+                                    <div class="col-auto">
+                                        <div class="d-flex flex-column gap-2">
+                                            {% if not order.isHasBeenSaved %}
+                                                <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
+                                                    <i class="bi bi-hourglass-split"></i>
+                                                    <span>Не додано на склад</span>
+                                                </div>
+                                            {% else %}
+                                                <div class="badge bg-success d-flex align-items-center gap-2 p-2">
+                                                    <i class="bi bi-check-circle"></i>
+                                                    <span>Закрито!</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if order.comment %}
+                                <div class="card-footer bg-light p-0 border-top-light">
+                                    <div class="px-3 py-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <small class="text-muted">Коментар:</small>
+                                            <span class="small fw-medium">{{order.comment}}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
-
-                    </div>
-
-                    {% if order.comment %}
-                        <div><span class="text-muted">Коментар:</span> {{order.comment}}</div>
-                    {% endif %}
-
-
+                    </a>
                 </div>
-            </a>
             </div>
-
         {% endfor %}
     </div>
 </div>
+
+<style>
+.hover-shadow-md {
+    transition: all 0.2s ease-in-out;
+}
+.hover-shadow-md:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+.transition-all {
+    transition: all 0.2s ease-in-out;
+}
+.badge {
+    border: 1px solid rgba(0,0,0,0.1);
+}
+.border-top-light {
+    border-top: 1px solid rgba(0,0,0,0.05) !important;
+}
+.border-bottom-light {
+    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+}
+</style>
 {% endblock %}

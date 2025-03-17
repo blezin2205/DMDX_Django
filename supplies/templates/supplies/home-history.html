@@ -7,17 +7,11 @@
 
 {% block content %}
 <div class="container py-1">
-     <div class="btn-group my-4 shadow-sm">
-        <a href="/" class="btn {% if isAll %} active {% endif %} custom-btn" aria-current="page">
-            <i class="bi bi-grid-3x3-gap me-2"></i>Всі
-        </a>
-        <a href="/childSupply" class="btn mx-1 {% if isChild %} active {% endif %} custom-btn">
-            <i class="bi bi-box-seam me-2"></i>Список товарів
-        </a>
-        <a href="/historySupply" class="btn {% if isHistory %} active {% endif %} custom-btn">
-            <i class="bi bi-clock-history me-2"></i>Історія товарів
-        </a>
-    </div>
+    <div class="btn-group my-3">
+        <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+        <a href="/childSupply" class="btn btn-primary mx-2 {% if isChild %} active {% endif %}">Список товарів</a>
+        <a href="/historySupply" class="btn btn-primary {% if isHistory %} active {% endif %}">Історія товарів</a>
+      </div>
 
     <form method="get" class="form-inline justify-content-center">
          <div class="container bg-light border shadow p-3 mb-3 rounded-3">

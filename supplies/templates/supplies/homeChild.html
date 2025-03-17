@@ -7,17 +7,11 @@
 
 {% block content %}
 <div class="container py-1">
-     <div class="btn-group my-4 shadow-sm">
-        <a href="/" class="btn {% if isAll %} active {% endif %} custom-btn" aria-current="page">
-            <i class="bi bi-grid-3x3-gap me-2"></i>Всі
-        </a>
-        <a href="/childSupply" class="btn mx-1 {% if isChild %} active {% endif %} custom-btn">
-            <i class="bi bi-box-seam me-2"></i>Список товарів
-        </a>
-        <a href="/historySupply" class="btn {% if isHistory %} active {% endif %} custom-btn">
-            <i class="bi bi-clock-history me-2"></i>Історія товарів
-        </a>
-    </div>
+    <div class="btn-group my-3">
+        <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+        <a href="/childSupply" class="btn btn-primary mx-2 {% if isChild %} active {% endif %}">Список товарів</a>
+        <a href="/historySupply" class="btn btn-primary {% if isHistory %} active {% endif %}">Історія товарів</a>
+      </div>
 
     <form method="get" class="form-inline justify-content-center">
          <div class="container bg-light border shadow p-4 mb-4 rounded-3">
@@ -92,53 +86,5 @@
   </tbody>
 </table>
 
-<style>
-.custom-btn {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    color: #495057;
-    transition: all 0.3s ease;
-    font-weight: 500;
-    padding: 0.625rem 1.25rem;
-}
-
-.custom-btn:hover {
-    background-color: #e9ecef;
-    color: #212529;
-    transform: translateY(-1px);
-}
-
-.custom-btn.active {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    color: white;
-}
-
-.btn-group {
-    border-radius: 0.5rem;
-    overflow: hidden;
-}
-
-.btn-group .btn:first-child {
-    border-top-left-radius: 0.5rem;
-    border-bottom-left-radius: 0.5rem;
-}
-
-.btn-group .btn:last-child {
-    border-top-right-radius: 0.5rem;
-    border-bottom-right-radius: 0.5rem;
-}
-
-/* Additional styles for the form buttons */
-form .custom-btn {
-    background-color: #ffffff;
-}
-
-form .custom-btn:hover {
-    background-color: #f8f9fa;
-    border-color: #0d6efd;
-    color: #0d6efd;
-}
-</style>
 
 {% endblock %}

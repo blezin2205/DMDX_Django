@@ -1,65 +1,92 @@
-
-          <div class="card-body px-3 d-flex justify-content-between align-items-center">
-            {% if item.general_supply %}
-                <div class="col">
-               {% if item.general_supply %}
-              <div style="font-size: large">{{ item.general_supply.name }}</div>
-                  {% if item.general_supply.ref %}
-                      <div class="text-muted" style="font-size: small">REF: {{ item.general_supply.ref }}</div>
-                  {% endif %}
-                   {% if item.general_supply.SMN_code %}
-                       <div class="text-muted" style="font-size: small">SMN: {{ item.general_supply.SMN_code }}</div>
-                  {% endif %}
-                   {% if item.general_supply.category %}
-                       <div class="text-muted" style="font-size: smaller"> Категорія: {{ item.general_supply.category }}</div>
-              {% endif %}
-              {% endif %}
-
-              </div>
-
-                <div class="col">
-                <h6 style="font-size: medium"><span class="text-muted">LOT:</span> {{ item.supplyLot }}</h6>
-                <h6 style="color:{% if item.date_is_good %}blue{% elif item.date_is_today %}orange{% else %}red{% endif %}; font-size: medium"><span class="text-muted">Термін:</span> {{ item.expiredDate|date:"d.m.Y" }}</h6>
-
-
-                </div>
-{#              <div class="col-md-3 col-lg-3 col-xl-2 d-flex">#}
-{#                <input id="form1{{ item.id }}" min="0" name="count_{{ item.id }}" value="{{ item.count_in_order }}" type="number"#}
-{#                  class="form-control form-control-sm" hx-trigger="keyup changed delay:1000ms" hx-post="{% url 'update_count_in_preorder_cart' item.id %}" hx-target="#precart-badge"/>#}
-{#                  <input type="hidden" id="hidden{{ item.id }}" name="count_id_{{ item.id }}" value="{{ item.id }}">#}
-{##}
-{#              </div>#}
-              <div class="col">
-                  {% if item.general_supply.package_and_tests %}
-                      <h5 style="font-size: medium"><span class="text-muted">Pcg:</span> {{ item.general_supply.package_and_tests }}</h5>
-                  {% endif %}
-              </div>
-                {% if item.general_supply and item.isHandleAdded %}
-            <i class="bi bi-keyboard"></i>
-        {% endif %}
-                      <h4 class="mx-3"><span class="badge bg-secondary">{{ item.count }}</span></h4>
-                      {% if not delivery_order.isHasBeenSaved %}
-                 <button class="btn btn-warning" hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_edit_action' %}" hx-vals='{"item_id": {{ item.id }}}' hx-target="closest div .sup_in_delivery_order_recg_card" hx-swap="innerHTML">
-              <i class="bi bi-pencil"></i>
-    </button>
-                           {% endif %}
-
-            {% else %}
-                <div class="col" style="font-size: small">
-                <div style="font-size: medium"><span class="text-muted">Barcode: </span>{{ item.barcode }}</div>
-                <div style="font-size: small"><span class="text-muted">SMN Code: </span> {{ item.SMN_code }}</div>
-                <div style="font-size: small"><span class="text-muted">LOT: </span> {{ item.supplyLot }}</div>
-                <div style="font-size: small"><span class="text-muted">EXP DATE: </span> {{ item.expiredDate_desc }}</div>
-                </div>
-
-                      <h4 class="mx-3"><span class="badge bg-secondary">{{ item.count }}</span></h4>
-                <button class="btn btn-danger" hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_delete_action' %}" hx-vals='{"del_sup_id": "{{ item.id }}"}' hx-target="closest div .sup_in_delivery_order_recg_card" hx-swap="outerHTML">
-      <i class="bi bi-trash3"></i>
-    </button>
-
+<div class="card-body px-3">
+  <div class="row g-2 align-items-center">
+    {% if item.general_supply %}
+      <!-- Supply Info Column -->
+      <div class="col-md-4">
+        <div class="fs-6 fw-medium text-truncate mb-1">{{ item.general_supply.name }}</div>
+        <div class="d-flex flex-column gap-1 small">
+          <div class="d-flex gap-2 align-items-center text-muted">
+            {% if item.general_supply.ref %}
+              <span title="Reference"><i class="bi bi-hash"></i>{{ item.general_supply.ref }}</span>
             {% endif %}
-
-{#              <div class="col-md-1 col-lg-1 col-xl-1 text-end">#}
-{#                  <button data-product="{{ item.id }}" data-action="delete-delivery-item" class="btn btn-lg add-btn update-cart-detail text-danger" type="button"><i class="bi bi-trash"></i></button>#}
-{#              </div>#}
+            {% if item.general_supply.SMN_code %}
+              <span title="SMN Code"><i class="bi bi-upc"></i>{{ item.general_supply.SMN_code }}</span>
+            {% endif %}
           </div>
+          <div class="d-flex gap-2 align-items-center">
+            {% if item.general_supply.category %}
+              <span class="badge bg-light text-dark border" title="Category">
+                <i class="bi bi-tag"></i> {{ item.general_supply.category }}
+              </span>
+            {% endif %}
+            {% if item.general_supply.package_and_tests %}
+              <span class="badge bg-light text-dark border" title="Package">
+                <i class="bi bi-box"></i> {{ item.general_supply.package_and_tests }}
+              </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Details Column -->
+      <div class="col-md-4">
+        <div class="d-flex flex-column gap-2">
+          <div class="d-flex align-items-center">
+            <span class="text-muted me-2">LOT:</span>
+            <span class="fw-medium">{{ item.supplyLot }}</span>
+          </div>
+          <div class="d-flex align-items-center">
+            <span class="text-muted me-2">Термін:</span>
+            <span class="fw-medium" style="color:{% if item.date_is_good %}var(--bs-primary){% elif item.date_is_today %}var(--bs-warning){% else %}var(--bs-danger){% endif %}">
+              {{ item.expiredDate|date:"d.m.Y" }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Count and Actions Column -->
+      <div class="col-md-4 d-flex align-items-center justify-content-end gap-3">
+        {% if item.general_supply and item.isHandleAdded %}
+          <span class="text-muted" title="Manual Entry"><i class="bi bi-keyboard"></i></span>
+        {% endif %}
+        <span class="badge bg-secondary fs-5">{{ item.count }}</span>
+        {% if not delivery_order.isHasBeenSaved %}
+          <button class="btn btn-sm btn-warning" 
+            hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_edit_action' %}" 
+            hx-vals='{"item_id": {{ item.id }}}' 
+            hx-target="closest div .sup_in_delivery_order_recg_card" 
+            hx-swap="innerHTML">
+            <i class="bi bi-pencil"></i>
+          </button>
+        {% endif %}
+      </div>
+
+    {% else %}
+      <!-- Barcode Supply Info -->
+      <div class="col-md-8">
+        <div class="d-flex flex-column gap-1 small">
+          <div class="fs-6 mb-1">
+            <span class="text-muted">Barcode: </span>{{ item.barcode }}
+          </div>
+          <div class="d-flex gap-3 text-muted">
+            <span><i class="bi bi-upc me-1"></i>{{ item.SMN_code }}</span>
+            <span><i class="bi bi-hash me-1"></i>{{ item.supplyLot }}</span>
+            <span><i class="bi bi-calendar me-1"></i>{{ item.expiredDate_desc }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Count and Delete Button -->
+      <div class="col-md-4 d-flex align-items-center justify-content-end gap-3">
+        <span class="badge bg-secondary fs-5">{{ item.count }}</span>
+        <button class="btn btn-sm btn-danger" 
+          hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_delete_action' %}" 
+          hx-vals='{"del_sup_id": "{{ item.id }}"}' 
+          hx-target="closest div .sup_in_delivery_order_recg_card" 
+          hx-swap="outerHTML">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </div>
+    {% endif %}
+  </div>
+</div>

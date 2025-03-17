@@ -43,3 +43,39 @@
 </table>
 
 {% endblock %}
+
+
+<div class="btn-group my-4 shadow-sm">
+  <a href="/" class="btn {% if isAll %} active {% endif %} custom-btn" aria-current="page">
+    <i class="bi bi-grid-3x3-gap me-2"></i>Всі
+  </a>
+  <a href="/childSupply" class="btn mx-1 {% if isChild %} active {% endif %} custom-btn">
+    <i class="bi bi-box-seam me-2"></i>Список товарів
+  </a>
+  <a href="/historySupply" class="btn {% if isHistory %} active {% endif %} custom-btn">
+    <i class="bi bi-clock-history me-2"></i>Історія товарів
+  </a>
+</div>
+
+   <form method="get" class="form-inline justify-content-center">
+       <div class="container bg-light border shadow-sm py-1 px-2 mb-2 rounded-3">
+           <div class="d-flex flex-wrap gap-3 align-items-start">
+               <div class="d-flex flex-column gap-1" style="min-width: 100px; flex: 1;">
+                   {{ suppFilter.form.ordering|as_crispy_field }}
+                   {{ suppFilter.form.category|as_crispy_field }}
+               </div>
+               <div class="d-flex flex-column gap-1" style="min-width: 100px; flex: 1;">
+                   {{ suppFilter.form.ref|as_crispy_field }}
+                   {{ suppFilter.form.SMN_code|as_crispy_field }}
+               </div>
+               <div class="d-flex flex-column gap-1" style="min-width: 250px; flex: 2;">
+                   {{ suppFilter.form.name|as_crispy_field }}
+                   <div class="d-flex justify-content-end">
+                       <button class="btn btn-outline-primary mt-3" type="submit">
+                           <i class="bi bi-search me-1"></i>Застосувати
+                       </button>
+                   </div>
+               </div>
+           </div>
+       </div>
+   </form>
