@@ -1,26 +1,9 @@
-import datetime
-import json
-import os
-import csv
-import pymsteams
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect, HttpResponse, FileResponse, JsonResponse
-from django.urls import reverse
-from django.db.models import Prefetch, prefetch_related_objects, Sum, F
-from django.contrib.auth import authenticate, login, logout
+from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
-from django.template.loader import get_template
-from django.conf import settings
-from django.contrib import messages
 from django_htmx.http import trigger_client_event
-
-from dateutil.relativedelta import relativedelta
 from xlsxwriter.workbook import Workbook
-import plotly.express as px
-
-from ..decorators import unauthenticated_user, allowed_users
 from ..models import *
 from ..serializers import *
 from ..filters import *
