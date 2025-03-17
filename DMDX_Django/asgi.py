@@ -12,7 +12,7 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 from channels.auth import AuthMiddlewareStack
 from django.urls import path
-from DMDX_Django.consumers import DeliveryConsumer
+from DMDX_Django.consumers import DeliveryConsumer, NPDocumentConsumer
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'DMDX_Django.settings')
 
@@ -21,6 +21,7 @@ application = ProtocolTypeRouter({
     "websocket": AuthMiddlewareStack(
         URLRouter([
             path('wss/add_new_delivery_loading/', DeliveryConsumer.as_asgi()),
+            path('wss/np_document_updates/', NPDocumentConsumer.as_asgi()),
         ])
     ),
 })

@@ -1,104 +1,170 @@
-{% extends 'supplies/base.html' %}
 {% load crispy_forms_filters %}
 {% load static %}
 {% load crispy_forms_tags %}
 {% load bootstrap %}
-    {% block title %}
-{{ title }}
-{% endblock %}
 
-{% block content %}
-     <div class="{% if request.user_agent.is_mobile %}w-100  {% else %} w-75 {% endif %} bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
-     <form method="POST" action="">
-{% csrf_token %}
-     {{ placeForm|crispy }}
-     {{ inputForm.sender_np_place|as_crispy_field }}
-     <div class="row g-3">
-  <div class="col-sm">
-    {{ inputForm.payment_user_type|as_crispy_field }}
-  </div>
-  <div class="col-sm">
-    {{ inputForm.payment_money_type|as_crispy_field }}
-  </div>
-</div>
-         <div class="row bg-light rounded p-2 m-2">
-             <div class="hstack gap-2">
-                              <div class="col-sm">
-    {{ inputForm.weight|as_crispy_field }}
-  </div>
-  <div class="col-sm">
-    {{ inputForm.width|as_crispy_field }}
-  </div>
-  <div class="col-sm">
-    {{ inputForm.length|as_crispy_field }}
-  </div>
-             <div class="col-sm">
-    {{ inputForm.height|as_crispy_field }}
-  </div>
+<form class="modal-form" id="npOrderForm" method="post" 
+      hx-post="{% url 'create_np_document_for_order' order.id %}"
+      hx-swap="none">
+    {% csrf_token %}
+    <input type="hidden" name="order_id" value="{{ order.id }}">
+    <div class="modal-body-content">
+        {{ placeForm|crispy }}
+        {{ inputForm.sender_np_place|as_crispy_field }}
+        <div class="row g-3">
+            <div class="col-sm">
+                {{ inputForm.payment_user_type|as_crispy_field }}
+            </div>
+            <div class="col-sm">
+                {{ inputForm.payment_money_type|as_crispy_field }}
+            </div>
+        </div>
+        <div class="row bg-light rounded p-2 m-2">
+            <div class="hstack gap-2">
+                <div class="col-sm">
+                    {{ inputForm.weight|as_crispy_field }}
+                </div>
+                <div class="col-sm">
+                    {{ inputForm.width|as_crispy_field }}
+                </div>
+                <div class="col-sm">
+                    {{ inputForm.length|as_crispy_field }}
+                </div>
+                <div class="col-sm">
+                    {{ inputForm.height|as_crispy_field }}
+                </div>
+                <button class="btn btn-outline-primary" hx-post="{% url 'add_more_np_places_input_group' %}" hx-target="#add_more_places_input_group" hx-swap="beforebegin"><i class="bi bi-plus-circle"></i></button>
+                <button class="btn btn-outline-warning" hx-post="{% url 'copy_np_places_input_group' %}" hx-vals='{ "weight": {{ inputForm.weight }}, "width": {{ inputForm.width }}, "length": {{ inputForm.length }}, "height": {{ inputForm.height }}  }' hx-target="#add_more_places_input_group" hx-swap="beforebegin"><i class="bi bi-clipboard2-fill"></i></button>
+            </div>
+        </div>
 
-                 <button class="btn btn-outline-primary" hx-post="{% url 'add_more_np_places_input_group' %}" hx-target="#add_more_places_input_group" hx-swap="beforebegin"><i class="bi bi-plus-circle"></i></button>
-                 <button class="btn btn-outline-warning" hx-post="{% url 'copy_np_places_input_group' %}" hx-vals='{ "weight": {{ inputForm.weight }}, "width": {{ inputForm.width }}, "length": {{ inputForm.length }}, "height": {{ inputForm.height }}  }' hx-target="#add_more_places_input_group" hx-swap="beforebegin"><i class="bi bi-clipboard2-fill"></i></button>
-             </div>
+        <div id="add_more_places_input_group">
+        </div>
 
+        <div class="row g-3">
+            <div class="col-sm">
+                {{ inputForm.description|as_crispy_field }}
+            </div>
+        </div>
 
-</div>
+        <div class="row g-3">
+            <div class="col-sm">
+                {{ inputForm.cost|as_crispy_field }}
+            </div>
+            <div class="col-sm">
+                {{ inputForm.dateDelivery|as_crispy_field }}
+            </div>
+        </div>
 
-              <div id="add_more_places_input_group">
-</div>
+        {% if messages %}
+        <div class="alert alert-danger my-4">
+            {% for message in messages %}
+            <div{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</div>
+            {% endfor %}
+        </div>
+        <div class="alert alert-warning">
+            <p class="mb-2"><em>Якщо отримали помилку, про те, що: Aдреса отримувача не належить отримувачу, потрібно додати адресу до організації, для якої попередньо вже було додано ЄДРПОУ</em></p>
+            <p class="mb-0"><em>Якщо отримали помилку, про те, що: "ContactSender is removed" -> Settings -> Нова пошта REF INFO -> Sync REF with myself -> Навпроти свого імені нажати кнопку</em></p>
+        </div>
+        <div id="error"></div>
+        {% endif %}
 
-         <div class="row g-3">
-  <div class="col-sm">
-    {{ inputForm.description|as_crispy_field }}
-  </div>
-</div>
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
+        
+        <div class="d-flex gap-2 justify-content-center mt-4">
+          <button class="btn btn-primary" type="submit" name="save_and_print" value="1">
+            <i class="bi bi-printer"></i> Зберегти та друкувати
+          </button>
+          <button class="btn btn-primary" type="submit" name="save_and_exit" id="submitButton" value="1">
+            <i class="bi bi-x-square"></i> Зберегти та вийти
+          </button>
+          <button class="btn btn-primary" type="button" id="loadingButton" style="display: none; min-width: 200px;" disabled>
+            <span class="spinner-border spinner-border-sm"></span>
+            <span role="status" hidden>Loading...</span>
+          </button>
+        </div>
 
-       <div class="row g-3">
-  <div class="col-sm">
-    {{ inputForm.cost|as_crispy_field }}
-  </div>
-  <div class="col-sm">
-    {{ inputForm.dateDelivery|as_crispy_field }}
-  </div>
-</div>
-
-    {% if messages %}
-<ul class="messages my-4" style="color: red">
-    {% for message in messages %}
-    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-    {% endfor %}
-
-<p class="py-3" style="font-weight: inherit; color: orange"><em>Якщо отримали помилку, про те, що: Aдреса отримувача не належить отримувачу, потрібно додати адресу до організації, для якої попередньо вже було додано ЄДРПОУ</em></p>
-<p class="py-3" style="font-weight: inherit; color: orange"><em>Якщо отримали помилку, про те, що: "ContactSender is removed" -> Settings -> Нова пошта REF INFO -> Sync REF with myself -> Навпроти свого імені нажати кнопку</em></p>
-
-</ul>
-             <div id="error"></div>
-{% endif %}
-<input type="hidden" name="next" value="{{ request.GET.next }}">
-     <div class="hstack gap-4 justify-content-center m-4">
-<button class="btn btn-primary" type="submit" name="save_and_print"><i class="bi bi-printer"></i> Зберегти та друкувати</button>
-     <button class="btn btn-primary" type="submit" name="save_and_add"><i class="bi bi-file-earmark-plus"></i> Зберегти та додати інший</button>
-     <button class="btn btn-primary" type="submit" name="save_and_exit"><i class="bi bi-x-square"></i> Зберегти та вийти</button>
-         </div>
-</form>
-</div>
-
-    <div class="text-sm-start fst-italic" style="font-size: small">
-    При створенні ЕН з відділення типу поштамат обов'язково вказуються параметри розмірів.
-        <br>
-Обмеження:
-         <br>
-<li class="ps-4 my-0 py-0">Максимальне значення оцінної вартості для відправки із поштомату (параметр Cost) – 10000 грн.;</li>
-         <br>
-       <li class="ps-4 my-0 py-0">Максимально допустимі габарити вантажу: Ширина 40 см; Довжина 60 см; Висота 30 см;</li>
-
-         <br>
-        <li class="ps-4 my-0 py-0">Максимально допустима вага вантажу 20 кг;</li>
-
-         <br>
-При створенні відправлення із поштомату можна вказувати лише одне місце на одне відправлення.
-         <br>
-Після створення інтернет документа, ЕН з'являється у списку ЕН в особистому кабінеті.
-     <br>
+        <div class="alert alert-info mt-4 small">
+            <p class="mb-2"><strong>При створенні ЕН з відділення типу поштомату обов'язково вказуються параметри розмірів.</strong></p>
+            <p class="mb-2"><strong>Обмеження:</strong></p>
+            <ul class="mb-0 ps-3">
+                <li>Максимальне значення оцінної вартості для відправки із поштомату (параметр Cost) – 10000 грн.</li>
+                <li>Максимально допустимі габарити вантажу: Ширина 40 см; Довжина 60 см; Висота 30 см</li>
+                <li>Максимально допустима вага вантажу 20 кг</li>
+                <li>При створенні відправлення із поштомату можна вказувати лише одне місце на одне відправлення</li>
+                <li>Після створення інтернет документа, ЕН з'являється у списку ЕН в особистому кабінеті</li>
+            </ul>
+        </div>
     </div>
+</form>
 
-{% endblock %}
+<script>
+    // Show loading button
+    function showLoadingButton() {
+        // Hide all submit buttons
+        document.querySelectorAll('button[type="submit"]').forEach(button => {
+            button.style.display = 'none';
+        });
+        // Show loading button
+        document.getElementById('loadingButton').style.display = 'block';
+    }
+
+    // Handle form submission
+    document.getElementById('npOrderForm').addEventListener('submit', function(event) {
+        showLoadingButton();
+    });
+
+    // WebSocket connection
+    const socket = new WebSocket('wss://' + window.location.host + '/wss/np_document_updates/');
+
+    socket.onopen = function(e) {
+        console.log('WebSocket connection established');
+    };
+
+    socket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        if (data.message) {
+            // Re-enable all submit buttons
+            document.querySelectorAll('button[type="submit"]').forEach(button => {
+                button.style.display = 'block';
+            });
+            // Hide loading button
+            document.getElementById('loadingButton').style.display = 'none';
+              // Open delivery order URL in a new tab and return
+          if (data.delivery_order_id) {
+            window.open(data.delivery_order_id, '_blank'); // Open in a new tab
+            window.location.href = '/orders'; // Redirect the main page
+            return;
+        }
+
+        // Redirect to orders only if delivery_order_id is not present
+            if (data.message === "Накладна успішно створена") {
+            window.location.href = '/orders';
+            return;
+        }
+
+        alert(data.message);
+        }
+    };
+
+    socket.onclose = function(e) {
+        console.error('WebSocket closed unexpectedly:', e);
+    };
+
+    socket.onerror = function(e) {
+        console.error('WebSocket error:', e);
+    };
+</script>
+
+<style>
+.modal-form {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+.modal-body-content {
+    padding: 1rem;
+}
+.alert {
+    margin-bottom: 1rem;
+}
+</style>

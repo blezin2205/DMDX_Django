@@ -1,12 +1,14 @@
-
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect, HttpResponse, FileResponse
+from django.http import HttpResponseRedirect, HttpResponse, FileResponse, JsonResponse
 from .NPModels import *
 from .forms import *
 import json
 from django.contrib import messages
 import requests
 from django_htmx.http import trigger_client_event
+import threading
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 def sendTurboSMSRequest(text, recipients):
@@ -93,8 +95,164 @@ def copy_np_places_input_group(request):
     return render(request, 'partials/add_more_np_places_input_group.html', data)
 
 
-def create_np_document_for_order(request, order_id):
+def threading_create_np_document_async(request, data, order_id, redirect_url=False):
+    try:
+        order = Order.objects.get(id=order_id)
+        user = request.user
+        for_place = order.place
+        deliveryInfo = for_place.address_NP
+        deliveryType = deliveryInfo.deliveryType
+        sender_places = SenderNPPlaceInfo.objects.filter(for_user=request.user)
 
+        inputForm = CreateNPParselForm(data, instance=order)
+        placeForm = ClientFormForParcel(data, instance=for_place)
+
+        if inputForm.is_valid() and placeForm.is_valid():
+            dateSend = inputForm.cleaned_data['dateDelivery'].strftime('%d.%m.%Y')
+            sender_np_place = inputForm.cleaned_data['sender_np_place']
+            payment_money_type = inputForm.cleaned_data['payment_money_type']
+            payment_user_type = inputForm.cleaned_data['payment_user_type']
+            width = inputForm.cleaned_data['width']
+            length = inputForm.cleaned_data['length']
+            height = inputForm.cleaned_data['height']
+            weight = inputForm.cleaned_data['weight']
+            description = inputForm.cleaned_data['description']
+            cost = inputForm.cleaned_data['cost']
+            sender_ref = "3b0e7317-2a6b-11eb-8513-b88303659df5"
+
+            volumeGeneral = float(width / 100) * float(length / 100) * float(height / 100)
+
+            sender_place = inputForm.cleaned_data['sender_np_place']
+            recipient_address = placeForm.cleaned_data['address_NP']
+            recipient_worker = placeForm.cleaned_data['worker_NP']
+
+            weight_input_field_list = data.getlist('weight_input_field') or []
+            width_input_field_list = data.getlist('width_input_field') or []
+            length_input_field_list = data.getlist('length_input_field') or []
+            height_input_field_list = data.getlist('height_input_field') or []
+
+            options_seat_list = [
+                {
+                    "volumetricVolume": str(volumeGeneral),
+                    "volumetricWidth": width,
+                    "volumetricLength": length,
+                    "volumetricHeight": height,
+                    "weight": str(weight)
+                }
+            ]
+
+            for i in range(len(weight_input_field_list)):
+                weight = weight_input_field_list[i]
+                width = width_input_field_list[i]
+                length = length_input_field_list[i]
+                height = height_input_field_list[i]
+
+                volumetric_volume = float(width) / 100 * float(length) / 100 * float(height) / 100
+
+                options_seat = {
+                    "volumetricVolume": str(volumetric_volume),
+                    "volumetricWidth": width,
+                    "volumetricLength": length,
+                    "volumetricHeight": height,
+                    "weight": str(weight)
+                }
+
+                options_seat_list.append(options_seat)
+
+            params = {
+                "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                "modelName": "InternetDocument",
+                "calledMethod": "save",
+                "methodProperties": {
+                    "PayerType": payment_user_type,
+                    "PaymentMethod": payment_money_type,
+                    "DateTime": dateSend,
+                    "CargoType": "Parcel",
+                    "ServiceType": f'{sender_place.deliveryType}{deliveryType}',
+                    "Description": description,
+                    "Cost": str(cost),
+                    "CitySender": sender_np_place.city_ref_NP,
+                    "Sender": sender_ref,
+                    "SenderAddress": sender_np_place.address_ref_NP,
+                    "ContactSender": request.user.np_contact_sender_ref,
+                    "SendersPhone": request.user.mobNumber,
+                    "CityRecipient": recipient_address.city_ref_NP,
+                    "Recipient": recipient_worker.ref_counterparty_NP,
+                    "RecipientAddress": recipient_address.address_ref_NP,
+                    "ContactRecipient": recipient_worker.ref_NP,
+                    "RecipientsPhone": recipient_worker.telNumber,
+                    "OptionsSeat": options_seat_list,
+                }
+            }
+
+            data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+            print("response from NP: ",data)
+            
+            workr_postition = ''
+            if recipient_worker.position:
+                workr_postition = recipient_worker.position
+
+            worker_name = f'{recipient_worker}, {workr_postition}, телефон: {recipient_worker.telNumber}'
+            address_name = f'{recipient_address.cityName}, {recipient_address.addressName}'
+
+            if data["success"] is True and data["data"][0] is not None:
+                list = data["data"][0]
+                ref = list["Ref"]
+                cost = list["CostOnSite"]
+                estimated_date = list["EstimatedDeliveryDate"]
+                id_number = int(list["IntDocNumber"])
+                detailInfo = NPDeliveryCreatedDetailInfo(document_id=id_number,
+                                                     ref=ref, cost_on_site=cost,
+                                                     estimated_time_delivery=estimated_date,
+                                                     recipient_worker=worker_name,
+                                                     recipient_address=address_name,
+                                                     for_order=order,
+                                                     userCreated=user)
+                detailInfo.save()
+                user.np_last_choosed_delivery_place_id = sender_place.id
+                user.save()
+                url_to_redirect = None
+
+                if redirect_url:
+                    url_to_redirect = f'https://my.novaposhta.ua/orders/printMarking85x85/orders[]/{ref}/type/pdf8/apiKey/99f738524ca3320ece4b43b10f4181b1'
+
+                # Send success message through WebSocket
+                print("url_to_redirect: ", url_to_redirect)
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    "np_document_updates",
+                    {
+                        "type": "delivery_message",
+                        "message": "Накладна успішно створена",
+                        "delivery_order_id": url_to_redirect
+                    }
+                )
+            else:
+                errorsString = '\n'.join(f'• {error}' for error in data["errors"])
+                # Send error message through WebSocket
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    "np_document_updates",
+                    {
+                        "type": "delivery_message",
+                        "message": f"Помилка при створенні накладної\n\n{errorsString}",
+                        "delivery_order_id": None
+                    }
+                )
+    except Exception as e:
+        # Send error message through WebSocket
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "np_document_updates",
+            {
+                "type": "delivery_message",
+                "message": f"Помилка: {str(e)}",
+                "delivery_order_id": None
+            }
+        )
+
+def create_np_document_for_order(request, order_id):
+    print("create_np_document_for_order start")
     order = Order.objects.get(id=order_id)
     user = request.user
     for_place = order.place
@@ -117,142 +275,34 @@ def create_np_document_for_order(request, order_id):
     placeForm.fields['worker_NP'].initial = for_place.worker_NP
     placeForm.fields['address_NP'].initial = for_place.address_NP
 
-
     if request.method == 'POST':
-        inputForm = CreateNPParselForm(request.POST, instance=order)
-        placeForm = ClientFormForParcel(request.POST, instance=for_place)
-        print(inputForm.is_valid())
-        if inputForm.is_valid() and placeForm.is_valid():
-            dateSend = inputForm.cleaned_data['dateDelivery'].strftime('%d.%m.%Y')
-            sender_np_place = inputForm.cleaned_data['sender_np_place']
-            payment_money_type = inputForm.cleaned_data['payment_money_type']
-            payment_user_type = inputForm.cleaned_data['payment_user_type']
-            width = inputForm.cleaned_data['width']
-            length = inputForm.cleaned_data['length']
-            height = inputForm.cleaned_data['height']
-            weight = inputForm.cleaned_data['weight']
-            seatsAmount = 1
-            description = inputForm.cleaned_data['description']
-            cost = inputForm.cleaned_data['cost']
-            sender_ref = "3b0e7317-2a6b-11eb-8513-b88303659df5"
-
-            volumeGeneral = float(width / 100) * float(length / 100) * float(height / 100)
-
-            sender_place = inputForm.cleaned_data['sender_np_place']
-            recipient_address = placeForm.cleaned_data['address_NP']
-            recipient_worker = placeForm.cleaned_data['worker_NP']
-
-            weight_input_field_list = request.POST.getlist('weight_input_field') or []
-            width_input_field_list = request.POST.getlist('width_input_field') or []
-            length_input_field_list = request.POST.getlist('length_input_field') or []
-            height_input_field_list = request.POST.getlist('height_input_field') or []
-
-            options_seat_list = [
-                {
-                        "volumetricVolume": str(volumeGeneral),
-                        "volumetricWidth": width,
-                        "volumetricLength": length,
-                        "volumetricHeight": height,
-                        "weight": str(weight)
-                    }
-            ]
-
-            # Iterate over the indices of the input lists assuming they are of the same length
-            for i in range(len(weight_input_field_list)):
-                # Extract values from input lists
-                weight = weight_input_field_list[i]
-                width = width_input_field_list[i]
-                length = length_input_field_list[i]
-                height = height_input_field_list[i]
-
-                # Calculate volumetric volume
-                volumetric_volume = float(width) / 100 * float(length) / 100 * float(height) / 100
-
-                # Create dictionary for the current set of values
-                options_seat = {
-                    "volumetricVolume": str(volumetric_volume),
-                    "volumetricWidth": width,
-                    "volumetricLength": length,
-                    "volumetricHeight": height,
-                    "weight": str(weight)
-                }
-
-                # Append the dictionary to the list
-                options_seat_list.append(options_seat)
-
-            params = {
-                "apiKey": "99f738524ca3320ece4b43b10f4181b1",
-                "modelName": "InternetDocument",
-                "calledMethod": "save",
-                "methodProperties": {
-                    "PayerType": payment_user_type,
-                    "PaymentMethod": payment_money_type,
-                    "DateTime": dateSend,
-                    "CargoType": "Parcel",
-                    # "VolumeGeneral": str(volumeGeneral),
-                    # "Weight": str(general_weight),
-                    "ServiceType": f'{sender_place.deliveryType}{deliveryType}',
-                    # "SeatsAmount": str(seatsAmount),
-                    "Description": description,
-                    "Cost": str(cost),
-                    "CitySender": sender_np_place.city_ref_NP,
-                    "Sender": sender_ref,
-                    "SenderAddress": sender_np_place.address_ref_NP,
-                    "ContactSender": request.user.np_contact_sender_ref,
-                    "SendersPhone": request.user.mobNumber,
-                    "CityRecipient": recipient_address.city_ref_NP,
-                    "Recipient": recipient_worker.ref_counterparty_NP,
-                    "RecipientAddress": recipient_address.address_ref_NP,
-                    "ContactRecipient": recipient_worker.ref_NP,
-                    "RecipientsPhone": recipient_worker.telNumber,
-                    "OptionsSeat": options_seat_list,
-                }
-            }
-
-            data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
-            print(data)
-            workr_postition = ''
-            if recipient_worker.position:
-                workr_postition = recipient_worker.position
-
-            worker_name = f'{recipient_worker}, {workr_postition}, телефон: {recipient_worker.telNumber}'
-            address_name = f'{recipient_address.cityName}, {recipient_address.addressName}'
-
-            if data["success"] is True and data["data"][0] is not None:
-                list = data["data"][0]
-                ref = list["Ref"]
-                cost = list["CostOnSite"]
-                estimated_date = list["EstimatedDeliveryDate"]
-                id_number = int(list["IntDocNumber"])
-                detailInfo = NPDeliveryCreatedDetailInfo(document_id=id_number,
-                                                         ref=ref, cost_on_site=cost,
-                                                         estimated_time_delivery=estimated_date,
-                                                         recipient_worker=worker_name,
-                                                         recipient_address=address_name,
-                                                         for_order=order,
-                                                         userCreated=user)
-                detailInfo.save()
-                user.np_last_choosed_delivery_place_id = sender_place.id
-                user.save()
-                print(list)
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+            # Start the async process in a thread
+            t = threading.Thread(target=threading_create_np_document_async, args=[request, data, order_id], daemon=True)
+            t.start()
+            return JsonResponse({'status': 'processing'})
+        else:
+            inputForm = CreateNPParselForm(request.POST, instance=order)
+            placeForm = ClientFormForParcel(request.POST, instance=for_place)
+            if inputForm.is_valid() and placeForm.is_valid():
+                # Start the async process in a thread
+                redirect_url = False
                 if 'save_and_print' in request.POST:
-                    url = f'https://my.novaposhta.ua/orders/printMarking85x85/orders[]/{ref}/type/pdf8/apiKey/99f738524ca3320ece4b43b10f4181b1'
-                    return redirect(url)
-                elif 'save_and_add' in request.POST:
-                    messages.info(request, "Add Succesfully")
-                    return redirect(f'/create-np_document-for-order/{order_id}')
-                else:
-                    next = request.POST.get('next')
-                    return redirect('/orders')
+                    redirect_url = True
+                t = threading.Thread(target=threading_create_np_document_async, args=[request, request.POST, order_id, redirect_url], daemon=True)
+                t.start()
+                return JsonResponse({'status': 'processing'})
+            else:
+                return JsonResponse({'status': 'error', 'errors': inputForm.errors})
 
-            elif data["success"] is False and data["errors"] is not None:
-                errors = data["errors"]
-                print(errors)
-                for error in errors:
-                    messages.info(request, error)
-                return render(request, 'supplies/create_new_np_order_doc.html', {'inputForm': inputForm})
-
-    return render(request, 'supplies/create_new_np_order_doc.html', {'inputForm': inputForm, 'placeForm': placeForm, 'title': title})
+    # For GET requests, just render the form
+    return render(request, 'supplies/create_new_np_order_doc.html', {
+        'inputForm': inputForm,
+        'placeForm': placeForm,
+        'order': order,
+        'title': title
+    })
 
 
 def address_getCities(request):

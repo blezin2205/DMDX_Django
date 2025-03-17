@@ -273,6 +273,11 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'blezin2205@gmail.com'
 EMAIL_HOST_PASSWORD = 'Rohlikos31'
+
+
+LANGUAGE_CODE = 'en-us'  # or any other locale
+TIME_ZONE = 'Europe/Kyiv'  # Correct timezone for Kyiv
+USE_TZ = True
 #
 # CELERY_BROKER_URL = 'rediss://:pe0ff32c5420845f7f82ecadf2729cf8051ae3f185ad1dd6e26617e5ca57fe3dd@ec2-35-168-134-227.compute-1.amazonaws.com:16129'
 #
