@@ -23,10 +23,6 @@ import os
 from xlsxwriter.workbook import Workbook
 from django_htmx.http import trigger_client_event
 from django.contrib import messages
-import requests
-import pandas
-import csv
-import pymsteams
 
 
 def generate_list_of_xls_from_preorders_list(preorders_list, withChangedStatus = False):

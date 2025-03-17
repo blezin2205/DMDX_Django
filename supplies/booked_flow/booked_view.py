@@ -1,40 +1,30 @@
-import asyncio
 import datetime
+import json
+import os
+import csv
+import pymsteams
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect, HttpResponse, FileResponse
+from django.http import HttpResponseRedirect, HttpResponse, FileResponse, JsonResponse
 from django.urls import reverse
-from django.db.models import Prefetch, prefetch_related_objects
+from django.db.models import Prefetch, prefetch_related_objects, Sum, F
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.template.loader import get_template
+from django.conf import settings
+from django.contrib import messages
+from django_htmx.http import trigger_client_event
+
+from dateutil.relativedelta import relativedelta
+from xlsxwriter.workbook import Workbook
+import plotly.express as px
+
 from ..decorators import unauthenticated_user, allowed_users
 from ..models import *
 from ..serializers import *
-from datetime import date
-from dateutil.relativedelta import relativedelta
-from django.contrib.auth import authenticate, login, logout
 from ..filters import *
 from ..forms import *
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-import json
-from django.core.paginator import Paginator
-from django.db.models import *
-from io import BytesIO
-from django.http import HttpResponse
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from django.conf import settings
-from django.core.mail import send_mail
-
-import os
-from xlsxwriter.workbook import Workbook
-from django_htmx.http import trigger_client_event
-from django.contrib import messages
-import requests
-import pandas
-import csv
-import pymsteams
-import plotly.express as px
-from django.db.models import Sum, F
 from ..tasks import *
 from ..views import *
 
