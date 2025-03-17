@@ -20,8 +20,8 @@ google-auth==2.32.0
 google-cloud-firestore==2.4.0
 google-cloud-storage==2.3.0
 gunicorn==22.0.0
-numpy==1.26.4
-pandas==1.4.3
+# numpy==1.26.4
+# pandas==1.4.3
 Pillow==10.4.0
 plotly==5.23.0
 psycopg2-binary==2.9.9
