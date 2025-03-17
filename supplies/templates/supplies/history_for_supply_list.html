@@ -1,221 +1,228 @@
-
 {% load crispy_forms_filters %}
 {% load bootstrap %}
 {% load myapp_extras %}
 {% load mathfilters %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 <div class="container py-1">
+   <div class="w-auto py-3">
+      <div style="font-size: x-large; font-weight: bolder; text-align: center">{{ generalSupp.name }}</div>
+      <div class="mt-2" style="text-align: center">
+         <div style="display: inline-flex; gap: 2rem; text-align: left">
+            <div>
+               {% if generalSupp.ref %}
+                  <div class="text-muted" style="font-size: large"><i class="fas fa-barcode"></i> {{ generalSupp.ref }}</div>
+               {% endif %}
+               {% if generalSupp.SMN_code %}
+                  <div class="text-muted" style="font-size: large"><i class="fas fa-hashtag"></i> {{ generalSupp.SMN_code }}</div>
+               {% endif %}
+            </div>
+            <div>
+               {% if generalSupp.package_and_tests %}
+                  <div class="text-muted" style="font-size: medium"><i class="fas fa-box"></i> {{ generalSupp.package_and_tests }}</div>
+               {% endif %}
+               {% if generalSupp.category %}
+                  <div class="text-muted" style="font-size: medium"><i class="fas fa-tag"></i> {{ generalSupp.category }}</div>
+               {% endif %}
+            </div>
+         </div>
+      </div>
+   </div>
 
-   <div class="w-auto text-center py-3">
-      <div style="font-size: x-large; font-weight: bolder">{{ generalSupp.name }}</div>
-                  {% if generalSupp.ref %}
-                      <div class="text-muted" style="font-size: large">REF: {{ generalSupp.ref }}</div>
-                  {% endif %}
-                   {% if generalSupp.SMN_code %}
-                       <div class="text-muted" style="font-size: large">SMN: {{ generalSupp.SMN_code }}</div>
-                  {% endif %}
-   {% if generalSupp.package_and_tests %}
-                       <div class="text-muted" style="font-size: medium">package/tests: {{ generalSupp.package_and_tests }}</div>
-                  {% endif %}
-                   {% if generalSupp.category %}
-                       <div class="text-muted" style="font-size: medium"> Категорія: {{ generalSupp.category }}</div>
-              {% endif %}
-  </div>
-<section class="h-100 shadow p-3 mb-5 rounded row d-flex justify-content-center align-items-center" style="background-color: #eee;">
-{% if supplies %}
-<h4 class="text-center py-3">В замовленнях <span class="text-muted">(Всього: {{ total_count_in_orders }} шт.)</span></h4>
-<section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
+   {% if supplies %}
+   <div class="card shadow-sm mb-4">
+      <div class="card-header bg-light">
+         <h5 class="mb-0">
+            В замовленнях
+            <small class="text-muted">(Всього: {{ total_count_in_orders }} шт.)</small>
+         </h5>
+      </div>
+      <div class="card-body">
+         <div class="table-responsive">
+            <table class="table">
+               <thead class="thead-light">
+                  <tr>
+                     <th scope="col">({{supplies|length}} шт.) Для: </th>
+                     <th scope="col">LOT</th>
+                     <th scope="col">Кількість</th>
+                     <th scope="col">Термін</th>
+                     <th scope="col">Замовлення від:</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  {% for el in supplies %}
+                  <tr>
+                     <th scope="row" style="text-align: left" class="w-50">
+                        <a href="{% url 'orderDetail' order_id=el.supply_for_order.id sup_id=el.id %}?next={{ request.get_full_path|urlencode }}" 
+                           {% if not el.supply_for_order.isComplete %} class="link-warning" {% endif %}>
+                           №{{ el.supply_for_order.id }}
+                        </a>
+                        <span>{{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span>
+                     </th>
+                     <td class="supplyRow">
+                        {% if el.lot is not none %}
+                           {{ el.lot }}
+                        {% endif %}
+                     </td>
+                     <td>{{ el.count_in_order }}</td>
+                     <td>
+                        <div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">
+                           {{ el.date_expired|date:"d.m.Y" }}
+                        </div>
+                     </td>
+                     <td>{{ el.supply_for_order.dateCreated|date:"d.m.Y" }}</td>
+                  </tr>
+                  {% endfor %}
+               </tbody>
+            </table>
+         </div>
+      </div>
+   </div>
+   {% endif %}
 
+   {% if in_booked_sup %}
+   <div class="card shadow-sm mb-4">
+      <div class="card-header bg-light">
+         <h5 class="mb-0">
+            В броньованих товарах
+            <small class="text-muted">(Всього: {{ total_count_in_booked_sup }} шт.)</small>
+         </h5>
+      </div>
+      <div class="card-body">
+         <div class="table-responsive">
+            <table class="table">
+               <thead class="thead-light">
+                  <tr>
+                     <th scope="col">({{in_booked_sup|length}} шт.) Для: </th>
+                     <th scope="col">LOT</th>
+                     <th scope="col">Кількість</th>
+                     <th scope="col">Термін</th>
+                     <th scope="col">Заброньовано: </th>
+                  </tr>
+               </thead>
+               <tbody>
+                  {% for el in in_booked_sup %}
+                  <tr>
+                     <th scope="row" style="text-align: left" class="w-50">
+                        <span>{{ el.supply_for_place.name }}, {{ el.supply_for_place.city_ref.name }}</span>
+                     </th>
+                     <td class="supplyRow">
+                        {% if el.lot is not none %}
+                           {{ el.lot }}
+                        {% endif %}
+                     </td>
+                     <td>{{ el.count_in_order }}</td>
+                     <td>
+                        <div style="color:{% if el.supply.expiredDate %}blue{% elif el.supply.expiredDate %}orange{% else %}red{% endif %};">
+                           {{ el.supply.expiredDate|date:"d.m.Y" }}
+                        </div>
+                     </td>
+                     <td>{{ el.date_created|date:"d.m.Y" }}</td>
+                  </tr>
+                  {% endfor %}
+               </tbody>
+            </table>
+         </div>
+      </div>
+   </div>
+   {% endif %}
 
-        <table class="table centred mt-3 w-100 mx-auto">
-  <thead class="thead-dark">
-    <tr>
-      <th scope="col">({{supplies|length}} шт.) Для: </th>
-{#      <th scope="col">Опис</th>#}
-{#        <th scope="col">Категорія</th>#}
-{#        <th scope="col">REF</th>#}
-{#        <th scope="col">SMN</th>#}
-        <th scope="col">LOT</th>
-        <th scope="col">Кількість</th>
-        <th scope="col">Термін</th>
-        <th scope="col">Замовлення від:</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for el in supplies %}
+   {% if in_preorders %}
+   <div class="card shadow-sm mb-4">
+      <div class="card-header bg-light">
+         <h5 class="mb-0">
+            В передзамовленнях
+            <small class="text-muted">(Всього: {{ total_count_in_preorders }} шт.)</small>
+         </h5>
+      </div>
+      <div class="card-body">
+         <div class="table-responsive">
+            <table class="table">
+               <thead class="thead-light">
+                  <tr>
+                     <th scope="col">({{in_preorders|length}} шт.) Для: </th>
+                     <th scope="col">Замовлено</th>
+                     <th scope="col">Поставлено</th>
+                     <th scope="col">Борг</th>
+                     <th scope="col">Передзамовлення від:</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  {% for el in in_preorders %}
+                  <tr>
+                     <th scope="row" style="text-align: left" class="w-50">
+                        <a href="{% url 'preorderDetail' el.supply_for_order.id %}?next={{ request.get_full_path }}">
+                           № {{el.supply_for_order.id}}
+                           <span>
+                              {% if el.supply_for_order.state_of_delivery == 'Complete' %}
+                                 <span class="complete">(Повністю поставлено)</span>
+                              {% elif el.supply_for_order.state_of_delivery == 'Partial' %}
+                                 <span style="color: #deb05b; font-weight: bold">(Частково поставлено)</span>
+                              {% elif el.supply_for_order.state_of_delivery == 'awaiting_from_customer' %}
+                                 <span style="color: rgba(222,126,91,0.59); font-weight: bold">(Формується замовником)</span>
+                              {% elif el.supply_for_order.state_of_delivery == 'accepted_by_customer' %}
+                                 <span style="color: #deb05b; font-weight: bold">(Підтверджено замовником)</span>
+                              {% elif el.supply_for_order.state_of_delivery == 'Awaiting' %}
+                                 <span style="color: #de925b; font-weight: bold">(Замовлено у виробника)</span>
+                              {% endif %}
+                           </span>
+                        </a>
+                        <span class="mx-2">
+                           {{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}
+                        </span>
+                     </th>
+                     <td>{{ el.count_in_order }}</td>
+                     <td>{{ el.count_in_order_current }}</td>
+                     <td>{{ el.count_in_order|sub:el.count_in_order_current }}</td>
+                     <td>{{ el.supply_for_order.dateCreated|date:"d.m.Y" }}</td>
+                  </tr>
+                  {% endfor %}
+               </tbody>
+            </table>
+         </div>
+      </div>
+   </div>
+   {% endif %}
 
-     <tr>
-      <th scope="row" style="text-align: left" class="w-50"><a href="{% url 'orderDetail' order_id=el.supply_for_order.id sup_id=el.id %}?next={{ request.get_full_path|urlencode }}" {% if not el.supply_for_order.isComplete %} class="link-warning" {% endif %} >№{{ el.supply_for_order.id }}</a> <span>{{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span></th>
-
-         <td class="supplyRow">
-                    {% if el.lot is not none %}
-                        {{ el.lot }}
-                {% endif %}
-                    </td>
-
-            <td>{{ el.count_in_order }}</td>
-            <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}
-
-                            </div></td>
-            <td>{{ el.supply_for_order.dateCreated|date:"d.m.Y" }}</td>
-    </tr>
-   {% endfor %}
-  </tbody>
-</table>
-</section>
-{% endif %}
-
-{% if in_booked_sup %}
-<h4 class="text-center py-3">В броньованих товарах <span class="text-muted">(Всього: {{ total_count_in_booked_sup }} шт.)</span></h4>
-<section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
-
-
-        <table class="table centred mt-3 w-100 mx-auto">
-  <thead class="thead-dark">
-    <tr>
-      <th scope="col">({{in_booked_sup|length}} шт.) Для: </th>
-{#      <th scope="col">Опис</th>#}
-{#        <th scope="col">Категорія</th>#}
-{#        <th scope="col">REF</th>#}
-{#        <th scope="col">SMN</th>#}
-        <th scope="col">LOT</th>
-        <th scope="col">Кількість</th>
-        <th scope="col">Термін</th>
-        <th scope="col">Заброньовано: </th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for el in in_booked_sup %}
-
-     <tr>
-      <th scope="row" style="text-align: left" class="w-50"><span>{{ el.supply_for_place.name }}, {{ el.supply_for_place.city_ref.name }}</span></th>
-
-         <td class="supplyRow">
-                    {% if el.lot is not none %}
-                        {{ el.lot }}
-                {% endif %}
-                    </td>
-
-            <td>{{ el.count_in_order }}</td>
-            <td><div style="color:{% if el.supply.expiredDate %}blue{% elif el.supply.expiredDate %}orange{% else %}red{% endif %};">{{ el.supply.expiredDate|date:"d.m.Y" }}
-
-                            </div></td>
-            <td>{{ el.date_created|date:"d.m.Y" }}</td>
-    </tr>
-   {% endfor %}
-  </tbody>
-</table>
-</section>
-{% endif %}
-
-{% if in_preorders %}
-<h4 class="text-center py-3">В передзамовленнях <span class="text-muted">(Всього: {{ total_count_in_preorders }} шт.)</span></h4>
-<section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
-
-
-        <table class="table centred mt-3 w-100 mx-auto">
-  <thead class="thead-dark">
-    <tr>
-      <th scope="col">({{in_preorders|length}} шт.) Для: </th>
-{#      <th scope="col">Опис</th>#}
-{#        <th scope="col">Категорія</th>#}
-{#        <th scope="col">REF</th>#}
-{#        <th scope="col">SMN</th>#}
-        <th scope="col">Замовлено</th>
-        <th scope="col">Поставлено</th>
-        <th scope="col">Борг</th>
-        <th scope="col">Передзавомлення від:</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for el in in_preorders %}
-
-     <tr>
-      <th scope="row" style="text-align: left" class="w-50">
-          <a href="{% url 'preorderDetail' el.supply_for_order.id %}?next={{ request.get_full_path }}">№ {{el.supply_for_order.id}}
-                <span>
-     {% if el.supply_for_order.state_of_delivery == 'Complete' %}
-        <span class="complete">(Повністю поставлено)</span>
-          {% elif el.supply_for_order.state_of_delivery == 'Partial' %}
-          <span style="color: #deb05b; font-weight: bold">(Частково поставлено)</span>
-           {% elif el.supply_for_order.state_of_delivery == 'awaiting_from_customer' %}
-          <span style="color: rgba(222,126,91,0.59); font-weight: bold">(Формується замовником)</span>
-           {% elif el.supply_for_order.state_of_delivery == 'accepted_by_customer' %}
-          <span style="color: #deb05b; font-weight: bold">(Підтверджено замовником)</span>
-        {% elif  el.supply_for_order.state_of_delivery == 'Awaiting' %}
-        <span style="color: #de925b; font-weight: bold">(Замовлено у виробника)</span>
-        {% endif %}
-
-</span>
-          </a>
-          <span class="mx-2">
-              {{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span>
-      </th>
-
-         <td>
-                    {{ el.count_in_order }}
-                    </td>
-
-            <td>{{ el.count_in_order_current }}</td>
-            <td>{{ el.count_in_order|sub:el.count_in_order_current }}</td>
-          <td>{{ el.supply_for_order.dateCreated|date:"d.m.Y" }}</td>
-{#            <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}#}
-{##}
-{#                            </div></td>#}
-{#            <td>{{ el.date_created|date:"d.m.Y" }}</td>#}
-    </tr>
-   {% endfor %}
-  </tbody>
-</table>
-</section>
-{% endif %}
-
-{% if in_deliveries %}
-<h4 class="text-center py-3">В поставках <span class="text-muted">(Всього: {{ total_count_in_deliveries }} шт.)</span></h4>
-<section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
-
-
-        <table class="table centred mt-3 w-100 mx-auto">
-  <thead class="thead-dark">
-    <tr>
-      <th scope="col">({{in_deliveries|length}} шт.) З поставки: </th>
-{#      <th scope="col">Опис</th>#}
-{#        <th scope="col">Категорія</th>#}
-{#        <th scope="col">REF</th>#}
-{#        <th scope="col">SMN</th>#}
-        <th scope="col">LOT</th>
-        <th scope="col">Кількість</th>
-        <th scope="col">Термін</th>
-{#        <th scope="col">Дата cтворення</th>#}
-    </tr>
-  </thead>
-  <tbody>
-    {% for el in in_deliveries %}
-
-     <tr>
-      <th scope="row" style="text-align: left">
-          <a href="{% url 'delivery_detail' el.delivery_order.id %}?next={{ request.get_full_path }}"> № {{el.delivery_order.id}} від {{ el.delivery_order.date_created|date:"d.m.Y" }}</a>
-{#          <span>{{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span>#}
-      </th>
-
-         <td>
-                    {{ el.supplyLot }}
-                    </td>
-
-            <td>{{ el.count }}</td>
-         <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.expiredDate|date:"d.m.Y" }}
-
-{#                            </div></td>#}
-{#     <td>{{ el.delivery_order.date_created|date:"d.m.Y" }}</td>#}
-{#            <td><div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">{{ el.date_expired|date:"d.m.Y" }}#}
-{##}
-{#                            </div></td>#}
-{#            <td>{{ el.date_created|date:"d.m.Y" }}</td>#}
-    </tr>
-   {% endfor %}
-  </tbody>
-</table>
-</section>
-{% endif %}
-
-</section>
+   {% if in_deliveries %}
+   <div class="card shadow-sm mb-4">
+      <div class="card-header bg-light">
+         <h5 class="mb-0">
+            В поставках
+            <small class="text-muted">(Всього: {{ total_count_in_deliveries }} шт.)</small>
+         </h5>
+      </div>
+      <div class="card-body">
+         <div class="table-responsive">
+            <table class="table">
+               <thead class="thead-light">
+                  <tr>
+                     <th scope="col">({{in_deliveries|length}} шт.) З поставки: </th>
+                     <th scope="col">LOT</th>
+                     <th scope="col">Кількість</th>
+                     <th scope="col">Термін</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  {% for el in in_deliveries %}
+                  <tr>
+                     <th scope="row" style="text-align: left">
+                        <a href="{% url 'delivery_detail' el.delivery_order.id %}?next={{ request.get_full_path }}">
+                           № {{el.delivery_order.id}} від {{ el.delivery_order.date_created|date:"d.m.Y" }}
+                        </a>
+                     </th>
+                     <td>{{ el.supplyLot }}</td>
+                     <td>{{ el.count }}</td>
+                     <td>
+                        <div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">
+                           {{ el.expiredDate|date:"d.m.Y" }}
+                        </div>
+                     </td>
+                  </tr>
+                  {% endfor %}
+               </tbody>
+            </table>
+         </div>
+      </div>
+   </div>
+   {% endif %}
 </div>

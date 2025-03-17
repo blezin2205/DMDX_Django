@@ -1175,9 +1175,13 @@ def cartDetail(request):
     orderForm = OrderInCartForm(request.POST or None)
     cities = City.objects.all()
     if request.method == 'POST':
-        place_id = request.POST.get('place_id')
-        place = Place.objects.get(id=place_id)
+        if 'delete' in request.POST:
+            next = request.POST.get('next')
+            orderInCart.delete()
+            return HttpResponseRedirect(next)
         if 'save' in request.POST:
+            place_id = request.POST.get('place_id')
+            place = Place.objects.get(id=place_id)
             orderType = request.POST.get('orderType')
             if orderForm.is_valid():
                 comment = orderForm.cleaned_data['comment']
@@ -1415,13 +1419,6 @@ def cartDetail(request):
 
             orderInCart.delete()
             return redirect(f'/clientsInfo/{place_id}/booked_supplies_list')
-
-        if 'delete' in request.POST:
-            next = request.POST.get('next')
-            orderInCart.delete()
-            return HttpResponseRedirect(next)
-
-
     return render(request, 'supplies/cart.html',
                   {'title': f'Корзина ({total_count_in_cart} шт.)', 'order': orderInCart, 'cartCountData': cartCountData, 'supplies': supplies,
                    'orderForm': orderForm, 'cities': cities, 'total_count_in_cart': total_count_in_cart,

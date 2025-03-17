@@ -1,5 +1,7 @@
 from django import template
 from ..models import *
+from django.utils import timezone
+from datetime import datetime
 
 register = template.Library()
 
@@ -117,3 +119,21 @@ def previous(some_list, current_index):
         return some_list[int(current_index) - 1] # access the previous element
     except:
         return '' # return empty string in case of exception
+
+@register.filter
+def date_color(date):
+    if not date:
+        return 'red'
+    
+    today = timezone.now().date()
+    
+    # Handle both datetime and date objects
+    if hasattr(date, 'date'):
+        date = date.date()
+    
+    if date > today:
+        return 'blue'
+    elif date == today:
+        return 'orange'
+    else:
+        return 'red'

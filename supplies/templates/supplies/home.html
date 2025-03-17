@@ -5,6 +5,8 @@
 {% load mathfilters %}
 {% load myapp_extras %}
 
+{% csrf_token %}
+
     {% block title %}
 {{ title }}
 {% endblock %}
@@ -96,7 +98,7 @@
 
 {% endif %}
       {% if request.user|has_group:"empl" or request.user.is_staff %}
-<a href="{% url 'history_for_supply' el.id %}?next={{ request.get_full_path|urlencode }}" class="text-decoration-none link-dark">
+<a href="#" class="text-decoration-none link-dark supply-history-btn" data-supply-id="{{ el.id }}">
    {{ el.name }}
 </a>
       {% else %}
@@ -383,6 +385,60 @@
 
 {% endif %}
 
+<!-- Supply History Modal -->
+<div class="modal fade" id="supplyHistoryModal" tabindex="-1" role="dialog" aria-labelledby="supplyHistoryModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document" style="max-width: 80%;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="supplyHistoryModalLabel">Історія товару</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="supplyHistoryContent">
+        <div class="text-center">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+$(function() {
+    $('.supply-history-btn').on('click', function(e) {
+        e.preventDefault();
+        const supplyId = $(this).data('supply-id');
+        const modal = $('#supplyHistoryModal');
+        const content = $('#supplyHistoryContent');
+        
+        // Show loading spinner
+        content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+        
+        // Show modal
+        modal.modal('show');
+        
+        // Fetch history data using Fetch API
+        fetch(`/history_for_supply/${supplyId}`)
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        throw new Error('У вас немає прав для перегляду історії товару');
+                    }
+                    throw new Error('Помилка завантаження історії');
+                }
+                return response.text();
+            })
+            .then(data => {
+                content.html(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                content.html(`<div class="alert alert-danger">${error.message}</div>`);
+            });
+    });
+});
+</script>
 
 {% endblock %}
 
