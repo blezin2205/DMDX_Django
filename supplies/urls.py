@@ -189,6 +189,7 @@ urlpatterns = [
     re_path(r'^list/(?P<path>.*)$', firebase_view.list_files, name='list_files'),
     path('upload/', firebase_view.upload_files, name='upload_files'),
     path('delete_file/', firebase_view.delete_file, name='delete_file'),
-    path('nova_poshta_registers', NPViews.nova_poshta_registers, name='nova_poshta_registers')
+    path('nova_poshta_registers', NPViews.nova_poshta_registers, name='nova_poshta_registers'),
+    path('orderCellUpdateNPStatus/<int:order_id>', NPViews.orderCellUpdateNPStatus, name='orderCellUpdateNPStatus')
 
 ]

@@ -142,7 +142,7 @@ class Category(models.Model):
 
 
 class GeneralSupply(models.Model):
-    name = models.CharField(max_length=200, null=True)
+    name = models.CharField(max_length=500, null=True)
     ref = models.CharField(max_length=50, null=True, blank=True)
     SMN_code = models.CharField(max_length=50, null=True, blank=True)
     package_and_tests = models.CharField(max_length=50, null=True, blank=True)
@@ -180,7 +180,7 @@ class SupplySaveFromScanApiModel(models.Model):
 
 class Supply(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=300, null=True, blank=True)
+    name = models.CharField(max_length=500, null=True, blank=True)
     general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True, related_name='general')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     ref = models.CharField(max_length=50, null=True, blank=True)
@@ -539,7 +539,7 @@ class StatusNPParselFromDoucmentID(models.Model):
     status_desc = models.CharField(max_length=200)
     docNumber = models.CharField(max_length=50)
     for_order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True)
-    counterpartyRecipientDescription = models.CharField(max_length=50, blank=True, null=True)
+    counterpartyRecipientDescription = models.CharField(max_length=500, blank=True, null=True)
     documentWeight = models.CharField(max_length=50, blank=True, null=True)
     factualWeight = models.CharField(max_length=50, blank=True, null=True)
     payerType = models.CharField(max_length=50, blank=True, null=True)
@@ -564,7 +564,7 @@ class SupplyInAgreement(models.Model):
     generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.SET_NULL, null=True, blank=True)
     supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True)
     supply_for_agreement = models.ForeignKey(Agreement, on_delete=models.CASCADE, null=True)
-    lot = models.CharField(max_length=20, null=True, blank=True)
+    lot = models.CharField(max_length=50, null=True, blank=True)
     date_expired = models.DateField(null=True)
     date_created = models.DateField(null=True, blank=True)
 
@@ -771,7 +771,7 @@ class SupplyInOrderInCart(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True, default=0)
     supply = models.OneToOneField(Supply, on_delete=models.SET_NULL, null=True, blank=True)
     supply_for_order = models.ForeignKey(OrderInCart, on_delete=models.CASCADE, null=True)
-    lot = models.CharField(max_length=20, null=True, blank=True)
+    lot = models.CharField(max_length=50, null=True, blank=True)
     date_expired = models.DateField(null=True)
     date_created = models.DateField(null=True, blank=True)
 
@@ -809,7 +809,7 @@ class SupplyInPreorderInCart(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True, default=0)
     supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True)
     supply_for_order = models.ForeignKey(PreorderInCart, on_delete=models.CASCADE, null=True)
-    lot = models.CharField(max_length=20, null=True, blank=True)
+    lot = models.CharField(max_length=50, null=True, blank=True)
     date_expired = models.DateField(null=True, blank=True)
     date_created = models.DateField(null=True, blank=True)
     general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True, blank=True)
@@ -851,7 +851,7 @@ class BookedSupplyInOrderInCart(models.Model):
     count_in_order = models.PositiveIntegerField(null=True, blank=True, default=0)
     supply = models.OneToOneField(SupplyInBookedOrder, on_delete=models.CASCADE, null=True, blank=True)
     supply_for_order = models.ForeignKey(BookedOrderInCart, on_delete=models.CASCADE, null=True)
-    lot = models.CharField(max_length=20, null=True, blank=True)
+    lot = models.CharField(max_length=50, null=True, blank=True)
     date_expired = models.DateField(null=True)
     date_created = models.DateField(null=True, blank=True, auto_now_add=True)
 

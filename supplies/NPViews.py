@@ -480,7 +480,6 @@ def np_delivery_detail_info_for_order(request, order_id):
                 user_who_created_document = userCreatedList[number]
 
                 status_code = obj["StatusCode"]
-                counterpartyRecipientDescription = obj["CounterpartyRecipientDescription"]
                 documentWeight = obj["DocumentWeight"]
                 factualWeight = obj["FactualWeight"]
                 payerType = obj["PayerType"]
@@ -518,35 +517,37 @@ def np_delivery_detail_info_for_order(request, order_id):
                 status_parsel_code = int(status_code)
                 print(dateCreated)
                 print(dateScan)
+
+                print(f'Get status for order {order_id} and document {number}')
                 try:
-                    status_parsel_model = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.get(
-                        docNumber=number, for_order_id=order_id)
-                    status_parsel_model.status_desc = status
-                    status_parsel_model.status_code = status_code
-                    status_parsel_model.docNumber = number
-                    status_parsel_model.counterpartyRecipientDescription = counterpartyRecipientDescription
-                    status_parsel_model.documentWeight = documentWeight
-                    status_parsel_model.factualWeight = factualWeight
-                    status_parsel_model.payerType = payerType
-                    status_parsel_model.seatsAmount = seatsAmount
-                    status_parsel_model.phoneRecipient = phoneRecipient
-                    status_parsel_model.scheduledDeliveryDate = scheduledDeliveryDate
-                    status_parsel_model.documentCost = documentCost
-                    status_parsel_model.paymentMethod = paymentMethod
-                    status_parsel_model.warehouseSender = warehouseSender
-                    status_parsel_model.dateCreated = dateCreated
-                    status_parsel_model.dateScan = dateScan
-                    status_parsel_model.recipientAddress = recipientAddress
-                    status_parsel_model.recipientFullNameEW = recipientFullNameEW
-                    status_parsel_model.cargoDescriptionString = cargoDescriptionString
-                    status_parsel_model.announcedPrice = announcedPrice
-                    status_parsel_model.actualDeliveryDate = actualDeliveryDate
-                    status_parsel_model.recipientDateTime = recipientDateTime
-                    status_parsel_model.save()
-                except:
-                    status_parsel_model = StatusNPParselFromDoucmentID(status_code=status_code, status_desc=status,
+                    status_parsel_model = order.statusnpparselfromdoucmentid_set.filter(
+                        docNumber=number, for_order_id=order_id).first()
+                    
+                    if status_parsel_model:
+                        status_parsel_model.status_desc = status
+                        status_parsel_model.status_code = status_code
+                        status_parsel_model.docNumber = number
+                        status_parsel_model.documentWeight = documentWeight
+                        status_parsel_model.factualWeight = factualWeight
+                        status_parsel_model.payerType = payerType
+                        status_parsel_model.seatsAmount = seatsAmount
+                        status_parsel_model.phoneRecipient = phoneRecipient
+                        status_parsel_model.scheduledDeliveryDate = scheduledDeliveryDate
+                        status_parsel_model.documentCost = documentCost
+                        status_parsel_model.paymentMethod = paymentMethod
+                        status_parsel_model.warehouseSender = warehouseSender
+                        status_parsel_model.dateCreated = dateCreated
+                        status_parsel_model.dateScan = dateScan
+                        status_parsel_model.recipientAddress = recipientAddress
+                        status_parsel_model.recipientFullNameEW = recipientFullNameEW
+                        status_parsel_model.cargoDescriptionString = cargoDescriptionString
+                        status_parsel_model.announcedPrice = announcedPrice
+                        status_parsel_model.actualDeliveryDate = actualDeliveryDate
+                        status_parsel_model.recipientDateTime = recipientDateTime
+                        status_parsel_model.save()
+                    else:
+                        status_parsel_model = StatusNPParselFromDoucmentID(status_code=status_code, status_desc=status,
                                                                        docNumber=number, for_order_id=order_id,
-                                                                       counterpartyRecipientDescription=counterpartyRecipientDescription,
                                                                        documentWeight=documentWeight,
                                                                        factualWeight=factualWeight,
                                                                        payerType=payerType,
@@ -564,6 +565,30 @@ def np_delivery_detail_info_for_order(request, order_id):
                                                                        recipientFullNameEW=recipientFullNameEW,
                                                                        cargoDescriptionString=cargoDescriptionString,
                                                                        announcedPrice=announcedPrice)
+                        status_parsel_model.save()
+                except Exception as e:
+                    print(f"Error updating status parcel model: {str(e)}")
+                    # Create new model if update fails
+                    status_parsel_model = StatusNPParselFromDoucmentID(status_code=status_code, status_desc=status,
+                                                                   docNumber=number, for_order_id=order_id,
+                                                                   counterpartyRecipientDescription=counterpartyRecipientDescription,
+                                                                   documentWeight=documentWeight,
+                                                                   factualWeight=factualWeight,
+                                                                   payerType=payerType,
+                                                                   seatsAmount=seatsAmount,
+                                                                   phoneRecipient=phoneRecipient,
+                                                                   scheduledDeliveryDate=scheduledDeliveryDate,
+                                                                   documentCost=documentCost,
+                                                                   paymentMethod=paymentMethod,
+                                                                   warehouseSender=warehouseSender,
+                                                                   dateCreated=dateCreated,
+                                                                   dateScan=dateScan,
+                                                                   actualDeliveryDate=actualDeliveryDate,
+                                                                   recipientDateTime=recipientDateTime,
+                                                                   recipientAddress=recipientAddress,
+                                                                   recipientFullNameEW=recipientFullNameEW,
+                                                                   cargoDescriptionString=cargoDescriptionString,
+                                                                   announcedPrice=announcedPrice)
                     status_parsel_model.save()
 
         parsels_status_data = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.all()
@@ -586,4 +611,9 @@ def np_create_ID_button_subscribe(request, order_id):
     order = Order.objects.get(id=order_id)
     return render(request, 'partials/np_create_ID_button.html', {'order': order})
 
+
+def orderCellUpdateNPStatus(request, order_id):
+    order = Order.objects.get(id=order_id)
+    template = 'partials/order_preview_cel.html'
+    return render(request, template, {'order': order})
 
