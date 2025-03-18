@@ -19,7 +19,7 @@
                 {{ inputForm.payment_money_type|as_crispy_field }}
             </div>
         </div>
-        <div class="row bg-light rounded p-2 m-2">
+        <div class="row bg-light rounded p-2 mx-auto my-2">
             <div class="hstack gap-2">
                 <div class="col-sm">
                     {{ inputForm.weight|as_crispy_field }}
@@ -94,6 +94,12 @@
                 <li>При створенні відправлення із поштомату можна вказувати лише одне місце на одне відправлення</li>
                 <li>Після створення інтернет документа, ЕН з'являється у списку ЕН в особистому кабінеті</li>
             </ul>
+            <hr>
+            <p class="mb-2"><strong>Важлива інформація щодо помилок:</strong></p>
+            <ul class="mb-0 ps-3">
+                <li>"Aдреса отримувача не належить отримувачу": потрібно додати адресу до організації, для якої попередньо вже було додано ЄДРПОУ</li>
+                <li>"ContactSender is removed": Меню -> Settings -> Нова пошта REF INFO -> Sync REF with myself -> Навпроти свого імені нажати sync</li>
+            </ul>
         </div>
     </div>
 </form>
@@ -160,11 +166,45 @@
 .modal-form {
     max-height: calc(100vh - 200px);
     overflow-y: auto;
+    padding-bottom: 1rem;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.modal-form::-webkit-scrollbar {
+    display: none;
+}
+
 .modal-body-content {
-    padding: 1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    scroll-padding-bottom: 1rem;
+    scroll-padding-top: 1rem;
 }
 .alert {
     margin-bottom: 1rem;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    .modal-form {
+        max-height: calc(100vh - 100px);
+        padding-bottom: 2rem;
+    }
+    
+    .modal-body-content {
+        padding: 0.75rem;
+    }
+    
+    /* Ensure buttons have enough space at the bottom */
+    .d-flex.gap-2.justify-content-center {
+        margin-bottom: 1rem;
+    }
+    
+    /* Adjust alert spacing on mobile */
+    .alert {
+        margin-bottom: 0.75rem;
+    }
 }
 </style>

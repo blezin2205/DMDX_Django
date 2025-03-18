@@ -40,7 +40,7 @@ class CreateNPParselForm(ModelForm):
         self.fields['width'].label = "Ширина (см)"
         self.fields['length'].label = "Довжина (см)"
         self.fields['height'].label = "Висота (см)"
-        self.fields['weight'].label = "Фактична вага (кг)"
+        self.fields['weight'].label = "Вага (кг)"
         # self.fields['seatsAmount'].label = "Кількість місць"
         self.fields['description'].label = "Опис"
         self.fields['cost'].label = "Оціночна вартість (грн)"

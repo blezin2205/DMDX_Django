@@ -75,8 +75,9 @@ const csrftoken = getToken('csrftoken');
 
     <div class="w-auto">
     <div class="container">
+        <div class="spacer" style="height: 2rem;"></div>
         {% if title %}
-        <div class="title-wrapper my-4 p-4 bg-white rounded-3 shadow-sm">
+        <div class="title-wrapper mb-2 p-4 bg-white rounded-3 shadow-sm">
             <div class="d-flex align-items-center">
                 {% if title_icon %}
                     <i class="bi {{ title_icon }} me-3 title-icon"></i>

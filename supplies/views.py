@@ -943,7 +943,7 @@ def cartDetailForClient(request):
 
     return render(request, 'supplies/preorder-cart.html',
                   {'title': f'Корзина передзамовлення ({total_count_in_cart} шт.)', 'order': orderInCart, 'cartCountData': cartCountData,
-                   'supplies': supplies, 'cities': cities,
+                   'supplies': supplies, 'cities': cities, 'total_count_in_cart': total_count_in_cart,
                    'orderForm': orderForm, 'places': places, 'placeChoosed': placeChoosed, 'preorders': preorders, 'isClient': isClient, 'supDict': supDict})
 
 
@@ -1175,14 +1175,15 @@ def cartDetail(request):
     orderForm = OrderInCartForm(request.POST or None)
     cities = City.objects.all()
     if request.method == 'POST':
+        place_id = request.POST.get('place_id')
+        place = Place.objects.get(id=place_id)
+        orderType = request.POST.get('orderType')
         if 'delete' in request.POST:
             next = request.POST.get('next')
             orderInCart.delete()
             return HttpResponseRedirect(next)
         if 'save' in request.POST:
-            place_id = request.POST.get('place_id')
-            place = Place.objects.get(id=place_id)
-            orderType = request.POST.get('orderType')
+            
             if orderForm.is_valid():
                 comment = orderForm.cleaned_data['comment']
                 dateToSend = orderForm.cleaned_data['dateToSend']

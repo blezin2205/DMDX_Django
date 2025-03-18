@@ -3,58 +3,116 @@
 {% load bootstrap %}
 {% load mathfilters %}
 {% load myapp_extras %}
-    {% block title %}
-{{ title }}
-{% endblock %}
+
+{% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-    <h3 style="color: grey">Корзина для: <b style="color: black">{{ booked_cart.place.get_place_name }}</b></h3>
-    <h4 style="color: grey">Cтворив: <u style="color: black">{{ booked_cart.userCreated }}</u></h4>
-    <h5 style="color: grey">Всього: <b style="color: black">{{ booked_cart.get_cart_items }} шт.</b></h5>
-<form method="POST" action="">
-<button class="btn btn-outline-danger my-4" type="submit" name="delete">Видалити</button>
+<div class="container py-3 w-75">
+    <!-- Order Summary Section -->
+    <div class="card shadow-sm mb-3 bg-light">
+        <div class="card-body">
+            <h6 class="card-title mb-3"><i class="bi bi-info-circle me-2"></i>Загальна інформація</h6>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted"><i class="bi bi-building"></i> Місце:</small> <span class="fw-bold">{{ booked_cart.place.get_place_name }}</span>
+                </div>
+                <div>
+                    <small class="text-muted"><i class="bi bi-person"></i> Створив:</small> <span class="fw-bold">{{ booked_cart.userCreated }}</span>
+                </div>
+                <div>
+                    <small class="text-muted"><i class="bi bi-box-seam"></i> Всього:</small> <span class="fw-bold">{{ booked_cart.get_cart_items }} шт.</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #f5f5f5;">
-  <div class="container h-100 py-3">
-    <div class="row d-flex justify-content-center align-items-center h-100">
-      <div class="col-10">
-          {% for item in sups_in_booked_cart %}
-               <div class="sup_in_delivery_order_recg_card card rounded mt-3">
-              {% include 'booked_flow/booked_cart_item.html' %}
-              </div>
-          {% endfor %}
+    <form method="POST" action="">
+        <!-- Main Content Section -->
+        <div class="card shadow-sm bg-light">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="card-title mb-0"><i class="bi bi-cart me-2"></i>Товари в корзині</h6>
+                    <button class="btn btn-outline-danger btn-sm" type="submit" name="delete">
+                        <i class="bi bi-trash"></i> Видалити
+                    </button>
+                </div>
 
-<hr class="rounded my-4">
-      <div class="container py-4 mt-4 shadow-sm rounded" style="background-color: rgba(234,233,233,0.77)">
+                {% for item in sups_in_booked_cart %}
+                <div class="card border-0 bg-white mb-3">
+                    <div class="card-body">
+                        {% include 'booked_flow/booked_cart_item.html' %}
+                    </div>
+                </div>
+                {% endfor %}
 
-          <div style="width: 250px">{{ orderForm.dateToSend|as_crispy_field }}</div>
-          {{ orderForm.comment|as_crispy_field }}
+                <!-- Order Details Section -->
+                <div class="card border-0 bg-white mt-4">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3"><i class="bi bi-calendar-event me-2"></i>Деталі замовлення</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center gap-2">
+                                    {{ orderForm.dateToSend|as_crispy_field }}
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-4" onclick="setTodayDate()">
+                                        <i class="bi bi-calendar-check"></i> Сьогодні
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                {{ orderForm.comment|as_crispy_field }}
+                            </div>
+                        </div>
 
-{% if uncompleted_orders.count > 0 %}
-               <div class="btn-group pt-3" role="group" aria-label="Basic radio toggle button group" style="width: fit-content">
-  <input type="radio" class="btn-check" name="orderType" value="new_order" id="btnradio1" autocomplete="off" checked hx-post="{% url 'add_to_exist_order_from_booked_cart' %}" hx-trigger="click" hx-target="#orderType">
-  <label class="btn btn-outline-primary" for="btnradio1">Нове замовлення</label>
+                        {% if uncompleted_orders.count > 0 %}
+                        <div class="mt-3">
+                            <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                                <input type="radio" class="btn-check" name="orderType" value="new_order" id="btnradio1" autocomplete="off" checked 
+                                    hx-post="{% url 'add_to_exist_order_from_booked_cart' %}" hx-trigger="click" hx-target="#orderType">
+                                <label class="btn btn-outline-primary" for="btnradio1">
+                                    <i class="bi bi-cart-plus"></i> Нове замовлення
+                                </label>
 
-  <input type="radio" class="btn-check" name="orderType" value="add_to_Exist_order" id="btnradio2" autocomplete="off" hx-vals='{ "place_id": {{ booked_cart.place.id }}  }' hx-post="{% url 'add_to_exist_order_from_booked_cart' %}" hx-trigger="click" hx-target="#orderType">
-  <label class="btn btn-outline-primary" for="btnradio2">Додати до існуючого</label>
+                                <input type="radio" class="btn-check" name="orderType" value="add_to_Exist_order" id="btnradio2" autocomplete="off" 
+                                    hx-vals='{ "place_id": {{ booked_cart.place.id }}  }' hx-post="{% url 'add_to_exist_order_from_booked_cart' %}" 
+                                    hx-trigger="click" hx-target="#orderType">
+                                <label class="btn btn-outline-primary" for="btnradio2">
+                                    <i class="bi bi-plus-circle"></i> Додати до існуючого
+                                </label>
+                            </div>
+
+                            <div id="orderType" class="mt-3">
+                                {% include 'booked_flow/add_to_exist_order_from_booked_cart.html' %}
+                            </div>
+                        </div>
+                        {% else %}
+                            <input type="hidden" name="orderType" value="new_order">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-center mt-4">
+            <button class="btn btn-primary" type="submit">
+                <i class="bi bi-save"></i> Зберегти
+            </button>
+        </div>
+
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
+        {% csrf_token %}
+    </form>
 </div>
 
-     <div id="orderType">
-               {% include 'booked_flow/add_to_exist_order_from_booked_cart.html' %}
-    </div>
-{% else %}
-    <input type="hidden" name="orderType" value="new_order">
-       {% endif %}
-
-
-      </div>
-    </div>
-  </div>
-  <div class="d-flex justify-content-center"><button class="btn btn-primary m-4 w-25" style="width: 100px" type="submit">Зберегти</button></div>
-</div>
-</section>
-<input type="hidden" name="next" value="{{ request.GET.next }}">
-{% csrf_token %}
-
- </form>
+<script>
+function setTodayDate() {
+    const today = new Date();
+    const dateInput = document.querySelector('input[name="dateToSend"]');
+    if (dateInput) {
+        const formattedDate = today.toISOString().split('T')[0];
+        dateInput.value = formattedDate;
+        // Trigger change event to ensure any listeners are notified
+        dateInput.dispatchEvent(new Event('change'));
+    }
+}
+</script>
 {% endblock %}

@@ -1,99 +1,191 @@
 {% load mathfilters %}
 {% load myapp_extras %}
-<div class="my-4" id="order_preview_cell{{ order.id }}">
-    <div class="d-flex justify-content-center">
-    <a class="custom-link w-100" href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" role="button">
-        <div class="card">
-        <div class="card-body">
-    <h5 class="card-title">
-        <h5 class="mb-1">Замовлення №: {{order.id}}</h5>
-        <p class="fw-medium">Для: {{order.place.name}}, {{order.place.city_ref.name}}</p>
-     {% if order.for_agreement %}
-          <p class="mb-1">Договір: <b>№{{order.for_agreement.description}}</b></p>
-      {% endif %}
+{% load static %}
 
-     {% if order.for_preorder %}
-         {% if order.for_preorder.isPreorder %}
-             <p class="mb-1">Передзамовлення: <b>№{{order.for_preorder.id}}</b></p>
-             {% else %}
-             <p class="mb-1">Договір: <b>№{{order.for_preorder.id}}</b> {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }} {% endif %} </p>
-             {% endif %}
-      {% endif %}
-
-    </h5>
-    <h6 class="card-subtitle my-2 text-body-secondary">
-        {% if order.isComplete %}
-        <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span></p>
-        {% else %}
-        <p class="mb-2"><span>Статус:</span> <span class="waiting">В очікуванні</span></p>
-        {% endif %}
-
-      {% if order.npdeliverycreateddetailinfo_set.exists %}
-          <div id="np_delivery_detail_info_for_order" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
-          {% for detailInfo in order.statusnpparselfromdoucmentid_set.all %}
-              <p class="mb-2"><span>Статус НП:</span> <b style="color: {% if detailInfo.status_code == '9' %} green {% elif detailInfo.status_code == '2' %} red {% else %} orange {% endif %}">{{ detailInfo.status_desc }}</b>  </p>
-          {% endfor %}
-          </div>
-     {% endif %}
-
-
-        {% if order.comment %}
-            <p class="mb-0"> <span class="text-muted">Комментарiй:</span> {{order.comment}}</p>
-        {% endif %}
-
-    </h6>
-    <p class="card-text">
-        {% if request.user|has_group:"empl" or request.user.is_staff %}
-      {% if order.dateToSend and not order.isComplete %}
-{% now "d.m.Y" as current_date %}
-{% if order.dateToSend|date:"d.m.Y" == current_date %}
-    <p><div class="p-1 mb-1 bg-danger text-dark" style="border-radius: 4px"><b style="text-underline: #0b0b0b">Відправити</b>:
-   <b>Сьогодні</b>
-    </div></p>
-{% else %}
-    <p><div class="p-1 mb-1 bg-warning text-dark" style="border-radius: 4px"><b style="text-underline: #0b0b0b">Відправити</b>:
-    <b>{{order.dateToSend|date:"d.m.Y"}}</b>
-    </div></p>
-{% endif %}{% endif %}{% endif %}
-
-      <p class="opacity-60 text-nowrap date" >Дата створення: {{order.dateCreated|date:"d.m.Y"}}</p>
-         {% if order.isComplete %}
-      <p class="opacity-60 text-nowrap date">Дата відправки: {{order.dateSent|date:"d.m.Y"}}</p>
-          {% endif %}
-
-      {% if order.npdeliverycreateddetailinfo_set.exists %}
-          <div class="container" style="background: rgb(245,245,245); border-radius: 4px;">
-          <h6>Розрахункова дата доставки: </h6>
-      {% for detailInfo in order.npdeliverycreateddetailinfo_set.all %}
-          <div class="hstack gap-1 justify-content-between">
-           <h6 class="opacity-60 text-nowrap date">- {{ detailInfo.document_id }} ({{detailInfo.cost_on_site}} грн.): </h6>
-           <h6 class="opacity-60 text-nowrap date">{{ detailInfo.estimated_time_delivery }}</h6>
-          </div>
-      <h6 class="opacity-60 text-nowrap date">- {{ detailInfo.document_id }}: {{ detailInfo.estimated_time_delivery }}</h6>
-          {% endfor %}
-          </div>
-
-      {% endif %}
-
-    </p>
-  </div>
-  </div>
-    </a>
-    <div class="vstack gap-3 ps-2">
-
-        {% if request.user.is_staff and not order.isComplete %}
-    {% if order.place.address_NP and order.place.worker_NP %}
-        <div id="np_create_ID_button_subscribe" hx-get="{% url 'np_create_ID_button_subscribe' order.id %}" hx-trigger="np_create_ID_button_subscribe{{order.id}} from:body">
-                            {% include 'partials/np_create_ID_button.html' %}
+<div class="my-3" id="order_preview_cell{{ order.id }}">
+    <div class="d-flex flex-column">
+        <div class="card shadow-sm">
+            <a class="text-decoration-none" href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" role="button">
+                <div class="card-body p-3">
+                    <!-- Header Section -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="mb-1 fw-bold">Замовлення №{{order.id}}</h5>
+                            <p class="mb-1 text-muted small">{{order.place.name}}, {{order.place.city_ref.name}}</p>
                         </div>
+                        <div class="text-end">
+                            {% if order.isComplete %}
+                                <span class="badge bg-success d-flex align-items-center gap-1">
+                                    <i class="bi bi-check-circle"></i>
+                                    <span>Відправлено</span>
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning d-flex align-items-center gap-1">
+                                    <i class="bi bi-hourglass-split"></i>
+                                    <span>В очікуванні</span>
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
 
-        {% endif %}
-        <button class="btn btn-primary btn-lg add-btn" type="submit" hx-target="#order_preview_cell{{ order.id }}" hx-post="{% url 'orders_update_status' order.id %}"><i class="bi bi-send"></i></button>
-{#    <form action="" onsubmit="window.mytest()">#}
-{#        <button class="btn btn-danger btn-lg add-btn" type="submit" hx-target="#order_delete_cell" hx-delete="{% url 'order_delete' order.id %}" hx-confirm="Ви точно хочете видалити це замовлення?"><i class="bi bi-trash"></i></button>#}
-{#    </form>#}
-    {% endif %}
-    </div>
-    </div>
+                    <!-- Order Details Section -->
+                    <div class="mb-3">
+                        {% if order.for_agreement %}
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="bi bi-file-text text-primary"></i>
+                                <span class="small">Договір: <b>№{{order.for_agreement.description}}</b></span>
+                            </div>
+                        {% endif %}
 
+                        {% if order.for_preorder %}
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="bi bi-calendar-check text-info"></i>
+                                <span class="small">
+                                    {% if order.for_preorder.isPreorder %}
+                                        Передзамовлення: <b>№{{order.for_preorder.id}}</b>
+                                    {% else %}
+                                        Договір: <b>№{{order.for_preorder.id}}</b>
+                                        {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }}{% endif %}
+                                    {% endif %}
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Status and Delivery Info -->
+                    <div class="mb-3">
+                        {% if request.user|has_group:"empl" or request.user.is_staff %}
+                            {% if order.dateToSend and not order.isComplete %}
+                                {% now "d.m.Y" as current_date %}
+                                {% if order.dateToSend|date:"d.m.Y" == current_date %}
+                                    <div class="alert alert-danger d-flex align-items-center gap-2 mb-2 py-2">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        <span class="small">Відправити: <b>Сьогодні</b></span>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-warning d-flex align-items-center gap-2 mb-2 py-2">
+                                        <i class="bi bi-clock"></i>
+                                        <span class="small">Відправити: <b>{{order.dateToSend|date:"d.m.Y"}}</b></span>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+
+                        {% if order.npdeliverycreateddetailinfo_set.exists %}
+                            <div class="bg-light rounded p-2">
+                                <div id="np_delivery_detail_info_for_order" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
+                                    {% for detailInfo in order.statusnpparselfromdoucmentid_set.all %}
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <i class="bi bi-truck text-primary"></i>
+                                            <span class="small {% if detailInfo.status_code == '9' %}text-success{% elif detailInfo.status_code == '2' %}text-danger{% else %}text-warning{% endif %}">
+                                                {{ detailInfo.status_desc }}
+                                            </span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Comments and Dates -->
+                    <div class="border-top pt-2">
+                        {% if order.comment %}
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="bi bi-chat-left-text text-muted"></i>
+                                <span class="small text-muted">{{order.comment}}</span>
+                            </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between text-muted small">
+                            <span>Створено: {{order.dateCreated|date:"d.m.Y"}}</span>
+                            {% if order.isComplete %}
+                                <span>Відправлено: {{order.dateSent|date:"d.m.Y"}}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Action Buttons Footer -->
+            {% if request.user.is_staff and not order.isComplete %}
+                <div class="card-footer bg-light border-top-0 p-2">
+                    <div class="d-flex gap-2">
+                        {% if order.place.address_NP and order.place.worker_NP %}
+                            <div id="np_create_ID_button_subscribe" 
+                                 class="flex-grow-1"
+                                 hx-get="{% url 'np_create_ID_button_subscribe' order.id %}" 
+                                 hx-trigger="np_create_ID_button_subscribe{{order.id}} from:body">
+                                {% include 'partials/np_create_ID_button.html' %}
+                            </div>
+                        {% endif %}
+
+                        <button class="btn btn-primary d-flex align-items-center justify-content-center action-button" 
+                                style="width: 45px; height: 45px; border-radius: 8px;"
+                                type="submit" 
+                                hx-target="#order_preview_cell{{ order.id }}" 
+                                hx-post="{% url 'orders_update_status' order.id %}">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
+
+<style>
+.card {
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.08);
+    transition: all 0.2s ease-in-out;
+    overflow: hidden;
+}
+
+.card:active {
+    transform: scale(0.98);
+}
+
+.badge {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.alert {
+    border-radius: 8px;
+    margin: 0;
+}
+
+.action-button {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease-in-out;
+}
+
+.action-button:active {
+    transform: scale(0.95);
+    background-color: #0b5ed7;
+}
+
+.card-footer {
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Improve touch targets */
+.btn, .action-button {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Add ripple effect for better touch feedback */
+.card:active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.05);
+    pointer-events: none;
+}
+</style>

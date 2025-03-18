@@ -1,24 +1,88 @@
 {% load static %}
 
-<div class="hstack gap-1 {% if order.get_parsel_delivery_status == 1 %} p-2 bg-secondary-subtle rounded{% endif %}">
+<div class="d-flex gap-2 align-items-center" {% if order.get_parsel_delivery_status == 1 %} style="background-color: #e4e5e7; padding: 8px; border-radius: 10px;" {% endif %}>
+ 
+        {% if order.get_parsel_delivery_status == 1 %}
+            <div class="form-check d-flex align-items-center justify-content-center">
+                <input class="form-check-input custom-checkbox" 
+                       type="checkbox" 
+                       value="{{ order.id }}" 
+                       id="register_print_buttons_{{ order.id }}" 
+                       name="register_print_buttons" 
+                       hx-target="#register_print_buttons_{{ order.id }}" 
+                       hx-post="{% url 'get_register_for_orders' %}" 
+                       hx-trigger="click"
+                       style="width: 28px; height: 28px; cursor: pointer;">
+            </div>
+        {% endif %}
 
-{% if order.get_parsel_delivery_status == 1 %}
-    <div class="form-check">
-        <input class="form-check-input" type="checkbox" value="{{ order.id }}" id="register_print_buttons" name="register_print_buttons" hx-target="#register_print_buttons" hx-post="{% url 'get_register_for_orders' %}" hx-trigger="click">
-        <label class="form-check-label" for="register_print_buttons">
-        </label>
-    </div>
-{% endif %}
-
-{% if order.place.address_NP and order.place.worker_NP and order.get_parsel_delivery_status == 1 or order.get_parsel_delivery_status == 2 or order.place.address_NP and order.place.worker_NP and not order.statusnpparselfromdoucmentid_set.exists %}
-    <button type="button" 
-            class="btn p-0 border-0"
-            hx-get="{% url 'create_np_document_for_order' order.id %}"
-            hx-target="#npModalContent{{ order.id }}"
-            hx-trigger="click"
-            data-bs-toggle="modal"
-            data-bs-target="#npModal{{ order.id }}">
-        <img src="{% static 'images/np_icon.png' %}" width="50" height="49" style="border-radius: 10px">
-    </button>
-{% endif %}
+        {% if order.place.address_NP and order.place.worker_NP and order.get_parsel_delivery_status == 1 or order.get_parsel_delivery_status == 2 or order.place.address_NP and order.place.worker_NP and not order.statusnpparselfromdoucmentid_set.exists %}
+            <div class="d-flex align-items-center justify-content-center" style="width: 50px; height: 49px; margin: 0;">
+                <button type="button" 
+                        class="btn p-0 border-0 np-modal-button"
+                        data-order-id="{{ order.id }}"
+                        data-url="{% url 'create_np_document_for_order' order.id %}"
+                        {% if not request.user_agent.is_mobile %}
+                        hx-get="{% url 'create_np_document_for_order' order.id %}"
+                        hx-target="#npModalContent{{ order.id }}"
+                        hx-trigger="click"
+                        data-bs-toggle="modal"
+                        data-bs-target="#npModal{{ order.id }}"
+                        {% endif %}>
+                    <img src="{% static 'images/np_icon.png' %}" width="50" height="49" style="border-radius: 10px">
+                </button>
+            </div>
+        {% endif %}
 </div>
+
+<style>
+.custom-checkbox {
+    background-color: #fff;
+    border: 2px solid #0d6efd;
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+}
+
+.custom-checkbox:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.custom-checkbox:hover {
+    border-color: #0a58ca;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.custom-checkbox:focus {
+    border-color: #0a58ca;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.np-modal-button:hover {
+    opacity: 0.9;
+    transition: opacity 0.2s ease-in-out;
+}
+</style>
+
+{% if request.user_agent.is_mobile %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        document.querySelectorAll('.np-modal-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const orderId = this.dataset.orderId;
+                const url = this.dataset.url;
+                
+                htmx.ajax('GET', url, {
+                    target: '#npModalContent' + orderId,
+                    swap: 'innerHTML'
+                }).then(() => {
+                    const modal = new bootstrap.Modal(document.getElementById('npModal' + orderId));
+                    modal.show();
+                });
+            });
+        });
+    }
+});
+</script>
+{% endif %}

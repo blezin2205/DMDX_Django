@@ -1,46 +1,127 @@
 {% load mathfilters %}
-          <div class="card-body px-3 d-flex justify-content-center align-items-center">
-                <div class="col">
-              <div style="font-size: large">{{ item.supply.generalSupply.name }}</div>
-                  {% if item.supply.generalSupply.ref %}
-                      <div class="text-muted" style="font-size: small">REF: {{ item.supply.generalSupply.ref }}</div>
-                  {% endif %}
-                   {% if item.supply.generalSupply.SMN_code %}
-                       <div class="text-muted" style="font-size: small">SMN: {{ item.supply.generalSupply.SMN_code }}</div>
-                  {% endif %}
-                   {% if item.supply.generalSupply.category %}
-                       <div class="text-muted" style="font-size: smaller"> Категорія: {{ item.supply.generalSupply.category }}</div>
-              {% endif %}
-
-              </div>
-
-                <div class="col">
-                <h6 style="font-size: medium"><span class="text-muted">LOT:</span> {{ item.lot }}</h6>
-                <h6 style="color:{% if item.date_is_good %}blue{% elif item.date_is_today %}orange{% else %}red{% endif %}; font-size: medium"><span class="text-muted">Термін:</span> <span style="color:{% if item.date_is_good %}blue{% elif item.date_is_today %}orange{% else %}red{% endif %};">{{ item.date_expired|date:"d.m.Y" }}</span></h6>
-
-
-                </div>
-                {% if item.supply.generalSupply.package_and_tests %}
-              <div class="col">
-                      <h5 style="font-size: medium"><span class="text-muted">Pcg:</span> {{ item.supply.generalSupply.package_and_tests }}</h5>
-              </div>
+<div class="row align-items-center">
+    <!-- Supply Information -->
+    <div class="col-md-4">
+        <div class="d-flex align-items-center mb-2">
+            <i class="bi bi-box me-2 text-primary"></i>
+            <h6 class="mb-0">{{ item.supply.generalSupply.name }}</h6>
+        </div>
+        <div class="row g-1">
+            <div class="col-6">
+                {% if item.supply.generalSupply.ref %}
+                    <small class="text-muted d-block"><i class="bi bi-upc"></i> {{ item.supply.generalSupply.ref }}</small>
                 {% endif %}
+                {% if item.supply.generalSupply.SMN_code %}
+                    <small class="text-muted d-block"><i class="bi bi-hash"></i> {{ item.supply.generalSupply.SMN_code }}</small>
+                {% endif %}
+            </div>
+            <div class="col-6">
+                {% if item.supply.generalSupply.category %}
+                    <small class="text-muted d-block"><i class="bi bi-tags"></i> {{ item.supply.generalSupply.category }}</small>
+                {% endif %}
+                {% if item.supply.generalSupply.package_and_tests %}
+                    <small class="text-muted d-block"><i class="bi bi-box-seam"></i> {{ item.supply.generalSupply.package_and_tests }}</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 
-<div class="col">
-               <div class="vstack">
-                   {% if item.supply.countOnHold %}
-                         <label for="form1">Доступно: <b>{{ item.supply.count_in_order|sub:item.supply.countOnHold }}</b></label>
-                          {% else %}
-                          <label for="form1">Доступно: <b>{{ item.supply.count_in_order }}</b></label>
-                      {% endif %}
-                <input id="form1" style="width: 100px" min="0" name="count_{{ item.id }}" value="{{ item.count_in_order }}" type="number"
-                  class="form-control form-control-sm" />
-                  <input type="hidden" name="count_id_{{ item.id }}" value="{{ item.id }}">
+    <!-- Lot and Expiry Information -->
+    <div class="col-md-3">
+        <div class="d-flex flex-column">
+            <div class="mb-2">
+                <small class="text-muted"><i class="bi bi-barcode"></i> LOT:</small>
+                <span class="fw-bold">{{ item.lot }}</span>
+            </div>
+            <div>
+                <small class="text-muted"><i class="bi bi-calendar-check"></i> </small>
+                <span class="fw-bold {% if item.date_is_good %}text-primary{% elif item.date_is_today %}text-warning{% else %}text-danger{% endif %}">
+                    {{ item.date_expired|date:"d.m.Y" }}
+                </span>
+            </div>
+        </div>
+    </div>
 
-                  </div>
-              </div>
+    <!-- Quantity Information -->
+    <div class="col-md-3">
+        <div class="input-group input-group-sm" style="width: 120px;">
+            <span class="input-group-text"><i class="bi bi-123"></i></span>
+            <input type="number" min="0" name="count_{{ item.id }}" 
+                value="{{ item.count_in_order }}"
+                class="form-control quantity-input"
+                data-item-id="{{ item.id }}"
+                data-max-available="{% if item.supply.countOnHold %}{{ item.supply.count_in_order|sub:item.supply.countOnHold }}{% else %}{{ item.supply.count_in_order }}{% endif %}">
+        </div>
+        <small class="text-muted d-block mt-1">
+            <i class="bi bi-check-circle"></i> <span id="available_label_{{ item.id }}">Доступно:</span> 
+            <span class="fw-bold" id="available_{{ item.id }}">
+                {% if item.supply.countOnHold %}
+                    {{ item.supply.count_in_order|sub:item.supply.countOnHold }}
+                {% else %}
+                    {{ item.supply.count_in_order }}
+                {% endif %}
+            </span>
+        </small>
+        <input type="hidden" name="count_id_{{ item.id }}" value="{{ item.id }}">
+    </div>
 
-<button class="btn btn-danger" hx-post="{% url 'delete_sup_from_booked_cart_delete_action' %}" hx-vals='{"del_sup_id": {{ item.id }}, "booked_cart_id": {{ booked_cart.id }}}' hx-target="closest div .sup_in_delivery_order_recg_card" hx-swap="outerHTML">
-      <i class="bi bi-trash3"></i>
-    </button>
-          </div>
+    <!-- Delete Button -->
+    <div class="col-md-2 d-flex justify-content-end">
+        <button class="btn btn-sm btn-outline-danger" 
+            hx-post="{% url 'delete_sup_from_booked_cart_delete_action' %}" 
+            hx-vals='{"del_sup_id": {{ item.id }}, "booked_cart_id": {{ booked_cart.id }}}' 
+            hx-target="closest div .card" 
+            hx-swap="outerHTML">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+function validateQuantity(input) {
+    const itemId = input.dataset.itemId;
+    const maxAvailable = parseInt(input.dataset.maxAvailable);
+    const availableLabel = document.getElementById(`available_label_${itemId}`);
+    
+    if (isNaN(maxAvailable)) {
+        console.error('Invalid available quantity for item:', itemId);
+        return;
+    }
+    
+    // Get and validate the input value
+    let value = parseInt(input.value) || 0;
+    
+    // Ensure value is not negative
+    if (value < 0) {
+        value = 0;
+    }
+    
+    // If value exceeds available, set it to max available and highlight the label
+    if (value > maxAvailable) {
+        value = maxAvailable;
+        availableLabel.classList.add('text-danger');
+        availableLabel.classList.remove('text-muted');
+    } else {
+        availableLabel.classList.remove('text-danger');
+        availableLabel.classList.add('text-muted');
+    }
+    
+    // Update input value
+    input.value = value;
+}
+
+// Add event listeners when the document is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Add validation to all quantity inputs
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    
+    quantityInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            validateQuantity(this);
+        });
+        input.addEventListener('change', function() {
+            validateQuantity(this);
+        });
+    });
+});
+</script>
