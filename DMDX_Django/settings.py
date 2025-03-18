@@ -161,13 +161,6 @@ ASGI_APPLICATION = 'DMDX_Django.asgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-#
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -179,19 +172,10 @@ DATABASES = {
     }
 }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'dmdx',
-#         'USER': 'postgres',
-#         'PASSWORD': '4646',
-#         'HOST': 'localhost',
-#         'PORT': '5433',
-#     }
-# }
-
+# Update database configuration from $DATABASE_URL if available (for Heroku)
 db_from_env = dj_database_url.config(conn_max_age=500)
-DATABASES['default'].update(db_from_env)
+if db_from_env:
+    DATABASES['default'] = db_from_env
 
 django_heroku.settings(locals())
 DATABASES['default']['CONN_MAX_AGE'] = 0
@@ -296,3 +280,6 @@ USE_TZ = True
 # CELERYD_CONCURRENCY = os.environ.get('CELERYD_CONCURRENCY', 1)
 
 # Configure Django App for Heroku.
+
+# Telegram Bot Settings
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '1803152934:AAFjutMUtAz3wFS8MdBbo9bQmRdUGZEpkwQ')
