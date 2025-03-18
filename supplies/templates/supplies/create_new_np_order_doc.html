@@ -139,7 +139,7 @@
         });
 
     // WebSocket connection
-    const socket = new WebSocket('wss://' + window.location.host + '/wss/np_document_updates/');
+    const socket = new WebSocket('ws://' + window.location.host + '/wss/np_document_updates/');
 
     socket.onopen = function(e) {
         console.log('WebSocket connection established');
@@ -149,38 +149,34 @@
         const data = JSON.parse(e.data);
         if (data.message) {
             hideLoadingSpinner();
-            if (data.message == 'Накладна успішно створена') {
+            if (data.message === 'Накладна успішно створена') {
                 if (data.delivery_order_id) {
-                window.open(data.delivery_order_id, '_blank');
-            }
-            const orderIdInput = document.querySelector('input[name="order_id"]');
-            const orderId = orderIdInput ? orderIdInput.value : null;
-            if (orderId) {
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                if (isMobile) {
-                    window.location.href = '/orders';
-                } else {
-                    htmx.ajax('POST', `orderCellUpdateNPStatus/${orderId}`, {
-                        target: `#order_preview_cell${orderId}`,
-                        swap: 'innerHTML'
-                    });
+                    window.open(data.delivery_order_id, '_blank');
                 }
-                const modal = document.querySelector('.modal');
-                if (modal) {
-                    console.log('MODAL found!');
-                    // Use Bootstrap 5's data-bs-dismiss attribute
-                    const closeButton = modal.querySelector('[data-bs-dismiss="modal"]');
-                    if (closeButton) {
-                        closeButton.click();
+                const orderIdInput = document.querySelector('input[name="order_id"]');
+                const orderId = orderIdInput ? orderIdInput.value : null;
+                if (orderId) {
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                    if (isMobile) {
+                        window.location.href = '/orders';
                     } else {
-                        // Fallback: hide the modal directly
-                        modal.style.display = 'none';
-                        modal.classList.remove('show');
-                        document.body.classList.remove('modal-open');
+                        htmx.ajax('POST', `orderCellUpdateNPStatus/${orderId}`, {
+                            target: `#order_preview_cell${orderId}`,
+                            swap: 'innerHTML'
+                        });
                     }
+                    const modal = document.querySelector('.modal');
+                    if (modal) {
+                        console.log('MODAL found!');
+                        // Hide all modals
+                        $('.modal').modal('hide');
+                        // Remove modal-open class from body
+                        $('body').removeClass('modal-open');
+                        // Remove modal backdrop
+                        $('.modal-backdrop').remove();
+                    }
+                    return;
                 }
-                return;
-            }
             } else {
                 alert(data.message);
             }
