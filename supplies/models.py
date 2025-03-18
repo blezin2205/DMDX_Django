@@ -440,6 +440,7 @@ class PreOrder(models.Model):
 
 class Order(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+    userSent = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='sent_orders')
     for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, blank=True,
                                      related_name='orders_for_preorder')
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)

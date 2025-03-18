@@ -13,11 +13,11 @@
             <!-- Order Info -->
             <div class="row g-2">
                 <div class="col-md-2">
-                    <div class="badge bg-secondary d-flex align-items-center gap-2 p-2 mb-1">
+                    <div class="badge bg-secondary d-flex-inline align-items-center gap-2 p-2 mb-1">
                         <i class="bi bi-calendar3"></i>
                         <span>{{order.dateCreated|date:"d.m.Y"}}</span>
                     </div>
-                    <div class="badge {% if order.isClientCreated %}bg-warning{% else %}bg-secondary{% endif %} d-flex align-items-center gap-2 p-2">
+                    <div class="badge {% if order.isClientCreated %}bg-warning{% else %}bg-secondary{% endif %} d-flex-inline align-items-center gap-2 p-2">
                         <i class="bi bi-person"></i>
                         <span class="text-truncate" style="max-width: 150px;">{{ order.userCreated.first_name }} {{ order.userCreated.last_name }}</span>
                     </div>
@@ -78,6 +78,12 @@
                                 <i class="bi bi-check-circle"></i>
                                 <span>{{order.dateSent|date:"d.m.Y"}}</span>
                             </div>
+                            {% if order.userSent %}
+                                <div class="badge bg-secondary d-flex align-items-center gap-2 p-2">
+                                    <i class="bi bi-person-check"></i>
+                                    <span class="text-truncate" style="max-width: 150px;">{{ order.userSent.first_name }} {{ order.userSent.last_name }}</span>
+                                </div>
+                            {% endif %}
                         {% else %}
                             <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
                                 <i class="bi bi-hourglass-split"></i>
@@ -101,8 +107,8 @@
 
                 <!-- Right side - Export & Delete buttons -->
                 <div class="d-flex align-items-center gap-2">
-                    <a href="{% url 'orderDetailCsv' order.id %}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-file-earmark-excel me-1"></i>Export to Excel
+                    <a href="{% url 'orderDetailCsv' order.id %}" class="btn btn-outline-secondary btn-sm" data-toggle="tooltip" title="Export to Excel">
+                        <i class="bi bi-file-earmark-excel"></i>
                     </a>
                     {% if not order.isComplete and request.user.is_staff %}
                         <form method="POST" action="" onsubmit="window.mytest()" class="m-0">

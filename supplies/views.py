@@ -2171,6 +2171,7 @@ def orderUpdateStatus(request, order_id):
         order.isComplete = True
         order.dateToSend = None
         order.dateSent = timezone.now().date()
+        order.userSent = request.user
         order.save()
 
         preorder = order.for_preorder

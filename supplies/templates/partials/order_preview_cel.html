@@ -102,6 +102,12 @@
                                         <i class="bi bi-check-circle"></i>
                                         <span>{{order.dateSent|date:"d.m.Y"}}</span>
                                     </div>
+                                    {% if order.userSent %}
+                                        <div class="badge bg-light text-dark d-flex align-items-center gap-2">
+                                            <i class="bi bi-person-check"></i>
+                                            <span>{{ order.userSent.first_name }} {{ order.userSent.last_name }}</span>
+                                        </div>
+                                    {% endif %}
                                 {% else %}
                                     <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
                                         <i class="bi bi-hourglass-split"></i>
