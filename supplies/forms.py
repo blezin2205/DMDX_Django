@@ -194,8 +194,23 @@ class SupplyForm(ModelForm):
         widgets = {
             'supplyLot': forms.TextInput(attrs={'style': 'min-width: 150px;'}),
             'count': forms.NumberInput(attrs={'style': 'min-width: 50px;'}),
-            'expiredDate': forms.DateInput(attrs={'style': 'min-width: 150px;'}),
+            'expiredDate': forms.TextInput(attrs={
+                'style': 'min-width: 150px;',
+                'pattern': r'\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])',
+                'placeholder': 'YYYY-MM-DD',
+                'title': 'Введіть дату в форматі YYYY-MM-DD'
+            }),
         }
+
+    def clean_expiredDate(self):
+        date_value = self.cleaned_data['expiredDate']
+        if isinstance(date_value, datetime.date):
+            return date_value
+        try:
+            date = datetime.datetime.strptime(date_value, '%Y-%m-%d').date()
+            return date
+        except ValueError:
+            raise forms.ValidationError('Введіть дату в форматі YYYY-MM-DD')
 
 
 class NewSupplyForm(ModelForm):
