@@ -10,52 +10,63 @@
  <form method="post" class="form-inline justify-content-center">
     {% csrf_token %}
     <div class="container">
-  <div class="row">
-    <div class="col">
-              <a href="/orders" class="btn btn-primary m-2 {% if isOrdersTab %} active {% endif %}" aria-current="page">Замовлення {% if cartCountData.orders_incomplete > 0 %} <span class="badge bg-warning ms-2">{{ cartCountData.orders_incomplete }}</span> {% endif %}</a>
-{#   {% if request.user|has_group:"empl" or request.user.is_staff %}#}
-{#    <a href="{% url 'agreements' %}" class="btn btn-primary {% if isAgreementsTab %} active {% endif %}" aria-current="page">Договори</a>#}
-{#  {% endif %}#}
-        <a href="/preorders" class="btn btn-primary {% if isPreordersTab %} active {% endif %}">Передзамовлення {% if cartCountData.preorders_incomplete > 0 %} <span class="badge ms-2" style="background: #5bc0de">{{ cartCountData.preorders_incomplete }}</span> {% endif %}</a>
+        <div class="d-flex justify-content-between align-items-center py-2">
+            <div class="d-flex gap-2">
+                <a href="/orders" class="btn btn-primary {% if isOrdersTab %} active {% endif %}" aria-current="page">
+                    Замовлення 
+                    {% if cartCountData.orders_incomplete > 0 %}
+                        <span class="badge bg-warning ms-2">{{ cartCountData.orders_incomplete }}</span>
+                    {% endif %}
+                </a>
+                <a href="/preorders" class="btn btn-primary {% if isPreordersTab %} active {% endif %}">
+                    Передзамовлення 
+                    {% if cartCountData.preorders_incomplete > 0 %}
+                        <span class="badge ms-2" style="background: #5bc0de">{{ cartCountData.preorders_incomplete }}</span>
+                    {% endif %}
+                </a>
+            </div>
+            <div class="d-flex gap-2">
+                <div id="register_print_buttons" style="min-height: 50px;">
+                    {% include 'partials/register_print_orders_chekbox_buttons.html' %}
+                </div>
+                <div id="register_exls_selected_buttons" style="min-height: 50px; margin-left: 10px;">
+                    {% include 'partials/register_print_orders_chekbox_buttons.html' %}
+                </div>
+            </div>
+        </div>
 
-    {% if messages %}
-<ul class="messages my-4" style="color: red">
-    {% for message in messages %}
-    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-    {% endfor %}
+        {% if messages %}
+            <div class="alert alert-danger mb-3" role="alert">
+                <ul class="mb-0">
+                    {% for message in messages %}
+                        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div id="error"></div>
+        {% endif %}
 
-</ul>
-             <div id="error"></div>
-{% endif %}
+        <div class="container bg-light border shadow-sm py-1 px-2 mb-2 rounded-3 {% if request.user_agent.is_mobile %} w-100 {% else %} w-50 {% endif %} align-items-start" style="margin-left: 0;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex gap-3">
+                    {{ orderFilter.form.isComplete|as_crispy_field }}
+                    {% if request.user|has_group:"empl" or request.user.is_staff %}
+                        {{ orderFilter.form.for_state_of_client|as_crispy_field }}
+                        {{ orderFilter.form.for_np_delivery_state|as_crispy_field }}
+                    {% endif %}
+                </div>
+                <div class="ms-auto">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search me-1"></i>Застосувати
+                    </button>
+                </div>
+            </div>
+        </div>
 
     </div>
-    <div class="col d-flex justify-content-end" id="register_print_buttons">
-        {% include 'partials/register_print_orders_chekbox_buttons.html' %}
-    </div>
-  <div class="col d-flex justify-content-end" id="register_exls_selected_buttons">
-        {% include 'partials/register_print_orders_chekbox_buttons.html' %}
-    </div>
-  </div>
-
-{#    <form method="get" class="form-inline justify-content-center">#}
-         <div class="hstack {% if request.user_agent.is_mobile %} container {% else %}  w-50 {% endif %}gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between">
-             <div class="hstack gap-2">
-                 {{ orderFilter.form.isComplete|as_crispy_field }}
-                 {% if request.user|has_group:"empl" or request.user.is_staff %}
-                 {{ orderFilter.form.for_state_of_client|as_crispy_field }}
-                 {{ orderFilter.form.for_np_delivery_state|as_crispy_field }}
-                 {% endif %}
-             </div>
-             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
-
-</div>
-{##}
-{#        </form>#}
-
-</div>
     <div class="container" id="order_delete_cell">
         {% include 'partials/order_delete_cell.html' %}
-</div>
+    </div>
   </form>
  <form method="get" class="form-inline justify-content-center">
         {% if orders.paginator.num_pages > 1 %}

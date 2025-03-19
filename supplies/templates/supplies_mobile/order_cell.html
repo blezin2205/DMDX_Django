@@ -72,16 +72,19 @@
                         {% endif %}
 
                         {% if order.npdeliverycreateddetailinfo_set.exists %}
-                            <div class="bg-light rounded p-2">
-                                <div id="np_delivery_detail_info_for_order" hx-trigger="load" hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
-                                    {% for detailInfo in order.statusnpparselfromdoucmentid_set.all %}
-                                        <div class="d-flex align-items-center gap-2 mb-1">
-                                            <i class="bi bi-truck text-primary"></i>
-                                            <span class="small {% if detailInfo.status_code == '9' %}text-success{% elif detailInfo.status_code == '2' %}text-danger{% else %}text-warning{% endif %}">
-                                                {{ detailInfo.status_desc }}
+                            <div class="bg-light rounded px-2 py-1">
+                                <div class="hstack gap-2 align-items-center">
+                                    <img src="{% static 'images/np_icon.png' %}" class="np-icon" alt="NP" style="width: 20px; height: 20px;">
+                                    <div id="np_delivery_detail_info_for_order" 
+                                         class="d-flex align-items-center flex-wrap"
+                                         hx-trigger="load" 
+                                         hx-get="{% url 'np_delivery_detail_info_for_order' order.id %}">
+                                        {% for detailInfo in order.statusnpparselfromdoucmentid_set.all %}
+                                            <span class="small fw-medium {% if detailInfo.status_code == '9' %}np-status-success{% elif detailInfo.status_code == '2' %}np-status-error{% else %}np-status-pending{% endif %}">
+                                                {{ detailInfo.status_desc }}{% if not forloop.last %}; {% endif %}
                                             </span>
-                                        </div>
-                                    {% endfor %}
+                                        {% endfor %}
+                                    </div>
                                 </div>
                             </div>
                         {% endif %}
@@ -134,6 +137,15 @@
 </div>
 
 <style>
+.np-status-success {
+    color: #0d7a3f;
+}
+.np-status-error {
+    color: #b91c1c;
+}
+.np-status-pending {
+    color: #d77d17;
+}
 .card {
     border-radius: 12px;
     border: 1px solid rgba(0,0,0,0.08);

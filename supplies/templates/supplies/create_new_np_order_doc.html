@@ -71,36 +71,45 @@
 
         <input type="hidden" name="next" value="{{ request.GET.next }}">
         
-        <div class="d-flex gap-2 justify-content-center mt-4" style="height: 38px; position: relative;">
+        <div class="d-flex justify-content-center my-2">
           <div id="mainButtons">
-            <button class="btn btn-primary" type="submit" name="save_and_print" value="1">
+            <button class="btn btn-primary m-2" type="submit" style="height: 38px;" name="save_and_print" value="1">
               <i class="bi bi-printer"></i> Зберегти та друкувати
             </button>
-            <button class="btn btn-primary" type="submit" name="save_and_exit" id="submitButton" value="1">
+            <button class="btn btn-primary m-2" type="submit" style="height: 38px;" name="save_and_exit" id="submitButton" value="1">
               <i class="bi bi-x-square"></i> Зберегти та вийти
             </button>
           </div>
-          <div id="loadingSpinner" style="display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);">
+          <div id="loadingSpinner" style="display: none; height: 38px;" class="m-2">
             <span class="spinner-border spinner-border-sm text-primary" style="width: 1.5rem; height: 1.5rem;"></span>
           </div>
         </div>
 
-        <div class="alert alert-info mt-4 small">
-            <p class="mb-2"><strong>При створенні ЕН з відділення типу поштомату обов'язково вказуються параметри розмірів.</strong></p>
-            <p class="mb-2"><strong>Обмеження:</strong></p>
-            <ul class="mb-0 ps-3">
-                <li>Максимальне значення оцінної вартості для відправки із поштомату (параметр Cost) – 10000 грн.</li>
-                <li>Максимально допустимі габарити вантажу: Ширина 40 см; Довжина 60 см; Висота 30 см</li>
-                <li>Максимально допустима вага вантажу 20 кг</li>
-                <li>При створенні відправлення із поштомату можна вказувати лише одне місце на одне відправлення</li>
-                <li>Після створення інтернет документа, ЕН з'являється у списку ЕН в особистому кабінеті</li>
-            </ul>
-            <hr>
-            <p class="mb-2"><strong>Важлива інформація щодо помилок:</strong></p>
-            <ul class="mb-0 ps-3">
-                <li>"Aдреса отримувача не належить отримувачу": потрібно додати адресу до організації, для якої попередньо вже було додано ЄДРПОУ</li>
-                <li>"ContactSender is removed": Меню -> Settings -> Нова пошта REF INFO -> Sync REF with myself -> Навпроти свого імені нажати sync</li>
-            </ul>
+        <div class="m-2">
+            <div class="d-flex justify-content-end">
+                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#infoCollapse" aria-expanded="false" aria-controls="infoCollapse">
+                    <i class="bi bi-info-circle"></i>
+                </button>
+            </div>
+            <div class="collapse mt-3" id="infoCollapse">
+                <div class="alert alert-secondary small">
+                    <p class="mb-2"><strong>При створенні ЕН з відділення типу поштомату обов'язково вказуються параметри розмірів.</strong></p>
+                    <p class="mb-2"><strong>Обмеження:</strong></p>
+                    <ul class="mb-0 ps-3">
+                        <li>Максимальне значення оцінної вартості для відправки із поштомату (параметр Cost) – 10000 грн.</li>
+                        <li>Максимально допустимі габарити вантажу: Ширина 40 см; Довжина 60 см; Висота 30 см</li>
+                        <li>Максимально допустима вага вантажу 20 кг</li>
+                        <li>При створенні відправлення із поштомату можна вказувати лише одне місце на одне відправлення</li>
+                        <li>Після створення інтернет документа, ЕН з'являється у списку ЕН в особистому кабінеті</li>
+                    </ul>
+                    <hr>
+                    <p class="mb-2"><strong>Важлива інформація щодо помилок:</strong></p>
+                    <ul class="mb-0 ps-3">
+                        <li>"Aдреса отримувача не належить отримувачу": потрібно додати адресу до організації, для якої попередньо вже було додано ЄДРПОУ</li>
+                        <li>"ContactSender is removed": Меню -> Settings -> Нова пошта REF INFO -> Sync REF with myself -> Навпроти свого імені нажати sync</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 </form>
@@ -109,25 +118,14 @@
     // Show loading spinner
     function showLoadingSpinner() {
         // Hide main buttons
-        document.getElementById('mainButtons').style.display = 'none';
-        // Show loading spinner
-        document.getElementById('loadingSpinner').style.display = 'block';
+        $('#mainButtons').hide();
+        $('#loadingSpinner').show();
     }
 
     // Hide loading spinner
     function hideLoadingSpinner() {
-        // Show main buttons
-        document.getElementById('mainButtons').style.display = 'block';
-        // Hide loading spinner
-        document.getElementById('loadingSpinner').style.display = 'none';
-    }
-
-    // Reset spinner state when modal is opened
-    function resetSpinnerState() {
-        // Show main buttons
-        document.getElementById('mainButtons').style.display = 'block';
-        // Hide loading spinner
-        document.getElementById('loadingSpinner').style.display = 'none';
+        $('#mainButtons').show();
+        $('#loadingSpinner').hide();
     }
 
     // Add HTMX event listeners

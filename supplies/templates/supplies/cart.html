@@ -36,7 +36,7 @@
                     <div class="col-md-4">
                         <div class="d-flex align-items-center">
                             {{ orderForm.dateToSend|as_crispy_field }}
-                            <button type="button" class="btn btn-outline-primary btn-sm ms-2" onclick="setTodayDate()">
+                            <button type="button" class="btn btn-outline-primary btn-sm ms-2" onclick="toggleDate(this)" data-selected="false">
                                 <i class="bi bi-calendar-check"></i> Сьогодні
                             </button>
                         </div>
@@ -222,6 +222,27 @@
       dateInput.value = formattedDate;
       // Trigger change event to ensure any listeners are notified
       dateInput.dispatchEvent(new Event('change'));
+    }
+  }
+
+  function toggleDate(button) {
+    const dateInput = document.querySelector('input[name="dateToSend"]');
+    const isSelected = button.getAttribute('data-selected') === 'true';
+    
+    if (isSelected) {
+      // Remove date and reset button state
+      dateInput.value = '';
+      dateInput.removeAttribute('required');
+      button.classList.remove('btn-primary');
+      button.classList.add('btn-outline-primary');
+      button.setAttribute('data-selected', 'false');
+    } else {
+      // Set today's date and update button state
+      setTodayDate();
+      dateInput.setAttribute('required', 'required');
+      button.classList.remove('btn-outline-primary');
+      button.classList.add('btn-primary');
+      button.setAttribute('data-selected', 'true');
     }
   }
 

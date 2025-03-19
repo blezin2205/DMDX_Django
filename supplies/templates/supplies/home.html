@@ -45,66 +45,63 @@
 
 <div class="table-responsive">
     {% if request.user_agent.is_mobile %}
-        <div class="d-flex flex-column gap-3">
+        <div class="d-flex flex-column gap-2">
             {% for el in supplies %}
-                <div class="card">
-                    <div class="card-header bg-dark text-white">
+                <div class="border-bottom border-top">
+                    <div class="card-header bg-secondary-subtle text-dark p-2">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">{{ el.name }}</h5>
-                            {% if el.image %}
-                                <a href="#" class="pop">
-                                    <div datasrc="{{ el.image.url }}"><i class="bi bi-card-image text-white"></i></div>
-                                </a>
-                            {% endif %}
+                            <h6 class="mb-0">{{ el.name }}</h6>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if el.package_and_tests is not none %}
+                                    <small class="text-muted"><i class="bi bi-box-seam"></i> {{ el.package_and_tests }}</small>
+                                {% endif %}
+                                {% if el.image %}
+                                    <a href="#" class="pop">
+                                        <div datasrc="{{ el.image.url }}"><i class="bi bi-card-image text-dark"></i></div>
+                                    </a>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <strong>Пакування / Тести:</strong>
-                                <div>{% if el.package_and_tests is not none %}{{ el.package_and_tests }}{% endif %}</div>
-                            </div>
-                            <div class="col-6">
-                                <strong>Категорія:</strong>
-                                <div>{{ el.category.name }}</div>
-                            </div>
-                            <div class="col-6">
-                                <strong>REF:</strong>
-                                <div>{% if el.ref is not none %}{{ el.ref }}{% endif %}</div>
-                            </div>
-                            <div class="col-6">
-                                <strong>SMN:</strong>
-                                <div>{% if el.SMN_code is not none %}{{ el.SMN_code }}{% endif %}</div>
-                            </div>
+                    <div class="card-body p-2">
+                        <div class="d-flex gap-2 mb-2">
+                            <small class="text-muted"><i class="bi bi-tag"></i> {{ el.category.name }}</small>
+                            {% if el.ref is not none %}
+                                <small class="text-muted"><i class="bi bi-hash"></i> {{ el.ref }}</small>
+                            {% endif %}
+                            {% if el.SMN_code is not none %}
+                                <small class="text-muted"><i class="bi bi-upc"></i> {{ el.SMN_code }}</small>
+                            {% endif %}
                         </div>
-                        <div class="mt-3">
-                            <h6 class="mb-2">LOT інформація:</h6>
-                            {% for supp in el.general.all %}
-                                <div class="card mb-2">
-                                    <div class="card-body p-2">
-                                        <div class="row g-2">
-                                            <div class="col-12">
-                                                <strong>LOT:</strong> {% if supp.supplyLot is not none %}{{ supp.supplyLot }}{% endif %}
-                                            </div>
-                                            <div class="col-12">
-                                                <strong>Кількість:</strong> 
-                                                <span style="font-weight: 600">{{ supp.count }}</span>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="small">LOT</th>
+                                        <th class="small">К-сть</th>
+                                        <th class="small">Термін</th>
+                                        <th class="small text-end" style="width: 1%; white-space: nowrap;">Дії</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for supp in el.general.all %}
+                                        <tr>
+                                            <td class="small">{% if supp.supplyLot is not none %}{{ supp.supplyLot }}{% endif %}</td>
+                                            <td class="small">
+                                                <span class="fw-bold">{{ supp.count }}</span>
                                                 {% if supp.countOnHold %}
-                                                    <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2">{{ supp.countOnHold }}</span>
+                                                    <span style="background-color: orange; font-weight: 600" class="px-1 rounded-1 small">{{ supp.countOnHold }}</span>
                                                 {% endif %}
                                                 {% if supp.preCountOnHold %}
-                                                    <span style="background-color: #5bc0de; font-weight: 600" class="px-2 rounded-2">{{ supp.preCountOnHold }}</span>
+                                                    <span style="background-color: #5bc0de; font-weight: 600" class="px-1 rounded-1 small">{{ supp.preCountOnHold }}</span>
                                                 {% endif %}
-                                            </div>
-                                            <div class="col-12">
-                                                <strong>Термін:</strong>
-                                                <span style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">
-                                                    {{ supp.expiredDate|date:"d.m.Y" }}
-                                                </span>
-                                            </div>
-                                            {% if request.user.is_staff or request.user|has_group:"empl" %}
-                                                <div class="col-12">
-                                                    <div class="d-flex gap-1">
+                                            </td>
+                                            <td class="small" style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">
+                                                {{ supp.expiredDate|date:"d.m.Y" }}
+                                            </td>
+                                            <td class="text-end" style="width: 1%; white-space: nowrap;">
+                                                {% if request.user.is_staff or request.user|has_group:"empl" %}
+                                                    <div class="d-flex gap-1 justify-content-end">
                                                         <div id="add_cart_button-{{supp.id}}">
                                                             {% if not supp.id|in_cart:request.user %}
                                                                 <button hx-post="{% url 'update_item' supp.id %}" hx-target="#add_cart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
@@ -116,18 +113,25 @@
                                                             <a href="{% url 'updateSupply' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button" title="Редагувати LOT"><i class="bi bi-pencil"></i></a>
                                                         {% endif %}
                                                     </div>
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                         {% if request.user|has_group:"admin" %}
                             <div class="mt-2">
                                 <div class="d-flex gap-1">
                                     <a href="{% url 'addNewLot' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary" role="button" title="Додати LOT"><i class="bi bi-plus-square"></i></a>
                                     <a href="{% url 'updateGeneralSupply' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button" title="Редагувати назву"><i class="bi bi-pencil"></i></a>
+                                    <div id="add_preorder_general_to_preorder-{{el.id}}">
+                                        {% if el|in_precart_general:request.user %}
+                                            <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
+                                        {% else %}
+                                            <button hx-post="{% url 'add_preorder_general_to_preorder' el.id %}" hx-target="#add_preorder_general_to_preorder-{{el.id}}" class="btn btn-sm btn-primary add-btn" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         {% endif %}
