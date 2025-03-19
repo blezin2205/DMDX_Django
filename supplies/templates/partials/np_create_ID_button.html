@@ -9,7 +9,7 @@
                        value="{{ order.id }}" 
                        id="register_print_buttons_{{ order.id }}" 
                        name="register_print_buttons" 
-                       hx-target="#register_print_buttons_{{ order.id }}" 
+                       hx-target="#register_print_buttons"
                        hx-post="{% url 'get_register_for_orders' %}" 
                        hx-trigger="click"
                        style="width: 28px; height: 28px; cursor: pointer;">
