@@ -779,7 +779,7 @@ def sendTeamsMsg(request, order):
     app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
     if app_settings.send_teams_msg_preorders:
         myTeamsMessage = pymsteams.connectorcard(
-            "https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/3a448e3eaf974db19d8940ba81e9bcad/3894266e-3403-44b0-a8e4-5a568f2b70a4")
+            settings.TEAMS_WEBHOOK_URL_PREORDERS)
         myTeamsMessage.title(f'Передамовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
 
         myTeamsMessage.addLinkButton("Деталі замовлення",
@@ -859,7 +859,7 @@ def cartDetailForClient(request):
                                                     date_expired=sup.date_expired)
                     suppInOrder.save()
 
-                teams_channel = "https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/23dc86985db643f6a50d4bbf45719d3d/3894266e-3403-44b0-a8e4-5a568f2b70a4"
+                teams_channel = settings.TEAMS_WEBHOOK_URL_PREORDERS
 
                 myTeamsMessage = pymsteams.connectorcard(teams_channel)
                 myTeamsMessage.title(
@@ -1148,8 +1148,7 @@ def sendTeamsMsgCart(request, order):
         if order.for_preorder:
             agreementString = f'Передзамовлення № {order.for_preorder.id}'
 
-        myTeamsMessage = pymsteams.connectorcard(
-            "https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/c6694506a800419ab9aa040b09d0a5b1/3894266e-3403-44b0-a8e4-5a568f2b70a4")
+        myTeamsMessage = pymsteams.connectorcard(settings.TEAMS_WEBHOOK_URL_ORDERS)
         myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
 
         myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}/0')
@@ -1162,7 +1161,6 @@ def sendTeamsMsgCart(request, order):
         else:
             myTeamsMessage.text(f'{agreementString}\n\n{created}')
             myTeamsMessage.send()
-
 
 
 @login_required(login_url='login')
