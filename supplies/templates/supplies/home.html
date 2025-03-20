@@ -296,18 +296,7 @@
                 </h5>
                 <button type="button" class="btn-close position-absolute end-0 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-0" id="supplyHistoryContent">
-                <!-- Loading state -->
-                <div class="loading-state">
-                    <div class="loading-container">
-                        <div class="text-center">
-                            <div class="spinner-border text-primary mb-3" role="status">
-                                <span class="visually-hidden">Loading...</span>
-                            </div>
-                            <p class="text-muted mb-0">Завантаження історії...</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="modal-body p-0" id="supplyHistoryContent" style="height: calc(100vh - 100px);">
                 <!-- Content will be loaded here -->
             </div>
         </div>
@@ -322,12 +311,8 @@
                 <h6 class="modal-title" id="addNewLotModalLabel">Додати новий LOT для:<br><i class="bi bi-dot"><span id="supplyName"></span></i></h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-0" id="addNewLotContent">
-                <div class="text-center">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
+            <div class="modal-body p-0" id="addNewLotContent" style="height: 330px;">
+
             </div>
         </div>
     </div>
@@ -375,52 +360,22 @@
     }
 }
 
+.loading-state {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .loading-container {
-    min-height: calc(100vh - 100px);
     display: flex;
     justify-content: center;
     align-items: center;
+    min-height: 200px;
 }
 </style>
 
 <script>
-// Utility functions
-const showLoadingSpinner = (element) => {
-    element.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
-};
-
-const handleFetchError = (error, contentElement) => {
-    console.error('Error:', error);
-    contentElement.html(`<div class="alert alert-danger">${error.message}</div>`);
-};
-
-const fetchData = async (url, options = {}) => {
-    const response = await fetch(url, options);
-    if (!response.ok) {
-        if (response.status === 403) {
-            throw new Error('У вас немає прав для перегляду історії товару');
-        }
-        throw new Error('Помилка завантаження даних');
-    }
-    return response.text();
-};
-
-// Modal handling functions
-const showModal = (modalId, contentElement, fetchUrl, onSuccess) => {
-    const modal = $(modalId);
-    const content = $(contentElement);
-    
-    showLoadingSpinner(content);
-    modal.modal('show');
-    
-    fetchData(fetchUrl)
-        .then(data => {
-            content.html(data);
-            if (onSuccess) onSuccess(data);
-        })
-        .catch(error => handleFetchError(error, content));
-};
-
 // HTMX initialization
 const initializeHTMXElement = (element) => {
     const buttonContainer = $(element).closest('[id^="add_cart_button-"]');
@@ -445,7 +400,7 @@ $(function() {
     $('.supply-history-btn').on('click', function(e) {
         e.preventDefault();
         const supplyId = $(this).data('supply-id');
-        showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`);
+        showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`, 'Завантаження історії...');
     });
 
     // Add lot button handler
@@ -456,7 +411,7 @@ $(function() {
         
         $('#supplyName').text(supplyName);
         
-        showModal('#addNewLotModal', '#addNewLotContent', `/newLot/${supplyId}`, (data) => {
+        showModal('#addNewLotModal', '#addNewLotContent', `/newLot/${supplyId}`, 'Завантаження форми...', (data) => {
             $('#addNewLotForm').on('submit', function(e) {
                 e.preventDefault();
                 const formData = new FormData(this);
@@ -504,7 +459,7 @@ $(function() {
             
             $('#supplyName').text(supplyName);
             
-            showModal('#addNewLotModal', '#addNewLotContent', `/newLot/${supplyId}`, (data) => {
+            showModal('#addNewLotModal', '#addNewLotContent', `/newLot/${supplyId}`, 'Завантаження форми...', (data) => {
                 $('#addNewLotForm').on('submit', function(e) {
                     e.preventDefault();
                     const formData = new FormData(this);
@@ -539,7 +494,7 @@ $(function() {
         row.find('.supply-history-btn').on('click', function(e) {
             e.preventDefault();
             const supplyId = $(this).data('supply-id');
-            showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`);
+            showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`, 'Завантаження історії...');
         });
     }
 });

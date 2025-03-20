@@ -58,6 +58,7 @@
 </style>
 
 <script>
+
 $(function() {
     $('.np-modal-button').on('click', function(e) {
         e.preventDefault();
@@ -87,14 +88,16 @@ $(function() {
         
         // Show modal
         modal.modal('show');
+        showLoadingSpinner(content, 'Завантаження форми...');
         
         // Fetch NP document data
         fetch(url, {
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                'X-CSRFToken': csrftoken,
             }
         })
         .then(response => {
+            hideLoadingSpinner(content);
             if (!response.ok) {
                 if (response.status === 403) {
                     throw new Error('У вас немає прав для створення накладної');

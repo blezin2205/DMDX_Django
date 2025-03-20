@@ -140,14 +140,14 @@
     }
 
     // Show loading spinner
-    function showLoadingSpinner() {
+    function showSubmitButtonsLoadingSpinner() {
         // Hide main buttons
         $('#mainButtons').hide();
         $('#loadingSpinner').show();
     }
 
     // Hide loading spinner
-    function hideLoadingSpinner() {
+    function hideSubmitButtonsLoadingSpinner() {
         $('#mainButtons').show();
         $('#loadingSpinner').hide();
     }
@@ -155,7 +155,7 @@
     // Handle form submission
     function handleFormSubmit(event) {
         event.preventDefault();
-        showLoadingSpinner();
+        showSubmitButtonsLoadingSpinner();
         
         const form = event.target;
         const formData = new FormData(form);
@@ -173,12 +173,12 @@
                 // The WebSocket will handle the rest
                 return false;
             } else if (data.status === 'error') {
-                hideLoadingSpinner();
+                hideSubmitButtonsLoadingSpinner();
                 alert('Error: ' + JSON.stringify(data.errors));
             }
         })
         .catch(error => {
-            hideLoadingSpinner();
+            hideSubmitButtonsLoadingSpinner();
             console.error('Error:', error);
             alert('An error occurred while processing your request.');
         });

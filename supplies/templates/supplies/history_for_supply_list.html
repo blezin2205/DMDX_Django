@@ -29,22 +29,6 @@
     word-wrap: break-word;
 }
 
-/* Loading state styles */
-.loading-state {
-    display: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.9);
-    z-index: 1000;
-}
-
-.loading-state.active {
-    display: block;
-}
-
 /* Mobile-specific styles */
 @media (max-width: 768px) {
     .modal-form {
@@ -111,17 +95,6 @@
     }
 }
 </style>
-
-<div class="loading-state">
-    <div class="d-flex justify-content-center align-items-center" style="min-height: calc(100vh - 200px);">
-        <div class="text-center">
-            <div class="spinner-border text-primary mb-3" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="text-muted mb-0">Завантаження історії...</p>
-        </div>
-    </div>
-</div>
 
 <div class="container modal-form py-1">
    <div class="w-auto">
