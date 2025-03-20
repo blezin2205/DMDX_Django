@@ -133,7 +133,7 @@
                         {% if request.user|has_group:"admin" %}
                             <div class="mt-2">
                                 <div class="d-flex gap-1">
-                                    <a href="{% url 'addNewLot' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary" role="button" title="Додати LOT"><i class="bi bi-plus-square"></i></a>
+                                    <a href="#" class="btn btn-sm btn-primary add-lot-btn" data-supply-id="{{ el.id }}" role="button" title="Додати LOT"><i class="bi bi-plus-square"></i></a>
                                     <a href="{% url 'updateGeneralSupply' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button" title="Редагувати назву"><i class="bi bi-pencil"></i></a>
                                     <div id="add_preorder_general_to_preorder-{{el.id}}">
                                         {% if el|in_precart_general:request.user %}
@@ -239,7 +239,7 @@
                         <td>
                             <div class="hstack gap-1 justify-content-end">
                                 {% if request.user|has_group:"admin" %}
-                                    <a href="{% url 'addNewLot' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary" role="button" title="Додати LOT"><i class="bi bi-plus-square"></i></a>
+                                    <a href="#" class="btn btn-sm btn-primary add-lot-btn" data-supply-id="{{ el.id }}" role="button" title="Додати LOT"><i class="bi bi-plus-square"></i></a>
                                     <a href="{% url 'updateGeneralSupply' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button" title="Редагувати назву"><i class="bi bi-pencil"></i></a>
                                 {% endif %}
                                 <div id="add_preorder_general_to_preorder-{{el.id}}">
@@ -286,11 +286,30 @@
 <div class="modal fade" id="supplyHistoryModal" tabindex="-1" role="dialog" aria-labelledby="supplyHistoryModalLabel" aria-hidden="true">
     <div class="modal-dialog{% if request.user_agent.is_mobile %} modal-fullscreen-sm-down{% else %} modal-xl{% endif %}" role="document">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header py-2">
                 <h5 class="modal-title" id="supplyHistoryModalLabel">Історія товару</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-0" id="supplyHistoryContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add New Lot Modal -->
+<div class="modal fade" id="addNewLotModal" tabindex="-1" role="dialog" aria-labelledby="addNewLotModalLabel" aria-hidden="true">
+    <div class="modal-dialog{% if request.user_agent.is_mobile %} modal-fullscreen-sm-down{% else %}{% endif %}" role="document">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title" id="addNewLotModalLabel">Додати новий LOT для:<br><i class="bi bi-dot"><span id="supplyName"></span></i></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" id="addNewLotContent">
                 <div class="text-center">
                     <div class="spinner-border" role="status">
                         <span class="visually-hidden">Loading...</span>
@@ -322,42 +341,187 @@
         padding-left: 0;
         padding-right: 0;
     }
+    #addNewLotModal .modal-content {
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
+    #addNewLotModal .modal-header {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    #addNewLotModal .modal-body {
+        height: calc(100vh - 56px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0;
+    }
+    #addNewLotModal .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
 }
 </style>
 
 <script>
+// Utility functions
+const showLoadingSpinner = (element) => {
+    element.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+};
+
+const handleFetchError = (error, contentElement) => {
+    console.error('Error:', error);
+    contentElement.html(`<div class="alert alert-danger">${error.message}</div>`);
+};
+
+const fetchData = async (url, options = {}) => {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        if (response.status === 403) {
+            throw new Error('У вас немає прав для перегляду історії товару');
+        }
+        throw new Error('Помилка завантаження даних');
+    }
+    return response.text();
+};
+
+// Modal handling functions
+const showModal = (modalId, contentElement, fetchUrl, onSuccess) => {
+    const modal = $(modalId);
+    const content = $(contentElement);
+    
+    showLoadingSpinner(content);
+    modal.modal('show');
+    
+    fetchData(fetchUrl)
+        .then(data => {
+            content.html(data);
+            if (onSuccess) onSuccess(data);
+        })
+        .catch(error => handleFetchError(error, content));
+};
+
+// HTMX initialization
+const initializeHTMXElement = (element) => {
+    const buttonContainer = $(element).closest('[id^="add_cart_button-"]');
+    if (buttonContainer.length) {
+        const supplyId = buttonContainer.attr('id').replace('add_cart_button-', '');
+        
+        $(element).removeAttr('hx-post hx-target');
+        $(element).attr('hx-post', `/update_item/${supplyId}`);
+        $(element).attr('hx-target', `#add_cart_button-${supplyId}`);
+        
+        $(element).off('click').on('click', function(e) {
+            if ($(this).hasClass('disabled')) {
+                e.preventDefault();
+            }
+        });
+    }
+};
+
+// Main initialization
 $(function() {
+    // Supply history button handler
     $('.supply-history-btn').on('click', function(e) {
         e.preventDefault();
         const supplyId = $(this).data('supply-id');
-        const modal = $('#supplyHistoryModal');
-        const content = $('#supplyHistoryContent');
-        
-        // Show loading spinner
-        content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
-        
-        // Show modal
-        modal.modal('show');
-        
-        // Fetch history data using Fetch API
-        fetch(`/history_for_supply/${supplyId}`)
-            .then(response => {
-                if (!response.ok) {
-                    if (response.status === 403) {
-                        throw new Error('У вас немає прав для перегляду історії товару');
-                    }
-                    throw new Error('Помилка завантаження історії');
-                }
-                return response.text();
-            })
-            .then(data => {
-                content.html(data);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                content.html(`<div class="alert alert-danger">${error.message}</div>`);
-            });
+        showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`);
     });
+
+    // Add lot button handler
+    $('.add-lot-btn').on('click', function(e) {
+        e.preventDefault();
+        const supplyId = $(this).data('supply-id');
+        const supplyName = $(this).closest('tr').find('th[scope="row"]').text().trim();
+        
+        $('#supplyName').text(supplyName);
+        
+        showModal('#addNewLotModal', '#addNewLotContent', `/newLot/${supplyId}`, (data) => {
+            $('#addNewLotForm').on('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                
+                fetch(`/newLot/${supplyId}`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Помилка збереження');
+                    return response.json();
+                })
+                .then(data => {
+                    $('#addNewLotModal').modal('hide');
+                    const supplyRow = $(`[data-supply-id="${supplyId}"]`).closest('tr');
+                    const newRow = $(data.html).find(`[data-supply-id="${supplyId}"]`).closest('tr');
+                    supplyRow.replaceWith(newRow);
+                    initializeRowHandlers(newRow);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(error.message);
+                });
+            });
+        });
+    });
+    
+    function initializeRowHandlers(row) {
+        // Initialize HTMX elements
+        row.find('[hx-post]').each(initializeHTMXElement);
+
+        // Initialize HTMX globally
+        if (typeof htmx !== 'undefined') {
+            htmx.process(row[0]);
+        }
+
+        // Reinitialize add-lot-btn handler
+        row.find('.add-lot-btn').on('click', function(e) {
+            e.preventDefault();
+            const supplyId = $(this).data('supply-id');
+            const supplyName = $(this).closest('tr').find('th[scope="row"]').text().trim();
+            
+            $('#supplyName').text(supplyName);
+            
+            showModal('#addNewLotModal', '#addNewLotContent', `/newLot/${supplyId}`, (data) => {
+                $('#addNewLotForm').on('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    
+                    fetch(`/newLot/${supplyId}`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': csrftoken,
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Помилка збереження');
+                        return response.json();
+                    })
+                    .then(data => {
+                        $('#addNewLotModal').modal('hide');
+                        const supplyRow = $(`[data-supply-id="${supplyId}"]`).closest('tr');
+                        const newRow = $(data.html).find(`[data-supply-id="${supplyId}"]`).closest('tr');
+                        supplyRow.replaceWith(newRow);
+                        initializeRowHandlers(newRow);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert(error.message);
+                    });
+                });
+            });
+        });
+
+        // Reinitialize supply-history-btn handler
+        row.find('.supply-history-btn').on('click', function(e) {
+            e.preventDefault();
+            const supplyId = $(this).data('supply-id');
+            showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`);
+        });
+    }
 });
 </script>
 

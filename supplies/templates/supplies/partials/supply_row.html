@@ -1,0 +1,89 @@
+{% load myapp_extras %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load bootstrap %}
+{% load mathfilters %}
+
+{% csrf_token %}
+<tr>
+    <th scope="row" style="text-align: left; max-width: 350px">
+        {% if el.image %}
+            <div style="display:flex; flex-direction: row;">
+                <a href="#" class="pop">
+                    <div datasrc="{{ el.image.url }}"><i class="bi bi-card-image"></i></div>
+                </a>
+            </div>
+        {% endif %}
+        {% if request.user|has_group:"empl" or request.user.is_staff %}
+            <a href="#" class="text-decoration-none link-dark supply-history-btn" data-supply-id="{{ el.id }}">
+                {{ el.name }}
+            </a>
+        {% else %}
+            {{ el.name }}
+        {% endif %}
+    </th>
+    <td>{% if el.package_and_tests is not none %}{{ el.package_and_tests }}{% endif %}</td>
+    <td>{{ el.category.name }}</td>
+    <td>{% if el.ref is not none %}{{ el.ref }}{% endif %}</td>
+    <td>{% if el.SMN_code is not none %}{{ el.SMN_code }}{% endif %}</td>
+    <td class="supplyRow">
+        <table class="rounded-3 overflow-hidden table table-light table-borderless mb-0">
+            <tbody>
+                {% for supp in el.general.all %}
+                    <tr>
+                        <td style="width: 200px">
+                            <div>{% if supp.supplyLot is not none %}{{ supp.supplyLot }}{% endif %}</div>
+                        </td>
+                        <td style="width: 150px">
+                            <div>
+                                <span style="font-weight: 600">{{ supp.count }}</span>
+                                {% if supp.countOnHold %}
+                                    <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2">{{ supp.countOnHold }}</span>
+                                {% endif %}
+                                {% if supp.preCountOnHold %}
+                                    <span style="background-color: #5bc0de; font-weight: 600" class="px-2 rounded-2">{{ supp.preCountOnHold }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td style="width: 100px">
+                            <div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">
+                                {{ supp.expiredDate|date:"d.m.Y" }}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="hstack gap-1 justify-content-end">
+                                {% if request.user.is_staff or request.user|has_group:"empl" %}
+                                    <div id="add_cart_button-{{supp.id}}">
+                                        {% if not supp.id|in_cart:request.user %}
+                                            <button hx-post="{% url 'update_item' supp.id %}" hx-target="#add_cart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
+                                        {% endif %}
+                                    </div>
+                                    {% if request.user|has_group:"admin" %}
+                                        <a href="{% url 'updateSupply' supp.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button" title="Редагувати LOT"><i class="bi bi-pencil"></i></a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </td>
+    <td>
+        <div class="hstack gap-1 justify-content-end">
+            {% if request.user|has_group:"admin" %}
+            <a href="#" class="btn btn-sm btn-primary add-lot-btn" data-supply-id="{{ el.id }}" role="button" title="Додати LOT"><i class="bi bi-plus-square"></i></a>
+                <a href="{% url 'updateGeneralSupply' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button" title="Редагувати назву"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+            <div id="add_preorder_general_to_preorder-{{el.id}}">
+                {% if el|in_precart_general:request.user %}
+                    <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
+                {% else %}
+                    <button hx-post="{% url 'add_preorder_general_to_preorder' el.id %}" hx-target="#add_preorder_general_to_preorder-{{el.id}}" class="btn btn-sm btn-primary add-btn" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+</tr> 

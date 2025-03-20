@@ -32,6 +32,7 @@ from .tasks import *
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from firebase_admin import storage
+from django.template.loader import render_to_string
 
 # @login_required(login_url='login')
 # @allowed_users(allowed_roles=['admin'])
@@ -2615,9 +2616,15 @@ def addNewLotforSupply(request, supp_id):
                 supHistory.action_type = 'added-handle'
                 supHistory.save()
 
-            return HttpResponseRedirect(next)
-
-    return render(request, 'supplies/createSupply.html',
+            html = render_to_string('supplies/partials/supply_row.html', {
+            'el': generalSupp,
+            'request': request
+        })
+            return JsonResponse({
+            'html': html,
+            'success': True
+        })
+    return render(request, 'supplies/create_new_lot_modal.html',
                   {'title': f'Додати новий LOT для {generalSupp.name}', 'form': form, 'cartCountData': cartCountData})
 
 

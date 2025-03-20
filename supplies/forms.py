@@ -193,7 +193,10 @@ class SupplyForm(ModelForm):
         fields = ['supplyLot', 'count', 'expiredDate']
         widgets = {
             'supplyLot': forms.TextInput(attrs={'style': 'min-width: 150px;'}),
-            'count': forms.NumberInput(attrs={'style': 'min-width: 50px;'}),
+            'count': forms.NumberInput(attrs={
+                'style': 'min-width: 50px;',
+                'required': True
+            }),
             'expiredDate': forms.TextInput(attrs={
                 'style': 'min-width: 150px;',
                 'pattern': r'\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])',
