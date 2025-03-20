@@ -160,6 +160,13 @@
         const form = event.target;
         const formData = new FormData(form);
         
+        // Get the submitter button to determine which action was clicked
+        const submitter = event.submitter;
+        if (submitter) {
+            // Add the specific submit action to formData
+            formData.append(submitter.name, submitter.value);
+        }
+        
         fetch(form.action, {
             method: 'POST',
             body: formData,
