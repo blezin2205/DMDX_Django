@@ -197,7 +197,7 @@
     socket.onmessage = function(e) {
         const data = JSON.parse(e.data);
         if (data.message) {
-            hideLoadingSpinner();
+            hideSubmitButtonsLoadingSpinner();
             if (data.message === 'Накладна успішно створена') {
                 if (data.delivery_order_id) {
                     window.open(data.delivery_order_id, '_blank');
