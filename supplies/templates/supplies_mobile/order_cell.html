@@ -4,77 +4,90 @@
 
 <div class="my-3" id="order_preview_cell{{ order.id }}">
     <div class="d-flex flex-column">
-        <div class="card shadow-sm">
+        <div class="card shadow-sm hover-shadow-md transition-all">
             <a class="text-decoration-none" href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" role="button">
-                <div class="card-body p-3">
-                    <!-- Header Section -->
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <h5 class="mb-1 fw-bold">Замовлення №{{order.id}}</h5>
-                            <p class="mb-1 text-muted small">{{order.place.name}}, {{order.place.city_ref.name}}</p>
-                        </div>
-                        <div class="text-end">
-                            {% if order.isComplete %}
-                                <span class="badge bg-success d-flex align-items-center gap-1">
-                                    <i class="bi bi-check-circle"></i>
-                                    <span>Відправлено</span>
-                                </span>
-                            {% else %}
-                                <span class="badge bg-warning d-flex align-items-center gap-1">
-                                    <i class="bi bi-hourglass-split"></i>
-                                    <span>В очікуванні</span>
-                                </span>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Order Details Section -->
-                    <div class="mb-3">
-                        {% if order.for_agreement %}
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <i class="bi bi-file-text text-primary"></i>
-                                <span class="small">Договір: <b>№{{order.for_agreement.description}}</b></span>
+                <!-- Header Section with Status Background -->
+                <div class="card-header position-relative p-3 border-0 {% if not order.isComplete %} bg-warning bg-opacity-10 {% else %} bg-primary bg-opacity-10 {% endif %}">
+                    <div class="d-flex flex-column gap-2">
+                        <!-- Creation Info -->
+                        <div class="d-flex flex-wrap gap-2">
+                            <div class="badge bg-light text-dark d-flex align-items-center gap-2">
+                                <i class="bi bi-calendar3"></i>
+                                <span>{{order.dateCreated|date:"d.m.Y"}}</span>
                             </div>
-                        {% endif %}
+                            <div class="badge {% if order.isClientCreated %} bg-warning-subtle text-warning-emphasis {% else %} bg-light text-dark {% endif %} d-flex align-items-center gap-2">
+                                <i class="bi bi-person"></i>
+                                <span>{{ order.userCreated.first_name }} {{ order.userCreated.last_name }}</span>
+                            </div>
+                        </div>
 
+                        <!-- Order ID and Location -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="bi bi-box-seam"></i>
+                                <span>{{order.id}}</span>
+                            </h5>
+                            <p class="mb-0 text-muted small">{{order.place.name}}, {{order.place.city_ref.name}}</p>
+                        </div>
+
+                        <!-- Preorder/Agreement Info -->
                         {% if order.for_preorder %}
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <i class="bi bi-calendar-check text-info"></i>
-                                <span class="small">
-                                    {% if order.for_preorder.isPreorder %}
-                                        Передзамовлення: <b>№{{order.for_preorder.id}}</b>
-                                    {% else %}
-                                        Договір: <b>№{{order.for_preorder.id}}</b>
-                                        {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }}{% endif %}
-                                    {% endif %}
-                                </span>
-                            </div>
+                            {% if order.for_preorder.isPreorder %}
+                                <div class="badge bg-info bg-opacity-10 text-info">
+                                    Передзамовлення №{{order.for_preorder.id}}
+                                </div>
+                            {% else %}
+                                <div class="badge bg-secondary bg-opacity-10 text-secondary">
+                                    Договір №{{order.for_preorder.id}}
+                                    {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }}{% endif %}
+                                </div>
+                            {% endif %}
                         {% endif %}
                     </div>
+                </div>
 
-                    <!-- Status and Delivery Info -->
-                    <div class="mb-3">
+                <!-- Status and Delivery Info -->
+                <div class="card-body p-3">
+                    <div class="d-flex flex-column gap-2">
                         {% if request.user|has_group:"empl" or request.user.is_staff %}
                             {% if order.dateToSend and not order.isComplete %}
                                 {% now "d.m.Y" as current_date %}
                                 {% if order.dateToSend|date:"d.m.Y" == current_date %}
-                                    <div class="alert alert-danger d-flex align-items-center gap-2 mb-2 py-2">
+                                    <div class="badge bg-danger d-flex align-items-center gap-2 p-2">
                                         <i class="bi bi-exclamation-circle"></i>
-                                        <span class="small">Відправити: <b>Сьогодні</b></span>
+                                        <span>Відправка сьогодні</span>
                                     </div>
                                 {% else %}
-                                    <div class="alert alert-warning d-flex align-items-center gap-2 mb-2 py-2">
+                                    <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
                                         <i class="bi bi-clock"></i>
-                                        <span class="small">Відправити: <b>{{order.dateToSend|date:"d.m.Y"}}</b></span>
+                                        <span>{{order.dateToSend|date:"d.m.Y"}}</span>
                                     </div>
                                 {% endif %}
                             {% endif %}
                         {% endif %}
 
+                        {% if order.isComplete %}
+                            <div class="badge bg-success d-flex align-items-center gap-2 p-2">
+                                <i class="bi bi-check-circle"></i>
+                                <span>{{order.dateSent|date:"d.m.Y"}}</span>
+                            </div>
+                            {% if order.userSent %}
+                                <div class="badge bg-light text-dark d-flex align-items-center gap-2">
+                                    <i class="bi bi-person-check"></i>
+                                    <span>{{ order.userSent.first_name }} {{ order.userSent.last_name }}</span>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
+                                <i class="bi bi-hourglass-split"></i>
+                                <span>В очікуванні</span>
+                            </div>
+                        {% endif %}
+
                         {% if order.npdeliverycreateddetailinfo_set.exists %}
-                            <div class="bg-light rounded px-2 py-1">
+                            <div class="bg-light rounded p-2">
                                 <div class="hstack gap-2 align-items-center">
-                                    <img src="{% static 'images/np_icon.png' %}" class="np-icon" alt="NP" style="width: 20px; height: 20px;">
+                                    <img src="{% static 'images/np_icon.png' %}" class="np-icon" alt="NP">
                                     <div id="np_delivery_detail_info_for_order" 
                                          class="d-flex align-items-center flex-wrap"
                                          hx-trigger="load" 
@@ -89,29 +102,22 @@
                             </div>
                         {% endif %}
                     </div>
+                </div>
 
-                    <!-- Comments and Dates -->
-                    <div class="border-top pt-2">
-                        {% if order.comment %}
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <i class="bi bi-chat-left-text text-muted"></i>
-                                <span class="small text-muted">{{order.comment}}</span>
-                            </div>
-                        {% endif %}
-
-                        <div class="d-flex justify-content-between text-muted small">
-                            <span>Створено: {{order.dateCreated|date:"d.m.Y"}}</span>
-                            {% if order.isComplete %}
-                                <span>Відправлено: {{order.dateSent|date:"d.m.Y"}}</span>
-                            {% endif %}
+                <!-- Comments -->
+                {% if order.comment %}
+                    <div class="card-footer bg-light p-3 border-top-light">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-chat-left-text text-muted"></i>
+                            <span class="small fw-medium text-break">{{order.comment}}</span>
                         </div>
                     </div>
-                </div>
+                {% endif %}
             </a>
 
             <!-- Action Buttons Footer -->
             {% if request.user.is_staff and not order.isComplete %}
-                <div class="card-footer bg-light border-top-0 p-2">
+                <div class="card-footer bg-light border-top-light p-3">
                     <div class="d-flex gap-2">
                         {% if order.place.address_NP and order.place.worker_NP %}
                             <div id="np_create_ID_button_subscribe" 
@@ -129,6 +135,18 @@
                                 hx-post="{% url 'orders_update_status' order.id %}">
                             <i class="bi bi-send"></i>
                         </button>
+
+                        <div class="form-check d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                            <input class="form-check-input custom-checkbox" 
+                                   type="checkbox" 
+                                   value="{{ order.id }}" 
+                                   id="register_exls_selected_buttons" 
+                                   name="register_exls_selected_buttons" 
+                                   hx-target="#register_exls_selected_buttons" 
+                                   hx-post="{% url 'register_exls_selected_buttons' %}" 
+                                   hx-trigger="click"
+                                   style="width: 24px; height: 24px; margin: 0; cursor: pointer;">
+                        </div>
                     </div>
                 </div>
             {% endif %}
@@ -137,6 +155,31 @@
 </div>
 
 <style>
+.hover-shadow-md {
+    transition: all 0.2s ease-in-out;
+}
+.hover-shadow-md:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+.transition-all {
+    transition: all 0.2s ease-in-out;
+}
+.badge {
+    border: 1px solid rgba(0,0,0,0.1);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+.border-top-light {
+    border-top: 1px solid rgba(0,0,0,0.05) !important;
+}
+.np-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    display: inline-block;
+}
 .np-status-success {
     color: #0d7a3f;
 }
@@ -146,58 +189,41 @@
 .np-status-pending {
     color: #d77d17;
 }
-.card {
-    border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.08);
+.custom-checkbox {
+    background-color: #fff;
+    border: 2px solid #0d6efd;
+    border-radius: 6px;
     transition: all 0.2s ease-in-out;
+}
+.custom-checkbox:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+.custom-checkbox:hover {
+    border-color: #0a58ca;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+.custom-checkbox:focus {
+    border-color: #0a58ca;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+.card {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
     overflow: hidden;
 }
-
-.card:active {
-    transform: scale(0.98);
-}
-
-.badge {
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-weight: 500;
-}
-
-.alert {
-    border-radius: 8px;
-    margin: 0;
-}
-
 .action-button {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: all 0.2s ease-in-out;
 }
-
 .action-button:active {
     transform: scale(0.95);
     background-color: #0b5ed7;
 }
-
-.card-footer {
-    border-top: 1px solid rgba(0,0,0,0.05);
-}
-
 /* Improve touch targets */
 .btn, .action-button {
     min-height: 44px;
     min-width: 44px;
-}
-
-/* Add ripple effect for better touch feedback */
-.card:active::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.05);
-    pointer-events: none;
 }
 </style>

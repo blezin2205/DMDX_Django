@@ -21,14 +21,7 @@
                 <button type="button" 
                         class="btn p-0 border-0 np-modal-button"
                         data-order-id="{{ order.id }}"
-                        data-url="{% url 'create_np_document_for_order' order.id %}"
-                        {% if not request.user_agent.is_mobile %}
-                        hx-get="{% url 'create_np_document_for_order' order.id %}"
-                        hx-target="#npModalContent{{ order.id }}"
-                        hx-trigger="click"
-                        data-bs-toggle="modal"
-                        data-bs-target="#npModal{{ order.id }}"
-                        {% endif %}>
+                        data-url="{% url 'create_np_document_for_order' order.id %}">
                     <img src="{% static 'images/np_icon.png' %}" width="50" height="49" style="border-radius: 10px">
                 </button>
             </div>
@@ -64,25 +57,59 @@
 }
 </style>
 
-{% if request.user_agent.is_mobile %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        document.querySelectorAll('.np-modal-button').forEach(button => {
-            button.addEventListener('click', function() {
-                const orderId = this.dataset.orderId;
-                const url = this.dataset.url;
-                
-                htmx.ajax('GET', url, {
-                    target: '#npModalContent' + orderId,
-                    swap: 'innerHTML'
-                }).then(() => {
-                    const modal = new bootstrap.Modal(document.getElementById('npModal' + orderId));
-                    modal.show();
-                });
-            });
+$(function() {
+    $('.np-modal-button').on('click', function(e) {
+        e.preventDefault();
+        const orderId = $(this).data('order-id');
+        const url = $(this).data('url');
+        const modal = $('#npModal');
+        const content = $('#npModalContent');
+        
+        // Show loading spinner
+        content.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+        
+        // Get order information from the card
+        const card = $(this).closest('#order_preview_cell' + orderId).find('.card');
+        const orderNumber = card.find('h6 .bi-box-seam').next('span').text();
+        const placeName = card.find('h6.text-muted').text();
+        const orderComment = card.find('.card-footer .text-break').text();
+        
+        // Update modal header with order information
+        $('#npModalLabel').html(`
+            <div class="d-flex align-items-center gap-1 justify-content-center">
+                <i class="bi bi-box-seam"></i>
+                <span>${orderNumber}</span>
+            </div>
+            <div class="text-muted small" style="font-size: 0.85rem;">${placeName}</div>
+            ${orderComment ? `<div class="text-muted small text-break" style="font-size: 0.85rem;">${orderComment}</div>` : ''}
+        `);
+        
+        // Show modal
+        modal.modal('show');
+        
+        // Fetch NP document data
+        fetch(url, {
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error('У вас немає прав для створення накладної');
+                }
+                throw new Error('Помилка завантаження форми накладної');
+            }
+            return response.text();
+        })
+        .then(data => {
+            content.html(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            content.html(`<div class="alert alert-danger">${error.message}</div>`);
         });
-    }
+    });
 });
 </script>
-{% endif %}

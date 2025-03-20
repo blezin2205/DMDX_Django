@@ -3,9 +3,7 @@
 {% load crispy_forms_tags %}
 {% load bootstrap %}
 
-<form class="modal-form" id="npOrderForm" method="post" 
-      hx-post="{% url 'create_np_document_for_order' order.id %}"
-      hx-swap="none">
+<form class="modal-form" id="npOrderForm" method="post" action="{% url 'create_np_document_for_order' order.id %}" onsubmit="return handleFormSubmit(event)">
     {% csrf_token %}
     <input type="hidden" name="order_id" value="{{ order.id }}">
     <div class="modal-body-content">
@@ -128,13 +126,39 @@
         $('#loadingSpinner').hide();
     }
 
-    // Add HTMX event listeners
-    document.body.addEventListener('htmx:beforeRequest', function(evt) {
-            // Only show spinner for our form submission
-            if (evt.detail.target.id === 'npOrderForm') {
-                showLoadingSpinner();
+    // Handle form submission
+    function handleFormSubmit(event) {
+        event.preventDefault();
+        showLoadingSpinner();
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrftoken,
             }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'processing') {
+                // The WebSocket will handle the rest
+                return false;
+            } else if (data.status === 'error') {
+                hideLoadingSpinner();
+                alert('Error: ' + JSON.stringify(data.errors));
+            }
+        })
+        .catch(error => {
+            hideLoadingSpinner();
+            console.error('Error:', error);
+            alert('An error occurred while processing your request.');
         });
+
+        return false;
+    }
 
     // WebSocket connection
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -155,15 +179,10 @@
                 const orderIdInput = document.querySelector('input[name="order_id"]');
                 const orderId = orderIdInput ? orderIdInput.value : null;
                 if (orderId) {
-                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                    if (isMobile) {
-                        window.location.href = '/orders';
-                    } else {
-                        htmx.ajax('POST', `orderCellUpdateNPStatus/${orderId}`, {
+                    htmx.ajax('POST', `orderCellUpdateNPStatus/${orderId}`, {
                             target: `#order_preview_cell${orderId}`,
                             swap: 'innerHTML'
                         });
-                    }
                     const modal = document.querySelector('.modal');
                     if (modal) {
                         console.log('MODAL found!');
@@ -195,9 +214,9 @@
 .modal-form {
     max-height: calc(100vh - 200px);
     overflow-y: auto;
-    padding-bottom: 1rem;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE and Edge */
+    width: 100%;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -206,34 +225,58 @@
 }
 
 .modal-body-content {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    scroll-padding-bottom: 1rem;
-    scroll-padding-top: 1rem;
+    padding: 1rem;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
 }
+
 .alert {
     margin-bottom: 1rem;
+    word-wrap: break-word;
 }
 
 /* Mobile-specific styles */
 @media (max-width: 768px) {
     .modal-form {
         max-height: calc(100vh - 100px);
-        padding-bottom: 2rem;
     }
     
     .modal-body-content {
-        padding: 0.75rem;
+        padding: 0.5rem;
     }
     
     /* Ensure buttons have enough space at the bottom */
     .d-flex.gap-2.justify-content-center {
         margin-bottom: 1rem;
+        flex-wrap: wrap;
     }
     
     /* Adjust alert spacing on mobile */
     .alert {
         margin-bottom: 0.75rem;
+    }
+
+    /* Fix hstack overflow on mobile */
+    .hstack {
+        flex-wrap: wrap;
+        gap: 0.5rem !important;
+    }
+
+    .hstack .col-sm {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: 0;
+    }
+
+    /* Ensure form inputs don't overflow */
+    .form-control, .form-select {
+        max-width: 100%;
+    }
+
+    /* Adjust button sizes for better mobile fit */
+    .btn {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
     }
 }
 </style>

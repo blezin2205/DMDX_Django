@@ -48,9 +48,18 @@
         <div class="d-flex flex-column gap-2">
             {% for el in supplies %}
                 <div class="border-bottom border-top">
+                    <a href="#" class="text-decoration-none link-dark supply-history-btn" data-supply-id="{{ el.id }}">
                     <div class="card-header bg-secondary-subtle text-dark p-2">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">{{ el.name }}</h6>
+                            <h6 class="mb-0">
+                                {% if request.user|has_group:"empl" or request.user.is_staff %}
+                                   
+                                        {{ el.name }}
+                                   
+                                {% else %}
+                                    {{ el.name }}
+                                {% endif %}
+                            </h6>
                             <div class="d-flex align-items-center gap-2">
                                 {% if el.package_and_tests is not none %}
                                     <small class="text-muted"><i class="bi bi-box-seam"></i> {{ el.package_and_tests }}</small>
@@ -63,6 +72,7 @@
                             </div>
                         </div>
                     </div>
+                </a>
                     <div class="card-body p-2">
                         <div class="d-flex gap-2 mb-2">
                             <small class="text-muted"><i class="bi bi-tag"></i> {{ el.category.name }}</small>
@@ -274,13 +284,13 @@
 
 <!-- Supply History Modal -->
 <div class="modal fade" id="supplyHistoryModal" tabindex="-1" role="dialog" aria-labelledby="supplyHistoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document" style="max-width: 80%;">
+    <div class="modal-dialog{% if request.user_agent.is_mobile %} modal-fullscreen-sm-down{% else %} modal-xl{% endif %}" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="supplyHistoryModalLabel">Історія товару</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="supplyHistoryContent">
+            <div class="modal-body p-0" id="supplyHistoryContent">
                 <div class="text-center">
                     <div class="spinner-border" role="status">
                         <span class="visually-hidden">Loading...</span>
@@ -290,6 +300,30 @@
         </div>
     </div>
 </div>
+
+<style>
+@media (max-width: 575.98px) {
+    #supplyHistoryModal .modal-content {
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
+    #supplyHistoryModal .modal-header {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    #supplyHistoryModal .modal-body {
+        height: calc(100vh - 56px); /* 56px is the height of modal-header */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0;
+    }
+    #supplyHistoryModal .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+</style>
 
 <script>
 $(function() {

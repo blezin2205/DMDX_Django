@@ -190,6 +190,7 @@ urlpatterns = [
     path('upload/', firebase_view.upload_files, name='upload_files'),
     path('delete_file/', firebase_view.delete_file, name='delete_file'),
     path('nova_poshta_registers', NPViews.nova_poshta_registers, name='nova_poshta_registers'),
-    path('orderCellUpdateNPStatus/<int:order_id>', NPViews.orderCellUpdateNPStatus, name='orderCellUpdateNPStatus')
+    path('orderCellUpdateNPStatus/<int:order_id>', NPViews.orderCellUpdateNPStatus, name='orderCellUpdateNPStatus'),
+    path('import-general-supplies/', views.import_general_supplies_from_excel, name='import_general_supplies_from_excel')
 
 ]

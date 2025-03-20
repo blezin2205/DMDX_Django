@@ -614,6 +614,10 @@ def np_create_ID_button_subscribe(request, order_id):
 
 def orderCellUpdateNPStatus(request, order_id):
     order = Order.objects.get(id=order_id)
-    template = 'partials/order_preview_cel.html'
+    # Check if user agent is mobile
+    if request.user_agent.is_mobile:
+        template = 'supplies_mobile/order_cell.html'
+    else:
+        template = 'partials/order_preview_cel.html'
     return render(request, template, {'order': order})
 

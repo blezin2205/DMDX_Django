@@ -3686,3 +3686,99 @@ def serviceNotes(request):
     return render(request, 'supplies/serviceNotes.html',
                   {'title': f'Сервiсні записи', 'serviceNotes': serviceNotes, 'cartCountData': cartCountData,
                    'form': form, 'serviceFilters': serviceFilters, 'isService': True})
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def import_general_supplies_from_excel(request):
+    if request.method == 'POST':
+        if 'excel_file' in request.FILES:
+            try:
+                excel_file = request.FILES['excel_file']
+                # Get column mappings from form
+                name_col = int(request.POST.get('name_column', 0))
+                ref_col = request.POST.get('ref_column')
+                smn_code_col = request.POST.get('smn_code_column')
+                package_tests_col = request.POST.get('package_tests_column')
+                category_id = request.POST.get('category')
+                
+                # Read excel file
+                import pandas as pd
+                df = pd.read_excel(excel_file)
+                
+                success_count = 0
+                update_count = 0
+                error_count = 0
+                error_messages = []
+                
+                # Get the selected category
+                category = Category.objects.get(id=category_id)
+                
+                for index, row in df.iterrows():
+                    try:
+                        # Prepare data dictionary with required fields
+                        supply_data = {
+                            'name': row[name_col],
+                            'category': category
+                        }
+                        
+                        # Add optional fields only if they exist and are not empty
+                        if ref_col and ref_col.strip() != '':
+                            ref_col_num = int(ref_col)
+                            if pd.notna(row[ref_col_num]):
+                                supply_data['ref'] = str(row[ref_col_num])
+                            
+                        if smn_code_col and smn_code_col.strip() != '':
+                            smn_code_col_num = int(smn_code_col)
+                            if pd.notna(row[smn_code_col_num]):
+                                supply_data['SMN_code'] = str(row[smn_code_col_num])
+                            
+                        if package_tests_col and package_tests_col.strip() != '':
+                            package_tests_col_num = int(package_tests_col)
+                            if pd.notna(row[package_tests_col_num]):
+                                supply_data['package_and_tests'] = str(row[package_tests_col_num])
+                        
+                        # Check if GeneralSupply with this name exists
+                        existing_supply = GeneralSupply.objects.filter(name=row[name_col], category=category).first()
+                        
+                        if existing_supply:
+                            # Update existing supply
+                            for key, value in supply_data.items():
+                                setattr(existing_supply, key, value)
+                            existing_supply.save()
+                            update_count += 1
+                        else:
+                            # Create new supply
+                            general_supply = GeneralSupply(**supply_data)
+                            general_supply.save()
+                            success_count += 1
+                        
+                    except Exception as e:
+                        error_count += 1
+                        error_messages.append(f"Row {index + 1}: {str(e)}")
+                        print(f"Error on row {index}: {str(e)}")
+                        continue
+
+                if success_count > 0 or update_count > 0:
+                    message = []
+                    if success_count > 0:
+                        message.append(f'Created {success_count} new items')
+                    if update_count > 0:
+                        message.append(f'Updated {update_count} existing items')
+                    messages.success(request, ' | '.join(message))
+                if error_count > 0:
+                    messages.warning(request, f'Failed to process {error_count} items. Check the console for details.')
+                return redirect('import_general_supplies_from_excel')
+                
+            except Exception as e:
+                messages.error(request, f'Error processing file: {str(e)}')
+                return redirect('import_general_supplies_from_excel')
+    
+    # Get all categories for the dropdown
+    categories = Category.objects.all().order_by('name')
+    
+    return render(request, 'supplies/import_general_supplies.html', {
+        'title': 'Import General Supplies',
+        'cartCountData': countCartItemsHelper(request),
+        'categories': categories
+    })
+
+
