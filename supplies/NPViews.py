@@ -80,6 +80,7 @@ def get_print_xls_for_preorders(request):
 
 
 def add_more_np_places_input_group(request):
+    print("add_more_np_places_input_group")
     return render(request, 'partials/add_more_np_places_input_group.html', {})
 
 def minus_add_more_np_places_input_group(request):

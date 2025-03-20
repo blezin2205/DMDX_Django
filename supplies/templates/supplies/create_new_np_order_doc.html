@@ -31,8 +31,8 @@
                 <div class="col-sm">
                     {{ inputForm.height|as_crispy_field }}
                 </div>
-                <button class="btn btn-outline-primary" hx-post="{% url 'add_more_np_places_input_group' %}" hx-target="#add_more_places_input_group" hx-swap="beforebegin"><i class="bi bi-plus-circle"></i></button>
-                <button class="btn btn-outline-warning" hx-post="{% url 'copy_np_places_input_group' %}" hx-vals='{ "weight": {{ inputForm.weight }}, "width": {{ inputForm.width }}, "length": {{ inputForm.length }}, "height": {{ inputForm.height }}  }' hx-target="#add_more_places_input_group" hx-swap="beforebegin"><i class="bi bi-clipboard2-fill"></i></button>
+                <button type="button" class="btn btn-outline-primary" onclick="addMorePlaces()"><i class="bi bi-plus-circle"></i></button>
+                <button type="button" class="btn btn-outline-warning" onclick="copyPlaces()"><i class="bi bi-clipboard2-fill"></i></button>
             </div>
         </div>
 
@@ -113,6 +113,32 @@
 </form>
 
 <script>
+    // Add these new functions at the beginning of your script section
+    function addMorePlaces() {
+        htmx.ajax('POST', "{% url 'add_more_np_places_input_group' %}", {
+            target: '#add_more_places_input_group',
+            swap: 'beforebegin'
+        });
+    }
+
+    function copyPlaces() {
+        const weight = document.querySelector('input[name="weight"]').value;
+        const width = document.querySelector('input[name="width"]').value;
+        const length = document.querySelector('input[name="length"]').value;
+        const height = document.querySelector('input[name="height"]').value;
+
+        htmx.ajax('POST', "{% url 'copy_np_places_input_group' %}", {
+            target: '#add_more_places_input_group',
+            swap: 'beforebegin',
+            values: {
+                weight: weight,
+                width: width,
+                length: length,
+                height: height
+            }
+        });
+    }
+
     // Show loading spinner
     function showLoadingSpinner() {
         // Hide main buttons
@@ -209,7 +235,6 @@
         console.error('WebSocket error:', e);
     };
 </script>
-
 <style>
 .modal-form {
     max-height: calc(100vh - 200px);
