@@ -26,7 +26,7 @@
             <div class="modal-body p-0" id="npModalContent">
                 <!-- Loading state -->
                 <div class="loading-state">
-                    <div class="d-flex justify-content-center align-items-center" style="min-height: calc(100vh - 200px);">
+                    <div class="loading-container">
                         <div class="text-center">
                             <div class="spinner-border text-primary mb-3" role="status">
                                 <span class="visually-hidden">Loading...</span>
@@ -138,4 +138,12 @@
 {% endif %}
  </form>
 
+ <style>
+    .loading-container {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
 {% endblock %}
