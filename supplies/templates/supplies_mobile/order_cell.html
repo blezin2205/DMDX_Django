@@ -124,7 +124,7 @@
                                  class="flex-grow-1"
                                  hx-get="{% url 'np_create_ID_button_subscribe' order.id %}" 
                                  hx-trigger="np_create_ID_button_subscribe{{order.id}} from:body">
-                                {% include 'partials/np_create_ID_button.html' %}
+                                {% include 'partials/delivery/np_create_ID_button.html' %}
                             </div>
                         {% endif %}
 

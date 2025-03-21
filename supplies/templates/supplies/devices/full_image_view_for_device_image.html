@@ -1,0 +1,10 @@
+{% extends 'supplies/base/base.html' %}
+
+    {% block title %}
+{{ device.general_device.name }} / {{ device.serial_number }}
+{% endblock %}
+
+{% block content %}
+    <h5>Full image for: {{ device.general_device.name }} / {{ device.serial_number }} \n {{ device.in_place.name }}</h5>
+    <img src="{{ device.image.url }}" alt="">
+{% endblock %}

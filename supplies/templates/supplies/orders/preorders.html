@@ -1,0 +1,84 @@
+{% extends 'supplies/base/base.html' %}
+{% load myapp_extras %}
+{% load crispy_forms_filters %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+     <form method="post" class="form-inline justify-content-center">
+      {% csrf_token %}
+{% if not fromClientList %}
+     <div class="col">
+      <div class="row">
+      <div class="col">
+              <a href="/orders" class="btn btn-primary m-2 {% if isOrdersTab %} active {% endif %}" aria-current="page">Замовлення {% if cartCountData.orders_incomplete > 0 %} <span class="badge bg-warning ms-2">{{ cartCountData.orders_incomplete }}</span> {% endif %}</a>
+{#    {% if request.user|has_group:"empl" or request.user.is_staff %}#}
+{#         <a href="{% url 'agreements' %}" class="btn btn-primary {% if isAgreementsTab %} active {% endif %}" aria-current="page">Договори</a>#}
+{#     {% endif %}#}
+  <a href="/preorders" class="btn btn-primary {% if isPreordersTab %} active {% endif %}">Передзамовлення {% if cartCountData.preorders_incomplete > 0 %} <span class="badge ms-2" style="background: #5bc0de">{{ cartCountData.preorders_incomplete }}</span> {% endif %}</a>
+
+    {% if messages %}
+<ul class="messages my-4" style="color: red">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    {% endfor %}
+
+</ul>
+             <div id="error"></div>
+{% endif %}
+
+    </div>
+
+    </div>
+    </div>
+{% endif %}
+{#     <form method="get" class="form-inline justify-content-center">#}
+     <div class="hstack gap-2">
+         <div class="hstack w-100 gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between">
+             <div class="hstack gap-4">
+{#                 {{ preorderFilter.form.isComplete|as_crispy_field }}#}
+                 {{ preorderFilter.form.state_of_delivery|as_crispy_field }}
+                 {% if request.user|has_group:"empl" or request.user.is_staff %}
+                 {{ preorderFilter.form.for_state_of_client|as_crispy_field }}
+                 {{ preorderFilter.form.isPreorder|as_crispy_field }}
+                     {{ preorderFilter.form.search_text|as_crispy_field }}
+                 {% endif %}
+             </div>
+             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
+
+</div>
+     <div class="col d-flex justify-content-end" id="xls_preorder_print_buttons">
+        {% include 'partials/preorders/xls_preorders_print_buttons.html' %}
+    </div>
+
+     </div>
+
+
+
+
+{#        </form>#}
+<div class="col d-flex justify-content-end pe-2">
+    {% if isArchiveChoosed %}
+         <button type="submit" class="btn btn-outline-primary">
+        Сховати архів
+    </button>
+    {% else %}
+         <button type="submit" class="btn btn-outline-primary" name="get_archive_preorders">
+        Показати архів
+    </button>
+    {% endif %}
+
+    </div>
+
+{% if orders.count == 0 %}
+
+    <h3>Передзамовлень ще немає!</h3>
+{% else %}
+    <div class="container" id="preorders-list">
+    {% include 'partials/preorders/preorders-list.html' %}
+</div>
+{% endif %}
+<script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
+ </form>
+{% endblock %}

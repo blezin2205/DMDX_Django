@@ -1,0 +1,20 @@
+{% load myapp_extras %}
+
+
+{% for order in orders %}
+{% include 'partials/preorders/preorder_preview_cell.html' %}
+
+    {% if not forloop.last %}
+        {% with next_order=orders|next:forloop.counter0 %}
+            {% if order.state_of_delivery != next_order.state_of_delivery %}
+
+                <div style="height: 12px; background-color: rgb(124,124,124); border-radius: 8px; margin-top: 50px; margin-bottom: 50px"> </div>
+{#                   {{ next_order.get_state_of_delivery_value }}#}
+{#                   <div style="height: 12px; background-color: rgb(124,124,124); border-radius: 8px; margin-top: 50px; margin-bottom: 50px"> </div>#}
+
+
+            {% endif %}
+        {% endwith %}
+    {% endif %}
+
+    {% endfor %}

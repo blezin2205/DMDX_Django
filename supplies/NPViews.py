@@ -60,7 +60,7 @@ def httpRequest(request):
 
 def nova_poshta_registers(request):
     registers = RegisterNPInfo.objects.all().order_by('-id')
-    return render(request, 'supplies/nova_poshta_registers.html', {'registers': registers})
+    return render(request, 'supplies/nova_poshta/nova_poshta_registers.html', {'registers': registers})
 
 
 
@@ -78,12 +78,12 @@ def get_print_xls_for_preorders(request):
         cheked = len(selected_orders) > 0
         print(selected_orders)
         print(cheked)
-    return render(request, 'partials/xls_preorders_print_buttons.html', {'cheked': cheked})
+    return render(request, 'partials/preorders/xls_preorders_print_buttons.html', {'cheked': cheked})
 
 
 def add_more_np_places_input_group(request):
     print("add_more_np_places_input_group")
-    return render(request, 'partials/add_more_np_places_input_group.html', {})
+    return render(request, 'partials/delivery/add_more_np_places_input_group.html', {})
 
 def minus_add_more_np_places_input_group(request):
     return HttpResponse(status=200)
@@ -95,7 +95,7 @@ def copy_np_places_input_group(request):
     height = request.POST.get('height')
     weight = request.POST.get('weight')
     data = { 'width': width, 'length': length, 'height': height, 'weight': weight }
-    return render(request, 'partials/add_more_np_places_input_group.html', data)
+    return render(request, 'partials/delivery/add_more_np_places_input_group.html', data)
 
 
 def threading_create_np_document_async(request, data, order_id, redirect_url=False):
@@ -300,7 +300,7 @@ def create_np_document_for_order(request, order_id):
                 return JsonResponse({'status': 'error', 'errors': inputForm.errors})
 
     # For GET requests, just render the form
-    return render(request, 'supplies/create_new_np_order_doc.html', {
+    return render(request, 'supplies/nova_poshta/create_new_np_order_doc.html', {
         'inputForm': inputForm,
         'placeForm': placeForm,
         'order': order,
@@ -346,7 +346,7 @@ def search_city(request):
     if search_text != "":
         results = NPCity.objects.filter(name__istartswith=search_text.capitalize())
     context = {"results": results}
-    return render(request, 'partials/search-city-results.html', context)
+    return render(request, 'partials/search/search-city-results.html', context)
 
 def search_street(request):
 
@@ -369,7 +369,7 @@ def search_street(request):
 
     print(cityRef)
 
-    return render(request, 'partials/search-streets-results.html', context)
+    return render(request, 'partials/search/search-streets-results.html', context)
 
 
 def search_warehouse(request):
@@ -393,7 +393,7 @@ def search_warehouse(request):
     print("WAREHOUSES")
     print(data['data'])
     context = {"results": data["data"]}
-    return render(request, 'partials/search-streets-results.html', context)
+    return render(request, 'partials/search/search-streets-results.html', context)
 
 
 def choosed_city(request):
@@ -402,9 +402,9 @@ def choosed_city(request):
     cityType = request.POST.get('cityType')
     recipientType = request.POST.get('recipientType')
     if recipientType == 'Warehouse':
-        renderPage = 'partials/choosed-city-and-warehouse.html'
+        renderPage = 'partials/search/choosed-city-and-warehouse.html'
     else:
-        renderPage = 'partials/choosed-city.html'
+        renderPage = 'partials/search/choosed-city.html'
 
     return render(request, renderPage, {'cityName': cityName, 'cityRef': cityRef, 'cityType': cityType})
 
@@ -426,7 +426,7 @@ def choosed_street(request):
         ifStreet = False
     else:
         ifStreet = True
-    return render(request, 'partials/choosed-street.html', {'streetName': streetName, 'streetType': streetType, 'streetRef': streetRef, 'street': ifStreet})
+    return render(request, 'partials/search/choosed-street.html', {'streetName': streetName, 'streetType': streetType, 'streetRef': streetRef, 'street': ifStreet})
 
 def radioAddClientTONP(request):
 
@@ -435,7 +435,7 @@ def radioAddClientTONP(request):
     orgRefExistJson = request.POST.get('orgRefExist')
     orgExist = bool(orgRefExistJson == 'True')
 
-    return render(request, 'partials/radioButtonsWorkerTypeGroup.html', {'cheked': isShow, 'orgRefExist': orgExist})
+    return render(request, 'partials/common/radioButtonsWorkerTypeGroup.html', {'cheked': isShow, 'orgRefExist': orgExist})
 
 def delete_my_np_sender_place(request):
     del_sender_place_id = request.POST.get('del_sender_place_id')
@@ -603,7 +603,7 @@ def np_delivery_detail_info_for_order(request, order_id):
         #         parcel_user = documentsIdList.first().userCreated
         #         update_order_status_core(order_id, parcel_user)
             
-        response = render(request, 'partials/np_delivery_info_in_list_of_orders.html',
+        response = render(request, 'partials/delivery/np_delivery_info_in_list_of_orders.html',
                           {'parsels_status_data': parsels_status_data})
         trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
 
@@ -615,7 +615,7 @@ def np_delivery_detail_info_for_order(request, order_id):
         #         parcel_user = documentsIdList.first().userCreated
         #         update_order_status_core(order_id, parcel_user)
         
-        response = render(request, 'partials/np_delivery_info_in_list_of_orders.html',
+        response = render(request, 'partials/delivery/np_delivery_info_in_list_of_orders.html',
                           {'parsels_status_data': parsels_status_data})
         trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
 
@@ -626,7 +626,7 @@ def np_delivery_detail_info_for_order(request, order_id):
 def np_create_ID_button_subscribe(request, order_id):
     print("np_create_ID_button_subscribe")
     order = Order.objects.get(id=order_id)
-    return render(request, 'partials/np_create_ID_button.html', {'order': order})
+    return render(request, 'partials/delivery/np_create_ID_button.html', {'order': order})
 
 
 def orderCellUpdateNPStatus(request, order_id):
@@ -635,6 +635,6 @@ def orderCellUpdateNPStatus(request, order_id):
     if request.user_agent.is_mobile:
         template = 'supplies_mobile/order_cell.html'
     else:
-        template = 'partials/order_preview_cel.html'
+        template = 'partials/orders/order_preview_cel.html'
     return render(request, template, {'order': order})
 

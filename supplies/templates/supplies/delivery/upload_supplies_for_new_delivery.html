@@ -1,0 +1,145 @@
+{% extends 'supplies/base/base.html' %}
+{% load myapp_extras %}
+{% load crispy_forms_filters %}
+{% load bootstrap %}
+{% load static %}
+
+{% block title %}
+  {{ title }}
+{% endblock %}
+
+{% block content %}
+<section class="h-100 shadow p-3 mb-5 rounded align-content-center" style="background-color: #f5f5f5; display: flex; justify-content: center; align-items: center;">
+
+
+    <div class="d-flex justify-content-around w-100">
+        <div>
+            <figure style="background-color: white; border-radius: 16px; text-align: center; padding: 20px; margin: 20px">
+            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903384/syncMode_cr1ova.png" alt="alldata" style="width: 300px; height: 80px;">
+            <figcaption class="fw-bold">Synchronous Mode</figcaption>
+        </figure>
+        <figure style="background-color: white; border-radius: 16px; text-align: center; padding: 20px; margin: 20px">
+            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903295/storeMode_mohdkj.png" alt="alldata" style="width: 300px; height: 80px;">
+            <figcaption class="fw-bold">Storage Mode</figcaption>
+        </figure>
+        </div>
+
+         <div>
+            <figure style="background-color: white; border-radius: 16px; text-align: center; padding: 20px; margin: 20px">
+            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903286/uploadAllData_g0mul9.png" alt="alldata" style="width: 300px; height: 80px;">
+            <figcaption class="fw-bold">Upload All Data</figcaption>
+        </figure>
+        <figure style="background-color: white; border-radius: 16px; text-align: center; padding: 20px; margin: 20px">
+            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903277/totalCount_hvm7zt.png" alt="alldata" style="width: 300px; height: 80px;">
+            <figcaption class="fw-bold">Total Data Count</figcaption>
+        </figure>
+             <figure style="background-color: white; border-radius: 16px; text-align: center; padding: 20px; margin: 20px">
+            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714902868/clearAllData_niur7l.png" alt="alldata" style="width: 300px; height: 80px;">
+            <figcaption class="fw-bold">Clear All Data</figcaption>
+        </figure>
+        </div>
+
+
+    </div>
+</section>
+
+
+
+
+
+    
+    <section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #f5f5f5;">
+<form method="post" action="" id="upload_supplies_for_new_delivery">
+  {% csrf_token %}
+  <div class="container w-50 p-3 align-items-start">
+      <div class="container w-100 p-3 my-3 align-items-start bg-light border shadow-sm">
+          <h5>Тип штрих-коду</h5>
+      <div class="form-check">
+  <input class="form-check-input" type="radio" name="barcode_type" id="flexRadioDefault1" value="Siemens" checked>
+  <label class="form-check-label" for="flexRadioDefault1">
+    Siemens
+  </label>
+</div>
+<div class="form-check">
+  <input class="form-check-input" type="radio" name="barcode_type" value="Alegria" id="flexRadioDefault2">
+  <label class="form-check-label" for="flexRadioDefault2">
+    Alegria
+  </label>
+</div>
+</div>
+    {{ form.description|as_crispy_field }}
+      <button class="btn btn-outline-primary my-5 w-100" type="submit" id="submitButton">Зберегти</button>
+        <button class="btn btn-primary my-5 w-100" type="button" id="loadingButton" style="display: none;" disabled>
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <span role="status">Loading...</span>
+        </button>
+  </div>
+
+
+</form>
+ <script>
+        // Показати лоадінг кнопку
+        function showLoadingButton() {
+            document.getElementById('submitButton').style.display = 'none';
+            document.getElementById('loadingButton').style.display = 'block';
+        }
+
+        // Показати попап і лоадінг кнопку перед відправкою форми
+        document.getElementById('upload_supplies_for_new_delivery').onsubmit = function(event) {
+    // Prevent the form from submitting normally
+    event.preventDefault();
+
+    // Get the values of the radio buttons and description
+    var barcodeType = document.querySelector('input[name="barcode_type"]:checked').value;
+    var description = document.getElementById('id_description').value; // Replace 'id_description' with the actual ID of your description field
+    var deliveryOrderId = "{{ delivery_order_id }}";
+    // Call the function with the selected value and description
+    callSomeViewFunction(deliveryOrderId, barcodeType, description);
+    showLoadingButton();
+};
+
+function callSomeViewFunction(deliveryOrderId = null, barcodeType, description) {
+    // Implement the function to send the data to the server
+    fetch('/upload_supplies_for_new_delivery_from_js_script', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ barcode_type: barcodeType, description: description, deliveryOrderId: deliveryOrderId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Handle the response from the server
+        console.log(data);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+        // Підключення до WebSocket
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(`${protocol}//${window.location.host}/wss/add_new_delivery_loading/`);
+
+        socket.onopen = function(e) {
+            console.log('WebSocket connection opened');
+        };
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            alert(data.message)
+            window.location.href = `/all_deliveries/${data.delivery_order_id}`; // Редірект після отримання повідомлення
+        };
+
+        socket.onclose = function(e) {
+            console.error('WebSocket closed unexpectedly');
+        };
+    </script>
+
+
+{# {% include 'partials/common/progress-bar.html' %} #}
+    </section>
+    
+    
+{% endblock %}

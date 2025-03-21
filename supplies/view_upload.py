@@ -50,12 +50,12 @@ def get_progress(request, task_id, for_delivery_order_id):
             t.append(d)
         supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
         status_of_task = result.status
-        return render(request, 'supplies/delivery_cart.html', {'cartCountData': cartCountData, 'status_of_task': status_of_task, 'supDict': supDict, 'delivery_order': delivery_order, 'total_count': total_count, 'form': form})
+        return render(request, 'supplies/cart/delivery_cart.html', {'cartCountData': cartCountData, 'status_of_task': status_of_task, 'supDict': supDict, 'delivery_order': delivery_order, 'total_count': total_count, 'form': form})
 
     print(task_id)
     print(percent_complete)
     context = {'task_id': task_id, 'for_delivery_order_id': for_delivery_order_id, 'value': percent_complete}
-    return render(request, 'partials/progress-bar.html', context)
+    return render(request, 'partials/common/progress-bar.html', context)
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -80,9 +80,9 @@ def upload_supplies_for_new_delivery(request, delivery_order_id=None):
                 title = "Створити нову поставку"
             task = makeDataUpload.delay(string_data, for_delivery_order.id, barcode_type)
             context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': for_delivery_order.id}
-            return render(request, 'supplies/upload_supplies_new_delivery_progress.html', context)
+            return render(request, 'supplies/delivery/upload_supplies_new_delivery_progress.html', context)
 
-    return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form, 'title': title,
+    return render(request, 'supplies/delivery/upload_supplies_for_new_delivery.html', {'form': form, 'title': title,
                                                                                                             'cartCountData': cartCountData})
 
 @login_required(login_url='login')
@@ -145,7 +145,7 @@ def upload_supplies_for_new_delivery_noncelery(request, delivery_order_id=None):
             t.start()
             return JsonResponse({'success': False, 'message': 'Форма не дійсна.'})
             # return redirect('/all_deliveries')
-    return render(request, 'supplies/upload_supplies_for_new_delivery.html', {'form': form, 'cartCountData': cartCountData, 'title': title, 'delivery_order_id': delivery_order_id})
+    return render(request, 'supplies/delivery/upload_supplies_for_new_delivery.html', {'form': form, 'cartCountData': cartCountData, 'title': title, 'delivery_order_id': delivery_order_id})
 
 def threading_create_delivery_async(request, string_data, delivery_order_id, barcode_type, isUpdate = False):
     for_delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
@@ -241,7 +241,7 @@ def all_deliveries(request):
     cartCountData = countCartItemsHelper(request)
     deliveries = DeliveryOrder.objects.all().order_by('-id')
 
-    return render(request, 'supplies/all_deliveries_list.html', {'cartCountData': cartCountData, 'deliveries': deliveries})
+    return render(request, 'supplies/delivery/all_deliveries_list.html', {'cartCountData': cartCountData, 'deliveries': deliveries})
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -282,7 +282,7 @@ def delivery_detail(request, delivery_id):
         t = supDict.setdefault(d.isRecognized, [])
         t.append(d)
     supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
-    return render(request, 'supplies/delivery_detail.html', {'cartCountData': cartCountData, 'total_count': total_count, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
+    return render(request, 'supplies/delivery/delivery_detail.html', {'cartCountData': cartCountData, 'total_count': total_count, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -357,7 +357,7 @@ def add_gen_sup_in_delivery_order_manual_list_save_action(request):
                                                 delivery_order=del_order)
         sup_delivery.save()
         context = {"item": sup_delivery}
-        return render(request, 'partials/saved_instance_of_manual_added_sup_in_delivery.html', context)
+        return render(request, 'partials/delivery/saved_instance_of_manual_added_sup_in_delivery.html', context)
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])

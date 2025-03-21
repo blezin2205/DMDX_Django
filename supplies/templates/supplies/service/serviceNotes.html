@@ -1,0 +1,81 @@
+{% extends 'supplies/base/base.html' %}
+{% load static %}
+{% load bootstrap %}
+
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+{% if request.user.is_staff %}
+<a class="btn btn-primary my-3" href="{% url 'create_note' %}" role="button">Створити запис</a>
+{% endif %}
+    {% if isService %}
+        <form method="get" class="form-inline justify-content-center">
+         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
+             <div class="hstack gap-2">
+                 {{ serviceFilters.form.for_place|bootstrap }}
+                 {{ serviceFilters.form.from_user|bootstrap }}
+             </div>
+             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
+
+</div>
+        </form>
+    {% endif %}
+
+
+
+    <table class="table centred mt-5">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">{{serviceNotes|length}}</th>
+      <th scope="col" class="textAlignLeft">Опис</th>
+      <th scope="col">Інженер</th>
+        {% if isService %}
+        <th scope="col">Клієнт</th>
+        {% endif %}
+        <th scope="col">Дата</th>
+    {% if request.user.is_staff %}
+    <th scope="col">Action</th>
+    {% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for note in serviceNotes %}
+
+     <tr>
+      <th scope="row">{{note.id}}</th>
+         <td style="text-align: left; white-space: pre-line">{{ note.description }}</td>
+         <td>{{ note.from_user.last_name }}</td>
+         {% if isService %}
+             <td>{{ note.for_place.name }}, {{ note.for_place.city_ref.name }}</td>
+         {% endif %}
+
+         <td>{{ note.dateCreated|date:"d.m.Y" }}</td>
+{% if request.user.is_staff %}
+     <td>
+     <div class="hstack gap-1 justify-content-end">
+{#         <form action="{% url 'deleteNote' note.id %}"#}
+{#    method="POST" style="display: inline;" onsubmit="window.mytest()">#}
+{#    {% csrf_token %}#}
+{#    <input type="hidden" name="album_id"#}
+{#        value="{{ note.id }}" />#}
+{#    <button type="submit" class="btn btn-sm btn-danger">#}
+{#        <i class="bi bi-trash"></i>#}
+{#    </button>#}
+{#</form>#}
+         {% if request.user == note.from_user %}
+             <a class="btn btn-sm btn-warning" href="{% url 'updateNote' note.id %}"><i class="bi bi-pencil"></i></a>
+             {% endif %}
+
+    </div>
+     </td>
+
+{% endif %}
+
+    </tr>
+   {% endfor %}
+  </tbody>
+</table>
+    <script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
+{% endblock %}

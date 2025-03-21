@@ -39,7 +39,7 @@ def upload_to_storage(request):
             return JsonResponse({'message': 'Form is not valid'}, status=400)
     else:
         form = UploadFileForm()
-    return render(request, 'supplies/firebase_upload.html', {'form': form, 'files': files, 'folders': folders})
+    return render(request, 'supplies/misc/firebase_upload.html', {'form': form, 'files': files, 'folders': folders})
 
 def upload_files(request):
     if request.method == 'POST' and request.FILES.getlist('files'):
@@ -126,7 +126,7 @@ def list_files(request, path=''):
         'total_size': total_size,
     }
 
-    return render(request, 'supplies/list_fir_files.html', context)
+    return render(request, 'supplies/misc/list_fir_files.html', context)
 
 
 def delete_file(request):

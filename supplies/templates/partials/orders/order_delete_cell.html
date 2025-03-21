@@ -1,0 +1,10 @@
+
+{% if request.user_agent.is_mobile %}
+    {% for order in orders %}
+{% include 'supplies_mobile/order_cell.html' %}
+{% endfor %}
+{% else %}
+    {% for order in orders %}
+{% include 'partials/orders/order_preview_cel.html' %}
+{% endfor %}
+{% endif %}

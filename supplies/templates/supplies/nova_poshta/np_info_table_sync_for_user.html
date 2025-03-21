@@ -1,0 +1,47 @@
+{% extends 'supplies/base/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Your current REF: <span class="badge bg-primary">{{ current_ref }}</span></h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="py-3">Name</th>
+                            <th class="py-3">Phone</th>
+                            <th class="py-3">REF</th>
+                            <th class="py-3 text-center">Sync</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for postalUser in data %}
+                        <tr>
+                            <td class="py-2">{{ postalUser.LastName }} {{ postalUser.FirstName }}</td>
+                            <td class="py-2">{{ postalUser.Phones }}</td>
+                            <td class="py-2"><span class="badge bg-secondary">{{ postalUser.Ref }}</span></td>
+                            <td class="py-2 text-center">
+                                {% if postalUser.Ref != current_ref %}
+                                    <form method="POST" action="" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="np_ref" value="{{ postalUser.Ref }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="badge bg-success">Current</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

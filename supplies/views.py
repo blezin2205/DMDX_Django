@@ -40,7 +40,7 @@ from django.template.loader import render_to_string
 
 def celery_test(request):
     task = go_to_sleep.delay(1)
-    return render(request, 'supplies/celery-test.html', {'task_id': task.task_id})
+    return render(request, 'supplies/misc/celery-test.html', {'task_id': task.task_id})
 
 
 @login_required(login_url='login')
@@ -56,7 +56,7 @@ def app_settings(request):
     else:
         form = AppSettingsForm(instance=app_settings)
 
-    return render(request, 'supplies/app_settings.html', {'form': form})
+    return render(request, 'supplies/settings/app_settings.html', {'form': form})
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -68,7 +68,7 @@ def np_info_sync_ref_post_request(request):
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
-def httpRequest(request):
+def np_info_table_sync_for_user(request):
     user = request.user
 
     if request.method == 'POST':
@@ -92,7 +92,7 @@ def httpRequest(request):
 
     data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(param)).json()
 
-    return render(request, "supplies/http_response.html", {'data': data["data"], 'current_ref': current_ref})
+    return render(request, "supplies/nova_poshta/np_info_table_sync_for_user.html", {'data': data["data"], 'current_ref': current_ref})
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -130,7 +130,7 @@ def chartOfSoldSupplies(request):
 
     # chart = fig.to_html()
     context = {}
-    return render(request, "supplies/chart-sold.html", context)
+    return render(request, "supplies/misc/chart-sold.html", context)
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -162,7 +162,7 @@ def load_xms_data(request):
 
 
 
-    return render(request, 'supplies/load_xms_data.html', {'counter': counter, 'file_url': file_url})
+    return render(request, 'supplies/misc/load_xms_data.html', {'counter': counter, 'file_url': file_url})
 
 
 
@@ -211,7 +211,6 @@ def register_exls_selected_buttons(request):
     if request.method == 'POST':
         selected_orders = request.POST.getlist('register_exls_selected_buttons')
         cheked = len(selected_orders) > 0
-        print(selected_orders)
     return render(request, 'partials/register_butons_for_seelcted_orders.html', {'cheked': cheked})
 
 @login_required(login_url='login')
@@ -221,6 +220,7 @@ def countCartItemsHelper(request):
     preorders_await = 0
     preorders_partial = 0
     order_to_send_today = 0
+    expired_orders = 0
     is_one_cart = ''
 
     if app_settings.enable_show_other_booked_cart:
@@ -297,8 +297,8 @@ def countCartItemsHelper(request):
 
 @login_required(login_url='login')
 def full_image_view_for_device_image(request, device_id):
-    device = Device.objects.get(pk=device_id)
-    return render(request, 'supplies/full_image_view_for_device_image.html', {'device': device})
+    device = get_object_or_404(Device, id=device_id)
+    return render(request, 'supplies/devices/full_image_view_for_device_image.html', {'device': device})
 
 
 def countOnHoldMake(request):
@@ -412,7 +412,7 @@ def add_preorder_general_to_preorder(request, prodId):
         suppInCart.save()
 
     countInPreorder = suppInCart.count_in_order
-    response = render(request, 'partials/add_precart_button_general.html',
+    response = render(request, 'partials/cart/add_precart_button_general.html',
                       {'el': general_supply, 'countInPreCart': countInPreorder})
     trigger_client_event(response, 'subscribe_precart', {})
     return response
@@ -474,7 +474,7 @@ def preorder_supp_buttons(request, supp_id):
     deltaCountOnHold = supply.count - (supply.countOnHold + supply.preCountOnHold) == 0
     deltaCountOnCart = supply.count - (supply.countOnHold + supply.preCountOnHold) - countInPreCart == 0
 
-    response = render(request, 'partials/add_precart_button.html', {'countInPreCart': countInPreCart, 'supp': supply, 'deltaCountOnHold': deltaCountOnHold, 'deltaCountOnCart': deltaCountOnCart})
+    response = render(request, 'supplies/orders/preorder_detail_list_item.html', {'el': gen_sup_in_preorder, 'order': gen_sup_in_preorder.supply_for_order})
     trigger_client_event(response, 'subscribe_precart', {})
     return response
 
@@ -514,7 +514,7 @@ def updateItem(request, supp_id):
     deltaCountOnHold = supply.count - supply.countOnHold == 0
     countInCart = suppInCart.count_in_order
     deltaCountOnCart = supply.count - supply.countOnHold - countInCart == 0
-    response = render(request, 'partials/add_cart_button.html',
+    response = render(request, 'partials/cart/add_cart_button.html',
                       {'cartCountData': cartCountData, 'supp': supply, 'deltaCount': deltaCountOnHold,
                        'countInCart': countInCart, 'deltaCountOnCart': deltaCountOnCart})
     trigger_client_event(response, 'subscribe', {})
@@ -523,12 +523,12 @@ def updateItem(request, supp_id):
 
 def updateCartItemCount(request):
     cartCountData = countCartItemsHelper(request)
-    return render(request, 'partials/cart-badge.html', {'cartCountData': cartCountData})
+    return render(request, 'partials/cart/cart-badge.html', {'cartCountData': cartCountData})
 
 
 def updatePreCartItemCount(request):
     cartCountData = countCartItemsHelper(request)
-    return render(request, 'partials/precart-badge.html', {'cartCountData': cartCountData})
+    return render(request, 'partials/cart/precart-badge.html', {'cartCountData': cartCountData})
 
 
 @login_required(login_url='login')
@@ -573,14 +573,14 @@ def update_order_count(request):
            for_order.delete()
            return HttpResponse(status=200)
 
-    return render(request, 'partials/orderDetail_cell_item.html', {'el': supply, 'counter': counter})
+    return render(request, 'partials/orders/orderDetail_cell_item.html', {'el': supply, 'counter': counter})
 
 
 @login_required(login_url='login')
 def orderTypeDescriptionField(request):
     orderType = request.POST.get('orderType')
     isAgreement = orderType == 'Agreement'
-    return render(request, 'partials/orderTypeDescriptionField.html', {'isAgreement': isAgreement})
+    return render(request, 'partials/orders/orderTypeDescriptionField.html', {'isAgreement': isAgreement})
 
 @login_required(login_url='login')
 def add_to_exist_order_from_cart(request):
@@ -592,7 +592,7 @@ def add_to_exist_order_from_cart(request):
         print("PLACE ID = ", place_id)
         place = Place.objects.get(pk=place_id)
         orders = place.order_set.filter(isComplete=False)
-    return render(request, 'partials/add_to_exist_order_from_cart.html', {'isAdd_to_exist_order': isAdd_to_exist_order, 'orders': orders})
+    return render(request, 'partials/cart/add_to_exist_order_from_cart.html', {'isAdd_to_exist_order': isAdd_to_exist_order, 'orders': orders})
 
 
 @login_required(login_url='login')
@@ -602,7 +602,7 @@ def orderTypeDescriptionField_for_client(request):
     isAddedToExistPreorder = orderType == 'add_to_Exist_preorder'
     preorders = PreOrder.objects.filter(place_id=place_id_Selected).filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer') | Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial'))
 
-    return render(request, 'partials/orderTypeDescriptionField_for_client.html', {'isAddedToExistPreorder': isAddedToExistPreorder, 'preorders': preorders})
+    return render(request, 'partials/orders/orderTypeDescriptionField_for_client.html', {'isAddedToExistPreorder': isAddedToExistPreorder, 'preorders': preorders})
 
 
 
@@ -697,7 +697,7 @@ def home(request):
                 user_allowed_categories.add(quer)
 
         uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False, place__user=request.user).exists()
-        html_page = 'supplies/home_for_client.html'
+        html_page = 'supplies/home/home_for_client.html'
         supplies = GeneralSupply.objects.filter(category_id__in=user_allowed_categories).order_by('name')
         suppFilter = SupplyFilter(request.GET, queryset=supplies)
         category = Category.objects.filter(id__in=user_allowed_categories)
@@ -707,7 +707,7 @@ def home(request):
         supplies = GeneralSupply.objects.all().order_by('name')
         suppFilter = SupplyFilter(request.GET, queryset=supplies)
         uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False).exists()
-        html_page = 'supplies/home.html'
+        html_page = 'supplies/home/home.html'
 
     if not suppFilter.data:
         suppFilter.data['ordering'] = SupplyFilter.EXIST_CHOICES.В_наявності
@@ -944,7 +944,7 @@ def cartDetailForClient(request):
 
         return redirect('/preorders')
 
-    return render(request, 'supplies/preorder-cart.html',
+    return render(request, 'supplies/cart/preorder-cart.html',
                   {'title': f'Корзина передзамовлення ({total_count_in_cart} шт.)', 'order': orderInCart, 'cartCountData': cartCountData,
                    'supplies': supplies, 'cities': cities, 'total_count_in_cart': total_count_in_cart,
                    'orderForm': orderForm, 'places': places, 'placeChoosed': placeChoosed, 'preorders': preorders, 'isClient': isClient, 'supDict': supDict})
@@ -1007,7 +1007,7 @@ def carDetailForStaff(request):
 
         return redirect('/orders')
 
-    return render(request, 'supplies/cart.html',
+    return render(request, 'supplies/cart/cart.html',
                   {'title': 'Корзина', 'order': orderInCart, 'cart_items': cart_items, 'supplies': supplies,
                    'cities': cities,
                    'orderForm': orderForm
@@ -1036,7 +1036,7 @@ def add_np_sender_place(request):
         deliveryPlace.save()
         return redirect('/add_np_sender_place')
 
-    return render(request, 'supplies/add_new_sender_np_place.html', {'places': places})
+    return render(request, 'supplies/nova_poshta/add_new_sender_np_place.html', {'places': places})
 
 
 
@@ -1051,7 +1051,7 @@ def choose_preorder_in_cart_for_client(request):
         place = None
         preorders = None
 
-    return render(request, 'partials/choose_preorder_in_cart_for_client.html',
+    return render(request, 'partials/cart/choose_preorder_in_cart_for_client.html',
                   {'preorders': preorders, 'placeChoosed': place != None})
 
 
@@ -1065,7 +1065,7 @@ def get_place_for_city_in_precart(request):
     except:
         places = None
 
-    return render(request, 'partials/choose_place_in_cart_not_precart.html', {'places': places, 'cityChoosed': places != None, 'placeChoosed': False})
+    return render(request, 'partials/cart/choose_place_in_cart_not_precart.html', {'places': places, 'cityChoosed': places != None, 'placeChoosed': False})
 
 
 
@@ -1078,7 +1078,7 @@ def get_place_for_city_in_cart(request):
     except:
         places = None
 
-    return render(request, 'partials/choose_place_in_cart.html',
+    return render(request, 'partials/cart/choose_place_in_cart.html',
                   {'places': places, 'cityChoosed': places != None, 'placeChoosed': False})
 
 
@@ -1097,7 +1097,7 @@ def choose_place_in_cart_not_precart(request):
 
 
 
-    return render(request, 'partials/choose_uncompleted_order_in_cart.html', {'orders': orders, 'place': place, 'preorders': preorders, 'isPlaceChoosed': place != None})
+    return render(request, 'partials/cart/choose_uncompleted_order_in_cart.html', {'orders': orders, 'place': place, 'preorders': preorders, 'isPlaceChoosed': place != None})
 
 @login_required(login_url='login')
 def minus_from_preorders_detail_general_item(request):
@@ -1141,7 +1141,7 @@ def get_agreement_for_place_for_city_in_cart(request):
     place = Place.objects.get(pk=place_id)
     agreements = place.preorder_set.filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer'))
 
-    return render(request, 'partials/choose_agreement_forplace_incart.html', {'agreements': agreements, 'isPendingPreorderExist': agreements.exists(), 'isPlaceChoosed': True})
+    return render(request, 'partials/cart/choose_agreement_forplace_incart.html', {'agreements': agreements, 'isPendingPreorderExist': agreements.exists(), 'isPlaceChoosed': True})
 
 
 def sendTeamsMsgCart(request, order):
@@ -1421,7 +1421,7 @@ def cartDetail(request):
 
             orderInCart.delete()
             return redirect(f'/clientsInfo/{place_id}/booked_supplies_list')
-    return render(request, 'supplies/cart.html',
+    return render(request, 'supplies/cart/cart.html',
                   {'title': f'Корзина ({total_count_in_cart} шт.)', 'order': orderInCart, 'cartCountData': cartCountData, 'supplies': supplies,
                    'orderForm': orderForm, 'cities': cities, 'total_count_in_cart': total_count_in_cart,
                    })
@@ -1589,7 +1589,7 @@ def childSupply(request):
 
     cartCountData = countCartItemsHelper(request)
 
-    return render(request, 'supplies/homeChild.html',
+    return render(request, 'supplies/home/homeChild.html',
                   {'title': 'Дочерні товари', 'supplies': supplies, 'cartCountData': cartCountData,
                    'suppFilter': suppFilter, 'isHome': True, 'isChild': True})
 
@@ -1669,7 +1669,7 @@ def historySupply(request):
 
     cartCountData = countCartItemsHelper(request)
 
-    return render(request, 'supplies/home-history.html',
+    return render(request, 'supplies/home/home-history.html',
                   {'title': 'Історія товарів', 'supplies': supplies, 'cartCountData': cartCountData,
                    'suppFilter': suppFilter, 'isHome': True, 'isHistory': True})
 
@@ -1716,7 +1716,7 @@ def agreements(request):
 
     title = f'Всі договори. ({totalCount} шт.)'
 
-    return render(request, 'supplies/agreements.html',
+    return render(request, 'supplies/agreements/agreements.html',
                   {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True,
                    'totalCount': totalCount,
                    'isAgreementsTab': True})
@@ -1908,13 +1908,13 @@ def orders(request):
                 print(errors)
                 for error in errors:
                     messages.info(request, error)
-                return render(request, 'supplies/orders_new.html',
+                return render(request, 'supplies/orders/orders_new.html',
                               {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True,
                                'totalCount': totalCount,
                                'isOrdersTab': True})
 
 
-    return render(request, 'supplies/orders_new.html',
+    return render(request, 'supplies/orders/orders_new.html',
                   {'title': title, 'orders': orders, 'orderFilter': orderFilter, 'cartCountData': cartCountData, 'isOrders': True, 'totalCount': totalCount,
                    'isOrdersTab': True})
 
@@ -2084,7 +2084,7 @@ def preorders(request):
         if 'set_is_closed' in request.POST:
             generate_list_of_xls_from_preorders_list(selected_orders, False, False, True)
 
-    return render(request, 'supplies/preorders.html',
+    return render(request, 'supplies/orders/preorders.html',
                   {'title': title, 'isArchiveChoosed': isArchiveChoosed, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData, 'isOrders': True,
                    'isPreordersTab': True})
 
@@ -2104,7 +2104,7 @@ def delete_preorder_sup_in_preorder_cart(request, sup_id, order_id):
         t = supDict.setdefault(d.general_supply.category, [])
         t.append(d)
 
-    return render(request, 'partials/preorders_cart_list.html',
+    return render(request, 'partials/preorders/preorders_cart_list.html',
                   {'supDict': supDict, 'order': preorderInCart})
 
 
@@ -2119,7 +2119,7 @@ def deletePreorder(request, order_id):
     else:
         orders = PreOrder.objects.all().order_by('-id')
 
-    return render(request, 'partials/preorders-list.html',
+    return render(request, 'partials/preorders/preorders-list.html',
                   {'orders': orders})
 
 
@@ -2132,7 +2132,7 @@ def updatePreorderStatus(request, order_id):
     order.dateSent = timezone.now().date()
     order.save()
 
-    return render(request, 'partials/preorder_preview_cell.html', {'order': order})
+    return render(request, 'partials/preorders/preorder_preview_cell.html', {'order': order})
 
 
 def update_order_status_core(order_id, user):
@@ -2209,7 +2209,7 @@ def orderUpdateStatus(request, order_id):
         if user_agent.is_mobile:
             template = 'supplies_mobile/order_cell.html'
         else:
-            template = 'partials/order_preview_cel.html'
+            template = 'partials/orders/order_preview_cel.html'
 
         return render(request, template, {'order': order})
     except Exception as e:
@@ -2230,7 +2230,7 @@ def ordersForClient(request, client_id):
     if not orders:
         title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
 
-    return render(request, 'supplies/orders_new.html', {'title': title, 'orders': orders, 'orderFilter': orderFilter, 'isClients': True})
+    return render(request, 'supplies/orders/orders_new.html', {'title': title, 'orders': orders, 'orderFilter': orderFilter, 'isClients': True})
 
 
 @login_required(login_url='login')
@@ -2287,7 +2287,7 @@ def devicesList(request):
     title = f'Вcі прилади'
     cartCountData = countCartItemsHelper(request)
 
-    return render(request, 'supplies/devices.html',
+    return render(request, 'supplies/devices/devices.html',
                   {'title': title, 'devices': devices, 'cartCountData': cartCountData, 'filter': devFilters,
                    'isDevices': True})
 
@@ -2307,7 +2307,7 @@ def serviceNotesForClient(request, client_id):
     serviceNotes = place.servicenote_set.all()
     cartCountData = countCartItemsHelper(request)
     title = f'Всі сервісні замітки для клієнта: \n {place.name}, {place.city}'
-    return render(request, 'supplies/serviceNotes.html',
+    return render(request, 'supplies/service/serviceNotes.html',
                   {'title': title, 'serviceNotes': serviceNotes, 'form': form, 'cartCountData': cartCountData,
                    'isClients': True})
 
@@ -2328,7 +2328,7 @@ def createNote(request):
 
     cartCountData = countCartItemsHelper(request)
 
-    return render(request, 'supplies/createNote.html',
+    return render(request, 'supplies/service/createNote.html',
                   {'title': f'Створити новий запис', 'form': form, 'cartCountData': cartCountData,
                    'isService': True})
 
@@ -2352,7 +2352,7 @@ def createNote_for_client(request, client_id):
 
     cartCountData = countCartItemsHelper(request)
 
-    return render(request, 'supplies/createNote.html',
+    return render(request, 'supplies/service/createNote.html',
                   {'title': f'Створити новий запис', 'form': form, 'cartCountData': cartCountData,
                    'isHiddenPlace': True})
 
@@ -2373,7 +2373,7 @@ def updateNote(request, note_id):
             obj.save()
             return redirect('/serviceNotes')
 
-    return render(request, 'supplies/createNote.html',
+    return render(request, 'supplies/service/createNote.html',
                   {'title': f'Редагувати запис №{note_id}', 'form': form, 'cartCountData': cartCountData,
                    'isService': True})
 
@@ -2405,7 +2405,7 @@ def updateSupply(request, supp_id):
             suppForHistory.save()
             supp.delete()
 
-        html = render_to_string('supplies/partials/supply_row.html', {
+        html = render_to_string('partials/supplies/supply_row.html', {
             'el': generalSupp,
             'request': request
         })
@@ -2415,7 +2415,7 @@ def updateSupply(request, supp_id):
             'success': True
         })
 
-    return render(request, 'supplies/create_new_lot_modal.html',
+    return render(request, 'supplies/supplies/update_supply.html',
                   {'cartCountData': cartCountData, 'form': form,
                    'suppId': supp_id, 'editMode': True, 'generalSupp': generalSupp})
 
@@ -2453,9 +2453,8 @@ def addSupplyToExistOrder(request, supp_id):
             next = request.POST.get('next')
             return HttpResponseRedirect(next)
 
-    return render(request, 'supplies/cart.html',
-                  {'title': 'Додати до замовлення',
-                   'orderForm': orderForm, 'supplies': [supply], 'cartCountData': cartCountData, 'placeExist': True,
+    return render(request, 'supplies/supplies/create_new_lot_modal.html',
+                  {'cartCountData': cartCountData, 'form': orderForm, 'supplies': [supply], 'placeExist': True,
                    })
 
 
@@ -2491,9 +2490,8 @@ def addSupplyToExistPreOrder(request, supp_id):
             next = request.POST.get('next')
             return HttpResponseRedirect(next)
 
-    return render(request, 'supplies/cart.html',
-                  {'title': 'Додати до замовлення',
-                   'orderForm': orderForm, 'supplies': [supply], 'cartCountData': cartCountData, 'placeExist': True,
+    return render(request, 'supplies/supplies/create_new_lot_modal.html',
+                  {'cartCountData': cartCountData, 'form': orderForm, 'supplies': [supply], 'placeExist': True,
                    })
 
 
@@ -2527,9 +2525,8 @@ def addSupplyToExistPreOrderGeneral(request, supp_id):
             next = request.POST.get('next')
             return redirect(f"/preorders/{order.id}")
 
-    return render(request, 'supplies/cart.html',
-                  {'title': 'Додати до замовлення',
-                   'orderForm': orderForm, 'supplies': [supply], 'cartCountData': cartCountData,
+    return render(request, 'supplies/supplies/create_new_lot_modal.html',
+                  {'cartCountData': cartCountData, 'form': orderForm, 'supplies': [supply],
                    })
 
 
@@ -2547,7 +2544,7 @@ def updateGeneralSupply(request, supp_id):
                 # obj.from_user = User.objects.get(pk=request.user.id)
                 form.save()
                 next = request.POST.get('next')
-            html = render_to_string('supplies/partials/supply_row.html', {
+            html = render_to_string('partials/supplies/supply_row.html', {
             'el': supp,
             'request': request
         })
@@ -2560,7 +2557,7 @@ def updateGeneralSupply(request, supp_id):
             supp.delete()
             return JsonResponse({'success': True})
 
-    return render(request, 'supplies/update_supply.html',
+    return render(request, 'supplies/supplies/update_supply.html',
                   {'title': f'Редагувати запис №{supp_id}', 'form': form, 'generalSupp': supp})
 
 
@@ -2635,7 +2632,7 @@ def addNewLotforSupply(request, supp_id):
                 supHistory.action_type = 'added-handle'
                 supHistory.save()
 
-            html = render_to_string('supplies/partials/supply_row.html', {
+            html = render_to_string('partials/supplies/supply_row.html', {
             'el': generalSupp,
             'request': request
         })
@@ -2643,7 +2640,7 @@ def addNewLotforSupply(request, supp_id):
             'html': html,
             'success': True
         })
-    return render(request, 'supplies/create_new_lot_modal.html',
+    return render(request, 'supplies/supplies/create_new_lot_modal.html',
                   {'form': form, 'generalSupp': generalSupp})
 
 
@@ -2667,7 +2664,7 @@ def addgeneralSupply(request):
             # form.save()
             return redirect('/')
 
-    return render(request, 'supplies/createSupply.html',
+    return render(request, 'supplies/supplies/createSupply.html',
                   {'title': f'Додати новий товар', 'form': form, 'cartCountData': cartCountData})
 
 
@@ -2682,7 +2679,7 @@ def addNewCity(request):
             form.save()
             return redirect('/')
 
-    return render(request, 'supplies/createSupply.html',
+    return render(request, 'supplies/supplies/createSupply.html',
                   {'title': f'Додати нове місто', 'form': form, 'cartCountData': cartCountData})
 
 
@@ -2697,7 +2694,7 @@ def addNewCategory(request):
             form.save()
             return redirect('/')
 
-    return render(request, 'supplies/createSupply.html',
+    return render(request, 'supplies/supplies/createSupply.html',
                   {'title': f'Додати нову категорію для товара', 'form': form, 'cartCountData': cartCountData})
 
 
@@ -2712,7 +2709,7 @@ def addgeneralSupplyOnly(request):
             form.save()
             return redirect('/')
 
-    return render(request, 'supplies/createSupply.html',
+    return render(request, 'supplies/supplies/createSupply.html',
                   {'title': f'Додати нову назву товару', 'form': form, 'cartCountData': cartCountData})
 
 
@@ -2758,13 +2755,13 @@ def addNewClient(request):
                     print(errors)
                     for error in errors:
                         messages.error(request, error)
-                    return render(request, 'supplies/create_np_order_doucment.html',
+                    return render(request, 'supplies/nova_poshta/create_np_order_doucment.html',
                                   {'title': f'Додати нового клієнта', 'inputForm': form,
                                    'cartCountData': cartCountData})
 
             org.save()
             return redirect('/clientsInfo')
-    return render(request, 'supplies/create_np_order_doucment.html',
+    return render(request, 'supplies/nova_poshta/create_np_order_doucment.html',
                   {'title': f'Додати нового клієнта', 'inputForm': form, 'cartCountData': cartCountData})
 
 
@@ -2781,7 +2778,7 @@ def addNewDeviceForClient(request, client_id):
             form_to_save.save()
             return redirect('/clientsInfo')
 
-    return render(request, 'supplies/createSupply.html',
+    return render(request, 'supplies/supplies/createSupply.html',
                   {'title': f'Додати прилад для: \n {client.name}, {client.city_ref.name}', 'form': form,
                    'cartCountData': cartCountData})
 
@@ -2839,7 +2836,7 @@ def editWorkerInfo(request, worker_id):
             next = request.POST.get('next')
             return redirect(next)
 
-    return render(request, 'supplies/addNewWorkerForClient.html',
+    return render(request, 'supplies/clients/addNewWorkerForClient.html',
                   {'title': f'Редагувати працівника для: \n{place.name}, {place.city_ref.name}', 'form': form,
                    'cartCountData': cartCountData, 'orgRefExist': orgRefExist})
 
@@ -2855,7 +2852,7 @@ def worker_card_info_delete_worker(request):
 def worker_card_info_edit_action(request):
     worker_id = request.POST.get('worker_id')
     worker = Workers.objects.get(id=worker_id)
-    return render(request, 'supplies/editClientDetail_worker_edit_view.html',
+    return render(request, 'supplies/clients/editClientDetail_worker_edit_view.html',
                   {'worker': worker})
 
 
@@ -2964,7 +2961,7 @@ def editClientInfo(request, client_id):
                 form.save()
                 return redirect('/clientsInfo')
 
-    return render(request, 'supplies/editClientDetail.html',
+    return render(request, 'supplies/clients/editClientDetail.html',
                   {'title': f'Редагувати клієнта: {client.name}, {client.city_ref.name}', 'place': client, 'form': form,
                    'cartCountData': cartCountData, 'workersSetExist': workersSetExist, 'adressSetExist': adressSetExist,
                    'clientId': client_id})
@@ -3018,7 +3015,7 @@ def addNewWorkerForClient(request, place_id):
             obj.save()
             next = request.POST.get('next')
             return HttpResponseRedirect(next)
-    return render(request, 'supplies/addNewWorkerForClient.html',
+    return render(request, 'supplies/clients/addNewWorkerForClient.html',
                   {'title': f'Додати нового працівника для {place.name}, {place.city}', 'form': form,
                    'cartCountData': cartCountData, 'orgRefExist': orgRefExist})
 
@@ -3039,7 +3036,7 @@ def orderDetail_pdf(request, order_id):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename=orderDetail' + \
                                       str(order.id) + str(order.place.name) + str(order.place.city) + '.pdf'
-    template = get_template('supplies/orderdetail-pdf.html')
+    template = get_template('supplies/orders/orderdetail-pdf.html')
     pisa_status = render_to_pdf(supplies_in_order)
     return HttpResponse(pisa_status, content_type='application/pdf')
 
@@ -3190,7 +3187,6 @@ def preorder_render_to_xls_all_items(request, order_id):
 
 @login_required(login_url='login')
 def devices_render_to_xls(request):
-    translator = Translator()
     devices = Device.objects.all()
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -3220,7 +3216,7 @@ def devices_render_to_xls(request):
     for row in devices:
         row_num += 1
         name = row.general_device.name
-        customer = translate_text(row.in_place.name, target_language='en')
+        customer = row.in_place.name
         customer_city = row.in_place.city
         serial_number = ''
         if row.serial_number:
@@ -3253,7 +3249,7 @@ def orderDetail_add_comment(request):
     comment = request.POST.get("comment") or ""
     print("order_id = ", order_id)
     print("comment = ", comment)
-    return render(request, 'partials/comment_input_textfield_area.html', {'order_id': order_id, 'comment': comment})
+    return render(request, 'partials/common/comment_input_textfield_area.html', {'order_id': order_id, 'comment': comment})
 
 
 @login_required(login_url='login')
@@ -3266,7 +3262,7 @@ def orderDetail_save_comment(request):
 
     print("order_id = ", order_id)
     print("comment_textfield = ", comment_textfield)
-    return render(request, 'partials/comment_textfield_area.html', {'order': order})
+    return render(request, 'partials/common/comment_textfield_area.html', {'order': order})
 
 @login_required(login_url='login')
 def orderDetail(request, order_id, sup_id):
@@ -3319,7 +3315,7 @@ def orderDetail(request, order_id, sup_id):
             order.delete()
             return HttpResponseRedirect(next)
 
-    return render(request, 'supplies/orderDetail.html',
+    return render(request, 'supplies/orders/orderDetail.html',
                   {'title': f'Замовлення № {order_id}', 'order': order, 'supplies': supplies_in_order,
                    'cartCountData': cartCountData, 'isOrders': True, 'highlighted_sup_id': sup_id})
 
@@ -3335,7 +3331,7 @@ def get_agreement_detail_for_cart(request):
         supplies_in_agreement = None
 
 
-    return render(request, 'partials/get_agreement_detail_for_cart.html',
+    return render(request, 'partials/common/get_agreement_detail_for_cart.html',
                   {'agreement': agreement, 'supplies': supplies_in_agreement, 'agreement_is_exist': agreement != None })
 
 
@@ -3379,7 +3375,7 @@ def agreementDetail(request, agreement_id):
     #         order.delete()
     #         return HttpResponseRedirect(next)
 
-    return render(request, 'supplies/agreementDetail.html',
+    return render(request, 'supplies/agreements/agreementDetail.html',
                   {'title': f'Договір № {agreement.description}', 'agreement': agreement, 'supplies': supplies_in_agreement, 'orders': orders_in_agreement,
                    'cartCountData': cartCountData, 'isOrders': True})
 
@@ -3395,7 +3391,7 @@ def preorderDetail(request, order_id):
     else:
         title = f'Договір № {order_id}'
 
-    return render(request, 'supplies/preorderDetail.html',
+    return render(request, 'supplies/orders/preorderDetail.html',
                   {'title': title, 'order': order, 'supplies': supplies_in_order,
                    'cartCountData': cartCountData, 'isOrders': True})
 
@@ -3525,7 +3521,7 @@ def preorderDetail_generateOrder(request, order_id):
             else:
                 messages.info(request, "Жодний товар не вибраний для формування замовлення!")
 
-    return render(request, 'supplies/preorderDetail-generate-order.html',
+    return render(request, 'supplies/orders/preorderDetail-generate-order.html',
                   {'title': f'Передзамовлення № {order_id}', 'order': order, 'orderForm': orderForm, 'supplies': supplies_in_order,
                    'cartCountData': cartCountData, 'isOrders': True})
 
@@ -3540,7 +3536,7 @@ def clientsInfo(request):
     page_number = request.GET.get('page')
     place = paginator.get_page(page_number)
     cartCountData = countCartItemsHelper(request)
-    return render(request, 'supplies/clientsList.html',
+    return render(request, 'supplies/clients/clientsList.html',
                   {'title': f'Клієнти', 'clients': place, 'placeFilter': placeFilter, 'cartCountData': cartCountData,
                    'isClients': True})
 
@@ -3561,7 +3557,7 @@ def serviceNotes(request):
     serviceNotes = serviceFilters.qs
     cartCountData = countCartItemsHelper(request)
 
-    return render(request, 'supplies/serviceNotes.html',
+    return render(request, 'supplies/service/serviceNotes.html',
                   {'title': f'Сервiсні записи', 'serviceNotes': serviceNotes, 'cartCountData': cartCountData,
                    'form': form, 'serviceFilters': serviceFilters, 'isService': True})
 @login_required(login_url='login')
@@ -3653,7 +3649,7 @@ def import_general_supplies_from_excel(request):
     # Get all categories for the dropdown
     categories = Category.objects.all().order_by('name')
     
-    return render(request, 'supplies/import_general_supplies.html', {
+    return render(request, 'supplies/supplies/import_general_supplies.html', {
         'title': 'Import General Supplies',
         'cartCountData': countCartItemsHelper(request),
         'categories': categories

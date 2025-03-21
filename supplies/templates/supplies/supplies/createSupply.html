@@ -1,0 +1,29 @@
+{% extends 'supplies/base/base.html' %}
+{% load crispy_forms_filters %}
+{% load static %}
+{% load bootstrap %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+<form method="POST" action="" enctype="multipart/form-data">
+  {% csrf_token %}
+<div class="w-50">
+    {{ form|crispy }}
+</div>
+
+
+{% if messages %}
+<ul class="messages my-4" style="color: red">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+
+<input type="hidden" name="next" value="{{ request.GET.next }}">
+<button class="btn btn-outline-primary my-5" type="submit">Зберегти</button>
+</form>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'supplies/base/base.html' %}
+{% load static %}
+    {% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+
+    {% for order in orders %}
+
+{% include 'partials/preorders/preorder_preview_cell.html' %}
+
+    {% endfor %}
+{% endblock %}
