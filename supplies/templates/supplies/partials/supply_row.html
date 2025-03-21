@@ -74,9 +74,9 @@
     <td>
         <div class="hstack gap-1 justify-content-end">
             {% if request.user|has_group:"admin" %}
-            <a href="#" class="btn btn-sm btn-primary add-lot-btn" data-supply-id="{{ el.id }}" role="button" title="Додати LOT"><i class="bi bi-plus-square"></i></a>
-                <a href="{% url 'updateGeneralSupply' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-warning" role="button" title="Редагувати назву"><i class="bi bi-pencil"></i></a>
-            {% endif %}
+            <button class="btn btn-sm btn-primary add-lot-btn" data-supply-id="{{ el.id }}" role="button" title="Додати LOT"><i class="bi bi-plus-square"></i></button>
+            <button class="btn btn-sm btn-warning edit-gen-sup-btn" data-supply-id="{{ el.id }}" role="button" title="Редагувати назву"><i class="bi bi-pencil"></i></button>
+        {% endif %}
             <div id="add_preorder_general_to_preorder-{{el.id}}">
                 {% if el|in_precart_general:request.user %}
                     <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>

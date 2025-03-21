@@ -55,9 +55,15 @@
                             <div class="alert alert-soft-danger mb-0 py-2 px-3 d-inline-flex align-items-center" 
                                  data-bs-toggle="tooltip" 
                                  data-bs-placement="bottom" 
-                                 title="Відправити замовлень сьогодні">
+                                 title="Відправити замовлень сьогодні {% if cartCountData.expired_orders > 0 %} (⚠️ Прострочені замовлення){% endif %}  ">
                                 <i class="bi bi-exclamation-circle me-2"></i>
                                 <span class="fw-semibold">{{ cartCountData.order_to_send_today }}</span>
+                                <span class="fw-semibold ps-2">
+                                    <div class="badge bg-danger bg-opacity-50 d-flex align-items-center gap-2">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <span>{{ cartCountData.expired_orders }}</span>
+                                    </div>
+                                </span>
                             </div>
                         {% endif %}
                     </li>

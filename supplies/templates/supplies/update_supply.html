@@ -1,15 +1,12 @@
-{% extends 'supplies/base.html' %}
+
 {% load crispy_forms_filters %}
 {% load static %}
 {% load bootstrap %}
-    {% block title %}
-{{ title }}
-{% endblock %}
 
 {% block content %}
-<form method="POST" action="" enctype="multipart/form-data">
+  <div class="container-fluid p-3">
   {% csrf_token %}
-<div class="w-50">
+<div class="w-auto">
     {{ form|crispy }}
 </div>
 
@@ -17,8 +14,8 @@
 <input type="hidden" name="next" value="{{ request.GET.next }}">
 <button class="btn btn-outline-primary my-5" type="submit" name="save">Зберегти</button>
 <button class="btn btn-outline-danger my-5 mx-3" type="submit" name="delete">Видалити</button>
+</div>
 
-</form>
 
 
 {% endblock %}

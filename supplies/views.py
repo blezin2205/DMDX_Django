@@ -278,6 +278,7 @@ def countCartItemsHelper(request):
         preorders_await = PreOrder.objects.filter(state_of_delivery='Awaiting').count()
         preorders_partial = PreOrder.objects.filter(state_of_delivery='Partial').count()
         order_to_send_today = Order.objects.filter(dateToSend=date.today(), isComplete=False).count()
+        expired_orders = Order.objects.filter(dateToSend__lt=date.today(), isComplete=False).count()
 
 
 
@@ -289,6 +290,7 @@ def countCartItemsHelper(request):
             'preorders_await': preorders_await,
             'preorders_partial': preorders_partial,
             'order_to_send_today': order_to_send_today,
+            'expired_orders': expired_orders,
             'is_one_cart': is_one_cart,
             'booked_cart_first': booked_cart_first
             }
@@ -2524,7 +2526,6 @@ def addSupplyToExistPreOrderGeneral(request, supp_id):
 def updateGeneralSupply(request, supp_id):
     supp = GeneralSupply.objects.get(id=supp_id)
     form = NewGeneralSupplyForm(instance=supp)
-    cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         next = request.POST.get('next')
         if 'save' in request.POST:
@@ -2534,13 +2535,21 @@ def updateGeneralSupply(request, supp_id):
                 # obj.from_user = User.objects.get(pk=request.user.id)
                 form.save()
                 next = request.POST.get('next')
+            html = render_to_string('supplies/partials/supply_row.html', {
+            'el': supp,
+            'request': request
+        })
+            return JsonResponse({
+            'html': html,
+            'success': True
+        })    
 
         elif 'delete' in request.POST:
             supp.delete()
+            return JsonResponse({'success': True})
 
-        return HttpResponseRedirect(next)
     return render(request, 'supplies/update_supply.html',
-                  {'title': f'Редагувати запис №{supp_id}', 'form': form, 'cartCountData': cartCountData})
+                  {'title': f'Редагувати запис №{supp_id}', 'form': form})
 
 
 @login_required(login_url='login')
@@ -2578,11 +2587,9 @@ def history_for_supply(request, supp_id):
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def addNewLotforSupply(request, supp_id):
-    generalSupp = GeneralSupply.objects.get(id=supp_id)
-
     form = SupplyForm()
-    cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
+        generalSupp = GeneralSupply.objects.get(id=supp_id)
         form = SupplyForm(request.POST)
         if form.is_valid():
             obj = form.save(commit=False)
@@ -2625,7 +2632,7 @@ def addNewLotforSupply(request, supp_id):
             'success': True
         })
     return render(request, 'supplies/create_new_lot_modal.html',
-                  {'title': f'Додати новий LOT для {generalSupp.name}', 'form': form, 'cartCountData': cartCountData})
+                  {'form': form})
 
 
 @login_required(login_url='login')

@@ -1,4 +1,5 @@
 import datetime
+import pytz
 
 import requests
 from django.urls import reverse_lazy
@@ -50,7 +51,10 @@ class CreateNPParselForm(ModelForm):
 
     payment_user_type = forms.ChoiceField(choices=CreateParselModel.PaymentUserType.choices)
     payment_money_type = forms.ChoiceField(choices=CreateParselModel.PaymentMoneyType.choices)
-    dateDelivery = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'min': datetime.datetime.now().date()}), initial=datetime.datetime.now())
+    dateDelivery = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'min': datetime.datetime.now(pytz.timezone('Europe/Kiev')).date()}),
+        initial=datetime.datetime.now(pytz.timezone('Europe/Kiev')).date()
+    )
 
     class Meta:
         model = CreateParselModel
@@ -254,7 +258,11 @@ class NewCategoryForm(ModelForm):
 
 
 class OrderInCartForm(ModelForm):
-    dateToSend = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'min': datetime.datetime.now().date()}), initial=None, required=False)
+    dateToSend = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'min': datetime.datetime.now(pytz.timezone('Europe/Kiev')).date()}),
+        initial=None,
+        required=False
+    )
 
     class Meta:
         model = OrderInCart

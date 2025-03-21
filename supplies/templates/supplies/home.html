@@ -376,95 +376,71 @@
 </style>
 
 <script>
-// HTMX initialization
-const initializeHTMXElement = (element) => {
-    const buttonContainer = $(element).closest('[id^="add_cart_button-"]');
-    if (buttonContainer.length) {
-        const supplyId = buttonContainer.attr('id').replace('add_cart_button-', '');
-        
-        $(element).removeAttr('hx-post hx-target');
-        $(element).attr('hx-post', `/update_item/${supplyId}`);
-        $(element).attr('hx-target', `#add_cart_button-${supplyId}`);
-        
-        $(element).off('click').on('click', function(e) {
-            if ($(this).hasClass('disabled')) {
-                e.preventDefault();
-            }
-        });
-    }
-};
-
-// Main initialization
-$(function() {
-    // Supply history button handler
-    $('.supply-history-btn').on('click', function(e) {
-        e.preventDefault();
-        const supplyId = $(this).data('supply-id');
-        showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`, 'Завантаження історії...');
-    });
-
-    // Add lot button handler
-    $('.add-lot-btn').on('click', function(e) {
-        e.preventDefault();
-        const supplyId = $(this).data('supply-id');
-        const supplyName = $(this).closest('tr').find('th[scope="row"]').text().trim();
-        
-        $('#supplyName').text(supplyName);
-        
-        showModal('#addNewLotModal', '#addNewLotContent', `/newLot/${supplyId}`, 'Завантаження форми...', (data) => {
-            $('#addNewLotForm').on('submit', function(e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                
-                fetch(`/newLot/${supplyId}`, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': csrftoken,
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error('Помилка збереження');
-                    return response.json();
-                })
-                .then(data => {
-                    $('#addNewLotModal').modal('hide');
-                    const supplyRow = $(`[data-supply-id="${supplyId}"]`).closest('tr');
-                    const newRow = $(data.html).find(`[data-supply-id="${supplyId}"]`).closest('tr');
-                    supplyRow.replaceWith(newRow);
-                    initializeRowHandlers(newRow);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert(error.message);
-                });
+    // HTMX initialization
+    const initializeHTMXElement = (element) => {
+        const buttonContainer = $(element).closest('[id^="add_cart_button-"]');
+        if (buttonContainer.length) {
+            const supplyId = buttonContainer.attr('id').replace('add_cart_button-', '');
+            
+            $(element).removeAttr('hx-post hx-target');
+            $(element).attr('hx-post', `/update_item/${supplyId}`);
+            $(element).attr('hx-target', `#add_cart_button-${supplyId}`);
+            
+            $(element).off('click').on('click', function(e) {
+                if ($(this).hasClass('disabled')) {
+                    e.preventDefault();
+                }
             });
-        });
-    });
-    
-    function initializeRowHandlers(row) {
-        // Initialize HTMX elements
-        row.find('[hx-post]').each(initializeHTMXElement);
-
-        // Initialize HTMX globally
-        if (typeof htmx !== 'undefined') {
-            htmx.process(row[0]);
         }
-
-        // Reinitialize add-lot-btn handler
-        row.find('.add-lot-btn').on('click', function(e) {
+    };
+    
+    // Main initialization
+    $(function() {
+        
+        // Supply history button handler
+        $('.supply-history-btn').on('click', function(e) {
             e.preventDefault();
-            const supplyId = $(this).data('supply-id');
-            const supplyName = $(this).closest('tr').find('th[scope="row"]').text().trim();
-            
+            const { supplyId, supplyName } = getSupplyNamAndId(this);
+            showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`, 'Завантаження історії...');
+        });
+    
+        // Add lot button handler
+        $('.add-lot-btn').on('click', function(e) {
+            e.preventDefault();
+            const { supplyId, supplyName } = getSupplyNamAndId(this);
             $('#supplyName').text(supplyName);
-            
-            showModal('#addNewLotModal', '#addNewLotContent', `/newLot/${supplyId}`, 'Завантаження форми...', (data) => {
+            showEditGenSupModal(`/newLot/${supplyId}`, supplyId);
+           
+        });
+    
+        $('.edit-gen-sup-btn').on('click', function(e) {
+            e.preventDefault();
+            const { supplyId, supplyName } = getSupplyNamAndId(this);
+            $('#supplyName').text(supplyName);
+            showEditGenSupModal(`/update_general/${supplyId}`, supplyId);
+           
+        });
+    
+        function getSupplyNamAndId(element) {
+            const supplyId = $(element).data('supply-id');
+            const supplyName = $(element).closest('tr').find('th[scope="row"]').text().trim();
+            return { supplyId, supplyName };
+        }
+        
+        function showEditGenSupModal(url, supplyId) {
+            showModal('#addNewLotModal', '#addNewLotContent', url, 'Завантаження форми...', (data) => {
+                // Remove any existing form submission handlers
+                $('#addNewLotForm').off('submit');
+                
                 $('#addNewLotForm').on('submit', function(e) {
                     e.preventDefault();
                     const formData = new FormData(this);
+                    let submitter = e.originalEvent.submitter
+                    if (submitter) {
+                        formData.append(submitter.name, submitter.value);
+                    }
                     
-                    fetch(`/newLot/${supplyId}`, {
+                    fetch(url, {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -478,7 +454,7 @@ $(function() {
                     .then(data => {
                         $('#addNewLotModal').modal('hide');
                         const supplyRow = $(`[data-supply-id="${supplyId}"]`).closest('tr');
-                        const newRow = $(data.html).find(`[data-supply-id="${supplyId}"]`).closest('tr');
+                        const newRow = data.html ? $(data.html).find(`[data-supply-id="${supplyId}"]`).closest('tr') : $('<tr>');
                         supplyRow.replaceWith(newRow);
                         initializeRowHandlers(newRow);
                     })
@@ -488,17 +464,42 @@ $(function() {
                     });
                 });
             });
-        });
-
-        // Reinitialize supply-history-btn handler
-        row.find('.supply-history-btn').on('click', function(e) {
-            e.preventDefault();
-            const supplyId = $(this).data('supply-id');
-            showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`, 'Завантаження історії...');
-        });
-    }
-});
-</script>
+        }
+    
+        function initializeRowHandlers(row) {
+            // Initialize HTMX elements
+            row.find('[hx-post]').each(initializeHTMXElement);
+    
+            // Initialize HTMX globally
+            if (typeof htmx !== 'undefined') {
+                htmx.process(row[0]);
+            }
+    
+            // Reinitialize add-lot-btn handler
+            row.find('.edit-gen-sup-btn').on('click', function(e) {
+                e.preventDefault();
+                const { supplyId, supplyName } = getSupplyNamAndId(this);
+                $('#supplyName').text(supplyName);
+                showEditGenSupModal(`/update_general/${supplyId}`, supplyId);
+            });
+    
+            row.find('.add-lot-btn').on('click', function(e) {
+                e.preventDefault();
+                const { supplyId, supplyName } = getSupplyNamAndId(this);
+                $('#supplyName').text(supplyName);
+                showEditGenSupModal(`/newLot/${supplyId}`, supplyId);
+            });
+    
+            // Reinitialize supply-history-btn handler
+            row.find('.supply-history-btn').on('click', function(e) {
+                e.preventDefault();
+                 const { supplyId, supplyName } = getSupplyNamAndId(this);
+                 $('#supplyName').text(supplyName);
+                 showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`, 'Завантаження історії...');
+            });
+        }
+    });
+    </script>
 
 {% endblock %}
 
