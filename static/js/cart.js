@@ -155,6 +155,33 @@ function sendCartAction(productId, action, url) {
         })
 }
 
+function updateOrderStatus(orderId) {
+    fetch(`orders_update_status/${orderId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+        },
+        body: JSON.stringify({'productId': orderId, 'action': 'update'})
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.text();
+    })
+    .then(html => {
+        // Update just the order preview cell
+        const orderCell = document.getElementById(`order_preview_cell${orderId}`);
+        if (orderCell) {
+            orderCell.innerHTML = html;
+        }
+    })
+    .catch(error => {
+        alert(error.message || 'Error updating order status');
+        console.error('Error updating order status:', error);
+    });
+}
 
 $(function () {
   $('[data-toggle="tooltip"]').tooltip()

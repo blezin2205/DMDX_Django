@@ -3,3 +3,6 @@
         {{ detailInfo.status_desc }}{% if not forloop.last %}; {% endif %}
     </span>
 {% endfor %}
+{% if all_status_greater_than_3 %}
+    <span class="badge bg-success ms-2">Всі статуси > 3</span>
+{% endif %}

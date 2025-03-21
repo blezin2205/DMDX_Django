@@ -1,0 +1,14 @@
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load bootstrap %}
+{% load mathfilters %}
+{% load myapp_extras %}
+
+<div class="modal fade" id="addNewLotModal" tabindex="-1" role="dialog" aria-labelledby="addNewLotModalLabel" aria-hidden="true">
+    <div class="modal-dialog{% if request.user_agent.is_mobile %} modal-fullscreen-sm-down{% else %}{% endif %}" role="document">
+        <form method="POST" action="" id="addNewLotForm" enctype="multipart/form-data">
+            {% csrf_token %}
+        <div class="modal-content" id="addNewLotContent">
+    </div>
+    </form>
+</div>

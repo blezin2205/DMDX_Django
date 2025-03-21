@@ -3,19 +3,32 @@
 {% load static %}
 {% load bootstrap %}
 
-{% block content %}
+
+<div class="modal-header py-2">
+  <h6 class="modal-title" id="addNewLotModalLabel">Редагувати назву товара:<br><i class="bi bi-dot"><span>{{ generalSupp.name }}</span></i></h6>
+<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<div class="modal-body p-0" style="min-height: 330px;">
   <div class="container-fluid p-3">
-  {% csrf_token %}
-<div class="w-auto">
-    {{ form|crispy }}
+      <div class="row">
+          <div class="col-12">
+                  {% csrf_token %}
+                  <div class="messages">
+                      {% if messages %}
+                          {% for message in messages %}
+                              <div class="alert alert-{{ message.tags }}">
+                                  {{ message }}
+                              </div>
+                          {% endfor %}
+                      {% endif %}
+                  </div>
+                  {{ form|crispy }}
+                  <div class="d-flex justify-content-evenly gap-2">
+                    <button class="btn btn-outline-primary" type="submit" name="save">Зберегти</button>
+                    <button class="btn btn-outline-danger" type="submit" name="delete">Видалити</button>
+                  </div>
+          </div>
+      </div>
+  </div>
 </div>
-
-
-<input type="hidden" name="next" value="{{ request.GET.next }}">
-<button class="btn btn-outline-primary my-5" type="submit" name="save">Зберегти</button>
-<button class="btn btn-outline-danger my-5 mx-3" type="submit" name="delete">Видалити</button>
-</div>
-
-
-
-{% endblock %}

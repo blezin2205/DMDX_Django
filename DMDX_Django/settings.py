@@ -222,6 +222,9 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DATE_INPUT_FORMATS = '%d-%m-%Y'
 
+# Auto-close setting for NP documents
+IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED = os.environ.get('IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED', 'True').lower() == 'true'
+
 REST_FRAMEWORK = {
    'DEFAULT_AUTHENTICATION_CLASSES': (
    'rest_framework.authentication.TokenAuthentication',

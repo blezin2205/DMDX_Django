@@ -2,27 +2,40 @@
 {% load crispy_forms_tags %}
 {% load bootstrap %}
 
-<div class="container-fluid p-3">
-    <div class="row">
-        <div class="col-12">
-                {% csrf_token %}
-                <div class="messages">
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }}">
-                                {{ message }}
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                {{ form|crispy }}
-                <div class="d-flex justify-content-end gap-2 mt-3">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-                    <button type="submit" class="btn btn-primary">Зберегти</button>
-                </div>
+<div class="modal-header py-2">
+    <h6 class="modal-title" id="addNewLotModalLabel">{%if editMode %}Редагувати LOT для:{%else%}Додати новий LOT для:{%endif%}<br><i class="bi bi-dot"><span>{{ generalSupp.name }}</span></i></h6>
+<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<div class="modal-body p-0" style="min-height: 330px;">
+    <div class="container-fluid p-3">
+        <div class="row">
+            <div class="col-12">
+                    {% csrf_token %}
+                    <div class="messages">
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }}">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    {{ form|crispy }}
+                    <div class="d-flex justify-content-evenly gap-2 ">
+                        {%if editMode %}
+                        <button class="btn btn-outline-primary" type="submit" name="save">Зберегти</button>
+                        <button class="btn btn-outline-danger" type="submit" name="delete">Видалити</button>
+                        {%else%}
+                        <button type="submit" class="btn btn-outline-primary">Зберегти</button>
+                        {%endif%}
+                    </div>
+            </div>
         </div>
     </div>
 </div>
+
+
 
 <script>
 function initializeDateInput() {
@@ -36,71 +49,6 @@ function initializeDateInput() {
     // Add new event listeners
     dateInput.addEventListener('input', handleDateInput);
     dateInput.addEventListener('blur', handleDateBlur);
-}
-
-function handleDateInput(e) {
-    const input = e.target;
-    // Store cursor position
-    const cursorPos = input.selectionStart;
-    const prevLength = input.value.length;
-    
-    // Remove any non-digit characters
-    let value = input.value.replace(/\D/g, '');
-    
-    // Don't format if less than 1 character
-    if (value.length < 1) {
-        input.value = value;
-        return;
-    }
-
-    // Format as YYYY-MM-DD
-    let formattedValue = '';
-    if (value.length <= 4) {
-        formattedValue = value;
-    } else if (value.length <= 6) {
-        formattedValue = value.substring(0, 4) + '-' + value.substring(4);
-    } else {
-        formattedValue = value.substring(0, 4) + '-' + value.substring(4, 6) + '-' + value.substring(6, 8);
-    }
-    
-    // Validate month and day if we have a complete date
-    if (value.length >= 8) {
-        const year = parseInt(value.substring(0, 4));
-        const month = parseInt(value.substring(4, 6));
-        const day = parseInt(value.substring(6, 8));
-        
-        let validMonth = month;
-        if (month > 12) validMonth = 12;
-        if (month < 1) validMonth = 1;
-        
-        const daysInMonth = new Date(year, validMonth, 0).getDate();
-        let validDay = day;
-        if (day > daysInMonth) validDay = daysInMonth;
-        if (day < 1) validDay = 1;
-        
-        formattedValue = `${year}-${String(validMonth).padStart(2, '0')}-${String(validDay).padStart(2, '0')}`;
-    }
-    
-    input.value = formattedValue;
-    
-    // Adjust cursor position if we're not at the end
-    if (cursorPos < prevLength) {
-        // If we're at a position where a hyphen was removed, move cursor back one space
-        const newCursorPos = cursorPos - (prevLength - formattedValue.length);
-        input.setSelectionRange(newCursorPos, newCursorPos);
-    }
-}
-
-function handleDateBlur(e) {
-    const value = e.target.value;
-    if (value) {
-        const date = new Date(value);
-        if (isNaN(date.getTime())) {
-            e.target.setCustomValidity('Please enter a valid date in YYYY-MM-DD format');
-        } else {
-            e.target.setCustomValidity('');
-        }
-    }
 }
 
 // Initialize when the modal content is loaded

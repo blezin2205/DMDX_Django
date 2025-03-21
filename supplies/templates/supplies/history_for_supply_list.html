@@ -121,6 +121,7 @@
       </div>
    </div>
 
+   {% if supplies or in_booked_sup or in_preorders or in_deliveries %}
    {% if supplies %}
    <div class="card shadow-sm mb-4">
       <div class="card-header bg-light">
@@ -317,5 +318,13 @@
          </div>
       </div>
    </div>
+   {% endif %}
+   {% else %}
+      <div class="d-flex justify-content-center align-items-center">
+         <div class="text-center">
+            <i class="fas fa-info-circle fa-2x m-3"></i>
+            <div class="fs-5">Історії товару ще немає.</div>
+         </div>
+      </div>
    {% endif %}
 </div>

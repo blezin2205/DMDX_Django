@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse, JsonResponse
 from .NPModels import *
+from .views import update_order_status_core
 from .forms import *
 import json
 from django.contrib import messages
@@ -9,6 +10,7 @@ from django_htmx.http import trigger_client_event
 import threading
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from django.conf import settings
 
 
 def sendTurboSMSRequest(text, recipients):
@@ -481,6 +483,7 @@ def np_delivery_detail_info_for_order(request, order_id):
                 user_who_created_document = userCreatedList[number]
 
                 status_code = obj["StatusCode"]
+                counterpartyRecipientDescription = obj["CounterpartyRecipientDescription"]
                 documentWeight = obj["DocumentWeight"]
                 factualWeight = obj["FactualWeight"]
                 payerType = obj["PayerType"]
@@ -549,6 +552,7 @@ def np_delivery_detail_info_for_order(request, order_id):
                     else:
                         status_parsel_model = StatusNPParselFromDoucmentID(status_code=status_code, status_desc=status,
                                                                        docNumber=number, for_order_id=order_id,
+                                                                       counterpartyRecipientDescription=counterpartyRecipientDescription,
                                                                        documentWeight=documentWeight,
                                                                        factualWeight=factualWeight,
                                                                        payerType=payerType,
@@ -592,13 +596,25 @@ def np_delivery_detail_info_for_order(request, order_id):
                                                                    announcedPrice=announcedPrice)
                     status_parsel_model.save()
 
-        parsels_status_data = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.all()
+        parsels_status_data = order.statusnpparselfromdoucmentid_set.all()
+        # if settings.IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED:
+        #     all_status_greater_than_3 = all(int(parcel.status_code) == 1 for parcel in parsels_status_data)
+        #     if documentsIdList.exists() and all_status_greater_than_3:
+        #         parcel_user = documentsIdList.first().userCreated
+        #         update_order_status_core(order_id, parcel_user)
+            
         response = render(request, 'partials/np_delivery_info_in_list_of_orders.html',
                           {'parsels_status_data': parsels_status_data})
         trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
 
     else:
-        parsels_status_data = Order.objects.get(id=order_id).statusnpparselfromdoucmentid_set.all()
+        parsels_status_data = order.statusnpparselfromdoucmentid_set.all()
+        # if settings.IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED:
+        #     all_status_greater_than_3 = all(int(parcel.status_code) == 1 for parcel in parsels_status_data)
+        #     if documentsIdList.exists() and all_status_greater_than_3:
+        #         parcel_user = documentsIdList.first().userCreated
+        #         update_order_status_core(order_id, parcel_user)
+        
         response = render(request, 'partials/np_delivery_info_in_list_of_orders.html',
                           {'parsels_status_data': parsels_status_data})
         trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
