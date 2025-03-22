@@ -67,6 +67,14 @@
                                 </span>
                                 {% endif %}
                             </div>
+                            {% elif cartCountData.expired_orders > 0 %}
+                            <div class="alert alert-soft-danger mb-0 py-2 px-3 d-inline-flex align-items-center" 
+                            data-bs-toggle="tooltip" 
+                            data-bs-placement="bottom" 
+                            title="Прострочені замовлення">
+                           <i class="bi bi-exclamation-triangle me-2"></i>
+                           <span class="fw-semibold">{{ cartCountData.expired_orders }}</span>
+                       </div>
                         {% endif %}
                     </li>
                 </ul>

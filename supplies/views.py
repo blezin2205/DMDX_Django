@@ -2586,7 +2586,7 @@ def history_for_supply(request, supp_id):
     in_booked_sup = generalSupp.supplyinbookedorder_set.all().order_by('-id')
     total_count_in_booked_sup = in_booked_sup.aggregate(total_count=Sum('count_in_order'))['total_count']
 
-    return render(request, 'supplies/history_for_supply_list.html',
+    return render(request, 'supplies/supplies/history_for_supply_list.html',
                   {'generalSupp': generalSupp,
                    'supplies': in_orders,
                    'in_preorders': in_preorders,

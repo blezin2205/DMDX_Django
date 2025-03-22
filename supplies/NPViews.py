@@ -456,8 +456,8 @@ def delete_my_np_sender_place(request):
     sup_info.delete()
     return HttpResponse(status=200)
 
-async def fetch_np_status(session: aiohttp.ClientSession, documents: List[Dict]) -> Dict:
-    """Make async request to Nova Poshta API"""
+def fetch_np_status(documents: List[Dict]) -> Dict:
+    """Make request to Nova Poshta API"""
     params = {
         "apiKey": "99f738524ca3320ece4b43b10f4181b1",
         "modelName": "TrackingDocument",
@@ -468,15 +468,8 @@ async def fetch_np_status(session: aiohttp.ClientSession, documents: List[Dict])
     }
     
     try:
-        # Create SSL context that ignores certificate verification
-        ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
-        
-        connector = aiohttp.TCPConnector(ssl=ssl_context)
-        async with aiohttp.ClientSession(connector=connector) as session:
-            async with session.post('https://api.novaposhta.ua/v2.0/json/', json=params) as response:
-                return await response.json()
+        response = requests.post('https://api.novaposhta.ua/v2.0/json/', json=params)
+        return response.json()
     except Exception as e:
         logger.error(f"Error fetching NP status: {str(e)}")
         return {"data": []}
@@ -545,15 +538,15 @@ def process_status_data(data: Dict, order: Order, userCreatedList: Dict) -> None
         except Exception as e:
             logger.error(f"Error updating status parcel model for order {order.id}, doc {number}: {str(e)}")
 
-def get_order_status_sync(order: Order) -> Tuple[bool, int]:
-    """Get order status in a sync context"""
+def get_order_status(order: Order) -> Tuple[bool, int]:
+    """Get order status"""
     if order.statusnpparselfromdoucmentid_set.exists():
         statusCode = int(order.statusnpparselfromdoucmentid_set.first().status_code)
         return True, statusCode
     return False, 0
 
-def get_order_documents_sync(order: Order) -> Tuple[List[Dict], Dict]:
-    """Get order documents in a sync context"""
+def get_order_documents(order: Order) -> Tuple[List[Dict], Dict]:
+    """Get order documents"""
     documentsIdList = order.npdeliverycreateddetailinfo_set.all()
     documents = []
     userCreatedList = {}
@@ -567,106 +560,63 @@ def get_order_documents_sync(order: Order) -> Tuple[List[Dict], Dict]:
     
     return documents, userCreatedList
 
-def get_parsels_status_data_sync(order: Order) -> QuerySet:
-    """Get parsels status data in a sync context"""
+def get_parsels_status_data(order: Order) -> QuerySet:
+    """Get parsels status data"""
     return order.statusnpparselfromdoucmentid_set.all()
 
-async def get_np_delivery_details_async(order: Order) -> Tuple[QuerySet, bool]:
-    """Async version of get_np_delivery_details"""
-    # Run sync functions in thread pool
+def get_np_delivery_details(order: Order) -> Tuple[QuerySet, bool]:
+    """Get NP delivery details sequentially"""
     print("Call for order: ", order.id)
-    loop = asyncio.get_event_loop()
-    has_status, status_code = await loop.run_in_executor(None, get_order_status_sync, order)
+    has_status, status_code = get_order_status(order)
     noMoreUpdate = False
 
     if has_status:
         noMoreUpdate = status_code == 2 or status_code == 9
 
     if not noMoreUpdate:
-        documents, userCreatedList = await loop.run_in_executor(None, get_order_documents_sync, order)
-        
-        # Create SSL context that ignores certificate verification
-        ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
-        
-        connector = aiohttp.TCPConnector(ssl=ssl_context)
-        async with aiohttp.ClientSession(connector=connector) as session:
-            data = await fetch_np_status(session, documents)
-            await loop.run_in_executor(None, process_status_data, data, order, userCreatedList)
+        documents, userCreatedList = get_order_documents(order)
+        data = fetch_np_status(documents)
+        process_status_data(data, order, userCreatedList)
 
-    parsels_status_data = await loop.run_in_executor(None, get_parsels_status_data_sync, order)
+    parsels_status_data = get_parsels_status_data(order)
     return parsels_status_data, noMoreUpdate
 
-def get_np_delivery_details(order: Order) -> Tuple[QuerySet, bool]:
-    """Synchronous wrapper for async function"""
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    return loop.run_until_complete(get_np_delivery_details_async(order))
-
-async def process_orders_batch(orders: List[Order], batch_size: int = 5) -> None:
-    """Process a batch of orders concurrently"""
-    tasks = []
-    for order in orders:
-        tasks.append(get_np_delivery_details_async(order))
-        if len(tasks) >= batch_size:
-            await asyncio.gather(*tasks)
-            tasks = []
-    
-    if tasks:
-        await asyncio.gather(*tasks)
-
 def complete_all_orders_with_np_status_code():
-    """Process orders in batches using async/await"""
+    """Process orders sequentially"""
     logger.info("Starting evening task execution")
     
-    # Get orders that need processing
-    orders = Order.objects.filter(statusnpparselfromdoucmentid__status_code__gt="3", isComplete=False).distinct()
-    logger.info(f"Found {orders.count()} orders with status code greater than 3 to process")
-    
-    # Create event loop and run the batch processing
     try:
-        logger.debug("Attempting to get existing event loop")
-        loop = asyncio.get_event_loop()
-        logger.debug("Successfully got existing event loop")
-    except RuntimeError:
-        logger.debug("No existing event loop found, creating new one")
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        logger.debug("New event loop created and set")
-
-    logger.info("Starting batch processing of orders")
-    loop.run_until_complete(process_orders_batch(list(orders), batch_size=5))
-    logger.info("Completed batch processing of orders")
-
-    logger.info(f"Processing summary - Total orders: {orders.count()}")
-    logger.info("="*100)
-    
-    # Process status updates for each order
-    for order in orders:
-        logger.info(f"Processing order ID: {order.id}")
-        delivery_info = order.npdeliverycreateddetailinfo_set.first()
-        if delivery_info:
-            user_sent = delivery_info.userCreated
-            logger.info(f"Order {order.id} delivery info found - User: {user_sent}")
-        else:
-            user_sent = None
-            logger.warning(f"No delivery info found for order {order.id}")
-            
-        try:
-            update_order_status_core(order.id, user_sent)
-            logger.info(f"Successfully updated status for order {order.id}")
-        except Exception as e:
-            logger.error(f"Error updating status for order {order.id}: {str(e)}")
+        # Get orders that need processing
+        orders = Order.objects.filter(statusnpparselfromdoucmentid__status_code__gt="3", isComplete=False).distinct()
+        logger.info(f"Found {orders.count()} orders with status code greater than 3 to process")
         
+        # Process each order sequentially
+        for order in orders:
+            try:
+                logger.info(f"Processing order ID: {order.id}")
+                get_np_delivery_details(order)
+                
+                delivery_info = order.npdeliverycreateddetailinfo_set.first()
+                user_sent = delivery_info.userCreated if delivery_info else None
+                logger.info(f"Order {order.id} delivery info found - User: {user_sent}")
+                
+                update_order_status_core(order.id, user_sent)
+                logger.info(f"Successfully updated status for order {order.id}")
+                
+                # Add a small delay between orders to prevent overwhelming the database
+                time.sleep(0.5)
+                
+            except Exception as e:
+                logger.error(f"Error processing order {order.id}: {str(e)}")
+            
+            logger.info("="*100)
+        
+        current_time = timezone.localtime(timezone.now())
+        logger.info(f"Evening task completed at {current_time}")
         logger.info("="*100)
-    
-    current_time = timezone.localtime(timezone.now())
-    logger.info(f"Evening task completed at {current_time}")
-    logger.info("="*100)
+        
+    except Exception as e:
+        logger.error(f"Error in complete_all_orders_with_np_status_code: {str(e)}")
 
 def np_delivery_detail_info_for_order(request, order_id):
     """
