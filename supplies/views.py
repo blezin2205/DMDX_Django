@@ -2142,64 +2142,67 @@ def updatePreorderStatus(request, order_id):
 def update_order_status_core(order_id, user):
     order = Order.objects.get(id=order_id)
     if order.isComplete:
-            raise ValueError(
-                'Це замовлення вже завершено і не може бути оновлено')
-    supps = order.supplyinorder_set.all()
-    for el in supps:
-        countInOrder = el.count_in_order
-        if el.supply:
-            supp = el.supply
-            # Ensure we don't go below 0
-            new_count_on_hold = max(0, supp.countOnHold - countInOrder)
-            new_count = max(0, supp.count - countInOrder)
-            supp.countOnHold = new_count_on_hold
-            supp.count = new_count
-            if new_count == 0:
-                supp.delete()
-            else:
-                supp.save(update_fields=['countOnHold', 'count'])
+        raise ValueError('Це замовлення вже завершено і не може бути оновлено')
+    
+    try:
+        with transaction.atomic():
+            supps = order.supplyinorder_set.all()
+            for el in supps:
+                countInOrder = el.count_in_order
+                if el.supply:
+                    supp = el.supply
+                    new_count_on_hold = max(0, supp.countOnHold - countInOrder)
+                    new_count = max(0, supp.count - countInOrder)
+                    supp.countOnHold = new_count_on_hold
+                    supp.count = new_count
+                    if new_count == 0:
+                        supp.delete()
+                    else:
+                        supp.save(update_fields=['countOnHold', 'count'])
 
-        if el.supply_in_booked_order:
-            supply_in_booked_order = el.supply_in_booked_order
-            # Ensure we don't go below 0
-            new_count_on_hold = max(
-                0, supply_in_booked_order.countOnHold - countInOrder)
-            new_count_in_order = max(
-                0, supply_in_booked_order.count_in_order - countInOrder)
-            supply_in_booked_order.countOnHold = new_count_on_hold
-            supply_in_booked_order.count_in_order = new_count_in_order
+                if el.supply_in_booked_order:
+                    supply_in_booked_order = el.supply_in_booked_order
+                    new_count_on_hold = max(
+                        0, supply_in_booked_order.countOnHold - countInOrder)
+                    new_count_in_order = max(
+                        0, supply_in_booked_order.count_in_order - countInOrder)
+                    supply_in_booked_order.countOnHold = new_count_on_hold
+                    supply_in_booked_order.count_in_order = new_count_in_order
 
-            if supply_in_booked_order.count_in_order == 0:
-                supply_in_booked_order.delete()
-            else:
-                supply_in_booked_order.save(
-                    update_fields=['countOnHold', 'count_in_order'])
+                    if supply_in_booked_order.count_in_order == 0:
+                        supply_in_booked_order.delete()
+                    else:
+                        supply_in_booked_order.save(
+                            update_fields=['countOnHold', 'count_in_order'])
 
-        genSupInPreorder = el.supply_in_preorder
-        if genSupInPreorder:
-            genSupInPreorder.count_in_order_current += el.count_in_order
-            if genSupInPreorder.count_in_order - genSupInPreorder.count_in_order_current <= 0:
-                genSupInPreorder.state_of_delivery = 'Complete'
-            else:
-                genSupInPreorder.state_of_delivery = 'Partial'
-            genSupInPreorder.save()
+                genSupInPreorder = el.supply_in_preorder
+                if genSupInPreorder:
+                    genSupInPreorder.count_in_order_current += el.count_in_order
+                    if genSupInPreorder.count_in_order - genSupInPreorder.count_in_order_current <= 0:
+                        genSupInPreorder.state_of_delivery = 'Complete'
+                    else:
+                        genSupInPreorder.state_of_delivery = 'Partial'
+                    genSupInPreorder.save()
 
-        order.isComplete = True
-        order.dateToSend = None
-        order.dateSent = timezone.now().date()
-        order.userSent = user
-        order.save()
+                preorder = order.for_preorder
+                if preorder:
+                    sups_in_preorder = preorder.supplyinpreorder_set.all()
+                    if all(sp.state_of_delivery == 'Complete' for sp in sups_in_preorder):
+                        preorder.state_of_delivery = 'Complete'
+                    elif any(x.state_of_delivery == 'Partial' or 'Awaiting' for x in sups_in_preorder):
+                        preorder.state_of_delivery = 'Partial'
+                    preorder.save(update_fields=['state_of_delivery'])
+                    
+            order.isComplete = True
+            order.dateToSend = None
+            order.dateSent = timezone.now().date()
+            order.userSent = user
+            order.save()        
 
-        preorder = order.for_preorder
-        if preorder:
-            sups_in_preorder = preorder.supplyinpreorder_set.all()
-            if all(sp.state_of_delivery == 'Complete' for sp in sups_in_preorder):
-                preorder.state_of_delivery = 'Complete'
-            elif any(x.state_of_delivery == 'Partial' or 'Awaiting' for x in sups_in_preorder):
-                preorder.state_of_delivery = 'Partial'
-            preorder.save(update_fields=['state_of_delivery'])
-
-    return order
+        return order
+    except Exception as e:
+        # Re-raise the exception to be handled by the calling function
+        raise ValueError(f'Помилка при оновленні статусу замовлення: {str(e)}')
 
 
 @login_required(login_url='login')
@@ -2208,7 +2211,7 @@ def orderUpdateStatus(request, order_id):
         order = Order.objects.get(id=order_id)
         
         if order.isComplete:
-            raise ValueError('Цей замовлення вже завершено і не може бути оновлено. Оновіть сторінку.')
+            raise ValueError('Це замовлення вже завершено і не може бути закрито.\nОновіть сторінку браузера.')
             
         order = update_order_status_core(order_id, request.user)
         
@@ -2424,6 +2427,7 @@ def updateSupply(request, supp_id):
 
     return render(request, 'supplies/supplies/update_supply.html',
                   {'cartCountData': cartCountData, 'form': form,
+                   'title': 'Редагувати LOT товара',
                    'suppId': supp_id, 'editMode': True, 'generalSupp': generalSupp})
 
 
@@ -2565,7 +2569,7 @@ def updateGeneralSupply(request, supp_id):
             return JsonResponse({'success': True})
 
     return render(request, 'supplies/supplies/update_supply.html',
-                  {'title': f'Редагувати запис №{supp_id}', 'form': form, 'generalSupp': supp})
+                  {'title': 'Редагувати назву товара', 'form': form, 'generalSupp': supp})
 
 
 @login_required(login_url='login')
