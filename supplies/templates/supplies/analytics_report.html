@@ -61,7 +61,7 @@
                                 {% for suggestion in report.suggestions %}
                                 <tr>
                                     <td>
-                                        <div>{{ suggestion.product.name }}</div>
+                                        <div><b>{{ suggestion.product.name }}</b></div>
                                         {% if suggestion.product.package_and_tests %}
                                             <div class="text-muted small">{{ suggestion.product.package_and_tests }}</div>
                                         {% endif %}
@@ -69,7 +69,7 @@
                                             <div class="text-muted small">{{ suggestion.product.category.name }}</div>
                                         {% endif %}
                                     </td>
-                                    <td><b>{{ suggestion.suggested_quantity }}</b></td>
+                                    <td><b>{{ suggestion.suggested_quantity|floatformat:0 }}</b></td>
                                     <td>{{ suggestion.avg_quantity|floatformat:1 }}</td>
                                     <td>{{ suggestion.max_quantity }}</td>
                                     <td>{{ suggestion.min_quantity }}</td>

@@ -108,9 +108,12 @@
             <div class="d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted small">{{client.city_ref.name}}</span>
-                    <a href="{% url 'analytics_report' client.id %}" class="btn btn-sm btn-outline-dark" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Аналітика">
-                        <i class="bi bi-info-circle"></i>
+                    {% if client.preorder_set.count > 0 %}
+                    <a href="{% url 'analytics_report' client.id %}" class="btn btn-sm bg-info-subtle" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Аналітика передзамовлень">
+                        <i class="bi bi-cart-plus text-info"></i>
                     </a>
+                    {% endif %}
+                    
                 </div>
                
                 <h5 class="client-name">{{client.name}}</h5>
