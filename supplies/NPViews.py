@@ -619,13 +619,13 @@ async def process_orders_batch(orders: List[Order], batch_size: int = 5) -> None
     if tasks:
         await asyncio.gather(*tasks)
 
-def complete_all_orders_with_np_status_code_1():
+def complete_all_orders_with_np_status_code():
     """Process orders in batches using async/await"""
     logger.info("Starting evening task execution")
     
     # Get orders that need processing
-    orders = Order.objects.filter(statusnpparselfromdoucmentid__status_code="1").distinct()
-    logger.info(f"Found {orders.count()} orders with status code 1 to process")
+    orders = Order.objects.filter(statusnpparselfromdoucmentid__status_code__gt="3", isComplete=False).distinct()
+    logger.info(f"Found {orders.count()} orders with status code greater than 3 to process")
     
     # Create event loop and run the batch processing
     try:
