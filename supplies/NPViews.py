@@ -73,7 +73,6 @@ def httpRequest(request):
 
 def nova_poshta_registers(request):
     registers = RegisterNPInfo.objects.all().order_by('-id')
-    evening_task()
     return render(request, 'supplies/nova_poshta/nova_poshta_registers.html', {'registers': registers})
 
 
@@ -620,7 +619,7 @@ async def process_orders_batch(orders: List[Order], batch_size: int = 5) -> None
     if tasks:
         await asyncio.gather(*tasks)
 
-def evening_task():
+def complete_all_orders_with_np_status_code_1():
     """Process orders in batches using async/await"""
     logger.info("Starting evening task execution")
     

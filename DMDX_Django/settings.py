@@ -305,15 +305,10 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': 'logs/evening_task.log',
-            'formatter': 'verbose',
-        },
     },
     'loggers': {
         'supplies': {  # This matches your app name
-            'handlers': ['console', 'file'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },
