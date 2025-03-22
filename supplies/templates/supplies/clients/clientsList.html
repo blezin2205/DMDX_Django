@@ -106,7 +106,13 @@
     <div class="card client-card shadow-sm">
         <div class="card-header {% if client.isPrivatePlace %} bg-warning bg-gradient bg-opacity-25 {% else %} bg-primary bg-gradient bg-opacity-25 {% endif %}">
             <div class="d-flex flex-column">
-                <span class="text-muted small">{{client.city_ref.name}}</span>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">{{client.city_ref.name}}</span>
+                    <a href="{% url 'analytics_report' client.id %}" class="btn btn-sm btn-outline-dark" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Аналітика">
+                        <i class="bi bi-info-circle"></i>
+                    </a>
+                </div>
+               
                 <h5 class="client-name">{{client.name}}</h5>
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="badge {% if client.isPrivatePlace %} bg-warning {% else %} bg-primary {% endif %}">

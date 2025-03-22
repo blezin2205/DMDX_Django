@@ -27,13 +27,14 @@ from django.contrib import messages
 import requests
 import csv
 import pymsteams
-from django.db.models import Sum, F, Exists, OuterRef
+from django.db.models import Sum, F, Exists, OuterRef, Max
 from .tasks import *
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from firebase_admin import storage
 from django.template.loader import render_to_string
 from django.db import transaction
+from .analytics import PreorderAnalytics
 
 
 # @login_required(login_url='login')
@@ -2268,7 +2269,7 @@ def agreementsForClient(request, client_id):
         if 'mark_as_delivery_completed' in request.POST:
             generate_list_of_xls_from_preorders_list(selected_orders, False, True)
 
-    return render(request, 'supplies/preorders.html',
+    return render(request, 'supplies/orders/preorders.html',
            {'title': title, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData,
             'isOrders': True,
             'isArchiveChoosed': isArchiveChoosed,
@@ -3665,5 +3666,37 @@ def import_general_supplies_from_excel(request):
         'cartCountData': countCartItemsHelper(request),
         'categories': categories
     })
+
+@login_required
+def analytics_report(request, place_id):
+    place = get_object_or_404(Place, id=place_id)
+    analytics = PreorderAnalytics(place)
+    report = analytics.get_analytics_report()
+    
+    # Отримуємо всі передзамовлення для цього місця
+    preorders = PreOrder.objects.filter(place=place).order_by('-dateCreated')
+    
+    # Отримуємо всі товари з передзамовлень, згруповані за generalSupply
+    preorder_items = SupplyInPreorder.objects.filter(
+        supply_for_order__in=preorders
+    ).values(
+        'generalSupply',
+        'generalSupply__name',
+        'generalSupply__package_and_tests',
+        'generalSupply__category__name'
+    ).annotate(
+        total_quantity=Sum('count_in_order'),
+        last_order_date=Max('supply_for_order__dateCreated')
+    ).order_by('-total_quantity')
+    
+    # Отримуємо аналітичний звіт
+    report = PreorderAnalytics(place).get_analytics_report()
+    
+    context = {
+        'report': report,
+        'preorders': preorders,
+        'preorder_items': preorder_items
+    }
+    return render(request, 'supplies/analytics_report.html', context)
 
 
