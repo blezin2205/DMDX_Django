@@ -9,8 +9,20 @@ import requests
 from django_htmx.http import trigger_client_event
 import threading
 from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
+from asgiref.sync import async_to_sync, sync_to_async
 from django.conf import settings
+import datetime
+import logging
+import asyncio
+import aiohttp
+from concurrent.futures import ThreadPoolExecutor
+from typing import List, Dict, Tuple
+import time
+from django.db.models import QuerySet
+from django.utils import timezone
+import ssl
+
+logger = logging.getLogger(__name__)
 
 
 def sendTurboSMSRequest(text, recipients):
@@ -31,6 +43,7 @@ def sendTurboSMSRequest(text, recipients):
 
 
 def httpRequest(request):
+
 
     param = {'apiKey': '99f738524ca3320ece4b43b10f4181b1',
              'modelName': 'Counterparty',
@@ -60,6 +73,7 @@ def httpRequest(request):
 
 def nova_poshta_registers(request):
     registers = RegisterNPInfo.objects.all().order_by('-id')
+    evening_task()
     return render(request, 'supplies/nova_poshta/nova_poshta_registers.html', {'registers': registers})
 
 
@@ -443,183 +457,229 @@ def delete_my_np_sender_place(request):
     sup_info.delete()
     return HttpResponse(status=200)
 
-def np_delivery_detail_info_for_order(request, order_id):
+async def fetch_np_status(session: aiohttp.ClientSession, documents: List[Dict]) -> Dict:
+    """Make async request to Nova Poshta API"""
+    params = {
+        "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+        "modelName": "TrackingDocument",
+        "calledMethod": "getStatusDocuments",
+        "methodProperties": {
+            "Documents": documents
+        }
+    }
+    
+    try:
+        # Create SSL context that ignores certificate verification
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        
+        connector = aiohttp.TCPConnector(ssl=ssl_context)
+        async with aiohttp.ClientSession(connector=connector) as session:
+            async with session.post('https://api.novaposhta.ua/v2.0/json/', json=params) as response:
+                return await response.json()
+    except Exception as e:
+        logger.error(f"Error fetching NP status: {str(e)}")
+        return {"data": []}
 
-    order = Order.objects.get(id=order_id)
-    userCreated = order.userCreated
+def process_status_data(data: Dict, order: Order, userCreatedList: Dict) -> None:
+    """Process status data and update database"""
+    if not data.get("data"):
+        return
+
+    for obj in data["data"]:
+        number = obj["Number"]
+        user_who_created_document = userCreatedList[number]
+
+        # Format dates
+        scheduledDeliveryDate = obj.get("ScheduledDeliveryDate", "")
+        if scheduledDeliveryDate:
+            scheduledDeliveryDate = datetime.datetime.strptime(scheduledDeliveryDate, '%d-%m-%Y %H:%M:%S').strftime('%d.%m.%Y %H:%M')
+
+        dateCreated = datetime.datetime.strptime(obj["DateCreated"], '%d-%m-%Y %H:%M:%S').strftime('%d.%m.%Y %H:%M')
+        
+        dateScan = obj.get("DateScan", "")
+        if dateScan:
+            dateScan = datetime.datetime.strptime(dateScan, '%H:%M %d.%m.%Y').strftime('%d.%m.%Y %H:%M')
+
+        actualDeliveryDate = obj.get("ActualDeliveryDate", "")
+        if actualDeliveryDate:
+            actualDeliveryDate = datetime.datetime.strptime(actualDeliveryDate, '%Y-%m-%d %H:%M:%S').strftime('%d.%m.%Y %H:%M')
+
+        recipientDateTime = obj.get("RecipientDateTime", "")
+        if recipientDateTime:
+            recipientDateTime = datetime.datetime.strptime(recipientDateTime, '%d.%m.%Y %H:%M:%S').strftime('%d.%m.%Y %H:%M')
+
+        # Prepare status data
+        status_data = {
+            "status_code": obj["StatusCode"],
+            "status_desc": obj["Status"],
+            "docNumber": number,
+            "for_order_id": order.id,
+            "counterpartyRecipientDescription": obj["CounterpartyRecipientDescription"],
+            "documentWeight": obj["DocumentWeight"],
+            "factualWeight": obj["FactualWeight"],
+            "payerType": obj["PayerType"],
+            "seatsAmount": obj["SeatsAmount"],
+            "phoneRecipient": obj["PhoneRecipient"],
+            "scheduledDeliveryDate": scheduledDeliveryDate,
+            "documentCost": obj["DocumentCost"],
+            "paymentMethod": obj["PaymentMethod"],
+            "warehouseSender": f'{user_who_created_document.first_name}, {user_who_created_document.last_name}, {obj["WarehouseSender"]}',
+            "dateCreated": dateCreated,
+            "dateScan": dateScan,
+            "actualDeliveryDate": actualDeliveryDate,
+            "recipientDateTime": recipientDateTime,
+            "recipientAddress": obj["RecipientAddress"],
+            "recipientFullNameEW": obj["RecipientFullNameEW"],
+            "cargoDescriptionString": obj["CargoDescriptionString"],
+            "announcedPrice": obj["AnnouncedPrice"]
+        }
+
+        # Update or create status model
+        try:
+            status_parsel_model, created = StatusNPParselFromDoucmentID.objects.update_or_create(
+                docNumber=number,
+                for_order_id=order.id,
+                defaults=status_data
+            )
+        except Exception as e:
+            logger.error(f"Error updating status parcel model for order {order.id}, doc {number}: {str(e)}")
+
+def get_order_status_sync(order: Order) -> Tuple[bool, int]:
+    """Get order status in a sync context"""
+    if order.statusnpparselfromdoucmentid_set.exists():
+        statusCode = int(order.statusnpparselfromdoucmentid_set.first().status_code)
+        return True, statusCode
+    return False, 0
+
+def get_order_documents_sync(order: Order) -> Tuple[List[Dict], Dict]:
+    """Get order documents in a sync context"""
     documentsIdList = order.npdeliverycreateddetailinfo_set.all()
     documents = []
     userCreatedList = {}
+    
+    for docu in documentsIdList:
+        documents.append({
+            'DocumentNumber': docu.document_id,
+            'Phone': docu.userCreated.mobNumber
+        })
+        userCreatedList[docu.document_id] = docu.userCreated
+    
+    return documents, userCreatedList
 
+def get_parsels_status_data_sync(order: Order) -> QuerySet:
+    """Get parsels status data in a sync context"""
+    return order.statusnpparselfromdoucmentid_set.all()
+
+async def get_np_delivery_details_async(order: Order) -> Tuple[QuerySet, bool]:
+    """Async version of get_np_delivery_details"""
+    # Run sync functions in thread pool
+    print("Call for order: ", order.id)
+    loop = asyncio.get_event_loop()
+    has_status, status_code = await loop.run_in_executor(None, get_order_status_sync, order)
     noMoreUpdate = False
 
-    if order.statusnpparselfromdoucmentid_set.exists():
-        statusCode = int(order.statusnpparselfromdoucmentid_set.first().status_code)
-        print(statusCode)
-        noMoreUpdate = statusCode == 2 or statusCode == 9
+    if has_status:
+        noMoreUpdate = status_code == 2 or status_code == 9
 
     if not noMoreUpdate:
-        for docu in documentsIdList:
-            documents.append({'DocumentNumber': docu.document_id,
-                              'Phone': docu.userCreated.mobNumber})
-            userCreatedList[docu.document_id] = docu.userCreated
-
-        objList = []
-
-        params = {
-            "apiKey": "99f738524ca3320ece4b43b10f4181b1",
-            "modelName": "TrackingDocument",
-            "calledMethod": "getStatusDocuments",
-            "methodProperties": {
-                "Documents": documents
-            }
-        }
-        data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
-        print(data)
-        status_parsel_code = 1
-        if data["data"]:
-            for obj in data["data"]:
-                number = obj["Number"]
-                user_who_created_document = userCreatedList[number]
-
-                status_code = obj["StatusCode"]
-                counterpartyRecipientDescription = obj["CounterpartyRecipientDescription"]
-                documentWeight = obj["DocumentWeight"]
-                factualWeight = obj["FactualWeight"]
-                payerType = obj["PayerType"]
-                seatsAmount = obj["SeatsAmount"]
-                phoneRecipient = obj["PhoneRecipient"]
-                scheduledDeliveryDate = obj["ScheduledDeliveryDate"]
-                if scheduledDeliveryDate != '':
-                    scheduledDeliveryDate_obj = datetime.datetime.strptime(scheduledDeliveryDate, '%d-%m-%Y %H:%M:%S')
-                    scheduledDeliveryDate = scheduledDeliveryDate_obj.strftime('%d.%m.%Y %H:%M')
-                documentCost = obj["DocumentCost"]
-                paymentMethod = obj["PaymentMethod"]
-                warehouseSender = f'{user_who_created_document.first_name}, {user_who_created_document.last_name}, {obj["WarehouseSender"]}'
-                dateCreated = obj["DateCreated"]
-                dateCreated_obj = datetime.datetime.strptime(dateCreated, '%d-%m-%Y %H:%M:%S')
-                dateCreated = dateCreated_obj.strftime('%d.%m.%Y %H:%M')
-                dateScan = obj["DateScan"]
-                if dateScan != '':
-                    dateScan_obj = datetime.datetime.strptime(dateScan, '%H:%M %d.%m.%Y')
-                    dateScan = dateScan_obj.strftime('%d.%m.%Y %H:%M')
-
-                actualDeliveryDate = obj["ActualDeliveryDate"]
-                if actualDeliveryDate != '':
-                    actualDeliveryDate_obj = datetime.datetime.strptime(actualDeliveryDate, '%Y-%m-%d %H:%M:%S')
-                    actualDeliveryDate = actualDeliveryDate_obj.strftime('%d.%m.%Y %H:%M')
-                recipientDateTime = obj["RecipientDateTime"]
-                if recipientDateTime != '':
-                    recipientDateTime_obj = datetime.datetime.strptime(recipientDateTime, '%d.%m.%Y %H:%M:%S')
-                    recipientDateTime = recipientDateTime_obj.strftime('%d.%m.%Y %H:%M')
-
-                recipientAddress = obj["RecipientAddress"]
-                recipientFullNameEW = obj["RecipientFullNameEW"]
-                cargoDescriptionString = obj["CargoDescriptionString"]
-                announcedPrice = obj["AnnouncedPrice"]
-                status = obj["Status"]
-                status_parsel_code = int(status_code)
-                print(dateCreated)
-                print(dateScan)
-
-                print(f'Get status for order {order_id} and document {number}')
-                try:
-                    status_parsel_model = order.statusnpparselfromdoucmentid_set.filter(
-                        docNumber=number, for_order_id=order_id).first()
-                    
-                    if status_parsel_model:
-                        status_parsel_model.status_desc = status
-                        status_parsel_model.status_code = status_code
-                        status_parsel_model.docNumber = number
-                        status_parsel_model.documentWeight = documentWeight
-                        status_parsel_model.factualWeight = factualWeight
-                        status_parsel_model.payerType = payerType
-                        status_parsel_model.seatsAmount = seatsAmount
-                        status_parsel_model.phoneRecipient = phoneRecipient
-                        status_parsel_model.scheduledDeliveryDate = scheduledDeliveryDate
-                        status_parsel_model.documentCost = documentCost
-                        status_parsel_model.paymentMethod = paymentMethod
-                        status_parsel_model.warehouseSender = warehouseSender
-                        status_parsel_model.dateCreated = dateCreated
-                        status_parsel_model.dateScan = dateScan
-                        status_parsel_model.recipientAddress = recipientAddress
-                        status_parsel_model.recipientFullNameEW = recipientFullNameEW
-                        status_parsel_model.cargoDescriptionString = cargoDescriptionString
-                        status_parsel_model.announcedPrice = announcedPrice
-                        status_parsel_model.actualDeliveryDate = actualDeliveryDate
-                        status_parsel_model.recipientDateTime = recipientDateTime
-                        status_parsel_model.save()
-                    else:
-                        status_parsel_model = StatusNPParselFromDoucmentID(status_code=status_code, status_desc=status,
-                                                                       docNumber=number, for_order_id=order_id,
-                                                                       counterpartyRecipientDescription=counterpartyRecipientDescription,
-                                                                       documentWeight=documentWeight,
-                                                                       factualWeight=factualWeight,
-                                                                       payerType=payerType,
-                                                                       seatsAmount=seatsAmount,
-                                                                       phoneRecipient=phoneRecipient,
-                                                                       scheduledDeliveryDate=scheduledDeliveryDate,
-                                                                       documentCost=documentCost,
-                                                                       paymentMethod=paymentMethod,
-                                                                       warehouseSender=warehouseSender,
-                                                                       dateCreated=dateCreated,
-                                                                       dateScan=dateScan,
-                                                                       actualDeliveryDate=actualDeliveryDate,
-                                                                       recipientDateTime=recipientDateTime,
-                                                                       recipientAddress=recipientAddress,
-                                                                       recipientFullNameEW=recipientFullNameEW,
-                                                                       cargoDescriptionString=cargoDescriptionString,
-                                                                       announcedPrice=announcedPrice)
-                        status_parsel_model.save()
-                except Exception as e:
-                    print(f"Error updating status parcel model: {str(e)}")
-                    # Create new model if update fails
-                    status_parsel_model = StatusNPParselFromDoucmentID(status_code=status_code, status_desc=status,
-                                                                   docNumber=number, for_order_id=order_id,
-                                                                   counterpartyRecipientDescription=counterpartyRecipientDescription,
-                                                                   documentWeight=documentWeight,
-                                                                   factualWeight=factualWeight,
-                                                                   payerType=payerType,
-                                                                   seatsAmount=seatsAmount,
-                                                                   phoneRecipient=phoneRecipient,
-                                                                   scheduledDeliveryDate=scheduledDeliveryDate,
-                                                                   documentCost=documentCost,
-                                                                   paymentMethod=paymentMethod,
-                                                                   warehouseSender=warehouseSender,
-                                                                   dateCreated=dateCreated,
-                                                                   dateScan=dateScan,
-                                                                   actualDeliveryDate=actualDeliveryDate,
-                                                                   recipientDateTime=recipientDateTime,
-                                                                   recipientAddress=recipientAddress,
-                                                                   recipientFullNameEW=recipientFullNameEW,
-                                                                   cargoDescriptionString=cargoDescriptionString,
-                                                                   announcedPrice=announcedPrice)
-                    status_parsel_model.save()
-
-        parsels_status_data = order.statusnpparselfromdoucmentid_set.all()
-        # if settings.IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED:
-        #     all_status_greater_than_3 = all(int(parcel.status_code) == 1 for parcel in parsels_status_data)
-        #     if documentsIdList.exists() and all_status_greater_than_3:
-        #         parcel_user = documentsIdList.first().userCreated
-        #         update_order_status_core(order_id, parcel_user)
-            
-        response = render(request, 'partials/delivery/np_delivery_info_in_list_of_orders.html',
-                          {'parsels_status_data': parsels_status_data})
-        trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
-
-    else:
-        parsels_status_data = order.statusnpparselfromdoucmentid_set.all()
-        # if settings.IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED:
-        #     all_status_greater_than_3 = all(int(parcel.status_code) == 1 for parcel in parsels_status_data)
-        #     if documentsIdList.exists() and all_status_greater_than_3:
-        #         parcel_user = documentsIdList.first().userCreated
-        #         update_order_status_core(order_id, parcel_user)
+        documents, userCreatedList = await loop.run_in_executor(None, get_order_documents_sync, order)
         
-        response = render(request, 'partials/delivery/np_delivery_info_in_list_of_orders.html',
-                          {'parsels_status_data': parsels_status_data})
-        trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
+        # Create SSL context that ignores certificate verification
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        
+        connector = aiohttp.TCPConnector(ssl=ssl_context)
+        async with aiohttp.ClientSession(connector=connector) as session:
+            data = await fetch_np_status(session, documents)
+            await loop.run_in_executor(None, process_status_data, data, order, userCreatedList)
 
+    parsels_status_data = await loop.run_in_executor(None, get_parsels_status_data_sync, order)
+    return parsels_status_data, noMoreUpdate
 
+def get_np_delivery_details(order: Order) -> Tuple[QuerySet, bool]:
+    """Synchronous wrapper for async function"""
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop.run_until_complete(get_np_delivery_details_async(order))
+
+async def process_orders_batch(orders: List[Order], batch_size: int = 5) -> None:
+    """Process a batch of orders concurrently"""
+    tasks = []
+    for order in orders:
+        tasks.append(get_np_delivery_details_async(order))
+        if len(tasks) >= batch_size:
+            await asyncio.gather(*tasks)
+            tasks = []
+    
+    if tasks:
+        await asyncio.gather(*tasks)
+
+def evening_task():
+    """Process orders in batches using async/await"""
+    logger.info("Starting evening task execution")
+    
+    # Get orders that need processing
+    orders = Order.objects.filter(statusnpparselfromdoucmentid__status_code="1").distinct()
+    logger.info(f"Found {orders.count()} orders with status code 1 to process")
+    
+    # Create event loop and run the batch processing
+    try:
+        logger.debug("Attempting to get existing event loop")
+        loop = asyncio.get_event_loop()
+        logger.debug("Successfully got existing event loop")
+    except RuntimeError:
+        logger.debug("No existing event loop found, creating new one")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        logger.debug("New event loop created and set")
+
+    logger.info("Starting batch processing of orders")
+    loop.run_until_complete(process_orders_batch(list(orders), batch_size=5))
+    logger.info("Completed batch processing of orders")
+
+    logger.info(f"Processing summary - Total orders: {orders.count()}")
+    logger.info("="*100)
+    
+    # Process status updates for each order
+    for order in orders:
+        logger.info(f"Processing order ID: {order.id}")
+        delivery_info = order.npdeliverycreateddetailinfo_set.first()
+        if delivery_info:
+            user_sent = delivery_info.userCreated
+            logger.info(f"Order {order.id} delivery info found - User: {user_sent}")
+        else:
+            user_sent = None
+            logger.warning(f"No delivery info found for order {order.id}")
+            
+        try:
+            update_order_status_core(order.id, user_sent)
+            logger.info(f"Successfully updated status for order {order.id}")
+        except Exception as e:
+            logger.error(f"Error updating status for order {order.id}: {str(e)}")
+        
+        logger.info("="*100)
+    
+    current_time = timezone.localtime(timezone.now())
+    logger.info(f"Evening task completed at {current_time}")
+    logger.info("="*100)
+
+def np_delivery_detail_info_for_order(request, order_id):
+    """
+    View function to handle NP delivery detail info requests
+    """
+    order = Order.objects.get(id=order_id)
+    parsels_status_data, noMoreUpdate = get_np_delivery_details(order)
+    
+    response = render(request, 'partials/delivery/np_delivery_info_in_list_of_orders.html',
+                     {'parsels_status_data': parsels_status_data})
+    trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
+    
     return response
 
 
@@ -637,4 +697,3 @@ def orderCellUpdateNPStatus(request, order_id):
     else:
         template = 'partials/orders/order_preview_cel.html'
     return render(request, template, {'order': order})
-

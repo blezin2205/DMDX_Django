@@ -27,12 +27,14 @@ from django.contrib import messages
 import requests
 import csv
 import pymsteams
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Exists, OuterRef
 from .tasks import *
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from firebase_admin import storage
 from django.template.loader import render_to_string
+from django.db import transaction
+
 
 # @login_required(login_url='login')
 # @allowed_users(allowed_roles=['admin'])
@@ -41,6 +43,8 @@ from django.template.loader import render_to_string
 def celery_test(request):
     task = go_to_sleep.delay(1)
     return render(request, 'supplies/misc/celery-test.html', {'task_id': task.task_id})
+
+
 
 
 @login_required(login_url='login')
@@ -2136,29 +2140,40 @@ def updatePreorderStatus(request, order_id):
 
 
 def update_order_status_core(order_id, user):
-    """
-    Core function to update order status without template rendering.
-    Returns the updated order object.
-    """
     order = Order.objects.get(id=order_id)
-    
+    if order.isComplete:
+            raise ValueError(
+                'Це замовлення вже завершено і не може бути оновлено')
     supps = order.supplyinorder_set.all()
     for el in supps:
         countInOrder = el.count_in_order
-        supp = None
         if el.supply:
-           supp = el.supply
-           supp.countOnHold -= countInOrder
-           supp.count -= countInOrder
+            supp = el.supply
+            # Ensure we don't go below 0
+            new_count_on_hold = max(0, supp.countOnHold - countInOrder)
+            new_count = max(0, supp.count - countInOrder)
+            supp.countOnHold = new_count_on_hold
+            supp.count = new_count
+            if new_count == 0:
+                supp.delete()
+            else:
+                supp.save(update_fields=['countOnHold', 'count'])
 
         if el.supply_in_booked_order:
             supply_in_booked_order = el.supply_in_booked_order
-            supply_in_booked_order.countOnHold -= countInOrder
-            supply_in_booked_order.count_in_order -= countInOrder
+            # Ensure we don't go below 0
+            new_count_on_hold = max(
+                0, supply_in_booked_order.countOnHold - countInOrder)
+            new_count_in_order = max(
+                0, supply_in_booked_order.count_in_order - countInOrder)
+            supply_in_booked_order.countOnHold = new_count_on_hold
+            supply_in_booked_order.count_in_order = new_count_in_order
+
             if supply_in_booked_order.count_in_order == 0:
                 supply_in_booked_order.delete()
             else:
-                supply_in_booked_order.save(update_fields=['countOnHold', 'count_in_order'])
+                supply_in_booked_order.save(
+                    update_fields=['countOnHold', 'count_in_order'])
 
         genSupInPreorder = el.supply_in_preorder
         if genSupInPreorder:
@@ -2169,28 +2184,23 @@ def update_order_status_core(order_id, user):
                 genSupInPreorder.state_of_delivery = 'Partial'
             genSupInPreorder.save()
 
-        if supp:
-            if supp.count == 0:
-                supp.delete()
-            else:
-                supp.save(update_fields=['countOnHold', 'count'])
+        order.isComplete = True
+        order.dateToSend = None
+        order.dateSent = timezone.now().date()
+        order.userSent = user
+        order.save()
 
-    order.isComplete = True
-    order.dateToSend = None
-    order.dateSent = timezone.now().date()
-    order.userSent = user
-    order.save()
-
-    preorder = order.for_preorder
-    if preorder:
-        sups_in_preorder = preorder.supplyinpreorder_set.all()
-        if all(sp.state_of_delivery == 'Complete' for sp in sups_in_preorder):
-            preorder.state_of_delivery = 'Complete'
-        elif any(x.state_of_delivery == 'Partial' or 'Awaiting' for x in sups_in_preorder):
-            preorder.state_of_delivery = 'Partial'
-        preorder.save(update_fields=['state_of_delivery'])
+        preorder = order.for_preorder
+        if preorder:
+            sups_in_preorder = preorder.supplyinpreorder_set.all()
+            if all(sp.state_of_delivery == 'Complete' for sp in sups_in_preorder):
+                preorder.state_of_delivery = 'Complete'
+            elif any(x.state_of_delivery == 'Partial' or 'Awaiting' for x in sups_in_preorder):
+                preorder.state_of_delivery = 'Partial'
+            preorder.save(update_fields=['state_of_delivery'])
 
     return order
+
 
 @login_required(login_url='login')
 def orderUpdateStatus(request, order_id):
@@ -2198,10 +2208,7 @@ def orderUpdateStatus(request, order_id):
         order = Order.objects.get(id=order_id)
         
         if order.isComplete:
-            return JsonResponse({
-                'error': True,
-                'message': 'Цей замовлення вже завершено і не може бути оновлено. Оновіть сторінку.'
-            }, status=400)
+            raise ValueError('Цей замовлення вже завершено і не може бути оновлено. Оновіть сторінку.')
             
         order = update_order_status_core(order_id, request.user)
         
