@@ -695,7 +695,7 @@ def home(request):
 
     uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
     isClient = request.user.groups.filter(name='client').exists() and not request.user.is_staff
-    place_id = None
+    place = None
     booked_list_exist = False
     if isClient:
         user_places = request.user.place_set.all()
@@ -706,7 +706,7 @@ def home(request):
             booked_list_exist = SupplyInBookedOrder.objects.filter(supply_for_place=plc).exists()
             for quer in categories:
                 user_allowed_categories.add(quer)
-        place_id = request.user.get_user_place_id()
+        place = user_places.first()
         uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False, place__user=request.user).exists()
         html_page = 'supplies/home/home_for_client.html'
         supplies = GeneralSupply.objects.filter(category_id__in=user_allowed_categories).order_by('name')
@@ -765,7 +765,7 @@ def home(request):
                                                   'supplies': page_obj, 'suppFilter': suppFilter,
                                                   'isHome': True,
                                                   'isAll': True,
-                                                  'place_id': place_id,
+                                                  'place': place,
                                                    'booked_list_exist': booked_list_exist,
                                                   'uncompleteOrdersExist': uncompleteOrdersExist,
                                                   'uncompletePreOrdersExist': uncompletePreOrdersExist})
@@ -3750,3 +3750,50 @@ def analytics_preorders_list_for_client(request):
         'isAnalytics': True
     }
     return render(request, 'supplies/clients/analytics_preorders_list.html', context)
+
+
+def teams_reminders_task():
+    
+    # Отримуємо всі замовлення, які треба відправити сьогодні
+    order_to_send_today = Order.objects.filter(dateToSend=date.today(), isComplete=False)
+    order_to_send_today_count = order_to_send_today.count()
+    if order_to_send_today_count > 0:
+        title = f'Відправити замовлень сьогодні: {order_to_send_today_count} шт.'
+        orderInfo = ''
+        for order in order_to_send_today:
+             orderInfo += f' • *№{order.id}:*  **{order.place.name}, {order.place.city_ref.name}**\n\n'
+        teams_reminders_send_message(title, orderInfo)
+        
+    # Отримуємо всі передзамовлення, в яких прогнозована дата передзамовлення сьогодні
+    current_date = timezone.now().date()
+    
+    # First filter places that have at least one preorder
+    places_with_preorders = Place.objects.filter(preorder__isnull=False).distinct()
+    
+    # Then filter based on predicted next order date
+    from .analytics import PreorderAnalytics
+    places_needing_order = []
+    
+    for place in places_with_preorders:
+        analytics = PreorderAnalytics(place)
+        next_order_date = analytics.predict_next_order_date()
+        if next_order_date == current_date:
+           places_needing_order.append(place.id)
+    place_need_preorder_today = Place.objects.filter(id__in=places_needing_order)       
+    place_need_preorder_today_count = place_need_preorder_today.count()
+    if place_need_preorder_today_count > 0:
+        title = f'Організації, яким рекомендовані передзамовлення сьогодні: {place_need_preorder_today_count}'
+        place_info = ''
+        for place in place_need_preorder_today:
+            place_info += f' • {place.name}, {place.city_ref.name}\n\n'
+        teams_reminders_send_message(title, place_info)
+    
+def teams_reminders_send_message(title, message, attachment=None):
+    myTeamsMessage = pymsteams.connectorcard(
+        settings.TEAMS_WEBHOOK_URL_REMINDERS)
+    myTeamsMessage.title(title)
+    myTeamsMessage.text(message)
+    if attachment:
+        myTeamsMessage.addSection(attachment)
+    myTeamsMessage.send()
+

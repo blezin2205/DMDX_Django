@@ -289,7 +289,7 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '1803152934:AAFjutMUtAz3wFS
 
 TEAMS_WEBHOOK_URL_ORDERS = os.getenv('TEAMS_WEBHOOK_URL_ORDERS', 'https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/c6694506a800419ab9aa040b09d0a5b1/3894266e-3403-44b0-a8e4-5a568f2b70a4/V2wLk3hA0SAVw9eR3KWQcu2RWV81FhmDaQxR41xjODk401')
 TEAMS_WEBHOOK_URL_PREORDERS = os.getenv('TEAMS_WEBHOOK_URL_PREORDERS', 'https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/3a448e3eaf974db19d8940ba81e9bcad/3894266e-3403-44b0-a8e4-5a568f2b70a4/V2i1ZRFQHD1Y1mdpEF1bxGZsvUvtDtc-0LHhz7OSWEHhs1')
-
+TEAMS_WEBHOOK_URL_REMINDERS = os.getenv('TEAMS_WEBHOOK_URL_REMINDERS', 'https://ddxi.webhook.office.com/webhookb2/e9d80572-d9a1-424e-adb4-e6e2840e8c34@d4f5ac22-fa4d-4156-b0e0-9c62234c6b45/IncomingWebhook/5185d5e775ba4812ade4a68c69834863/3894266e-3403-44b0-a8e4-5a568f2b70a4/V2L0kQ1Q5ZlW5ncZecswVvM7GbsaV4KJDmrBhHd6bLEHU1')
 # Logging Configuration
 LOGGING = {
     'version': 1,

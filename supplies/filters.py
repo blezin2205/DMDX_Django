@@ -298,21 +298,31 @@ class PlaceFilter(django_filters.FilterSet):
         ('devices', 'Прилади'),
     )
 
+    PREORDER_FILTER_CHOICES = (
+        ('', 'Всі'),
+        ('has_current_month_preorders', 'Має передзамовлення за поточний місяць'),
+        ('needs_order_this_month', 'Потребує замовлення в цьому місяці'),
+    )
+
     isPrivatePlace = django_filters.ChoiceFilter(choices=PRIVATE_CHOICES, label='Тип організації')
     name = django_filters.CharFilter(field_name='name', lookup_expr='icontains', label='Назва')
     city = django_filters.CharFilter(field_name='city', lookup_expr='icontains', label='Місто')
     is_has_options_button = django_filters.MultipleChoiceFilter(choices=OPTIONS_BUTTON,
                                                             widget=forms.CheckboxSelectMultiple(),
                                                             method='filter_by_is_has_options_button')
+    preorder_filter = django_filters.ChoiceFilter(choices=PREORDER_FILTER_CHOICES,
+                                                label='Фільтр передзамовлень',
+                                                method='filter_by_preorder_type')
 
     class Meta:
         model = Place
-        fields = ['isPrivatePlace', 'name', 'city_ref', 'is_has_options_button']
+        fields = ['isPrivatePlace', 'name', 'city_ref', 'is_has_options_button', 'preorder_filter']
 
     def __init__(self, *args, **kwargs):
         super(PlaceFilter, self).__init__(*args, **kwargs)
         self.filters['city_ref'].label = "Місто"
         self.filters['is_has_options_button'].label = "Наявність записів"
+        self.filters['preorder_filter'].label = "Фільтр передзамовлень"
 
     def filter_by_is_has_options_button(self, queryset, name, value):
         if 'booked_supplies' in value:
@@ -325,6 +335,37 @@ class PlaceFilter(django_filters.FilterSet):
             queryset = queryset.filter(servicenote__isnull=False).distinct()
         if 'devices' in value:
             queryset = queryset.filter(device__isnull=False).distinct()
+        return queryset
+
+    def filter_by_preorder_type(self, queryset, name, value):
+        if not value:
+            return queryset
+            
+        if value == 'has_current_month_preorders':
+            current_date = timezone.now()
+            start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            return queryset.filter(preorder__dateCreated__gte=start_of_month).distinct()
+            
+        elif value == 'needs_order_this_month':
+            current_date = timezone.now()
+            start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0).date()
+            end_of_month = (current_date.replace(day=1) + timezone.timedelta(days=32)).replace(day=1).date() - timezone.timedelta(days=1)
+            
+            # First filter places that have at least one preorder
+            places_with_preorders = queryset.filter(preorder__isnull=False).distinct()
+            
+            # Then filter based on predicted next order date
+            from .analytics import PreorderAnalytics
+            places_needing_order = []
+            
+            for place in places_with_preorders:
+                analytics = PreorderAnalytics(place)
+                next_order_date = analytics.predict_next_order_date()
+                if next_order_date and start_of_month <= next_order_date <= end_of_month:
+                    places_needing_order.append(place.id)
+            
+            return queryset.filter(id__in=places_needing_order)
+            
         return queryset
 
 

@@ -84,19 +84,44 @@
         margin-bottom: 2rem;
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     }
+
+    /* Horizontal checkboxes styles */
+    #div_id_is_has_options_button .form-check {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 1rem;
+    }
+
+    #div_id_is_has_options_button .form-check-label {
+        margin-left: 0.5rem;
+    }
+
+    #div_id_is_has_options_button > div {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+    }
 </style>
 
     <form method="get" class="form-inline justify-content-center">
          <div class="filter-section">
-             <div class="hstack gap-3">
-                 {{ placeFilter.form.is_has_options_button|as_crispy_field }}
-                 {{ placeFilter.form.city_ref|as_crispy_field }}
-                 {{ placeFilter.form.isPrivatePlace|as_crispy_field }}
-                 {{ placeFilter.form.name|as_crispy_field }}
+             <div class="d-flex flex-column gap-3">
+                 <div>
+                     {{ placeFilter.form.is_has_options_button|as_crispy_field }}
+                 </div>
+                 <div class="d-flex justify-content-center gap-3">
+                    <div style="max-width: 200px;">{{ placeFilter.form.preorder_filter|as_crispy_field }}</div>
+                    <div style="max-width: 200px;">{{ placeFilter.form.city_ref|as_crispy_field }}</div>
+                    <div style="max-width: 200px;">{{ placeFilter.form.isPrivatePlace|as_crispy_field }}</div>
+                    <div style="min-width: 400px;">{{ placeFilter.form.name|as_crispy_field }}</div>
+                 </div>
              </div>
-             <button class="btn btn-primary mt-3" type="submit">
-                 <i class="bi bi-search me-2"></i>Застосувати
-             </button>
+             <div class="d-flex justify-content-center mt-3">
+                 <button class="btn btn-primary" type="submit">
+                     <i class="bi bi-search me-2"></i>Застосувати
+                 </button>
+             </div>
          </div>
     </form>
 
