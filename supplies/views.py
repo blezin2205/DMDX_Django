@@ -399,26 +399,42 @@ def deleteSupplyInOrder(request):
 @login_required(login_url='login')
 def add_preorder_general_to_preorder(request, prodId):
     user = request.user
+    suggested_quantity = request.POST.get('suggested_quantity')  # Fixed parameter name
+    place_id = request.POST.get('place_id')
     general_supply = GeneralSupply.objects.get(id=prodId)
-    print('preorder_general_supp_buttons', prodId)
-
-    preorder, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
-
+    quantity = suggested_quantity if suggested_quantity else 1
+    place = None
+    print('PLACE ID = ', place_id)
+    if place_id:
+       print('PLACE ID 1 = ', place_id)
+       place = Place.objects.get(id=place_id)
+       preorderInCart = PreorderInCart.objects.filter(userCreated=user, isComplete=False).first()
+       if preorderInCart:
+          if preorderInCart.place:
+             if preorderInCart.place != place:
+                return HttpResponse('Спочатку завершіть створену корзину передзамовлення для організації: \n' + preorderInCart.place.name + ' ' + preorderInCart.place.city_ref.name , status=400)
+          else:
+            return HttpResponse('Спочатку завершіть створену корзину передзамовлення', status=400)    
+       else:
+            preorderInCart = PreorderInCart.objects.create(userCreated=user, isComplete=False, place=place)
+    else:
+       preorderInCart, created = PreorderInCart.objects.get_or_create(userCreated=user, isComplete=False)
+       
     try:
         suppInCart = SupplyInPreorderInCart.objects.get(
-                                        supply_for_order=preorder,
+                                        supply_for_order=preorderInCart,
                                         general_supply=general_supply)
         suppInCart.count_in_order += 1
         suppInCart.save(update_fields=['count_in_order'])
     except:
-        suppInCart = SupplyInPreorderInCart(count_in_order=1,
-                                            supply_for_order=preorder,
+        suppInCart = SupplyInPreorderInCart(count_in_order=quantity,
+                                            supply_for_order=preorderInCart,
                                             general_supply=general_supply)
         suppInCart.save()
 
     countInPreorder = suppInCart.count_in_order
     response = render(request, 'partials/cart/add_precart_button_general.html',
-                      {'el': general_supply, 'countInPreCart': countInPreorder})
+                      {'el': general_supply, 'countInPreCart': countInPreorder, 'place_id': place_id})
     trigger_client_event(response, 'subscribe_precart', {})
     return response
 
@@ -509,19 +525,8 @@ def updateItem(request, supp_id):
     if suppInCart.count_in_order <= 0:
         suppInCart.delete()
 
-    try:
-        orderInCart = OrderInCart.objects.first()
-        cart_items = orderInCart.get_cart_items
-    except:
-        cart_items = 0
-
-    cartCountData = {'cart_items': cart_items}
-    deltaCountOnHold = supply.count - supply.countOnHold == 0
-    countInCart = suppInCart.count_in_order
-    deltaCountOnCart = supply.count - supply.countOnHold - countInCart == 0
     response = render(request, 'partials/cart/add_cart_button.html',
-                      {'cartCountData': cartCountData, 'supp': supply, 'deltaCount': deltaCountOnHold,
-                       'countInCart': countInCart, 'deltaCountOnCart': deltaCountOnCart})
+                      {'supp': supply})
     trigger_client_event(response, 'subscribe', {})
     return response
 
@@ -690,6 +695,7 @@ def home(request):
 
     uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
     isClient = request.user.groups.filter(name='client').exists() and not request.user.is_staff
+    place_id = None
     booked_list_exist = False
     if isClient:
         user_places = request.user.place_set.all()
@@ -700,7 +706,7 @@ def home(request):
             booked_list_exist = SupplyInBookedOrder.objects.filter(supply_for_place=plc).exists()
             for quer in categories:
                 user_allowed_categories.add(quer)
-
+        place_id = request.user.get_user_place_id()
         uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False, place__user=request.user).exists()
         html_page = 'supplies/home/home_for_client.html'
         supplies = GeneralSupply.objects.filter(category_id__in=user_allowed_categories).order_by('name')
@@ -759,6 +765,7 @@ def home(request):
                                                   'supplies': page_obj, 'suppFilter': suppFilter,
                                                   'isHome': True,
                                                   'isAll': True,
+                                                  'place_id': place_id,
                                                    'booked_list_exist': booked_list_exist,
                                                   'uncompleteOrdersExist': uncompleteOrdersExist,
                                                   'uncompletePreOrdersExist': uncompletePreOrdersExist})
@@ -807,6 +814,7 @@ def sendTeamsMsg(request, order):
 @login_required(login_url='login')
 def cartDetailForClient(request):
     orderInCart = PreorderInCart.objects.get(userCreated=request.user, isComplete=False)
+    existing_place_for_preorder = orderInCart.place
     cartCountData = countCartItemsHelper(request)
     supplies = orderInCart.supplyinpreorderincart_set.all()
     total_count_in_cart = supplies.aggregate(total_count=Sum('count_in_order'))['total_count']
@@ -846,7 +854,7 @@ def cartDetailForClient(request):
             orderType = request.POST.get('orderType')
             preorderType = request.POST.get('preorderType')
             place_id = request.POST.get('place_id')
-            place = Place.objects.get(id=place_id)
+            place = existing_place_for_preorder if existing_place_for_preorder else Place.objects.get(id=place_id)
 
             if orderType == 'Agreement':
                 agreement_description = request.POST.get('agreement_description')
@@ -951,7 +959,7 @@ def cartDetailForClient(request):
 
     return render(request, 'supplies/cart/preorder-cart.html',
                   {'title': f'Корзина передзамовлення ({total_count_in_cart} шт.)', 'order': orderInCart, 'cartCountData': cartCountData,
-                   'supplies': supplies, 'cities': cities, 'total_count_in_cart': total_count_in_cart,
+                   'supplies': supplies, 'existing_place_for_preorder': existing_place_for_preorder, 'cities': cities, 'total_count_in_cart': total_count_in_cart,
                    'orderForm': orderForm, 'places': places, 'placeChoosed': placeChoosed, 'preorders': preorders, 'isClient': isClient, 'supDict': supDict})
 
 
@@ -1181,15 +1189,14 @@ def cartDetail(request):
     orderForm = OrderInCartForm(request.POST or None)
     cities = City.objects.all()
     if request.method == 'POST':
-        place_id = request.POST.get('place_id')
-        place = Place.objects.get(id=place_id)
         orderType = request.POST.get('orderType')
         if 'delete' in request.POST:
             next = request.POST.get('next')
             orderInCart.delete()
             return HttpResponseRedirect(next)
         if 'save' in request.POST:
-            
+            place_id = request.POST.get('place_id')
+            place = Place.objects.get(id=place_id)
             if orderForm.is_valid():
                 comment = orderForm.cleaned_data['comment']
                 dateToSend = orderForm.cleaned_data['dateToSend']
@@ -1404,6 +1411,8 @@ def cartDetail(request):
             return redirect('/orders')
 
         if 'save_as_booked_order' in request.POST:
+            place_id = request.POST.get('place_id')
+            place = Place.objects.get(id=place_id)
             for sup in supplies:
                 count = int(request.POST.get(f'count_{sup.id}'))
                 try:
@@ -3668,7 +3677,9 @@ def import_general_supplies_from_excel(request):
     })
 
 @login_required
+@allowed_users(allowed_roles=['admin', 'empl'])
 def analytics_report(request, place_id):
+    cartCountData = countCartItemsHelper(request)
     place = get_object_or_404(Place, id=place_id)
     analytics = PreorderAnalytics(place)
     report = analytics.get_analytics_report()
@@ -3695,8 +3706,47 @@ def analytics_report(request, place_id):
     context = {
         'report': report,
         'preorders': preorders,
-        'preorder_items': preorder_items
+        'preorder_items': preorder_items,
+        'cartCountData': cartCountData
     }
     return render(request, 'supplies/analytics_report.html', context)
 
-
+@login_required
+def analytics_preorders_list_for_client(request):
+    cartCountData = countCartItemsHelper(request)
+    place_id = request.user.get_user_place_id()
+    place = get_object_or_404(Place, id=place_id)
+    analytics = PreorderAnalytics(place)
+    report = analytics.get_analytics_report()
+    booked_list_exist = SupplyInBookedOrder.objects.filter(supply_for_place=place).exists()
+    
+    # Отримуємо всі передзамовлення для цього місця
+    preorders = PreOrder.objects.filter(place=place).order_by('-dateCreated')
+    
+    # Отримуємо всі товари з передзамовлень, згруповані за generalSupply
+    preorder_items = SupplyInPreorder.objects.filter(
+        supply_for_order__in=preorders
+    ).values(
+        'generalSupply',
+        'generalSupply__name',
+        'generalSupply__package_and_tests',
+        'generalSupply__category__name'
+    ).annotate(
+        total_quantity=Sum('count_in_order'),
+        last_order_date=Max('supply_for_order__dateCreated')
+    ).order_by('-total_quantity')
+    
+    # Отримуємо аналітичний звіт
+    report = PreorderAnalytics(place).get_analytics_report()
+    
+    context = {
+        'title': 'Аналітика передзамовлень',
+        'report': report,
+        'preorders': preorders,
+        'preorder_items': preorder_items,
+        'cartCountData': cartCountData  ,
+        'place_id': place_id,
+        'booked_list_exist': booked_list_exist,
+        'isAnalytics': True
+    }
+    return render(request, 'supplies/clients/analytics_preorders_list.html', context)

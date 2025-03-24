@@ -16,6 +16,7 @@
    {% if request.user.get_user_place_id != "NO EXIST" %}
       <a href="{% url 'booked_sups_list_for_client' request.user.get_user_place_id %}" class="btn btn-primary mx-2 {% if isBookedList %} active {% endif %}">Список заброньованих товарів</a>
   {% endif %}
+  <a href="{% url 'analytics_preorders_list_for_client' %}" class="btn btn-primary {% if isAnalytics %} active {% endif %}">Аналітика передзамовлень</a>
 
 </div>
     {% endif %}

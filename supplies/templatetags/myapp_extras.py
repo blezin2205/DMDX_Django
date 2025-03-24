@@ -70,12 +70,13 @@ def has_group(user, group_name):
 
 
 @register.filter(name='in_cart')
-def has_group(supId, user):
+def has_group(supId):
     try:
        sups =  SupplyInOrderInCart.objects.get(pk=supId)
-       return True
+       print(sups.count_in_order)
+       return sups.count_in_order
     except:
-        return False
+        return 0
 
 
 @register.filter(name='in_precart')
@@ -87,14 +88,26 @@ def has_group(supId, user):
     except:
         return False
 
-@register.filter(name='in_precart_general')
-def has_group(supId, user):
+@register.filter
+def in_precart_general(supId, user):
     try:
        preorderInCart = PreorderInCart.objects.get(userCreated=user)
        sups =  SupplyInPreorderInCart.objects.get(general_supply_id=supId, supply_for_order=preorderInCart)
-       return True
+       return sups.count_in_order
     except:
-        return False
+        return None
+    
+@register.simple_tag
+def in_precart_general_with_place(supId, user, place_id=None):
+    try:
+       print('place_id', place_id)
+       print('user', user)
+       preorderInCart = PreorderInCart.objects.get(userCreated=user, place_id=place_id)
+       sups =  SupplyInPreorderInCart.objects.get(general_supply_id=supId, supply_for_order=preorderInCart)
+       print("count in precart", sups.count_in_order)
+       return sups.count_in_order
+    except:
+        return None    
 
 
 

@@ -112,7 +112,7 @@
                                                 {% if request.user.is_staff or request.user|has_group:"empl" %}
                                                     <div class="d-flex gap-1 justify-content-end">
                                                         <div id="add_cart_button-{{supp.id}}">
-                                                            {% if not supp.id|in_cart:request.user %}
+                                                            {% if not supp.id|in_cart %}
                                                                 <button hx-post="{% url 'update_item' supp.id %}" hx-target="#add_cart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
                                                             {% else %}
                                                                 <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
@@ -135,11 +135,13 @@
                                     <button class="btn btn-sm btn-primary add-lot-btn" data-supply-id="{{ el.id }}" role="button" title="Додати LOT"><i class="bi bi-plus-square"></i></button>
                                     <button class="btn btn-sm btn-warning edit-gen-sup-btn" data-supply-id="{{ el.id }}" role="button" title="Редагувати назву"><i class="bi bi-pencil"></i></button>
                                     <div id="add_preorder_general_to_preorder-{{el.id}}">
-                                        {% if el|in_precart_general:request.user %}
-                                            <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
-                                        {% else %}
-                                            <button hx-post="{% url 'add_preorder_general_to_preorder' el.id %}" hx-target="#add_preorder_general_to_preorder-{{el.id}}" class="btn btn-sm btn-primary add-btn" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
-                                        {% endif %}
+                                        {% with count_in_precart=el|in_precart_general:request.user %}
+                                            {% if count_in_precart %}
+                                                <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
+                                            {% else %}
+                                                <button hx-post="{% url 'add_preorder_general_to_preorder' el.id %}" hx-target="#add_preorder_general_to_preorder-{{el.id}}" class="btn btn-sm btn-primary add-btn" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
+                                            {% endif %}
+                                        {% endwith %}
                                     </div>
                                 </div>
                             </div>
@@ -217,13 +219,7 @@
                                             <td>
                                                 <div class="hstack gap-1 justify-content-end">
                                                     {% if request.user.is_staff or request.user|has_group:"empl" %}
-                                                        <div id="add_cart_button-{{supp.id}}">
-                                                            {% if not supp.id|in_cart:request.user %}
-                                                                <button hx-post="{% url 'update_item' supp.id %}" hx-target="#add_cart_button-{{supp.id}}" class="btn btn-sm btn-primary add-btn {% if supp.count|sub:supp.countOnHold == 0 %} disabled {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
-                                                            {% else %}
-                                                                <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
-                                                            {% endif %}
-                                                        </div>
+                                                        {% include 'partials/cart/add_cart_button.html' with supp=supp %}
                                                         {% if request.user|has_group:"admin" %}
                                                             <button class="btn btn-sm btn-warning edit-lot-btn" data-supply-id="{{ supp.id }}" role="button" title="Редагувати LOT"><i class="bi bi-pencil"></i></button>
                                                         {% endif %}
@@ -241,13 +237,7 @@
                                     <button class="btn btn-sm btn-primary add-lot-btn" data-supply-id="{{ el.id }}" role="button" title="Додати LOT"><i class="bi bi-plus-square"></i></button>
                                     <button class="btn btn-sm btn-warning edit-gen-sup-btn" data-supply-id="{{ el.id }}" role="button" title="Редагувати назву"><i class="bi bi-pencil"></i></button>
                                 {% endif %}
-                                <div id="add_preorder_general_to_preorder-{{el.id}}">
-                                    {% if el|in_precart_general:request.user %}
-                                        <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
-                                    {% else %}
-                                        <button hx-post="{% url 'add_preorder_general_to_preorder' el.id %}" hx-target="#add_preorder_general_to_preorder-{{el.id}}" class="btn btn-sm btn-primary add-btn" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}" type="submit"><i class="bi bi-cart-plus"></i></button>
-                                    {% endif %}
-                                </div>
+                                    {% include 'partials/cart/add_precart_button_general.html' with el=el %}
                             </div>
                         </td>
                     </tr>

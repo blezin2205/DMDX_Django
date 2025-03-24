@@ -2,4 +2,17 @@
 {% load mathfilters %}
 {% load myapp_extras %}
 
-<button style="width: 32px" hx-post="{% url 'update_item' supp.id %}" hx-target="#add_cart_button-{{supp.id}}" class="btn btn-sm btn-success add-btn {% if deltaCountOnHold or deltaCountOnCart %} disabled {% endif %}" type="submit" data-toggle="tooltip" data-placement="top" title="В корзину">{% if countInCart %}{{ countInCart }}{% else %}<i class="bi bi-cart-plus"></i>{% endif %}</button>
+<div id="cart-badge">
+    {% with count_in_cart=supp.id|in_cart %}
+        {% with deltaCountOnHold=supp.count|sub:supp.countOnHold|sub:count_in_cart %}
+            <button hx-post="{% url 'update_item' supp.id %}"
+                    hx-target="closest div #cart-badge" 
+                    hx-swap="outerHTML"
+                    class="btn btn-sm btn-primary add-btn {% if deltaCountOnHold < 1 %} disabled {% endif %}" 
+                    style="min-width: 32px" 
+                    type="button">
+                {% if count_in_cart %}{{ count_in_cart }}{% else %}<i class="bi bi-cart-plus"></i>{% endif %} 
+            </button>
+        {% endwith %}
+    {% endwith %}
+</div>

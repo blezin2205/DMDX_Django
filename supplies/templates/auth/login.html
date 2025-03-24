@@ -13,18 +13,18 @@
 <body class="text-center">
     <div class="container justify-content-center">
     <main class="form-signin mt-5">
-  <form method="POST" action="">
+  <form method="POST" action="{% url 'login' %}">
       {% csrf_token %}
     <h1 class="h3 mb-2 fw-normal">Будь-ласка, ввійдіть в свій аккаунт</h1>
       <span style='font-size:50px;'>&#9196;</span>
 
       <div class="container-fluid" style="width: 300px">
           <div class="form-floating mb-3">
-      <input type="text" class="form-control" name="username" placeholder="">
+      <input type="text" class="form-control" name="username" placeholder="" required>
       <label for="floatingInput">Логін</label>
     </div>
     <div class="form-floating mb-5">
-      <input type="password" class="form-control" name="password" placeholder="">
+      <input type="password" class="form-control" name="password" placeholder="" required>
       <label for="floatingPassword">Пароль</label>
     </div>
       </div>

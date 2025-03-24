@@ -109,9 +109,11 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted small">{{client.city_ref.name}}</span>
                     {% if client.preorder_set.count > 0 %}
-                    <a href="{% url 'analytics_report' client.id %}" class="btn btn-sm bg-info-subtle" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Аналітика передзамовлень">
-                        <i class="bi bi-cart-plus text-info"></i>
+                    <div class="action-buttons">
+                    <a href="{% url 'analytics_report' client.id %}" style="background: #5bc0de"  class="btn btn-sm btn-outline-primary" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Аналітика передзамовлень">
+                        <i class="bi bi-cart-plus text-white"></i>
                     </a>
+                    </div>
                     {% endif %}
                     
                 </div>
@@ -122,16 +124,16 @@
                         {% if client.isPrivatePlace %} Приватні {% else %} Державні {% endif %}
                     </span>
                     <div class="action-buttons">
-                        <a href="{% url 'newWorkerForPlace' client.id %}" class="btn btn-sm btn-outline-dark" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати нового працівника">
+                        <a href="{% url 'newWorkerForPlace' client.id %}" class="btn btn-sm btn-outline-primary" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати нового працівника">
                             <i class="bi bi-person-plus"></i>
                         </a>
-                        <a href="{% url 'addNewDeviceForClient' client.id %}" class="btn btn-sm btn-outline-dark mx-1" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати прилад">
+                        <a href="{% url 'addNewDeviceForClient' client.id %}" class="btn btn-sm btn-outline-primary mx-1" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати прилад">
                             <i class="bi bi-device-ssd"></i>
                         </a>
-                        <a href="{% url 'create_note_for_client' client.id %}" class="btn btn-sm btn-outline-dark me-1" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати сервісну замітку">
+                        <a href="{% url 'create_note_for_client' client.id %}" class="btn btn-sm btn-outline-primary me-1" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати сервісну замітку">
                             <i class="bi bi-journal-text"></i>
                         </a>
-                        <a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-outline-dark" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Редагувати">
+                        <a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-outline-primary" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Редагувати">
                             <i class="bi bi-pencil"></i>
                         </a>
                     </div>

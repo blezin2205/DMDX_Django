@@ -193,4 +193,5 @@ urlpatterns = [
     path('orderCellUpdateNPStatus/<int:order_id>', NPViews.orderCellUpdateNPStatus, name='orderCellUpdateNPStatus'),
     path('import-general-supplies/', views.import_general_supplies_from_excel, name='import_general_supplies_from_excel'),
     path('analytics/<int:place_id>/', views.analytics_report, name='analytics_report'),
+    path('analytics_preorders_list_for_client/', views.analytics_preorders_list_for_client, name='analytics_preorders_list_for_client'),
 ]

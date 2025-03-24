@@ -1,1 +1,27 @@
-<button hx-post="{% url 'add_preorder_general_to_preorder' el.id %}" hx-target="#add_preorder_general_to_preorder-{{el.id}}" class="btn btn-sm btn-primary add-btn" style="background: #5bc0de; width: 32px" type="submit" >{% if countInPreCart %}{{ countInPreCart }}{% else %}<i class="bi bi-cart-plus"></i>{% endif %}</button>
+{% load bootstrap %}
+{% load mathfilters %}
+{% load myapp_extras %}
+<div id="precart-badge">
+    {% if place_id %}
+    {% in_precart_general_with_place supId=el.id user=request.user place_id=place_id as count_in_precart %}
+                                    <button hx-post="{% url 'add_preorder_general_to_preorder' el.id %}"
+                                    hx-target="closest div #precart-badge" 
+                                    hx-swap="outerHTML"
+                                    hx-vals='{"place_id": {{ place_id }} }'
+                                    class="btn btn-sm btn-primary add-btn" 
+                                    style="background: #5bc0de; min-width: 32px" 
+                                    type="button">{% if count_in_precart %}{{ count_in_precart }}{% else %}<i class="bi bi-cart-plus"></i>{% endif %} 
+                                    </button>
+    {% else %}
+    {% with count_in_precart=el|in_precart_general:request.user %}
+                                    <button hx-post="{% url 'add_preorder_general_to_preorder' el.id %}"
+                                    hx-target="closest div #precart-badge" 
+                                    hx-swap="outerHTML"
+                                    class="btn btn-sm btn-primary add-btn" 
+                                    style="background: #5bc0de; min-width: 32px" 
+                                    type="button">{% if count_in_precart %}{{ count_in_precart }}{% else %}<i class="bi bi-cart-plus"></i>{% endif %} 
+                                    </button>
+                                    {% endwith %}
+    {% endif %}
+
+</div>

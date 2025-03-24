@@ -11,13 +11,13 @@
 {% block content %}
 
     <div class="container py-1">
-  <div class="btn-group my-3">
-  <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
-  {% if request.user.get_user_place_id != "NO EXIST" and booked_list_exist %}
-      <a href="{% url 'booked_sups_list_for_client' request.user.get_user_place_id %}" class="btn btn-primary mx-2 {% if isChild %} active {% endif %}">Список заброньованих товарів</a>
-  {% endif %}
-
-</div>
+        <div class="btn-group my-3">
+            <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+            {% if request.user.get_user_place_id != "NO EXIST" and booked_list_exist %}
+                <a href="{% url 'booked_sups_list_for_client' request.user.get_user_place_id %}" class="btn btn-primary mx-2 {% if isBooked %} active {% endif %}">Список заброньованих товарів</a>
+            {% endif %}
+            <a href="{% url 'analytics_preorders_list_for_client' %}" class="btn btn-primary {% if isAnalytics %} active {% endif %}">Аналітика передзамовлень</a>
+        </div>
 
 <div class="container py-1">
      <form method="get" class="form-inline justify-content-center">
@@ -101,23 +101,7 @@
                 {% endif %}
       </td>
         <td>
-{#        <div class="vstack gap-1 justify-content-end">#}
- <div class="hstack gap-1 justify-content-end">
-        <div id="add_preorder_general_to_preorder-{{el.id}}">
-            {% if el|in_precart_general:request.user %}
-            <button class="btn btn-sm btn-success disabled" type="button"><i class="bi bi-cart-check"></i></button>
-        {% else %}
-{#            <button data-product={{ el.id }} data-action="add-general" class="btn btn-sm btn-primary add-btn preorder-general-supp-button" style="background: #5bc0de" data-toggle="tooltip" data-placement="top" title="В корзину передзамовлення (Назва)"><i class="bi bi-cart-plus"></i></button>#}
-
-             <button hx-post="{% url 'add_preorder_general_to_preorder' el.id %}" hx-target="#add_preorder_general_to_preorder-{{el.id}}" class="btn btn-sm btn-primary add-btn" style="background: {% if supp.isInPreorderCart %} #036f3b {% else %} #5bc0de {% endif %}"  type="submit" ><i class="bi bi-cart-plus"></i></button>
-        {% endif %}
-        </div>
-
-{#            {% if uncompletePreOrdersExist %}#}
-{#    <a href="{% url 'addSupplyToExistPreOrderGeneral' el.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-primary" role="button" data-toggle="tooltip" data-placement="top" title="Додати до існуючого передзамовлення (Назва)" style="background: #5bc0de"><i class="bi bi-bag-plus"></i></a>#}
-{##}
-{#            {% endif %}#}
-        </div>
+            {% include 'partials/cart/add_precart_button_general.html' with el=el place_id=place.id %}
             </td>
 
      {% endfor %}
