@@ -2074,6 +2074,12 @@ def preorders(request):
             orders = PreOrder.objects.filter(place__user=request.user, isClosed=True).order_by('-id')
         else:
             orders = PreOrder.objects.filter(place__user=request.user, isClosed=False).order_by('-id')
+            completed_orders = orders.filter(state_of_delivery='Complete')
+            if completed_orders.count() > 0:
+                for ord in completed_orders:
+                    ord.isClosed = True
+                    ord.isComplete = True
+                    ord.save(update_fields=['isClosed', 'isComplete'])
         title = f'Всі передзамовлення для {request.user.first_name} {request.user.last_name}'
     else:
         if 'get_archive_preorders' in request.POST:
@@ -2081,7 +2087,12 @@ def preorders(request):
             orders = PreOrder.objects.filter(isClosed=True).order_by('-state_of_delivery', '-id')
         else:
             orders = PreOrder.objects.filter(isClosed=False).order_by('-state_of_delivery', '-id')
-
+            completed_orders = orders.filter(state_of_delivery='Complete')
+            if completed_orders.count() > 0:
+                for ord in completed_orders:
+                    ord.isClosed = True
+                    ord.isComplete = True
+                    ord.save(update_fields=['isClosed', 'isComplete'])
         title = 'Всі передзамовлення'
 
     preorderFilter = PreorderFilter(request.POST, queryset=orders)
