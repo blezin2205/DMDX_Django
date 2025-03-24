@@ -39,6 +39,7 @@
              <div class="hstack gap-4">
 {#                 {{ preorderFilter.form.isComplete|as_crispy_field }}#}
                  {{ preorderFilter.form.state_of_delivery|as_crispy_field }}
+                 {{ preorderFilter.form.date_range|as_crispy_field }}
                  {% if request.user|has_group:"empl" or request.user.is_staff %}
                  {{ preorderFilter.form.for_state_of_client|as_crispy_field }}
                  {{ preorderFilter.form.isPreorder|as_crispy_field }}

@@ -5,7 +5,7 @@ class Command(BaseCommand):
     help = 'Sends Teams reminders for orders and preorders that need attention'
 
     def handle(self, *args, **options):
-        self.stdout.write('Starting evening task...')
+        self.stdout.write('Starting reminders teams task...')
         teams_reminders_task()
-        self.stdout.write(self.style.SUCCESS('Evening task completed successfully')) 
+        self.stdout.write(self.style.SUCCESS('Reminders teams task completed successfully')) 
         
