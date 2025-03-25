@@ -28,6 +28,9 @@ class AppSettingsForm(ModelForm):
 
 
 class CreateNPParselForm(ModelForm):
+    class Meta:
+        model = CreateParselModel
+        exclude = ['seatsAmount']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -38,28 +41,24 @@ class CreateNPParselForm(ModelForm):
 
         self.fields['payment_user_type'].label = "Хто платить за доставку"
         self.fields['payment_money_type'].label = "Тип оплати"
+        self.fields['cargo_type'].label = "Тип вантажу"
         self.fields['width'].label = "Ширина (см)"
         self.fields['length'].label = "Довжина (см)"
         self.fields['height'].label = "Висота (см)"
         self.fields['weight'].label = "Вага (кг)"
-        # self.fields['seatsAmount'].label = "Кількість місць"
         self.fields['description'].label = "Опис"
         self.fields['cost'].label = "Оціночна вартість (грн)"
         self.fields['dateDelivery'].label = "Дата відправки"
         self.fields['sender_np_place'].label = "Відділення відправки"
 
-
     payment_user_type = forms.ChoiceField(choices=CreateParselModel.PaymentUserType.choices)
     payment_money_type = forms.ChoiceField(choices=CreateParselModel.PaymentMoneyType.choices)
+    cargo_type = forms.ChoiceField(choices=CargoType.choices(), initial=CargoType.PARCEL.value)
+    weight = forms.DecimalField(max_digits=5)
     dateDelivery = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'min': datetime.datetime.now(pytz.timezone('Europe/Kiev')).date()}),
         initial=datetime.datetime.now(pytz.timezone('Europe/Kiev')).date()
     )
-
-    class Meta:
-        model = CreateParselModel
-        exclude = ['seatsAmount']
-
 
 
 class GeneralSupplyForm(ModelForm):

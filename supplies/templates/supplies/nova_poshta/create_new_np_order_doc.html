@@ -3,7 +3,7 @@
 {% load crispy_forms_tags %}
 {% load bootstrap %}
 
-<form class="modal-form" id="npOrderForm" method="post" action="{% url 'create_np_document_for_order' order.id %}" onsubmit="return handleFormSubmit(event)">
+<form class="modal-form" id="npOrderForm" method="post" action="{% url 'create_np_document_for_order' order.id %}" onsubmit="return npOrderDoc_handleFormSubmit(event)">
     {% csrf_token %}
     <input type="hidden" name="order_id" value="{{ order.id }}">
     <div class="modal-body-content">
@@ -17,22 +17,29 @@
                 {{ inputForm.payment_money_type|as_crispy_field }}
             </div>
         </div>
-        <div class="row bg-light rounded p-2 mx-auto my-2">
-            <div class="hstack gap-2">
-                <div class="col-sm">
-                    {{ inputForm.weight|as_crispy_field }}
+        <div class="row g-3">
+            <div class="col-sm">
+                {{ inputForm.cargo_type|as_crispy_field }}
+            </div>
+        </div>
+        <div id="cargo-dimensions-container">
+            <div class="row bg-light rounded p-2 mx-auto my-2">
+                <div class="hstack gap-2">
+                    <div class="col-sm">
+                        {{ inputForm.weight|as_crispy_field }}
+                    </div>
+                    <div class="col-sm">
+                        {{ inputForm.width|as_crispy_field }}
+                    </div>
+                    <div class="col-sm">
+                        {{ inputForm.length|as_crispy_field }}
+                    </div>
+                    <div class="col-sm">
+                        {{ inputForm.height|as_crispy_field }}
+                    </div>
+                    <button type="button" class="btn btn-outline-primary" onclick="npOrderDoc_addMorePlaces()"><i class="bi bi-plus-circle"></i></button>
+                    <button type="button" class="btn btn-outline-warning" onclick="npOrderDoc_copyPlaces()"><i class="bi bi-clipboard2-fill"></i></button>
                 </div>
-                <div class="col-sm">
-                    {{ inputForm.width|as_crispy_field }}
-                </div>
-                <div class="col-sm">
-                    {{ inputForm.length|as_crispy_field }}
-                </div>
-                <div class="col-sm">
-                    {{ inputForm.height|as_crispy_field }}
-                </div>
-                <button type="button" class="btn btn-outline-primary" onclick="addMorePlaces()"><i class="bi bi-plus-circle"></i></button>
-                <button type="button" class="btn btn-outline-warning" onclick="copyPlaces()"><i class="bi bi-clipboard2-fill"></i></button>
             </div>
         </div>
 
@@ -113,15 +120,76 @@
 </form>
 
 <script>
+(function() {
+    const cargoTypeSelect = document.querySelector('select[name="cargo_type"]');
+    const cargoDimensionsContainer = document.getElementById('cargo-dimensions-container');
+
+    // Store previous values
+    let previousValues = {
+        weight: '',
+        width: '',
+        length: '',
+        height: ''
+    };
+
+    function updateDimensionsVisibility() {
+        if (!cargoTypeSelect || !cargoDimensionsContainer) {
+            console.error('Required elements not found!');
+            return;
+        }
+
+        const selectedValue = cargoTypeSelect.value;
+        console.log('Cargo type changed to:', selectedValue);
+        
+        // Show/hide dimensions based on cargo type
+        if (selectedValue === 'Documents') {
+            // Store current values before setting to 1
+            previousValues = {
+                weight: document.querySelector('input[name="weight"]').value,
+                width: document.querySelector('input[name="width"]').value,
+                length: document.querySelector('input[name="length"]').value,
+                height: document.querySelector('input[name="height"]').value
+            };
+            
+            // Set default values to 1 for all dimension inputs
+            document.querySelector('input[name="weight"]').value = 0.1;
+            document.querySelector('input[name="width"]').value = '1';
+            document.querySelector('input[name="length"]').value = '1';
+            document.querySelector('input[name="height"]').value = '1';
+        } else {
+            console.log('Showing dimensions for type:', selectedValue);
+            // Restore previous values
+            document.querySelector('input[name="weight"]').value = previousValues.weight;
+            document.querySelector('input[name="width"]').value = previousValues.width;
+            document.querySelector('input[name="length"]').value = previousValues.length;
+            document.querySelector('input[name="height"]').value = previousValues.height;
+        }
+        
+        console.log('Current display style:', cargoDimensionsContainer.style.display);
+    }
+
+    // Add change event listener if element exists
+    if (cargoTypeSelect) {
+        cargoTypeSelect.addEventListener('change', function(e) {
+            console.log('Change event triggered');
+            console.log('Event target value:', e.target.value);
+            updateDimensionsVisibility();
+        });
+        
+        // Initial visibility update
+        console.log('Initial visibility update');
+        updateDimensionsVisibility();
+    }
+
     // Add these new functions at the beginning of your script section
-    function addMorePlaces() {
+    window.npOrderDoc_addMorePlaces = function() {
         htmx.ajax('POST', "{% url 'add_more_np_places_input_group' %}", {
             target: '#add_more_places_input_group',
             swap: 'beforebegin'
         });
     }
 
-    function copyPlaces() {
+    window.npOrderDoc_copyPlaces = function() {
         const weight = document.querySelector('input[name="weight"]').value;
         const width = document.querySelector('input[name="width"]').value;
         const length = document.querySelector('input[name="length"]').value;
@@ -140,22 +208,22 @@
     }
 
     // Show loading spinner
-    function showSubmitButtonsLoadingSpinner() {
+    window.npOrderDoc_showSubmitButtonsLoadingSpinner = function() {
         // Hide main buttons
         $('#mainButtons').hide();
         $('#loadingSpinner').show();
     }
 
     // Hide loading spinner
-    function hideSubmitButtonsLoadingSpinner() {
+    window.npOrderDoc_hideSubmitButtonsLoadingSpinner = function() {
         $('#mainButtons').show();
         $('#loadingSpinner').hide();
     }
 
     // Handle form submission
-    function handleFormSubmit(event) {
+    window.npOrderDoc_handleFormSubmit = function(event) {
         event.preventDefault();
-        showSubmitButtonsLoadingSpinner();
+        npOrderDoc_showSubmitButtonsLoadingSpinner();
         
         const form = event.target;
         const formData = new FormData(form);
@@ -180,12 +248,12 @@
                 // The WebSocket will handle the rest
                 return false;
             } else if (data.status === 'error') {
-                hideSubmitButtonsLoadingSpinner();
+                npOrderDoc_hideSubmitButtonsLoadingSpinner();
                 alert('Error: ' + JSON.stringify(data.errors));
             }
         })
         .catch(error => {
-            hideSubmitButtonsLoadingSpinner();
+            npOrderDoc_hideSubmitButtonsLoadingSpinner();
             console.error('Error:', error);
             alert('An error occurred while processing your request.');
         });
@@ -194,8 +262,8 @@
     }
 
     // WebSocket connection
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const socket = new WebSocket(`${protocol}//${window.location.host}/wss/np_document_updates/`);
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socket = new WebSocket(`${wsProtocol}//${window.location.host}/wss/np_document_updates/`);
 
     socket.onopen = function(e) {
         console.log('WebSocket connection established');
@@ -204,7 +272,7 @@
     socket.onmessage = function(e) {
         const data = JSON.parse(e.data);
         if (data.message) {
-            hideSubmitButtonsLoadingSpinner();
+            npOrderDoc_hideSubmitButtonsLoadingSpinner();
             if (data.message === 'Накладна успішно створена') {
                 if (data.delivery_order_id) {
                     window.open(data.delivery_order_id, '_blank');
@@ -241,6 +309,7 @@
     socket.onerror = function(e) {
         console.error('WebSocket error:', e);
     };
+})();
 </script>
 <style>
 .modal-form {

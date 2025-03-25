@@ -4,7 +4,30 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from django.contrib.sessions.models import Session
 from django.contrib.auth.signals import user_logged_in
+from enum import Enum
 
+
+class CargoType(Enum):
+    PARCEL = "Parcel"
+    CARGO = "Cargo"
+    DOCUMENTS = "Documents"
+    TIRES_WHEELS = "TiresWheels"
+    PALLET = "Pallet"
+
+    @classmethod
+    def choices(cls):
+        return [(member.value, cls.get_description(member.value)) for member in cls]
+
+    @classmethod
+    def get_description(cls, value):
+        descriptions = {
+            "Parcel": "Посилка",
+            "Cargo": "Вантаж",
+            "Documents": "Документи",
+            "TiresWheels": "Шини-диски",
+            "Pallet": "Палети"
+        }
+        return descriptions.get(value, "")
 
 class NPCity(models.Model):
     name = models.CharField(max_length=100, null=True)

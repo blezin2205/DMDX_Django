@@ -19,6 +19,7 @@ from django.core.serializers import serialize
 from django.http import JsonResponse
 from django.forms.models import model_to_dict
 from django.forms import ModelForm, Form
+from .NPModels import *
 import json
 
 
@@ -109,6 +110,11 @@ class CreateParselModel(models.Model):
     payment_money_type = models.CharField(choices=PaymentMoneyType.choices, max_length=12,
                                           default=PaymentMoneyType.БЕЗГОТІВКОВИЙ)
     sender_np_place = models.ForeignKey(SenderNPPlaceInfo, on_delete=models.SET_NULL, null=True)
+    cargo_type = models.CharField(
+        choices=CargoType.choices(),
+        max_length=20,
+        default=CargoType.PARCEL.value
+    )
     width = models.PositiveIntegerField()
     length = models.PositiveIntegerField()
     height = models.PositiveIntegerField()
@@ -117,6 +123,10 @@ class CreateParselModel(models.Model):
     description = models.CharField(max_length=200, default="Товари медичного призначення")
     cost = models.PositiveIntegerField(null=True, blank=True, default=300)
     dateDelivery = models.DateField(auto_now_add=True)
+
+    @property
+    def cargo_type_display(self):
+        return self.get_cargo_type_display()
 
 
 class City(models.Model):

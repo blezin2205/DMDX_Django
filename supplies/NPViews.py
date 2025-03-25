@@ -310,6 +310,7 @@ def create_np_document_for_order(request, order_id):
                 t.start()
                 return JsonResponse({'status': 'processing'})
             else:
+                print("Error here:", inputForm.errors)
                 return JsonResponse({'status': 'error', 'errors': inputForm.errors})
 
     # For GET requests, just render the form
