@@ -84,6 +84,11 @@
             document.getElementById('loadingButton').style.display = 'block';
         }
 
+        function hideLoadingButton() {
+            document.getElementById('submitButton').style.display = 'block';
+            document.getElementById('loadingButton').style.display = 'none';
+        }
+
         // Показати попап і лоадінг кнопку перед відправкою форми
         document.getElementById('upload_supplies_for_new_delivery').onsubmit = function(event) {
     // Prevent the form from submitting normally
@@ -93,13 +98,11 @@
     var barcodeType = document.querySelector('input[name="barcode_type"]:checked').value;
     var description = document.getElementById('id_description').value; // Replace 'id_description' with the actual ID of your description field
     var deliveryOrderId = "{{ delivery_order_id }}";
-    // Call the function with the selected value and description
-    callSomeViewFunction(deliveryOrderId, barcodeType, description);
-    showLoadingButton();
+    retrive_all_scanned_barcodes_for_new_delivery(deliveryOrderId, barcodeType, description);
 };
 
-function callSomeViewFunction(deliveryOrderId = null, barcodeType, description) {
-    // Implement the function to send the data to the server
+function retrive_all_scanned_barcodes_for_new_delivery(deliveryOrderId = null, barcodeType, description) {
+    showLoadingButton();
     fetch('/upload_supplies_for_new_delivery_from_js_script', {
         method: 'POST',
         headers: {
@@ -110,31 +113,16 @@ function callSomeViewFunction(deliveryOrderId = null, barcodeType, description) 
     })
     .then(response => response.json())
     .then(data => {
-        // Handle the response from the server
-        console.log(data);
+        hideLoadingButton();
+        alert(data.message);
+        window.location.href = `/all_deliveries/${data.delivery_order_id}`; 
     })
     .catch(error => {
+        hideLoadingButton();
+        alert('Error:', error);
         console.error('Error:', error);
     });
 }
-
-        // Підключення до WebSocket
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const socket = new WebSocket(`${protocol}//${window.location.host}/wss/add_new_delivery_loading/`);
-
-        socket.onopen = function(e) {
-            console.log('WebSocket connection opened');
-        };
-
-        socket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            alert(data.message)
-            window.location.href = `/all_deliveries/${data.delivery_order_id}`; // Редірект після отримання повідомлення
-        };
-
-        socket.onclose = function(e) {
-            console.error('WebSocket closed unexpectedly');
-        };
     </script>
 
 

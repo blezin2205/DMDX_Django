@@ -94,16 +94,6 @@ def upload_supplies_for_new_delivery_from_js_script(request):
         string_data = data.get('description', '')
         delivery_id = data.get('deliveryOrderId', '')
 
-        # Process the data as needed
-        response_data = {
-            'status': 'success',
-            'barcode_type': barcode_type,
-            'description': string_data
-        }
-        print("delivery_id", delivery_id)
-        print(delivery_id == 'None')
-
-
         if delivery_id == 'None':
             for_delivery_order = DeliveryOrder(from_user=request.user)
             for_delivery_order.save()
@@ -115,10 +105,8 @@ def upload_supplies_for_new_delivery_from_js_script(request):
             title = f'Додати штрих-коди до поставки № {for_delivery_order.id}'
             isUpdate = True
         print("START")
-        t = threading.Thread(target=threading_create_delivery_async,
-                             args=[request, string_data, for_delivery_order.id, barcode_type, isUpdate], daemon=True)
-        t.start()
-        return JsonResponse(response_data)
+        response_data = threading_create_delivery_async(request, string_data, for_delivery_order, barcode_type, isUpdate)
+        return response_data
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
 
 def upload_supplies_for_new_delivery_noncelery(request, delivery_order_id=None):
@@ -147,28 +135,24 @@ def upload_supplies_for_new_delivery_noncelery(request, delivery_order_id=None):
             # return redirect('/all_deliveries')
     return render(request, 'supplies/delivery/upload_supplies_for_new_delivery.html', {'form': form, 'cartCountData': cartCountData, 'title': title, 'delivery_order_id': delivery_order_id})
 
-def threading_create_delivery_async(request, string_data, delivery_order_id, barcode_type, isUpdate = False):
-    for_delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
-    makeDataUpload_nonCelery(string_data, delivery_order_id, barcode_type)
-    cartCountData = countCartItemsHelper(request)
-    supplies = for_delivery_order.deliverysupplyincart_set.all().order_by('general_supply__name')
-    total_count = supplies.aggregate(total_count=Sum('count'))['total_count']
-    supDict = {}
-    for d in supplies:
-        t = supDict.setdefault(d.isRecognized, [])
-        t.append(d)
-    supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
-
-    # Відправити повідомлення про завершення
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        'delivery_updates',
-        {
-            'type': 'delivery_complete',
-            'message': f'Поставка №{delivery_order_id} оновлена успішно!' if isUpdate else f'Поставка №{delivery_order_id} створена успішно!',
-            'delivery_order_id': delivery_order_id
+def threading_create_delivery_async(request, string_data, for_delivery_order, barcode_type, isUpdate = False):
+    total_sups_delivered, total_requests = makeDataUpload_nonCelery(string_data, for_delivery_order, barcode_type)
+    delivered_sups_with_general_supply_count = len([x for x in total_sups_delivered if x.general_supply is not None])
+    delivered_sups_without_general_supply_count = len([x for x in total_sups_delivered if x.general_supply is None])
+    
+    message = f'Поставка №{for_delivery_order.id} оновлена успішно!' if isUpdate else f'Поставка №{for_delivery_order.id} створена успішно!\n'
+    message += f'\n Всього сторк знайдено: {total_requests} шт.'
+    message += f'\n Товарів знайдено: {delivered_sups_with_general_supply_count} шт.'
+    message += f'\n Товарів не розпізнано: {delivered_sups_without_general_supply_count} шт.'
+    
+    response_data = {
+            'status': 'success',
+            'message': message,
+            'delivery_order_id': for_delivery_order.id,
         }
-    )
+    return JsonResponse(response_data)
+
+
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
