@@ -82,12 +82,12 @@ def np_info_table_sync_for_user(request):
         user.save(update_fields=['np_contact_sender_ref'])
 
     current_ref = user.np_contact_sender_ref
-    param = {'apiKey': '99f738524ca3320ece4b43b10f4181b1',
+    param = {'apiKey': settings.NOVA_POSHTA_API_KEY,
              'modelName': 'Counterparty',
              'calledMethod': 'getCounterpartyContactPersons',
-             'methodProperties': {'Ref': '3b0e7317-2a6b-11eb-8513-b88303659df5'}}
+             'methodProperties': {'Ref': settings.NOVA_POSHTA_SENDER_DMDX_REF}}
     getListOfCitiesParams = {
-        "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+        "apiKey": settings.NOVA_POSHTA_API_KEY,
         "modelName": "Address",
         "calledMethod": "getCities",
         "methodProperties": {
@@ -95,7 +95,7 @@ def np_info_table_sync_for_user(request):
         }
     }
 
-    data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(param)).json()
+    data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(param)).json()
 
     return render(request, "supplies/nova_poshta/np_info_table_sync_for_user.html", {'data': data["data"], 'current_ref': current_ref})
 
@@ -342,14 +342,14 @@ def deleteSupplyInOrderNPDocumentButton(request):
         npDocument = NPDeliveryCreatedDetailInfo.objects.get(document_id=statusParsel.docNumber)
 
         params = {
-            "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+            "apiKey": settings.NOVA_POSHTA_API_KEY,
             "modelName": "InternetDocument",
             "calledMethod": "delete",
             "methodProperties": {
                 "DocumentRefs": npDocument.ref
             }
         }
-        data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+        data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
         print(data)
 
         statusParsel.delete()
@@ -1853,7 +1853,10 @@ def orders(request):
 
         if 'print_choosed' in request.POST:
             print('---------------------PRINT CHOOSED --------------------------------')
-            np_link_print = f'https://my.novaposhta.ua/orders/printMarking85x85/orders/{listToStr}/type/pdf8/apiKey/99f738524ca3320ece4b43b10f4181b1'
+            np_link_print = settings.NOVA_POSHTA_PRINT_MARKING_MULTIPLE_URL_TEMPLATE.format(
+                refs=listToStr,
+                api_key=settings.NOVA_POSHTA_API_KEY
+            )
             return redirect(np_link_print)
 
         if 'export_to_excel_choosed' in request.POST:
@@ -1890,14 +1893,14 @@ def orders(request):
         if 'add_to_register_choosed' in request.POST:
             list_of_refs = list(map(str, documentsIdFromOrders))
             params = {
-                "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                "apiKey": settings.NOVA_POSHTA_API_KEY,
                 "modelName": "ScanSheet",
                 "calledMethod": "insertDocuments",
                 "methodProperties": {
                     "DocumentRefs": list_of_refs
                 }
             }
-            data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+            data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
             list_data = data["data"]
             print(data)
             register_Ref = ""
@@ -1909,7 +1912,10 @@ def orders(request):
                 in_list = []
                 for obj in list_data[0]["Success"]:
                     in_list.append(obj['Number'])
-                np_link_print = f'//my.novaposhta.ua/scanSheet/printScanSheet/refs[]/{register_Ref}/type/pdf/apiKey/99f738524ca3320ece4b43b10f4181b1'
+                np_link_print = settings.NOVA_POSHTA_PRINT_SCAN_SHEET_URL_TEMPLATE.format(
+                    ref=register_Ref,
+                    api_key=settings.NOVA_POSHTA_API_KEY
+                )
                 dt_obj = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
                 date_string = dt_obj.strftime('%d.%m.%Y %H:%M')
                 regInfoModel = RegisterNPInfo(barcode_string=register_number, register_url=np_link_print, date=date_string, documentsId=in_list, for_orders=for_orders_name_list)
@@ -2820,11 +2826,11 @@ def editWorkerInfo(request, worker_id):
     wrkr = Workers.objects.get(id=worker_id)
     form = WorkerForm(request.POST or None, instance=wrkr)
     place = wrkr.for_place
-    cartCountData = countCartItemsHelper(request)
     orgRefExist = place.ref_NP is not None
 
     if request.method == 'POST':
         if 'save' in request.POST:
+            print("save editWorkerInfo")
             radioButton = request.POST.get('flexRadioDefault')
             if form.is_valid():
                 refNP = None
@@ -2860,17 +2866,22 @@ def editWorkerInfo(request, worker_id):
                         return redirect(reverse('editWorkerInfo', kwargs={'worker_id': worker_id}))
                 obj.ref_counterparty_NP = refNP
                 obj.save()
-                next = request.POST.get('next')
-                return redirect(next)
 
         if 'delete' in request.POST:
             wrkr.delete()
-            next = request.POST.get('next')
-            return redirect(next)
+        
+        html = render_to_string('partials/clients/client_card.html', {
+            'client': place,
+            'request': request
+        })
+        return JsonResponse({
+            'html': html,
+            'clientId': place.id,
+            'success': True
+        })
 
     return render(request, 'supplies/clients/addNewWorkerForClient.html',
-                  {'title': f'Редагувати працівника для: \n{place.name}, {place.city_ref.name}', 'form': form,
-                   'cartCountData': cartCountData, 'orgRefExist': orgRefExist})
+                  {'place': place, 'form': form, 'editMode': True, 'orgRefExist': orgRefExist})
 
 
 @login_required(login_url='login')
@@ -2911,7 +2922,7 @@ def editClientInfo(request, client_id):
             recipientType = request.POST.get('recipientType')
 
             # Counterparty REF for add address as private person, but if organization added as organization to NP, address ref should be save for orgRef
-            counterpartyref = "3b0e7317-2a6b-11eb-8513-b88303659df5"
+            counterpartyref = settings.NOVA_POSHTA_SENDER_DMDX_REF
 
             if client.ref_NP is not None:
                 counterpartyref = client.ref_NP
@@ -2919,7 +2930,7 @@ def editClientInfo(request, client_id):
 
             if recipientType == 'Doors':
                 params = {
-                    "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                    "apiKey": settings.NOVA_POSHTA_API_KEY,
                     "modelName": "Address",
                     "calledMethod": "save",
                     "methodProperties": {
@@ -2930,7 +2941,7 @@ def editClientInfo(request, client_id):
                         "Note": comment
                     }
                 }
-                data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+                data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
                 list = data["data"]
                 print('------------------ add_address_NP ---------------')
                 print(list)
@@ -2964,7 +2975,7 @@ def editClientInfo(request, client_id):
 
                 if organization_code is not None:
                     params = {
-                        "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                        "apiKey": settings.NOVA_POSHTA_API_KEY,
                         "modelName": "Counterparty",
                         "calledMethod": "save",
                         "methodProperties": {
@@ -2973,7 +2984,7 @@ def editClientInfo(request, client_id):
                             "CounterpartyProperty": "Recipient"
                         }
                     }
-                    data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+                    data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
                     list = data["data"]
                     print('------------------ generalSave ---------------')
                     print(list)
@@ -3003,7 +3014,6 @@ def editClientInfo(request, client_id):
 def addNewWorkerForClient(request, place_id):
     form = WorkerForm()
     place = Place.objects.get(id=place_id)
-    cartCountData = countCartItemsHelper(request)
     orgRefExist = place.ref_NP is not None
 
     if request.method == 'POST':
@@ -3014,10 +3024,10 @@ def addNewWorkerForClient(request, place_id):
             if radioButton == 'asOrganization':
                 refNP = place.ref_NP
             if radioButton == 'asPrivateUser':
-                refNP = "3b13350b-2a6b-11eb-8513-b88303659df5"
+                refNP = settings.NOVA_POSHTA_SENDER_DMDX_REF
 
             params = {
-                "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                "apiKey": settings.NOVA_POSHTA_API_KEY,
                 "modelName": "ContactPerson",
                 "calledMethod": "save",
                 "methodProperties": {
@@ -3031,7 +3041,7 @@ def addNewWorkerForClient(request, place_id):
             obj = form.save(commit=False)
 
             if radioButton is not None:
-                data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+                data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
                 if data["data"]:
                     userData = data["data"][0]
                     print(userData)
@@ -3045,11 +3055,17 @@ def addNewWorkerForClient(request, place_id):
             obj.ref_counterparty_NP = refNP
             obj.for_place = place
             obj.save()
-            next = request.POST.get('next')
-            return HttpResponseRedirect(next)
+            html = render_to_string('partials/clients/client_card.html', {
+            'client': place,
+            'request': request
+            })
+            return JsonResponse({
+                'html': html,
+                'clientId': place.id,
+                'success': True
+            })
     return render(request, 'supplies/clients/addNewWorkerForClient.html',
-                  {'title': f'Додати нового працівника для {place.name}, {place.city}', 'form': form,
-                   'cartCountData': cartCountData, 'orgRefExist': orgRefExist})
+                  {'place': place, 'form': form, 'orgRefExist': orgRefExist})
 
 
 @login_required(login_url='login')
@@ -3334,14 +3350,14 @@ def orderDetail(request, order_id, sup_id):
                 docrefs = order.npdeliverycreateddetailinfo_set.values_list('ref')
                 for ref in docrefs:
                     params = {
-                        "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                        "apiKey": settings.NOVA_POSHTA_API_KEY,
                         "modelName": "InternetDocument",
                         "calledMethod": "delete",
                         "methodProperties": {
                             "DocumentRefs": ref
                         }
                     }
-                    data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+                    data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
                     print(data)
 
             order.delete()

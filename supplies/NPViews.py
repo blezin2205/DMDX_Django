@@ -45,13 +45,13 @@ def sendTurboSMSRequest(text, recipients):
 def httpRequest(request):
 
 
-    param = {'apiKey': '99f738524ca3320ece4b43b10f4181b1',
+    param = {'apiKey': settings.NOVA_POSHTA_API_KEY,
              'modelName': 'Counterparty',
              'calledMethod': 'getCounterpartyContactPersons',
-             'methodProperties': {'Ref': '3b0e7317-2a6b-11eb-8513-b88303659df5'}}
+             'methodProperties': {'Ref': settings.NOVA_POSHTA_SENDER_DMDX_REF}}
 
     getListOfCitiesParams = {
-        "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+        "apiKey": settings.NOVA_POSHTA_API_KEY,
         "modelName": "Address",
         "calledMethod": "getCities",
         "methodProperties": {
@@ -59,7 +59,7 @@ def httpRequest(request):
         }
     }
     user = request.user
-    data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(param)).json()
+    data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(param)).json()
     #
     # for obj in data["data"]:
     #     if obj["Description"] == 'Степанов Олександр Вячеславович':
@@ -112,160 +112,133 @@ def copy_np_places_input_group(request):
 
 
 def threading_create_np_document_async(request, data, order_id, redirect_url=False):
-    try:
-        order = Order.objects.get(id=order_id)
-        user = request.user
-        for_place = order.place
-        deliveryInfo = for_place.address_NP
-        deliveryType = deliveryInfo.deliveryType
-        sender_places = SenderNPPlaceInfo.objects.filter(for_user=request.user)
+    order = Order.objects.get(id=order_id)
+    user = request.user
+    for_place = order.place
+    deliveryInfo = for_place.address_NP
+    deliveryType = deliveryInfo.deliveryType
+    sender_places = SenderNPPlaceInfo.objects.filter(for_user=request.user)
 
-        inputForm = CreateNPParselForm(data, instance=order)
-        placeForm = ClientFormForParcel(data, instance=for_place)
+    inputForm = CreateNPParselForm(data, instance=order)
+    placeForm = ClientFormForParcel(data, instance=for_place)
 
-        if inputForm.is_valid() and placeForm.is_valid():
-            dateSend = inputForm.cleaned_data['dateDelivery'].strftime('%d.%m.%Y')
-            sender_np_place = inputForm.cleaned_data['sender_np_place']
-            payment_money_type = inputForm.cleaned_data['payment_money_type']
-            payment_user_type = inputForm.cleaned_data['payment_user_type']
-            width = inputForm.cleaned_data['width']
-            length = inputForm.cleaned_data['length']
-            height = inputForm.cleaned_data['height']
-            weight = inputForm.cleaned_data['weight']
-            description = inputForm.cleaned_data['description']
-            cost = inputForm.cleaned_data['cost']
-            sender_ref = "3b0e7317-2a6b-11eb-8513-b88303659df5"
+    if inputForm.is_valid() and placeForm.is_valid():
+        dateSend = inputForm.cleaned_data['dateDelivery'].strftime('%d.%m.%Y')
+        sender_np_place = inputForm.cleaned_data['sender_np_place']
+        payment_money_type = inputForm.cleaned_data['payment_money_type']
+        payment_user_type = inputForm.cleaned_data['payment_user_type']
+        width = inputForm.cleaned_data['width']
+        length = inputForm.cleaned_data['length']
+        height = inputForm.cleaned_data['height']
+        weight = inputForm.cleaned_data['weight']
+        description = inputForm.cleaned_data['description']
+        cost = inputForm.cleaned_data['cost']
+        sender_ref = settings.NOVA_POSHTA_SENDER_DMDX_REF
 
-            volumeGeneral = float(width / 100) * float(length / 100) * float(height / 100)
+        volumeGeneral = float(width / 100) * float(length / 100) * float(height / 100)
 
-            sender_place = inputForm.cleaned_data['sender_np_place']
-            recipient_address = placeForm.cleaned_data['address_NP']
-            recipient_worker = placeForm.cleaned_data['worker_NP']
+        sender_place = inputForm.cleaned_data['sender_np_place']
+        recipient_address = placeForm.cleaned_data['address_NP']
+        recipient_worker = placeForm.cleaned_data['worker_NP']
 
-            weight_input_field_list = data.getlist('weight_input_field') or []
-            width_input_field_list = data.getlist('width_input_field') or []
-            length_input_field_list = data.getlist('length_input_field') or []
-            height_input_field_list = data.getlist('height_input_field') or []
+        weight_input_field_list = data.getlist('weight_input_field') or []
+        width_input_field_list = data.getlist('width_input_field') or []
+        length_input_field_list = data.getlist('length_input_field') or []
+        height_input_field_list = data.getlist('height_input_field') or []
 
-            options_seat_list = [
-                {
-                    "volumetricVolume": str(volumeGeneral),
-                    "volumetricWidth": width,
-                    "volumetricLength": length,
-                    "volumetricHeight": height,
-                    "weight": str(weight)
-                }
-            ]
-
-            for i in range(len(weight_input_field_list)):
-                weight = weight_input_field_list[i]
-                width = width_input_field_list[i]
-                length = length_input_field_list[i]
-                height = height_input_field_list[i]
-
-                volumetric_volume = float(width) / 100 * float(length) / 100 * float(height) / 100
-
-                options_seat = {
-                    "volumetricVolume": str(volumetric_volume),
-                    "volumetricWidth": width,
-                    "volumetricLength": length,
-                    "volumetricHeight": height,
-                    "weight": str(weight)
-                }
-
-                options_seat_list.append(options_seat)
-
-            params = {
-                "apiKey": "99f738524ca3320ece4b43b10f4181b1",
-                "modelName": "InternetDocument",
-                "calledMethod": "save",
-                "methodProperties": {
-                    "PayerType": payment_user_type,
-                    "PaymentMethod": payment_money_type,
-                    "DateTime": dateSend,
-                    "CargoType": "Parcel",
-                    "ServiceType": f'{sender_place.deliveryType}{deliveryType}',
-                    "Description": description,
-                    "Cost": str(cost),
-                    "CitySender": sender_np_place.city_ref_NP,
-                    "Sender": sender_ref,
-                    "SenderAddress": sender_np_place.address_ref_NP,
-                    "ContactSender": request.user.np_contact_sender_ref,
-                    "SendersPhone": request.user.mobNumber,
-                    "CityRecipient": recipient_address.city_ref_NP,
-                    "Recipient": recipient_worker.ref_counterparty_NP,
-                    "RecipientAddress": recipient_address.address_ref_NP,
-                    "ContactRecipient": recipient_worker.ref_NP,
-                    "RecipientsPhone": recipient_worker.telNumber,
-                    "OptionsSeat": options_seat_list,
-                }
-            }
-
-            data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
-            print("response from NP: ",data)
-            
-            workr_postition = ''
-            if recipient_worker.position:
-                workr_postition = recipient_worker.position
-
-            worker_name = f'{recipient_worker}, {workr_postition}, телефон: {recipient_worker.telNumber}'
-            address_name = f'{recipient_address.cityName}, {recipient_address.addressName}'
-
-            if data["success"] is True and data["data"][0] is not None:
-                list = data["data"][0]
-                ref = list["Ref"]
-                cost = list["CostOnSite"]
-                estimated_date = list["EstimatedDeliveryDate"]
-                id_number = int(list["IntDocNumber"])
-                detailInfo = NPDeliveryCreatedDetailInfo(document_id=id_number,
-                                                     ref=ref, cost_on_site=cost,
-                                                     estimated_time_delivery=estimated_date,
-                                                     recipient_worker=worker_name,
-                                                     recipient_address=address_name,
-                                                     for_order=order,
-                                                     userCreated=user)
-                detailInfo.save()
-                user.np_last_choosed_delivery_place_id = sender_place.id
-                user.save()
-                url_to_redirect = None
-
-                if redirect_url:
-                    url_to_redirect = f'https://my.novaposhta.ua/orders/printMarking85x85/orders[]/{ref}/type/pdf8/apiKey/99f738524ca3320ece4b43b10f4181b1'
-
-                # Send success message through WebSocket
-                print("url_to_redirect: ", url_to_redirect)
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    "np_document_updates",
-                    {
-                        "type": "delivery_message",
-                        "message": "Накладна успішно створена",
-                        "delivery_order_id": url_to_redirect
-                    }
-                )
-            else:
-                errorsString = '\n'.join(f'• {error}' for error in data["errors"])
-                # Send error message through WebSocket
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    "np_document_updates",
-                    {
-                        "type": "delivery_message",
-                        "message": f"Помилка при створенні накладної\n\n{errorsString}",
-                        "delivery_order_id": None
-                    }
-                )
-    except Exception as e:
-        # Send error message through WebSocket
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            "np_document_updates",
+        options_seat_list = [
             {
-                "type": "delivery_message",
-                "message": f"Помилка: {str(e)}",
-                "delivery_order_id": None
+                "volumetricVolume": str(volumeGeneral),
+                "volumetricWidth": width,
+                "volumetricLength": length,
+                "volumetricHeight": height,
+                "weight": str(weight)
             }
-        )
+        ]
+
+        for i in range(len(weight_input_field_list)):
+            weight = weight_input_field_list[i]
+            width = width_input_field_list[i]
+            length = length_input_field_list[i]
+            height = height_input_field_list[i]
+
+            volumetric_volume = float(width) / 100 * float(length) / 100 * float(height) / 100
+
+            options_seat = {
+                "volumetricVolume": str(volumetric_volume),
+                "volumetricWidth": width,
+                "volumetricLength": length,
+                "volumetricHeight": height,
+                "weight": str(weight)
+            }
+
+            options_seat_list.append(options_seat)
+
+        params = {
+            "apiKey": settings.NOVA_POSHTA_API_KEY,
+            "modelName": "InternetDocument",
+            "calledMethod": "save",
+            "methodProperties": {
+                "PayerType": payment_user_type,
+                "PaymentMethod": payment_money_type,
+                "DateTime": dateSend,
+                "CargoType": "Parcel",
+                "ServiceType": f'{sender_place.deliveryType}{deliveryType}',
+                "Description": description,
+                "Cost": str(cost),
+                "CitySender": sender_np_place.city_ref_NP,
+                "Sender": sender_ref,
+                "SenderAddress": sender_np_place.address_ref_NP,
+                "ContactSender": request.user.np_contact_sender_ref,
+                "SendersPhone": request.user.mobNumber,
+                "CityRecipient": recipient_address.city_ref_NP,
+                "Recipient": recipient_worker.ref_counterparty_NP,
+                "RecipientAddress": recipient_address.address_ref_NP,
+                "ContactRecipient": recipient_worker.ref_NP,
+                "RecipientsPhone": recipient_worker.telNumber,
+                "OptionsSeat": options_seat_list,
+            }
+        }
+
+        data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
+        print("response from NP: ",data)
+        
+        workr_postition = ''
+        if recipient_worker.position:
+            workr_postition = recipient_worker.position
+
+        worker_name = f'{recipient_worker}, {workr_postition}, телефон: {recipient_worker.telNumber}'
+        address_name = f'{recipient_address.cityName}, {recipient_address.addressName}'
+
+        if data["success"] is True and data["data"][0] is not None:
+            list = data["data"][0]
+            ref = list["Ref"]
+            cost = list["CostOnSite"]
+            estimated_date = list["EstimatedDeliveryDate"]
+            id_number = int(list["IntDocNumber"])
+            detailInfo = NPDeliveryCreatedDetailInfo(document_id=id_number,
+                                                    ref=ref, cost_on_site=cost,
+                                                    estimated_time_delivery=estimated_date,
+                                                    recipient_worker=worker_name,
+                                                    recipient_address=address_name,
+                                                    for_order=order,
+                                                    userCreated=user)
+            detailInfo.save()
+            user.np_last_choosed_delivery_place_id = sender_place.id
+            user.save()
+            url_to_redirect = None
+
+            if redirect_url:
+                url_to_redirect = settings.NOVA_POSHTA_PRINT_MARKING_URL_TEMPLATE.format(
+                    ref=ref,
+                    api_key=settings.NOVA_POSHTA_API_KEY
+                )
+            
+            return url_to_redirect    
+        else:
+            errorsString = '\n'.join(f'• {error}' for error in data["errors"])
+            raise Exception(errorsString)
+            
 
 def create_np_document_for_order(request, order_id):
     print("create_np_document_for_order start")
@@ -292,26 +265,25 @@ def create_np_document_for_order(request, order_id):
     placeForm.fields['address_NP'].initial = for_place.address_NP
 
     if request.method == 'POST':
-        if request.content_type == 'application/json':
-            data = json.loads(request.body)
+        inputForm = CreateNPParselForm(request.POST, instance=order)
+        placeForm = ClientFormForParcel(request.POST, instance=for_place)
+        if inputForm.is_valid() and placeForm.is_valid():
             # Start the async process in a thread
-            t = threading.Thread(target=threading_create_np_document_async, args=[request, data, order_id], daemon=True)
-            t.start()
-            return JsonResponse({'status': 'processing'})
+            redirect_url = False
+            if 'save_and_print' in request.POST:
+                redirect_url = True
+            try:
+                url_to_redirect = threading_create_np_document_async(request, request.POST, order_id, redirect_url)
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': str(e)})
+            return JsonResponse({
+                    "status": "success",
+                    "message": "Накладна успішно створена",
+                    "order_id": order_id,
+                    "url_to_redirect": url_to_redirect
+                })
         else:
-            inputForm = CreateNPParselForm(request.POST, instance=order)
-            placeForm = ClientFormForParcel(request.POST, instance=for_place)
-            if inputForm.is_valid() and placeForm.is_valid():
-                # Start the async process in a thread
-                redirect_url = False
-                if 'save_and_print' in request.POST:
-                    redirect_url = True
-                t = threading.Thread(target=threading_create_np_document_async, args=[request, request.POST, order_id, redirect_url], daemon=True)
-                t.start()
-                return JsonResponse({'status': 'processing'})
-            else:
-                print("Error here:", inputForm.errors)
-                return JsonResponse({'status': 'error', 'errors': inputForm.errors})
+            return JsonResponse({'status': 'error', 'message': "Помилка валідації форми"})
 
     # For GET requests, just render the form
     return render(request, 'supplies/nova_poshta/create_new_np_order_doc.html', {
@@ -325,7 +297,7 @@ def create_np_document_for_order(request, order_id):
 def address_getCities(request):
 
     getListOfCitiesParams = {
-        "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+        "apiKey": settings.NOVA_POSHTA_API_KEY,
         "modelName": "Address",
         "calledMethod": "getCities",
         "methodProperties": {
@@ -336,7 +308,8 @@ def address_getCities(request):
     npCities = NPCity.objects.all()
     npCities.delete()
 
-    cityData = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(getListOfCitiesParams)).json()
+    
+    cityData = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(getListOfCitiesParams)).json()
     cityDataCount = cityData["data"]
     cities = []
     for city in cityDataCount:
@@ -367,7 +340,7 @@ def search_street(request):
     search_text = request.POST.get('search')
     cityRef = request.POST.get('np-cityref')
     params = {
-           "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+           "apiKey": settings.NOVA_POSHTA_API_KEY,
            "modelName": "Address",
            "calledMethod": "getStreet",
            "methodProperties": {
@@ -378,7 +351,7 @@ def search_street(request):
                   }
                 }
 
-    data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+    data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
     context = {"results": data["data"]}
 
     print(cityRef)
@@ -391,7 +364,7 @@ def search_warehouse(request):
     cityRef = request.POST.get('np-cityref')
 
     params = {
-        "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+        "apiKey": settings.NOVA_POSHTA_API_KEY,
         "modelName": "Address",
         "calledMethod": "getWarehouses",
         "methodProperties": {
@@ -403,7 +376,7 @@ def search_warehouse(request):
             "FindByString": search_text.capitalize()
         }
     }
-    data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+    data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
     print("WAREHOUSES")
     print(data['data'])
     context = {"results": data["data"]}
@@ -460,7 +433,7 @@ def delete_my_np_sender_place(request):
 def fetch_np_status(documents: List[Dict]) -> Dict:
     """Make request to Nova Poshta API"""
     params = {
-        "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+        "apiKey": settings.NOVA_POSHTA_API_KEY,
         "modelName": "TrackingDocument",
         "calledMethod": "getStatusDocuments",
         "methodProperties": {
@@ -469,7 +442,7 @@ def fetch_np_status(documents: List[Dict]) -> Dict:
     }
     
     try:
-        response = requests.post('https://api.novaposhta.ua/v2.0/json/', json=params)
+        response = requests.post(settings.NOVA_POSHTA_API_URL, json=params)
         return response.json()
     except Exception as e:
         logger.error(f"Error fetching NP status: {str(e)}")

@@ -319,3 +319,11 @@ LOGGING = {
         'propagate': False,
     },
 }
+
+# Nova Poshta API Settings
+NOVA_POSHTA_API_KEY = '99f738524ca3320ece4b43b10f4181b1'
+NOVA_POSHTA_PRINT_MARKING_URL_TEMPLATE = 'https://my.novaposhta.ua/orders/printMarking85x85/orders[]/{ref}/type/pdf8/apiKey/{api_key}'
+NOVA_POSHTA_PRINT_MARKING_MULTIPLE_URL_TEMPLATE = 'https://my.novaposhta.ua/orders/printMarking85x85/orders/{refs}/type/pdf8/apiKey/{api_key}'
+NOVA_POSHTA_PRINT_SCAN_SHEET_URL_TEMPLATE = '//my.novaposhta.ua/scanSheet/printScanSheet/refs[]/{ref}/type/pdf/apiKey/{api_key}'
+NOVA_POSHTA_API_URL = 'https://api.novaposhta.ua/v2.0/json/'
+NOVA_POSHTA_SENDER_DMDX_REF = "3b0e7317-2a6b-11eb-8513-b88303659df5"

@@ -1,43 +1,49 @@
-{% extends 'supplies/base/base.html' %}
 {% load crispy_forms_filters %}
-{% load static %}
-{% load bootstrap %}
 {% load crispy_forms_tags %}
-    {% block title %}
-{{ title }}
-{% endblock %}
+{% load bootstrap %}
 
-{% block content %}
-<form method="POST" action="">
-  {% csrf_token %}
-
-<div class="w-25">
-    {{ form|crispy }}
-</div>
-    <div class="form-check mt-5">
-  <input class="form-check-input" hx-post="{% url 'radioAddClientTONP' %}" hx-vals='{"orgRefExist": "{{ orgRefExist }}"}' hx-trigger="click" hx-target="#radioButtonsTypeGroup" type="checkbox" value="On" id="checkIfAddToNP" name="checkIfAddToNP">
-  <label class="form-check-label" for="flexCheckDefault">
-    Також зберегти для НП
-  </label>
+<div class="modal-header py-2">
+    <h6 class="modal-title" id="addNewLotModalLabel">{%if editMode %}Редагувати працівника для:{%else%}Додати нового працівника для:{%endif%}<br><i class="bi bi-dot"><span>{{ place.name }}</span></i></h6>
+<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
 
-    <div id="radioButtonsTypeGroup">
-         {% include 'partials/common/radioButtonsWorkerTypeGroup.html' %}
+<div class="modal-body p-0" style="min-height: 330px;">
+    <div class="container-fluid p-3">
+        <div class="row">
+            <div class="col-12">
+                    {% csrf_token %}
+                    <div class="messages">
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }}">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="w-auto">
+                      {{ form|crispy }}
+                  </div>
+                      <div class="form-check mt-5">
+                    <input class="form-check-input" hx-post="{% url 'radioAddClientTONP' %}" hx-vals='{"orgRefExist": "{{ orgRefExist }}"}' hx-trigger="click" hx-target="#radioButtonsTypeGroup" type="checkbox" value="On" id="checkIfAddToNP" name="checkIfAddToNP">
+                    <label class="form-check-label" for="flexCheckDefault">
+                      Також зберегти для НП
+                    </label>
+                  </div>
+                  
+                      <div id="radioButtonsTypeGroup">
+                           {% include 'partials/common/radioButtonsWorkerTypeGroup.html' %}
+                      </div>
+                    <div class="d-flex justify-content-evenly gap-2 pt-3">
+                        {%if editMode %}
+                        <button class="btn btn-outline-primary" type="submit" name="save">Зберегти</button>
+                        <button class="btn btn-outline-danger" type="submit" name="delete">Видалити</button>
+                        {%else%}
+                        <button type="submit" class="btn btn-outline-primary">Зберегти</button>
+                        {%endif%}
+                    </div>
+            </div>
+        </div>
     </div>
-
-{% if messages %}
-<ul class="messages my-4" style="color: red">
-    {% for message in messages %}
-    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
-
-
-<input type="hidden" name="next" value="{{ request.GET.next }}">
-<button class="btn btn-outline-primary my-5" type="submit" name="save">Зберегти</button>
-<button class="btn btn-outline-danger my-5 mx-3" type="submit" name="delete">Видалити</button>
-</form>
-{% endblock %}
-
+</div>
 

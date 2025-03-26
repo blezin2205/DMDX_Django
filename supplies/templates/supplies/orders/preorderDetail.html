@@ -6,88 +6,116 @@
 {% endblock %}
 
 {% block content %}
-
-    <div class="container">
-
-
-    <div class="allSupply">
-<h3>
-  <small class="text-muted">Для: {{order.place.name}}, {{order.place.city_ref.name}}</small>
-</h3>
-{% if order.comment %}
-<h4>
-  <small class="text-muted">Коментар: {{order.comment}}</small>
-</h4>
-{% endif %}
-<h5>
-  <small class="text-muted">Cтворив: {{order.userCreated.last_name}}</small>
-</h5>
-{% if order.isComplete %}
-        <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span> <span>{{order.dateSent|date:"d.m.Y" }}</span></p>
-        {% else %}
-        <p class="mb-2"><span>Статус:</span> <span style="color: #5bc0de; font-weight: bold">В очікуванні</span></p>
-        {%  endif %}
-
-
-        <div class="hstack gap-3">
-          {#        <a href="{% url 'orderDetailPdf' order.id %}">PDF</a>#}
-    <a href="{% url 'preorderDetailCsv' order.id %}">Export to Excel (До поставки)</a>
-    <a href="{% url 'preorderDetailCsvAll' order.id %}">Export to Excel (Весь список)</a>
-        </div>
-
-
-</div>
-
-    <table class="table centred mt-5">
-  <thead class="thead-dark">
-    <tr>
-      <th scope="col">{{supplies|length}}</th>
-      <th scope="col" class="textAlignLeft">Назва товару</th>
-        <th scope="col">Пакування / Тести</th>
-    <th scope="col">Категорія</th>
-        <th scope="col">REF</th>
-        <th scope="col">SMN code</th>
-        <th scope="col">Замовлено</th>
-    {% if order.isComplete %}
-        <th scope="col">Поставлено</th>
-        <th scope="col">Борг</th>
-
-
-    <th scope="col" >
-            <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %} ">
-                <div style="width: 110px;">LOT</div>
-            <div style="width: 110px;">Кількість</div>
-            <div style="width: 110px;">Термін</div>
+<div class="container py-4">
+    <!-- Order Header Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Organization Info -->
+                <div class="col-md-6">
+                    <h5 class="text-muted mb-3">
+                        <i class="bi bi-building me-2"></i>Організація
+                    </h5>
+                    <p class="mb-2 fs-5">{{order.place.name}}, {{order.place.city_ref.name}}</p>
+                    {% if order.comment %}
+                    <p class="mb-2">
+                        <i class="bi bi-chat-left-text me-2"></i>
+                        <span class="text-muted">{{order.comment}}</span>
+                    </p>
+                    {% endif %}
+                    <p class="mb-0">
+                        <i class="bi bi-person me-2"></i>
+                        <span class="text-muted">Створив: {{order.userCreated.last_name}}</span>
+                    </p>
+                </div>
+                
+                <!-- Status Info -->
+                <div class="col-md-6">
+                    <div class="d-flex flex-column align-items-md-end">
+                        {% if order.isComplete %}
+                        <div class="badge bg-success p-2 mb-2">
+                            <i class="bi bi-check-circle me-2"></i>Відправлено {{order.dateSent|date:"d.m.Y" }}
+                        </div>
+                        {% else %}
+                        <div class="badge bg-info p-2 mb-2">
+                            <i class="bi bi-clock me-2"></i>В очікуванні
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Export Actions -->
+                        <div class="btn-group">
+                            <a href="{% url 'preorderDetailCsv' order.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-file-earmark-excel me-2"></i>До поставки
+                            </a>
+                            <a href="{% url 'preorderDetailCsvAll' order.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-file-earmark-excel me-2"></i>Весь список
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </th>
-    {% endif %}
-
-        {% if order.isAvailableToEdit and request.user.is_staff %}
-        <th scope="col"></th>
-         {% endif %}
-    </tr>
-  </thead>
-  <tbody>
-    {% for el in supplies %}
-     {% include 'supplies/orders/preorder_detail_list_item.html' %}
-
-
-   {% endfor %}
-  </tbody>
-</table>
- <div class="text-center my-3">
-    <h5><u>{% if order.orders_for_preorder.all %}Замовлення, що були зроблені за цим передзамовленням{% else %} За цим передзамовленням ще немає замовлень {% endif %}</u></h5>
+        </div>
     </div>
-    <div class="list-group list-group-radio d-grid gap-2 border-0 w-auto" id="order_delete_cell">
-        {% with orders=order.orders_for_preorder.all %}
-        {% include 'partials/orders/order_delete_cell.html' %}
-        {% endwith %}
+
+    <!-- Orders Table -->
+    <div class="card shadow-sm  p-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table centred mt-3 w-auto mx-auto">
+                <thead class="thead-dark">
+                        <tr>
+                            <th scope="col" style="width: 50px">#</th>
+                            <th scope="col" class="text-start">Назва товару ({{supplies|length}})</th>
+                            <th scope="col">Пакування / Тести</th>
+                            <th scope="col">Категорія</th>
+                            <th scope="col">REF</th>
+                            <th scope="col">SMN code</th>
+                            <th scope="col">Замовлено</th>
+                            {% if order.isComplete %}
+                            <th scope="col">Поставлено</th>
+                            <th scope="col">Борг</th>
+                            <th scope="col">
+                                <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %}">
+                                    <div class="px-2">LOT</div>
+                                    <div class="px-2">Кількість</div>
+                                    <div class="px-2">Термін</div>
+                                </div>
+                            </th>
+                            {% endif %}
+                            {% if order.isAvailableToEdit and request.user.is_staff %}
+                            <th scope="col" style="width: 50px"></th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for el in supplies %}
+                        {% include 'supplies/orders/preorder_detail_list_item.html' %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Orders Section -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">
+                <i class="bi bi-diagram-3 me-2"></i>
+                {% if order.orders_for_preorder.all %}
+                Замовлення, що були зроблені за цим передзамовленням
+                {% else %}
+                За цим передзамовленням ще немає замовлень
+                {% endif %}
+            </h5>
+            <div class="list-group list-group-flush" id="order_delete_cell">
+                {% with orders=order.orders_for_preorder.all %}
+                {% include 'partials/orders/order_delete_cell.html' %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
 </div>
-
-
-</div>
-
-
 {% endblock %}
 
 

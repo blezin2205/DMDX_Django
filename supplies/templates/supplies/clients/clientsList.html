@@ -127,149 +127,8 @@
 
 {% if request.user_agent.is_mobile %}<div class="row row-cols-1 row-cols-lg-1 g-3"> {% else %} <div class="row row-cols-2 row-cols-lg-2 g-3"> {% endif %}
     {% for client in clients %}
-    <div class="col">
-    <div class="card client-card shadow-sm">
-        <div class="card-header {% if client.isPrivatePlace %} bg-warning bg-gradient bg-opacity-25 {% else %} bg-primary bg-gradient bg-opacity-25 {% endif %}">
-            <div class="d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-muted small">{{client.city_ref.name}}</span>
-                    {% if client.preorder_set.count > 0 %}
-                    <div class="action-buttons">
-                    <a href="{% url 'analytics_report' client.id %}" style="background: #5bc0de"  class="btn btn-sm btn-outline-primary" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Аналітика передзамовлень">
-                        <i class="bi bi-cart-plus text-white"></i>
-                    </a>
-                    </div>
-                    {% endif %}
-                    
-                </div>
-               
-                <h5 class="client-name">{{client.name}}</h5>
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="badge {% if client.isPrivatePlace %} bg-warning {% else %} bg-primary {% endif %}">
-                        {% if client.isPrivatePlace %} Приватні {% else %} Державні {% endif %}
-                    </span>
-                    <div class="action-buttons">
-                        <a href="{% url 'newWorkerForPlace' client.id %}" class="btn btn-sm btn-outline-primary" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати нового працівника">
-                            <i class="bi bi-person-plus"></i>
-                        </a>
-                        <a href="{% url 'addNewDeviceForClient' client.id %}" class="btn btn-sm btn-outline-primary mx-1" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати прилад">
-                            <i class="bi bi-device-ssd"></i>
-                        </a>
-                        <a href="{% url 'create_note_for_client' client.id %}" class="btn btn-sm btn-outline-primary me-1" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати сервісну замітку">
-                            <i class="bi bi-journal-text"></i>
-                        </a>
-                        <a href="{% url 'editClientInfo' client.id %}" class="btn btn-sm btn-outline-primary" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Редагувати">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-body py-3">
-            <div class="vstack gap-2">
-                {% if client.address %}
-                <div class="client-info">
-                    <i class="bi bi-geo-alt me-2"></i>
-                    <a href="https://www.google.com/maps/search/?api=1&query={{ client.address|urlencode }}" 
-                       class="text-decoration-none" 
-                       target="_blank" 
-                       rel="noopener noreferrer">
-                        {{ client.address }}
-                    </a>
-                </div>
-                {% endif %}
-
-                {% if client.link %}
-                <div class="client-info">
-                    <i class="bi bi-link-45deg me-2"></i>
-                    <a href="{{ client.link }}" class="text-decoration-none">{{ client.link }}</a>
-                </div>
-                {% endif %}
-            </div>
-
-            {% if client.workers.count > 0 %}
-            <div class="mt-3">
-                <h6 class="mb-2"><i class="bi bi-people me-2"></i>Контакти:</h6>
-                <div class="contact-list">
-                    {% for worker in client.workers.all %}
-                    <div class="contact-item">
-                        <div class="d-flex align-items-center">
-                            <a href="{% url 'editWorkerInfo' worker.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-secondary me-2">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <div class="flex-grow-1">
-                                <div class="d-flex align-items-center">
-                                    {% if client.worker_NP == worker %}
-                                    <img style="height: 20px; width: 20px" src="{% static 'images/np_logo.png' %}" class="me-2">
-                                    {% endif %}
-                                    <span class="fw-medium">{{ worker.secondName }} {{ worker.name }}{% if worker.middleName %} {{ worker.middleName }}{% endif %}</span>
-                                    {% if worker.position %}
-                                    <span class="text-muted ms-2">{{ worker.position }}</span>
-                                    {% endif %}
-                                </div>
-                                <a href="tel:{{ worker.telNumber }}" class="text-decoration-none text-primary">
-                                    <i class="bi bi-telephone me-1"></i>{{ worker.telNumber }}
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="card-footer bg-transparent border-top">
-            <div class="row g-2">
-                {% if client.supplyinbookedorder_set.count > 0 %}
-                <div class="col-6">
-                    <a href="{% url 'booked_sups_list_for_client' client.id %}" class="btn btn-outline-secondary footer-button w-100">
-                        <i class="bi bi-bookmark me-2"></i>Заброньовані товари
-                        <span class="badge bg-secondary ms-2">{{ client.supplyinbookedorder_set.count }}</span>
-                    </a>
-                </div>
-                {% endif %}
-
-                {% if client.preorder_set.count > 0 %}
-                <div class="col-6">
-                    <a href="{% url 'agreementsForClient' client.id %}" class="btn btn-outline-secondary footer-button w-100">
-                        <i class="bi bi-calendar-check me-2"></i>Передзамовлення
-                        <span class="badge bg-secondary ms-2">{{ client.preorder_set.count }}</span>
-                    </a>
-                </div>
-                {% endif %}
-
-                {% if client.order_set.count > 0 %}
-                <div class="col-6">
-                    <a href="{% url 'ordersForClient' client.id %}" class="btn btn-outline-secondary footer-button w-100">
-                        <i class="bi bi-cart me-2"></i>Замовлення
-                        <span class="badge bg-secondary ms-2">{{ client.order_set.count }}</span>
-                    </a>
-                </div>
-                {% endif %}
-
-                {% if client.servicenote_set.count > 0 %}
-                <div class="col-6">
-                    <a href="{% url 'serviceNotesForClient' client.id %}" class="btn btn-outline-secondary footer-button w-100">
-                        <i class="bi bi-journal-text me-2"></i>Сервісні записи
-                        <span class="badge bg-secondary ms-2">{{ client.servicenote_set.count }}</span>
-                    </a>
-                </div>
-                {% endif %}
-
-                {% if client.device_set.count > 0 %}
-                <div class="col-6">
-                    <a href="{% url 'devicesForClient' client.id %}" class="btn btn-outline-secondary footer-button w-100">
-                        <i class="bi bi-device-ssd me-2"></i>Прилади
-                        <span class="badge bg-secondary ms-2">{{ client.device_set.count }}</span>
-                    </a>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    </div>
+    {% include 'partials/clients/client_card.html' %}
+   
     {% endfor %}
 </div>
 
@@ -308,6 +167,113 @@
 </nav>
 {% endif %}
  </form>
+
+
+ <script>
+ $(function() {
+        
+        // Supply history button handler
+        $('.edit-worker-btn').on('click', function(e) {
+            e.preventDefault();
+            const workerId = $(this).data('worker-id');
+            showEditGenSupModal(`clientsInfo/${workerId}/editWorkerInfo`, workerId);
+        });
+    
+        // Add lot button handler
+        $('.add-worker-for-client-btn').on('click', function(e) {
+            e.preventDefault();
+            const clientId = $(this).data('client-id');
+            showEditGenSupModal(`clientsInfo/${clientId}/add-new-worker`, clientId);
+        });
+
+        $('.add-lot-btn').on('click', function(e) {
+            e.preventDefault();
+            const { supplyId, supplyName } = getSupplyNamAndId(this);
+            $('#supplyName').text(supplyName);
+            showEditGenSupModal(`/newLot/${supplyId}`, supplyId);
+           
+        });
+    
+        $('.edit-gen-sup-btn').on('click', function(e) {
+            e.preventDefault();
+            const { supplyId, supplyName } = getSupplyNamAndId(this);
+            $('#supplyName').text(supplyName);
+            showEditGenSupModal(`/update_general/${supplyId}`, supplyId);
+           
+        });
+    
+        
+        function showEditGenSupModal(url, supplyId) {
+            showModal('#addNewLotModal', '#addNewLotContent', url, 'Завантаження форми...', (data) => {
+                // Remove any existing form submission handlers
+                $('#addNewLotForm').off('submit');
+                
+                $('#addNewLotForm').on('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    let submitter = e.originalEvent.submitter
+                    if (submitter) {
+                        formData.append(submitter.name, submitter.value);
+                    }
+                    
+                    fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': csrftoken,
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Помилка збереження');
+                        return response.json();
+                    })
+                    .then(data => {
+                        $('#addNewLotModal').modal('hide');
+                        if (data.clientId) {
+                            // Handle client card update
+                            const clientCard = $(`.client-card[data-client-id="${data.clientId}"]`);
+                            if (clientCard.length) {
+                                const newCard = $(data.html).find(`.client-card[data-client-id="${data.clientId}"]`);
+                                clientCard.closest('.col').replaceWith(newCard.closest('.col'));
+                                initializeRowHandlers(newCard);
+                            }
+                        } else if (data.generalSuppId) {
+                            // Handle supply row update
+                            const supplyRow = $(`[data-supply-id="${data.generalSuppId}"]`).closest('tr');
+                            const newRow = data.html ? $(data.html).find(`[data-supply-id="${data.generalSuppId}"]`).closest('tr') : $('<tr>');
+                            supplyRow.replaceWith(newRow);
+                            initializeRowHandlers(newRow);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert(error.message);
+                    });
+                });
+            });
+        }
+    
+        function initializeRowHandlers(row) {
+            // Initialize HTMX globally
+            if (typeof htmx !== 'undefined') {
+                htmx.process(row[0]);
+            }
+            // Reinitialize add-lot-btn handler
+            row.find('.edit-worker-btn').on('click', function(e) {
+                e.preventDefault();
+                const workerId = $(this).data('worker-id');
+                showEditGenSupModal(`clientsInfo/${workerId}/editWorkerInfo`, workerId);
+            });
+
+            row.find('.add-worker-for-client-btn').on('click', function(e) {
+            e.preventDefault();
+            const clientId = $(this).data('client-id');
+            showEditGenSupModal(`clientsInfo/${clientId}/add-new-worker`, clientId);
+        });
+        }
+    });
+
+ </script>
 {% endblock %}
 
 

@@ -6,29 +6,65 @@
 {% endblock %}
 
 {% block content %}
-
+    <script>
+    function validateInput(input) {
+        const max = parseInt(input.getAttribute('max'));
+        if (input.value > max) {
+            input.value = max;
+        }
+        if (input.value < 0) {
+            input.value = 0;
+        }
+    }
+    </script>
     <div class="container w-auto">
-<h3>
-  <small class="text-muted">Для: {{order.place.name}}, {{order.place.city_ref.name}}</small>
-</h3>
-{% if order.comment %}
-<h4>
-  <small class="text-muted">Комментарій: {{order.comment}}</small>
-</h4>
-{% endif %}
-<h5>
-  <small class="text-muted">Cтворив: {{order.userCreated.last_name}}</small>
-</h5>
-{% if order.isComplete %}
-        <p class="mb-2"><span>Статус:</span> <span class="complete">Відправлено</span> <span>{{order.dateSent|date:"d.m.Y" }}</span></p>
-        {% else %}
-        <p class="mb-2"><span>Статус:</span> <span style="color: #5bc0de; font-weight: bold">В очікуванні</span></p>
-        {%  endif %}
-
-
-
-{#        <a href="{% url 'orderDetailPdf' order.id %}">PDF</a>#}
-    <a href="{% url 'preorderDetailCsv' order.id %}">Export to Excel</a>
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Organization Info -->
+                <div class="col-md-6">
+                    <h5 class="text-muted mb-3">
+                        <i class="bi bi-building me-2"></i>Організація
+                    </h5>
+                    <p class="mb-2 fs-5">{{order.place.name}}, {{order.place.city_ref.name}}</p>
+                    {% if order.comment %}
+                    <p class="mb-2">
+                        <i class="bi bi-chat-left-text me-2"></i>
+                        <span class="text-muted">{{order.comment}}</span>
+                    </p>
+                    {% endif %}
+                    <p class="mb-0">
+                        <i class="bi bi-person me-2"></i>
+                        <span class="text-muted">Створив: {{order.userCreated.last_name}}</span>
+                    </p>
+                </div>
+                
+                <!-- Status Info -->
+                <div class="col-md-6">
+                    <div class="d-flex flex-column align-items-end">
+                        {% if order.isComplete %}
+                        <div class="badge bg-success mb-2">
+                            <i class="bi bi-check-circle me-2"></i>
+                            <span>Відправлено {{order.dateSent|date:"d.m.Y"}}</span>
+                        </div>
+                        {% else %}
+                        <div class="badge bg-warning text-dark mb-2">
+                            <i class="bi bi-clock me-2"></i>
+                            <span>В очікуванні</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mt-2">
+                            <a href="{% url 'preorderDetailCsv' order.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-file-earmark-excel me-2"></i>
+                                Export to Excel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
      <form method="POST" action="">
     <table class="table centred mt-3 w-auto mx-auto">
@@ -91,8 +127,15 @@
             <label for="form1">Доступно: <u style="font-weight: bolder">{{ supp.count|sub:supp.countOnHold }}</u></label>
         {% if supp.count|sub:supp.countOnHold > 0 and el.count_in_order|sub:el.count_in_order_current|sub:el.get_booked_count > 0 %}
 
-            <input id="form1" min="0" name="count_list" {% if el.count_in_order|sub:el.count_in_order_current|sub:el.get_booked_count > supp.count|sub:supp.countOnHold  %} value="{{ supp.count|sub:supp.countOnHold }}" {% else %} value="{{ el.count_in_order|sub:el.count_in_order_current|sub:el.get_booked_count }}" {% endif %} type="number" style="width: 100px"
-                  class="form-control form-control-sm" />
+            <input id="form1" min="0" max="{{ supp.count|sub:supp.countOnHold }}" name="count_list" 
+                  {% if el.count_in_order|sub:el.count_in_order_current|sub:el.get_booked_count > supp.count|sub:supp.countOnHold  %} 
+                    value="{{ supp.count|sub:supp.countOnHold }}" 
+                  {% else %} 
+                    value="{{ el.count_in_order|sub:el.count_in_order_current|sub:el.get_booked_count }}" 
+                  {% endif %} 
+                  type="number" style="width: 100px"
+                  class="form-control form-control-sm"
+                  oninput="validateInput(this)" />
                   <input type="hidden" name="count_list_id" value="{{ supp.id }}">
 
             <div class="form-check">
