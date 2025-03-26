@@ -9,10 +9,10 @@ from enum import Enum
 
 class CargoType(Enum):
     PARCEL = "Parcel"
-    CARGO = "Cargo"
+    # CARGO = "Cargo"
     DOCUMENTS = "Documents"
-    TIRES_WHEELS = "TiresWheels"
-    PALLET = "Pallet"
+    # TIRES_WHEELS = "TiresWheels"
+    # PALLET = "Pallet"
 
     @classmethod
     def choices(cls):

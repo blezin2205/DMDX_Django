@@ -133,6 +133,7 @@ def threading_create_np_document_async(request, data, order_id, redirect_url=Fal
         weight = inputForm.cleaned_data['weight']
         description = inputForm.cleaned_data['description']
         cost = inputForm.cleaned_data['cost']
+        cargo_type = inputForm.cleaned_data['cargo_type']
         sender_ref = settings.NOVA_POSHTA_SENDER_DMDX_REF
 
         volumeGeneral = float(width / 100) * float(length / 100) * float(height / 100)
@@ -145,33 +146,40 @@ def threading_create_np_document_async(request, data, order_id, redirect_url=Fal
         width_input_field_list = data.getlist('width_input_field') or []
         length_input_field_list = data.getlist('length_input_field') or []
         height_input_field_list = data.getlist('height_input_field') or []
-
-        options_seat_list = [
-            {
-                "volumetricVolume": str(volumeGeneral),
-                "volumetricWidth": width,
-                "volumetricLength": length,
-                "volumetricHeight": height,
+        
+        if cargo_type == CargoType.DOCUMENTS.value:
+            print("cargo_type DOCUMENTS: ", cargo_type)
+            options_seat_list = [{
                 "weight": str(weight)
-            }
-        ]
-
-        for i in range(len(weight_input_field_list)):
-            weight = weight_input_field_list[i]
-            width = width_input_field_list[i]
-            length = length_input_field_list[i]
-            height = height_input_field_list[i]
-
+            }]
+        else:
             volumetric_volume = float(width) / 100 * float(length) / 100 * float(height) / 100
-
-            options_seat = {
-                "volumetricVolume": str(volumetric_volume),
-                "volumetricWidth": width,
-                "volumetricLength": length,
-                "volumetricHeight": height,
-                "weight": str(weight)
+            options_seat_list = [{
+            "volumetricVolume": str(volumetric_volume),
+            "volumetricWidth": str(width),
+            "volumetricLength": str(length),
+            "volumetricHeight": str(height),
+            "weight": str(weight)
+            }]
+            
+        for i in range(len(weight_input_field_list)):
+            cell_weight = weight_input_field_list[i]
+            cell_width = width_input_field_list[i]
+            cell_length = length_input_field_list[i]
+            cell_height = height_input_field_list[i]
+            if cargo_type == CargoType.DOCUMENTS.value:
+                options_seat = {
+                "weight": str(cell_weight)
             }
-
+            else:
+                volumetric_volume_cell = float(cell_width) / 100 * float(cell_length) / 100 * float(cell_height) / 100
+                options_seat = {
+                "volumetricVolume": str(volumetric_volume_cell),
+                "volumetricWidth": str(cell_width),
+                "volumetricLength": str(cell_length),
+                "volumetricHeight": str(cell_height),
+                "weight": str(cell_weight)
+            }
             options_seat_list.append(options_seat)
 
         params = {
@@ -182,7 +190,7 @@ def threading_create_np_document_async(request, data, order_id, redirect_url=Fal
                 "PayerType": payment_user_type,
                 "PaymentMethod": payment_money_type,
                 "DateTime": dateSend,
-                "CargoType": "Parcel",
+                "CargoType": cargo_type,
                 "ServiceType": f'{sender_place.deliveryType}{deliveryType}',
                 "Description": description,
                 "Cost": str(cost),
@@ -201,7 +209,6 @@ def threading_create_np_document_async(request, data, order_id, redirect_url=Fal
         }
 
         data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
-        print("response from NP: ",data)
         
         workr_postition = ''
         if recipient_worker.position:
@@ -237,6 +244,11 @@ def threading_create_np_document_async(request, data, order_id, redirect_url=Fal
             return url_to_redirect    
         else:
             errorsString = '\n'.join(f'• {error}' for error in data["errors"])
+            if data['info']:
+                errorsString += f'\n Info: {data["info"]}'
+            if data['warnings']:
+                warningsString = '\n'.join(f'• {warning}' for warning in data["warnings"])
+                errorsString += f'\n Warnings: {warningsString}'
             raise Exception(errorsString)
             
 
@@ -550,6 +562,7 @@ def get_np_delivery_details(order: Order) -> Tuple[QuerySet, bool]:
     if not noMoreUpdate:
         documents, userCreatedList = get_order_documents(order)
         data = fetch_np_status(documents)
+        print("data: ", data)
         process_status_data(data, order, userCreatedList)
 
     parsels_status_data = get_parsels_status_data(order)
