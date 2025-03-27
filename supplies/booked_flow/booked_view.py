@@ -81,6 +81,7 @@ def booked_supplies_list(request, client_id):
                                                                    supply=booked_sup,
                                                                    supply_for_order=booked_cart,
                                                                    lot=booked_sup.lot,
+                                                                   date_created=booked_sup.date_created,
                                                                    date_expired=booked_sup.date_expired)
                     booked_sup_in_cart.save()
         return redirect(f'/booked_cart_details/{booked_cart.id}')
@@ -174,7 +175,10 @@ def add_sup_to_booked_cart(request, sup_id):
                                                        supply=booked_sup,
                                                        supply_for_order=booked_cart,
                                                        lot=booked_sup.lot,
+                                                       date_created=booked_sup.date_created,
                                                        date_expired=booked_sup.date_expired)
+        print("1. SupplyInBookedOrder DATE CREATED: ", booked_sup.date_created)
+        print('1. SupplyInBookedOrder ID: ', booked_sup.id)
         booked_sup_in_cart.save()
 
     response = render(request, 'booked_flow/cart_button.html',
@@ -392,6 +396,7 @@ def convert_order_to_booked_order(request, order_id):
                 supply_in_preorder=s.supply_in_preorder,
                 lot=s.supply.supplyLot,
                 date_expired=s.supply.expiredDate,
+                date_created=s.supply.dateCreated,
                 internalName=s.generalSupply.name,
                 internalRef=s.generalSupply.ref
             )

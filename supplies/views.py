@@ -1426,12 +1426,16 @@ def cartDetail(request):
                         supply_for_place=place,
                         lot=sup.supply.supplyLot,
                         date_expired=sup.supply.expiredDate,
+                        date_created=sup.supply.dateCreated,
                         internalName=sup.supply.general_supply.name,
                         internalRef=sup.supply.general_supply.ref
                     )
+               
                 supInOrder.save()
                 sup.supply.countOnHold += count
                 sup.supply.save(update_fields=['countOnHold'])
+                print("SupplyInBookedOrder DATE CREATED: ", supInOrder.date_created)
+                print('SupplyInBookedOrder ID: ', supInOrder.id)
 
             orderInCart.delete()
             return redirect(f'/clientsInfo/{place_id}/booked_supplies_list')
@@ -3567,6 +3571,7 @@ def preorderDetail_generateOrder(request, order_id):
                                 supply_in_preorder=genSupInPreorder,
                                 lot=s.supplyLot,
                                 date_expired=s.expiredDate,
+                                date_created=s.dateCreated,
                                 internalName=s.general_supply.name,
                                 internalRef=s.general_supply.ref
                             )
@@ -3804,7 +3809,7 @@ def teams_reminders_task():
     current_date = timezone.now().date()
     
     # First filter places that have at least one preorder
-    places_with_preorders = Place.objects.filter(preorder__isnull=False).distinct()
+    places_with_preorders = Place.objects.filter(preorder__isnull=False, preorder__isPreorder=True).distinct()
     
     # Then filter based on predicted next order date
     from .analytics import PreorderAnalytics

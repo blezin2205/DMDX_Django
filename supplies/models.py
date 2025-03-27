@@ -659,7 +659,7 @@ class SupplyInBookedOrder(models.Model):
     supply_in_preorder = models.ForeignKey(SupplyInPreorder, on_delete=models.SET_NULL, null=True, blank=True)
     lot = models.CharField(max_length=100, null=True, blank=True)
     date_expired = models.DateField(null=True)
-    date_created = models.DateField(null=True, auto_now_add=True)
+    date_created = models.DateField(null=True, blank=True)
     internalName = models.CharField(max_length=500, null=True, blank=True)
     internalRef = models.CharField(max_length=100, null=True, blank=True)
 
@@ -864,7 +864,7 @@ class BookedSupplyInOrderInCart(models.Model):
     supply_for_order = models.ForeignKey(BookedOrderInCart, on_delete=models.CASCADE, null=True)
     lot = models.CharField(max_length=50, null=True, blank=True)
     date_expired = models.DateField(null=True)
-    date_created = models.DateField(null=True, blank=True, auto_now_add=True)
+    date_created = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f'Товар: для Бронюванні в коризні '
