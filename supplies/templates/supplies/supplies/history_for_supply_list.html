@@ -249,6 +249,8 @@
                            <span>
                               {% if el.supply_for_order.state_of_delivery == 'Complete' %}
                                  <span class="complete">(Повністю поставлено)</span>
+                              {% elif el.supply_for_order.state_of_delivery == 'Complete_Handle' %}
+                                 <span class="complete">(Повністю поставлено(Закрито вручну))</span>
                               {% elif el.supply_for_order.state_of_delivery == 'Partial' %}
                                  <span style="color: #deb05b; font-weight: bold">(Частково поставлено)</span>
                               {% elif el.supply_for_order.state_of_delivery == 'awaiting_from_customer' %}

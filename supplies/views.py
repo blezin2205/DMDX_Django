@@ -2187,38 +2187,47 @@ def update_order_status_core(order_id, user):
                     else:
                         supp.save(update_fields=['countOnHold', 'count'])
 
-                if el.supply_in_booked_order:
-                    supply_in_booked_order = el.supply_in_booked_order
-                    new_count_on_hold = max(
-                        0, supply_in_booked_order.countOnHold - countInOrder)
-                    new_count_in_order = max(
-                        0, supply_in_booked_order.count_in_order - countInOrder)
-                    supply_in_booked_order.countOnHold = new_count_on_hold
-                    supply_in_booked_order.count_in_order = new_count_in_order
+                try:
+                    if el.supply_in_booked_order:
+                        supply_in_booked_order = el.supply_in_booked_order
+                        new_count_on_hold = max(
+                            0, supply_in_booked_order.countOnHold - countInOrder)
+                        new_count_in_order = max(
+                            0, supply_in_booked_order.count_in_order - countInOrder)
+                        supply_in_booked_order.countOnHold = new_count_on_hold
+                        supply_in_booked_order.count_in_order = new_count_in_order
 
-                    if supply_in_booked_order.count_in_order == 0:
-                        supply_in_booked_order.delete()
-                    else:
-                        supply_in_booked_order.save(
-                            update_fields=['countOnHold', 'count_in_order'])
+                        if supply_in_booked_order.count_in_order == 0:
+                            supply_in_booked_order.delete()
+                        else:
+                            supply_in_booked_order.save(
+                                update_fields=['countOnHold', 'count_in_order'])
+                except SupplyInBookedOrder.DoesNotExist:
+                    # If the booked order doesn't exist, just continue with the next item
+                    continue
 
-                genSupInPreorder = el.supply_in_preorder
-                if genSupInPreorder:
-                    genSupInPreorder.count_in_order_current += el.count_in_order
-                    if genSupInPreorder.count_in_order - genSupInPreorder.count_in_order_current <= 0:
-                        genSupInPreorder.state_of_delivery = 'Complete'
+                try:
+                    if el.supply_in_preorder:
+                        genSupInPreorder = el.supply_in_preorder
+                        genSupInPreorder.count_in_order_current += el.count_in_order
+                        if genSupInPreorder.count_in_order - genSupInPreorder.count_in_order_current <= 0:
+                           genSupInPreorder.state_of_delivery = 'Complete'
                     else:
                         genSupInPreorder.state_of_delivery = 'Partial'
-                    genSupInPreorder.save()
+                        genSupInPreorder.save()
+                except SupplyInPreorder.DoesNotExist:
+                    # If the preorder doesn't exist, just continue with the next item
+                    continue
 
+            
+            if order.for_preorder:
                 preorder = order.for_preorder
-                if preorder:
-                    sups_in_preorder = preorder.supplyinpreorder_set.all()
-                    if all(sp.state_of_delivery == 'Complete' for sp in sups_in_preorder):
-                        preorder.state_of_delivery = 'Complete'
-                    elif any(x.state_of_delivery == 'Partial' or 'Awaiting' for x in sups_in_preorder):
-                        preorder.state_of_delivery = 'Partial'
-                    preorder.save(update_fields=['state_of_delivery'])
+                sups_in_preorder = preorder.supplyinpreorder_set.all()
+                if all(sp.state_of_delivery == 'Complete' for sp in sups_in_preorder):
+                    preorder.state_of_delivery = 'Complete'
+                elif any(x.state_of_delivery == 'Partial' or 'Awaiting' for x in sups_in_preorder):
+                    preorder.state_of_delivery = 'Partial'
+                preorder.save(update_fields=['state_of_delivery'])
                     
             order.isComplete = True
             order.dateToSend = None
