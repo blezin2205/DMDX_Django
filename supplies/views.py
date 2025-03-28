@@ -2216,14 +2216,13 @@ def update_order_status_core(order_id, user):
                         genSupInPreorder.count_in_order_current += el.count_in_order
                         if genSupInPreorder.count_in_order - genSupInPreorder.count_in_order_current <= 0:
                            genSupInPreorder.state_of_delivery = 'Complete'
-                    else:
-                        genSupInPreorder.state_of_delivery = 'Partial'
+                        else:
+                            genSupInPreorder.state_of_delivery = 'Partial'
                         genSupInPreorder.save()
                 except SupplyInPreorder.DoesNotExist:
                     # If the preorder doesn't exist, just continue with the next item
                     continue
 
-            
             if order.for_preorder:
                 preorder = order.for_preorder
                 sups_in_preorder = preorder.supplyinpreorder_set.all()
@@ -2454,8 +2453,13 @@ def updateSupply(request, supp_id):
             suppForHistory.action_type = 'deleted'
             suppForHistory.save()
             supp.delete()
-
-        html = render_to_string('partials/supplies/supply_row.html', {
+        
+        user_agent = get_user_agent(request)
+        if user_agent.is_mobile:
+                template = 'partials/supplies/supply_row_mobile.html'
+        else:
+                template = 'partials/supplies/supply_row.html'
+        html = render_to_string(template, {
             'el': generalSupp,
             'request': request
         })
@@ -2595,7 +2599,12 @@ def updateGeneralSupply(request, supp_id):
                 # obj.from_user = User.objects.get(pk=request.user.id)
                 form.save()
                 next = request.POST.get('next')
-            html = render_to_string('partials/supplies/supply_row.html', {
+            user_agent = get_user_agent(request)
+            if user_agent.is_mobile:
+                 template = 'partials/supplies/supply_row_mobile.html'
+            else:
+                 template = 'partials/supplies/supply_row.html'
+            html = render_to_string(template, {
             'el': supp,
             'request': request
         })
@@ -2683,7 +2692,12 @@ def addNewLotforSupply(request, supp_id):
                 supHistory.action_type = 'added-handle'
                 supHistory.save()
 
-            html = render_to_string('partials/supplies/supply_row.html', {
+            user_agent = get_user_agent(request)
+            if user_agent.is_mobile:
+                 template = 'partials/supplies/supply_row_mobile.html'
+            else:
+                 template = 'partials/supplies/supply_row.html'
+            html = render_to_string(template, {
             'el': generalSupp,
             'request': request
         })
