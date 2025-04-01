@@ -1,6 +1,6 @@
 {% load myapp_extras %}
 
-<nav class="navbar navbar-expand-md shadow-sm bg-white">
+<nav class="navbar navbar-expand-md shadow-sm bg-white bg-general-navbar">
     <div class="container-fluid px-4 py-2">
         <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNavbar">
             <span class="navbar-toggler-icon"></span>
@@ -14,16 +14,30 @@
                 </li>
 
                 <li class="nav-item">
-                    <a href="/orders" class="btn btn-soft{% if isOrders %} active{% endif %}" aria-current="page" 
-                       data-bs-toggle="tooltip" data-bs-placement="bottom" 
-                       title="В очікуванні - {{ cartCountData.orders_incomplete }} шт. Передзамовлення - {{ cartCountData.preorders_incomplete }} шт.">
+                    <a href="/orders" class="btn btn-soft position-relative{% if isOrders %} active{% endif %}" aria-current="page">
                         <i class="bi bi-clipboard-check me-1"></i>Замовлення 
-                        {% if cartCountData.orders_incomplete > 0 %}
-                            <span class="badge bg-warning-soft ms-2">{{ cartCountData.orders_incomplete }}</span>
-                        {% endif %}
-                        {% if cartCountData.preorders_incomplete > 0 %}
-                            <span class="badge bg-info-soft ms-2">{{ cartCountData.preorders_incomplete }}</span>
-                        {% endif %}
+                        <div class="position-absolute top-0 start-0 translate-middle-y d-flex gap-1" style="margin-left: -0.5rem;">
+                            {% if cartCountData.orders_pinned > 0 %}
+                                <span class="badge rounded-pill bg-danger" style="font-size: 0.6rem; padding: 0.25rem 0.4rem;">{{ cartCountData.orders_pinned }}</span>
+                            {% endif %}
+                            {% if cartCountData.orders_incomplete > 0 %}
+                                <span class="badge rounded-pill bg-warning" style="font-size: 0.6rem; padding: 0.25rem 0.4rem;">{{ cartCountData.orders_incomplete }}</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="/preorders" class="btn btn-soft position-relative{% if isPreordersTab %} active{% endif %}" aria-current="page">
+                        <i class="bi bi-clipboard-check me-1"></i>Передзамовлення 
+                        <div class="position-absolute top-0 start-0 translate-middle-y d-flex gap-1" style="margin-left: -0.5rem;">
+                            {% if cartCountData.preorders_pinned > 0 %}
+                                <span class="badge rounded-pill bg-danger" style="font-size: 0.6rem; padding: 0.25rem 0.4rem;">{{ cartCountData.preorders_pinned }}</span>
+                            {% endif %}
+                            {% if cartCountData.preorders_incomplete > 0 %}
+                                <span class="badge rounded-pill bg-info" style="font-size: 0.6rem; padding: 0.25rem 0.4rem;">{{ cartCountData.preorders_incomplete }}</span>
+                            {% endif %}
+                        </div>
                     </a>
                 </li>
 
@@ -33,18 +47,6 @@
                             <i class="bi bi-people me-1"></i>Клієнти
                         </a>
                     </li>
-
-                    <li class="nav-item">
-                        <a href="/serviceNotes" class="btn btn-soft{% if isService %} active{% endif %}" aria-current="page">
-                            <i class="bi bi-tools me-1"></i>Сервісні записи
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a href="/allDevices" class="btn btn-soft{% if isDevices %} active{% endif %}" aria-current="page">
-                            <i class="bi bi-cpu me-1"></i>Прилади
-                        </a>
-                    </li>
                 {% endif %}
             </ul>
 
@@ -52,29 +54,29 @@
                 <ul class="navbar-nav ms-auto me-4">
                     <li class="nav-item">
                         {% if cartCountData.order_to_send_today > 0 %}
-                            <div class="alert alert-soft-danger mb-0 py-2 px-3 d-inline-flex align-items-center" 
+                            <div class="btn btn-soft-danger d-inline-flex align-items-center" 
                                  data-bs-toggle="tooltip" 
                                  data-bs-placement="bottom" 
-                                 title="Відправити замовлень сьогодні {% if cartCountData.expired_orders > 0 %} (⚠️ Прострочені замовлення){% endif %}  ">
+                                 title="Відправити замовлень сьогодні {% if cartCountData.expired_orders > 0 %} (⚠️ Прострочені замовлення){% endif %}">
                                 <i class="bi bi-exclamation-circle me-2"></i>
-                                <span class="fw-semibold">{{ cartCountData.order_to_send_today }}</span>
+                                <span class="bg-danger bg-opacity-50 text-white" style="padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: small;">{{ cartCountData.order_to_send_today }}</span>
                                 {% if cartCountData.expired_orders > 0 %}
-                                <span class="fw-semibold ps-2">
-                                    <div class="badge bg-danger bg-opacity-50 d-flex align-items-center gap-2">
+                                <span class="ms-2">
+                                    <span class="bg-danger bg-opacity-50 text-white" style="padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: small;">
                                         <i class="bi bi-exclamation-triangle"></i>
-                                        <span>{{ cartCountData.expired_orders }}</span>
-                                    </div>
+                                        {{ cartCountData.expired_orders }}
+                                    </span>
                                 </span>
                                 {% endif %}
                             </div>
                             {% elif cartCountData.expired_orders > 0 %}
-                            <div class="alert alert-soft-danger mb-0 py-2 px-3 d-inline-flex align-items-center" 
+                            <div class="btn btn-soft-danger d-inline-flex align-items-center" 
                             data-bs-toggle="tooltip" 
                             data-bs-placement="bottom" 
                             title="Прострочені замовлення">
-                           <i class="bi bi-exclamation-triangle me-2"></i>
-                           <span class="fw-semibold">{{ cartCountData.expired_orders }}</span>
-                       </div>
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <span class="bg-danger bg-opacity-50 text-white" style="padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: small;">{{ cartCountData.expired_orders }}</span>
+                            </div>
                         {% endif %}
                     </li>
                 </ul>
@@ -118,6 +120,14 @@
                                 <a class="dropdown-item" href="{% url 'all_deliveries' %}">
                                     <i class="bi bi-box me-2"></i>Поставки
                                 </a>
+                                    <a class="dropdown-item" href="/serviceNotes">
+                                        <i class="bi bi-tools me-1"></i>Сервісні записи
+                                    </a>
+            
+                                <a class="dropdown-item" href="/allDevices">
+                                    <i class="bi bi-cpu me-1"></i>Прилади
+                                </a>
+
                                 <div class="dropdown-divider"></div>
                                 
                                 <h6 class="dropdown-header">Додати</h6>
@@ -141,7 +151,7 @@
                                 <a class="dropdown-item" href="{% url 'app_settings' %}">
                                     <i class="bi bi-gear me-2"></i>Налаштування
                                 </a>
-                                <a class="dropdown-item fw-bold" href="{% url 'list_files' '' %}">
+                                <a class="dropdown-item" href="{% url 'list_files' '' %}">
                                     <i class="bi bi-folder me-2"></i>Storage
                                 </a>
                             </div>

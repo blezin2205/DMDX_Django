@@ -21,6 +21,7 @@ import time
 from django.db.models import QuerySet
 from django.utils import timezone
 import ssl
+from django.core.paginator import Paginator
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,9 @@ def httpRequest(request):
 
 def nova_poshta_registers(request):
     registers = RegisterNPInfo.objects.all().order_by('-id')
+    paginator = Paginator(registers, 5)
+    page_number = request.GET.get('page')
+    registers = paginator.get_page(page_number)
     return render(request, 'supplies/nova_poshta/nova_poshta_registers.html', {'registers': registers})
 
 
@@ -562,7 +566,6 @@ def get_np_delivery_details(order: Order) -> Tuple[QuerySet, bool]:
     if not noMoreUpdate:
         documents, userCreatedList = get_order_documents(order)
         data = fetch_np_status(documents)
-        print("data: ", data)
         process_status_data(data, order, userCreatedList)
 
     parsels_status_data = get_parsels_status_data(order)

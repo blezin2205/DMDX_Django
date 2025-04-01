@@ -11,6 +11,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit, Layout, MultiField, Div
 from django.forms import formset_factory
 # from dynamic_forms import  DynamicField, DynamicFormMixin
+from django.utils.safestring import mark_safe
 
 class UploadFileForm(forms.Form):
     file = forms.FileField()

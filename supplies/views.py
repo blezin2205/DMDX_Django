@@ -1,6 +1,6 @@
 import datetime
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.urls import reverse
 from .decorators import unauthenticated_user, allowed_users
 from .models import *
@@ -27,7 +27,7 @@ from django.contrib import messages
 import requests
 import csv
 import pymsteams
-from django.db.models import Sum, F, Exists, OuterRef, Max
+from django.db.models import Sum, F, Exists, OuterRef, Max, Case, When, Value, IntegerField
 from .tasks import *
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -226,6 +226,8 @@ def countCartItemsHelper(request):
     preorders_partial = 0
     order_to_send_today = 0
     expired_orders = 0
+    orders_pinned = 0
+    preorders_pinned = 0
     is_one_cart = ''
 
     if app_settings.enable_show_other_booked_cart:
@@ -284,6 +286,8 @@ def countCartItemsHelper(request):
         preorders_partial = PreOrder.objects.filter(state_of_delivery='Partial').count()
         order_to_send_today = Order.objects.filter(dateToSend=date.today(), isComplete=False).count()
         expired_orders = Order.objects.filter(dateToSend__lt=date.today(), isComplete=False).count()
+        orders_pinned = Order.objects.filter(isPinned=True).count()
+        preorders_pinned = PreOrder.objects.filter(isPinned=True).count()
 
 
 
@@ -297,7 +301,9 @@ def countCartItemsHelper(request):
             'order_to_send_today': order_to_send_today,
             'expired_orders': expired_orders,
             'is_one_cart': is_one_cart,
-            'booked_cart_first': booked_cart_first
+            'booked_cart_first': booked_cart_first,
+            'orders_pinned': orders_pinned,
+            'preorders_pinned': preorders_pinned
             }
 
 @login_required(login_url='login')
@@ -854,6 +860,7 @@ def cartDetailForClient(request):
             orderType = request.POST.get('orderType')
             preorderType = request.POST.get('preorderType')
             place_id = request.POST.get('place_id')
+            is_pinned = request.POST.get('isPinned') is not None
             place = existing_place_for_preorder if existing_place_for_preorder else Place.objects.get(id=place_id)
 
             if orderType == 'Agreement':
@@ -902,7 +909,7 @@ def cartDetailForClient(request):
                 else:
                     dateSent = None
                 order = PreOrder(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent,
-                                 isComplete=isComplete, isPreorder=isPreorder,
+                                 isComplete=isComplete, isPreorder=isPreorder, isPinned=is_pinned,
                                  comment=comment, state_of_delivery=state_of_delivery)
                 order.save()
                 print("----------------PREORDER-------------------")
@@ -929,6 +936,7 @@ def cartDetailForClient(request):
                     dateSent = None
                 selectedPreorder.dateSent = dateSent
                 selectedPreorder.isComplete = isComplete
+                selectedPreorder.isPinned = is_pinned
                 if selectedPreorder.comment and comment:
                     selectedPreorder.comment += f' / {comment}'
                 elif comment:
@@ -1190,6 +1198,8 @@ def cartDetail(request):
     cities = City.objects.all()
     if request.method == 'POST':
         orderType = request.POST.get('orderType')
+        is_pinned = request.POST.get('isPinned') is not None
+        print("is_pinned: ", is_pinned)
         if 'delete' in request.POST:
             next = request.POST.get('next')
             orderInCart.delete()
@@ -1204,7 +1214,6 @@ def cartDetail(request):
                     isComplete = orderForm.cleaned_data['isComplete']
                 except:
                     isComplete = False
-
                 if isComplete:
                     dateSent = timezone.now().date()
                 else:
@@ -1212,8 +1221,10 @@ def cartDetail(request):
                 if orderType == 'new_order':
 
                     order = Order(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent,
-                                  isComplete=isComplete,
-                                  comment=comment, dateToSend=dateToSend)
+                                  isComplete=isComplete, 
+                                  isPinned=is_pinned,
+                                  comment=comment, 
+                                  dateToSend=dateToSend)
                     order.save()
 
                     for index, sup in enumerate(supplies):
@@ -1261,6 +1272,7 @@ def cartDetail(request):
 
                     selectedOrder.dateSent = dateSent
                     selectedOrder.isComplete = isComplete
+                    selectedOrder.isPinned = is_pinned
                     if selectedOrder.comment and comment:
                         selectedOrder.comment += f' / {comment}'
                     elif comment:
@@ -1823,15 +1835,20 @@ def render_to_xls_selected_order(table_header, place, supplies_in_order, wb):
 @login_required(login_url='login')
 def orders(request):
     cartCountData = countCartItemsHelper(request)
+    
 
     isClient = request.user.groups.filter(name='client').exists()
     if isClient:
-        ordersObj = Order.objects.filter(place__user=request.user).order_by('-id')
+        ordersObj = Order.objects.filter(place__user=request.user).order_by('-isPinned', 'isComplete', 'dateToSend', '-id')
+        pinned_orders = ordersObj.filter(isPinned=True)
+        pinned_orders_exists = pinned_orders.count() > 0
         totalCount = ordersObj.count()
         title = f'Всі замовлення для {request.user.first_name} {request.user.last_name}. ({totalCount} шт.)'
 
     else:
-        ordersObj = Order.objects.all().order_by('isComplete', 'dateToSend', '-id')
+        ordersObj = Order.objects.all().order_by('-isPinned', 'isComplete', 'dateToSend', '-id')
+        pinned_orders = ordersObj.filter(isPinned=True)
+        pinned_orders_exists = pinned_orders.count() > 0
         totalCount = ordersObj.count()
         title = f'Всі замовлення. ({totalCount} шт.)'
 
@@ -1854,7 +1871,13 @@ def orders(request):
         listToStr = ','.join(map(str, documentsIdFromOrders))
         print(listToStr)
         print("------------------------------------------------list string np red")
-
+        if 'remove_all_pinned_orders_action' in request.POST:
+            if not (request.user.groups.filter(name='empl').exists() or request.user.is_staff):
+                return HttpResponseForbidden("You don't have permission to perform this action")
+            pinned_orders.update(isPinned=False)
+            pinned_orders = pinned_orders.filter(isPinned=True)
+            pinned_orders_exists = pinned_orders.count() > 0
+            
         if 'print_choosed' in request.POST:
             print('---------------------PRINT CHOOSED --------------------------------')
             np_link_print = settings.NOVA_POSHTA_PRINT_MARKING_MULTIPLE_URL_TEMPLATE.format(
@@ -1940,7 +1963,7 @@ def orders(request):
 
     return render(request, 'supplies/orders/orders_new.html',
                   {'title': title, 'orders': orders, 'orderFilter': orderFilter, 'cartCountData': cartCountData, 'isOrders': True, 'totalCount': totalCount,
-                   'isOrdersTab': True})
+                   'isOrdersTab': True, 'pinned_orders_exists': pinned_orders_exists})
 
 
 
@@ -2081,9 +2104,31 @@ def preorders(request):
     if isClient:
         if 'get_archive_preorders' in request.POST:
             isArchiveChoosed = True
-            orders = PreOrder.objects.filter(place__user=request.user, isClosed=True).order_by('-id')
+            orders = PreOrder.objects.filter(place__user=request.user, isClosed=True).annotate(
+            state_priority=Case(
+                When(state_of_delivery='awaiting_from_customer', then=Value(1)),
+                When(state_of_delivery='accepted_by_customer', then=Value(2)),
+                When(state_of_delivery='Awaiting', then=Value(3)),
+                When(state_of_delivery='Partial', then=Value(4)),
+                When(state_of_delivery='Complete', then=Value(5)),
+                When(state_of_delivery='Complete_Handle', then=Value(6)),
+                default=Value(0),
+                output_field=IntegerField(),
+                )
+            ).order_by('isComplete', 'state_priority', '-id')
         else:
-            orders = PreOrder.objects.filter(place__user=request.user, isClosed=False).order_by('-id')
+            orders = PreOrder.objects.filter(place__user=request.user, isClosed=False).annotate(
+            state_priority=Case(
+                When(state_of_delivery='awaiting_from_customer', then=Value(1)),
+                When(state_of_delivery='accepted_by_customer', then=Value(2)),
+                When(state_of_delivery='Awaiting', then=Value(3)),
+                When(state_of_delivery='Partial', then=Value(4)),
+                When(state_of_delivery='Complete', then=Value(5)),
+                When(state_of_delivery='Complete_Handle', then=Value(6)),
+                default=Value(0),
+                output_field=IntegerField(),
+                )
+            ).order_by('isComplete', 'state_priority', '-id')
             completed_orders = orders.filter(state_of_delivery='Complete')
             if completed_orders.count() > 0:
                 for ord in completed_orders:
@@ -2094,9 +2139,31 @@ def preorders(request):
     else:
         if 'get_archive_preorders' in request.POST:
             isArchiveChoosed = True
-            orders = PreOrder.objects.filter(isClosed=True).order_by('-state_of_delivery', '-id')
+            orders = PreOrder.objects.filter(isClosed=True).annotate(
+            state_priority=Case(
+                When(state_of_delivery='awaiting_from_customer', then=Value(1)),
+                When(state_of_delivery='accepted_by_customer', then=Value(2)),
+                When(state_of_delivery='Awaiting', then=Value(3)),
+                When(state_of_delivery='Partial', then=Value(4)),
+                When(state_of_delivery='Complete', then=Value(5)),
+                When(state_of_delivery='Complete_Handle', then=Value(6)),
+                default=Value(0),
+                output_field=IntegerField(),
+                )
+            ).order_by('-isPinned', 'isComplete', 'state_priority', '-id')
         else:
-            orders = PreOrder.objects.filter(isClosed=False).order_by('-state_of_delivery', '-id')
+            orders = PreOrder.objects.filter(isClosed=False).annotate(
+            state_priority=Case(
+                When(state_of_delivery='awaiting_from_customer', then=Value(1)),
+                When(state_of_delivery='accepted_by_customer', then=Value(2)),
+                When(state_of_delivery='Awaiting', then=Value(3)),
+                When(state_of_delivery='Partial', then=Value(4)),
+                When(state_of_delivery='Complete', then=Value(5)),
+                When(state_of_delivery='Complete_Handle', then=Value(6)),
+                default=Value(0),
+                output_field=IntegerField(),
+                )
+            ).order_by('-isPinned', 'isComplete', 'state_priority', '-id')
             completed_orders = orders.filter(state_of_delivery='Complete')
             if completed_orders.count() > 0:
                 for ord in completed_orders:
@@ -2120,7 +2187,7 @@ def preorders(request):
             generate_list_of_xls_from_preorders_list(selected_orders, False, False, True)
 
     return render(request, 'supplies/orders/preorders.html',
-                  {'title': title, 'isArchiveChoosed': isArchiveChoosed, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData, 'isOrders': True,
+                  {'title': title, 'isArchiveChoosed': isArchiveChoosed, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData, 'isOrders': False,
                    'isPreordersTab': True})
 
 
@@ -2169,6 +2236,34 @@ def updatePreorderStatus(request, order_id):
 
     return render(request, 'partials/preorders/preorder_preview_cell.html', {'order': order})
 
+@login_required(login_url='login')
+def updatePreorderStatusPinned(request, order_id):
+    if not (request.user.groups.filter(name='empl').exists() or request.user.is_staff):
+        return HttpResponseForbidden("You don't have permission to perform this action")
+        
+    order = PreOrder.objects.get(id=order_id)
+    is_pinned = request.POST.get('is_pinned')
+    is_pinned_bool = is_pinned.lower() == 'true'
+    order.isPinned = is_pinned_bool
+    order.save(update_fields=['isPinned'])
+    return render(request, 'partials/preorders/preorder_preview_cell.html', {'order': order})
+
+def updateOrderPinnedStatus(request, order_id):
+    if not (request.user.groups.filter(name='empl').exists() or request.user.is_staff):
+        return HttpResponseForbidden("You don't have permission to perform this action")
+        
+    is_pinned = request.POST.get('is_pinned')
+    is_pinned_bool = is_pinned.lower() == 'true'
+    
+    order = Order.objects.get(id=order_id)
+    order.isPinned = is_pinned_bool
+    order.save(update_fields=['isPinned'])
+    # Check if user agent is mobile
+    if request.user_agent.is_mobile:
+        template = 'supplies_mobile/order_cell.html'
+    else:
+        template = 'partials/orders/order_preview_cel.html'
+    return render(request, template, {'order': order})
 
 def update_order_status_core(order_id, user):
     order = Order.objects.get(id=order_id)
@@ -2292,7 +2387,18 @@ def agreementsForClient(request, client_id):
         isArchiveChoosed = True
         orders = place.preorder_set.filter(isClosed=True).order_by('-state_of_delivery', '-id')
     else:
-        orders = place.preorder_set.filter(isClosed=False).order_by('-state_of_delivery', '-id')
+        orders = place.preorder_set.filter(isClosed=False).annotate(
+            state_priority=Case(
+                When(state_of_delivery='awaiting_from_customer', then=Value(1)),
+                When(state_of_delivery='accepted_by_customer', then=Value(2)),
+                When(state_of_delivery='Awaiting', then=Value(3)),
+                When(state_of_delivery='Partial', then=Value(4)),
+                When(state_of_delivery='Complete', then=Value(5)),
+                When(state_of_delivery='Complete_Handle', then=Value(6)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        ).order_by('isComplete', 'state_priority', '-id')
 
     preorderFilter = PreorderFilter(request.GET, queryset=orders)
     orders = preorderFilter.qs

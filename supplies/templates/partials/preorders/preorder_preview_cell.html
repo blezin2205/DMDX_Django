@@ -2,95 +2,123 @@
 <div id="preorder_preview_cell{{ order.id }}" class="my-4">
     <div class="d-flex gap-3 align-items-center">
         <a href="{% url 'preorderDetail' order.id %}?next={{ request.get_full_path|urlencode }}" class="text-decoration-none flex-grow-1">
-            <div class="card shadow-sm hover-shadow-md transition-all">
-                <div class="card-header position-relative p-3 border-0 {% if order.state_of_delivery == 'Complete' or order.state_of_delivery == 'Complete_Handle' %} bg-primary bg-opacity-10 {% else %} bg-warning bg-opacity-10 {% endif %}">
-                    <div class="row g-3">
-                        <!-- Left side - Creation info -->
-                        <div class="col-auto">
-                            <div class="d-flex flex-column gap-2">
-                                <div class="badge bg-light text-dark d-flex align-items-center gap-2">
-                                    <i class="bi bi-calendar3"></i>
-                                    <span>{{order.dateCreated|date:"d.m.Y"}}</span>
-                                </div>
-                                {% if order.userCreated %}
-                                <div class="badge bg-light text-dark d-flex align-items-center gap-2">
-                                    <i class="bi bi-person"></i>
-                                    <span>{{ order.userCreated.first_name }} {{ order.userCreated.last_name }}</span>
-                                </div>
-                                {% endif %}
-                            </div>
+            <div class="card shadow-sm hover-shadow-md transition-all" style="border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; overflow: visible;">
+                {% if request.user|has_group:"empl" or request.user.is_staff %}
+                    {% if order.isPinned %}
+                        <div class="pin-badge" onclick="event.preventDefault(); event.stopPropagation(); toggle_preorder_pinned_status({{ order.id }}, false)">
+                            <i class="bi bi-pin-angle-fill"></i>
                         </div>
-
-                        <!-- Center - Preorder info -->
-                        <div class="col text-center">
-                            {% if order.isPreorder %}
-                                <h5 class="mb-2 fw-bold">Передзамовлення №{{order.id}}
-                                    {% if order.isClosed %}
-                                        <span class="badge bg-secondary ms-2">АРХІВ</span>
-                                    {% endif %}
-                                </h5>
-                            {% else %}
-                                <h5 class="mb-2 fw-bold">Договір №{{order.id}}</h5>
-                            {% endif %}
-                            <h6 class="mt-3 text-muted">{{order.place.name}}, {{order.place.city_ref.name}}</h6>
-                        </div>
-
-                        <!-- Right side - Status info -->
-                        <div class="col-auto">
-                            <div class="d-flex flex-column gap-2">
-                                {% if order.state_of_delivery == 'Complete' %}
-                                    <div class="badge bg-success d-flex align-items-center gap-2 p-2">
-                                        <i class="bi bi-check-circle"></i>
-                                        <span>Повністю поставлено</span>
-                                    </div>
-                                {% elif order.state_of_delivery == 'Complete_Handle' %}
-                                    <div class="badge bg-success d-flex align-items-center gap-2 p-2">
-                                        <i class="bi bi-check-circle"></i>
-                                        <span>Повністю поставлено (Закрито вручну)</span>
-                                    </div>
-                                {% elif order.state_of_delivery == 'Partial' %}
-                                    <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
-                                        <i class="bi bi-hourglass-split"></i>
-                                        <span>Частково поставлено</span>
-                                    </div>
-                                {% elif order.state_of_delivery == 'awaiting_from_customer' %}
-                                    <div class="badge bg-info d-flex align-items-center gap-2 p-2">
-                                        <i class="bi bi-pencil-square"></i>
-                                        <span>Формується замовником</span>
-                                    </div>
-                                {% elif order.state_of_delivery == 'accepted_by_customer' %}
-                                    <div class="badge bg-primary d-flex align-items-center gap-2 p-2">
-                                        <i class="bi bi-check2-all"></i>
-                                        <span>Підтверджено замовником</span>
-                                    </div>
-                                {% elif order.state_of_delivery == 'Awaiting' %}
-                                    <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
-                                        <i class="bi bi-truck"></i>
-                                        <span>Замовлено у виробника</span>
-                                    </div>
-                                {% endif %}
-
-                                {% if order.isComplete %}
-                                    <div class="badge bg-secondary d-flex align-items-center gap-2 p-2">
-                                        <i class="bi bi-calendar-check"></i>
-                                        <span>Відправлено {{order.dateSent|date:"d.m.Y"}}</span>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {% if order.comment %}
-                    <div class="card-footer bg-light p-0 border-top-light">
-                        <div class="px-3 py-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <small class="text-muted">Коментар:</small>
-                                <span class="small fw-medium">{{order.comment}}</span>
-                            </div>
-                        </div>
-                    </div>
+                    {% endif %}
                 {% endif %}
+                <div class="card-content">
+                    <div class="card-header position-relative p-3 border-0 {% if order.state_of_delivery == 'Complete' or order.state_of_delivery == 'Complete_Handle' %} bg-primary bg-opacity-10 {% else %} bg-warning bg-opacity-10 {% endif %} rounded-top">
+                        <div class="row g-3">
+                            <!-- Left side - Creation info -->
+                            <div class="col-auto">
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="badge bg-light text-dark d-flex align-items-center gap-2">
+                                        <i class="bi bi-calendar3"></i>
+                                        <span>{{order.dateCreated|date:"d.m.Y"}}</span>
+                                    </div>
+                                    {% if order.userCreated %}
+                                    <div class="badge bg-light text-dark d-flex-inline align-items-center gap-2" style="max-width: 200px; white-space: normal; text-align: left;">
+                                        <i class="bi bi-person flex-shrink-0"></i>
+                                        <span style="word-wrap: break-word;">{{ order.userCreated.first_name }} {{ order.userCreated.last_name }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Center - Preorder info -->
+                            <div class="col text-center" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                {% if order.isPreorder %}
+                                    <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="display: inline-flex; padding: 4px 8px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 20px; background-color: rgba(0, 0, 0, 0.02); height: 32px;">
+                                        <i class="bi bi-box-seam"></i>
+                                        <span>{{order.id}}</span>
+                                        {% if request.user|has_group:"empl" or request.user.is_staff %}
+                                            {% if not order.isPinned %}
+                                                <div class="pin-badge-inline pin-badge-unpinned p-0 m-0" onclick="event.preventDefault(); event.stopPropagation(); toggle_preorder_pinned_status({{ order.id }}, true)">
+                                                    <i class="bi bi-pin-angle-fill"></i>
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if order.isClosed %}
+                                            <span class="badge bg-secondary ms-2">АРХІВ</span>
+                                        {% endif %}
+                                    </h6>
+                                {% else %}
+                                    <h6 class="mb-0 fw-bold d-flex align-items-center gap-2" style="display: inline-flex; padding: 4px 8px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 20px; background-color: rgba(0, 0, 0, 0.02); height: 32px;">
+                                        <i class="bi bi-box-seam"></i>
+                                        <span>Договір №{{order.id}}</span>
+                                        {% if request.user|has_group:"empl" or request.user.is_staff %}
+                                            {% if not order.isPinned %}
+                                                <div class="pin-badge-inline pin-badge-unpinned p-0 m-0" onclick="event.preventDefault(); event.stopPropagation(); toggle_preorder_pinned_status({{ order.id }}, true)">
+                                                    <i class="bi bi-pin-angle-fill"></i>
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    </h6>
+                                {% endif %}
+                                <h6 class="text-muted">{{order.place.name}}, {{order.place.city_ref.name}}</h6>
+                            </div>
+
+                            <!-- Right side - Status info -->
+                            <div class="col-auto">
+                                <div class="d-flex flex-column gap-2">
+                                    {% if order.state_of_delivery == 'Complete' %}
+                                        <div class="badge bg-success d-flex align-items-center gap-2 p-2">
+                                            <i class="bi bi-check-circle"></i>
+                                            <span>Повністю поставлено</span>
+                                        </div>
+                                    {% elif order.state_of_delivery == 'Complete_Handle' %}
+                                        <div class="badge bg-success d-flex align-items-center gap-2 p-2">
+                                            <i class="bi bi-check-circle"></i>
+                                            <span>Повністю поставлено (Закрито вручну)</span>
+                                        </div>
+                                    {% elif order.state_of_delivery == 'Partial' %}
+                                        <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
+                                            <i class="bi bi-hourglass-split"></i>
+                                            <span>Частково поставлено</span>
+                                        </div>
+                                    {% elif order.state_of_delivery == 'awaiting_from_customer' %}
+                                        <div class="badge bg-info d-flex align-items-center gap-2 p-2">
+                                            <i class="bi bi-pencil-square"></i>
+                                            <span>Формується замовником</span>
+                                        </div>
+                                    {% elif order.state_of_delivery == 'accepted_by_customer' %}
+                                        <div class="badge bg-primary d-flex align-items-center gap-2 p-2">
+                                            <i class="bi bi-check2-all"></i>
+                                            <span>Підтверджено замовником</span>
+                                        </div>
+                                    {% elif order.state_of_delivery == 'Awaiting' %}
+                                        <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
+                                            <i class="bi bi-truck"></i>
+                                            <span>Замовлено у виробника</span>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if order.isComplete %}
+                                        <div class="badge bg-secondary d-flex-inline align-items-center gap-2 p-2">
+                                            <i class="bi bi-calendar-check"></i>
+                                            <span>Підтверджено {{order.dateSent|date:"d.m.Y"}}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if order.comment %}
+                        <div class="card-footer bg-light p-0 border-top-light">
+                            <div class="px-3 py-2">
+                                <div class="d-flex align-items-start gap-2">
+                                    <i class="bi bi-chat-left-text text-muted"></i>
+                                    <span class="small fw-medium text-break">{{order.comment}}</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </a>
 
@@ -107,7 +135,6 @@
                 {% else %}
                     {% if request.user|has_group:"admin" or request.user.is_staff %}
                         {% if order.state_of_delivery != 'Complete' or order.state_of_delivery != 'awaiting_from_customer' %}
-                            
                             <a href="{% url 'preorderDetail-generate-order' order.id %}?next={{ request.get_full_path }}" 
                                class="btn btn-primary d-flex align-items-center justify-content-center"
                                style="width: 50px; height: 49px; border-radius: 5px;"
@@ -149,40 +176,3 @@
         {% endif %}
     </div>
 </div>
-
-<style>
-.hover-shadow-md {
-    transition: all 0.2s ease-in-out;
-}
-.hover-shadow-md:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-}
-.transition-all {
-    transition: all 0.2s ease-in-out;
-}
-.badge {
-    border: 1px solid rgba(0,0,0,0.1);
-}
-.border-top-light {
-    border-top: 1px solid rgba(0,0,0,0.05) !important;
-}
-.custom-checkbox {
-    background-color: #fff;
-    border: 2px solid #0d6efd;
-    border-radius: 6px;
-    transition: all 0.2s ease-in-out;
-}
-.custom-checkbox:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-.custom-checkbox:hover {
-    border-color: #0a58ca;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-}
-.custom-checkbox:focus {
-    border-color: #0a58ca;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-}
-</style>

@@ -314,3 +314,168 @@ form .custom-btn:hover {
   border-color: #0a58ca;
   box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
+
+.hover-shadow-md {
+  transition: all 0.2s ease-in-out;
+}
+.hover-shadow-md:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+.badge {
+  border: 1px solid rgba(0,0,0,0.1);
+}
+.border-top-light {
+  border-top: 1px solid rgba(0,0,0,0.05) !important;
+}
+.border-bottom-light {
+  border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+}
+.np-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: inline-block;
+}
+.np-status-success {
+  color: #0d7a3f;
+}
+.np-status-error {
+  color: #b91c1c;
+}
+.np-status-pending {
+  color: #d77d17;
+}
+.custom-checkbox {
+  background-color: #fff;
+  border: 2px solid #0d6efd;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+.custom-checkbox:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.custom-checkbox:hover {
+  border-color: #0a58ca;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.custom-checkbox:focus {
+  border-color: #0a58ca;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.loading-state {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  border-radius: 0.375rem;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+.card {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  overflow: visible;
+}
+
+.card-content {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.card-header {
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 12px !important;
+}
+
+.pin-badge {
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  width: 32px;
+  height: 32px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 2px solid white;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.pin-badge:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.pin-badge i {
+  font-size: 0.9rem;
+}
+
+.pin-badge-inline {
+  width: 24px;
+  height: 24px;
+  background-color: #dc3545;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  margin-left: 4px;
+}
+
+.pin-badge-inline:hover {
+  transform: scale(1.1);
+}
+
+.pin-badge-inline i {
+  font-size: 0.8rem;
+}
+
+.pin-badge-inline.pin-badge-unpinned {
+  background-color: #0d6efd;
+}
+
+.pin-badge-inline.pin-badge-unpinned:hover {
+  opacity: 1;
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, 
+        rgba(255, 193, 7, 0.3) 0%,
+        rgba(255, 193, 7, 0.2) 50%,
+        rgba(255, 152, 0, 0.15) 100%);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, 
+        rgba(13, 110, 253, 0.25) 0%,
+        rgba(13, 110, 253, 0.15) 50%,
+        rgba(102, 16, 242, 0.1) 100%);
+}
+
+.bg-general-navbar {
+    background: linear-gradient(135deg, 
+        rgba(13, 110, 253, 0.15) 0%,
+        rgba(13, 110, 253, 0.08) 50%,
+        rgba(102, 16, 242, 0.05) 100%);
+}

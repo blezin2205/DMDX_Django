@@ -99,6 +99,7 @@ urlpatterns = [
     path('delete-preorder/<int:order_id>', views.deletePreorder, name='delete-preorder'),
     path('delete_preorder_sup_in_preorder_cart/<int:sup_id>/<int:order_id>', views.delete_preorder_sup_in_preorder_cart, name='delete-preorder-sup-in-preorder-cart'),
     path('update-preorder-status/<int:order_id>', views.updatePreorderStatus, name='updatePreorderStatus'),
+    path('update-preorder-status-pinned/<int:order_id>', views.updatePreorderStatusPinned, name='updatePreorderStatusPinned'),
     path('orders_update_status/<int:order_id>', views.orderUpdateStatus, name='orders_update_status'),
     path('minus_from_preorders_detail_general_item', views.minus_from_preorders_detail_general_item, name='minus_from_preorders_detail_general_item'),
 
@@ -191,6 +192,7 @@ urlpatterns = [
     path('delete_file/', firebase_view.delete_file, name='delete_file'),
     path('nova_poshta_registers', NPViews.nova_poshta_registers, name='nova_poshta_registers'),
     path('orderCellUpdateNPStatus/<int:order_id>', NPViews.orderCellUpdateNPStatus, name='orderCellUpdateNPStatus'),
+    path('updateOrderPinnedStatus/<int:order_id>', views.updateOrderPinnedStatus, name='updateOrderPinnedStatus'),
     path('import-general-supplies/', views.import_general_supplies_from_excel, name='import_general_supplies_from_excel'),
     path('analytics/<int:place_id>/', views.analytics_report, name='analytics_report'),
     path('analytics_preorders_list_for_client/', views.analytics_preorders_list_for_client, name='analytics_preorders_list_for_client'),

@@ -251,7 +251,7 @@
                 }
                 htmx.ajax('POST', `orderCellUpdateNPStatus/${data.order_id}`, {
                             target: `#order_preview_cell${data.order_id}`,
-                            swap: 'innerHTML'
+                            swap: 'outerHTML'
                         });
                 $('#npModal').modal('hide');
             } else {
