@@ -461,6 +461,15 @@ class Order(models.Model):
     documentsId = ArrayField(models.CharField(max_length=200), blank=True, null=True)
     for_agreement = models.ForeignKey(Agreement, on_delete=models.SET_NULL, null=True, blank=True)
     dateToSend = models.DateField(null=True, blank=True)
+    
+    def date_send_is_good(self):
+        return self.dateToSend > timezone.now().date()
+
+    def date_send_is_expired(self):
+        return self.dateToSend < timezone.now().date()
+
+    def date_send_is_today(self):
+        return self.dateToSend == timezone.now().date()
 
     def isForPreorderOrItemHasPreorder(self):
         return (self.for_preorder is None) and self.supplyinorder_set.filter(supply_in_preorder__isnull=False)

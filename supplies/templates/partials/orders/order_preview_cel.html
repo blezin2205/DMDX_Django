@@ -48,13 +48,12 @@
                             <div class="d-flex flex-column gap-2">
                                 {% if request.user|has_group:"empl" or request.user.is_staff %}
                                     {% if order.dateToSend and not order.isComplete %}
-                                        {% now "d.m.Y" as current_date %}
-                                        {% if order.dateToSend|date:"d.m.Y" == current_date %}
+                                        {% if order.date_send_is_today %}
                                             <div class="badge bg-danger d-flex align-items-center gap-2 p-2">
                                                 <i class="bi bi-exclamation-circle"></i>
                                                 <span>Відправка сьогодні</span>
                                             </div>
-                                        {% elif order.dateToSend|date:"d.m.Y" < current_date %}
+                                        {% elif order.date_send_is_expired %}
                                             <div class="badge bg-danger bg-opacity-50 d-flex align-items-center gap-2 p-2">
                                                 <i class="bi bi-exclamation-triangle"></i>
                                                 <span>{{order.dateToSend|date:"d.m.Y"}}</span>
