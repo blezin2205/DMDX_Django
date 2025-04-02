@@ -8,34 +8,34 @@
         <div class="navbar-collapse collapse" id="collapseNavbar">
             <ul class="navbar-nav gap-3">
                 <li class="nav-item">
-                    <a href="/" class="btn btn-soft{% if isHome %} active{% endif %}" aria-current="page">
+                    <a href="/" class="btn btn-soft{% if isHome %} active fw-medium{% endif %}" aria-current="page">
                         <i class="bi bi-box-seam me-1"></i>Склад
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a href="/orders" class="btn btn-soft position-relative{% if isOrders %} active{% endif %}" aria-current="page">
+                    <a href="/orders" class="btn btn-soft position-relative{% if isOrders %} active fw-medium{% endif %}" aria-current="page">
                         <i class="bi bi-clipboard-check me-1"></i>Замовлення 
                         <div class="position-absolute top-0 start-0 translate-middle-y d-flex gap-1" style="margin-left: -0.5rem;">
                             {% if cartCountData.orders_pinned > 0 %}
-                                <span class="badge rounded-pill bg-danger" style="font-size: 0.6rem; padding: 0.25rem 0.4rem;">{{ cartCountData.orders_pinned }}</span>
+                                <span class="badge rounded-pill bg-danger" style="font-size: 0.7rem;">{{ cartCountData.orders_pinned }}</span>
                             {% endif %}
                             {% if cartCountData.orders_incomplete > 0 %}
-                                <span class="badge rounded-pill bg-warning" style="font-size: 0.6rem; padding: 0.25rem 0.4rem;">{{ cartCountData.orders_incomplete }}</span>
+                                <span class="badge rounded-pill bg-warning" style="font-size: 0.7rem;">{{ cartCountData.orders_incomplete }}</span>
                             {% endif %}
                         </div>
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a href="/preorders" class="btn btn-soft position-relative{% if isPreordersTab %} active{% endif %}" aria-current="page">
-                        <i class="bi bi-clipboard-check me-1"></i>Передзамовлення 
+                    <a href="/preorders" class="btn btn-soft position-relative{% if isPreordersTab %} active fw-medium {% endif %}" aria-current="page">
+                        <i class="bi bi-clipboard me-1"></i>Передзамовлення 
                         <div class="position-absolute top-0 start-0 translate-middle-y d-flex gap-1" style="margin-left: -0.5rem;">
                             {% if cartCountData.preorders_pinned > 0 %}
-                                <span class="badge rounded-pill bg-danger" style="font-size: 0.6rem; padding: 0.25rem 0.4rem;">{{ cartCountData.preorders_pinned }}</span>
+                                <span class="badge rounded-pill bg-danger" style="font-size: 0.7rem;">{{ cartCountData.preorders_pinned }}</span>
                             {% endif %}
                             {% if cartCountData.preorders_incomplete > 0 %}
-                                <span class="badge rounded-pill bg-info" style="font-size: 0.6rem; padding: 0.25rem 0.4rem;">{{ cartCountData.preorders_incomplete }}</span>
+                                <span class="badge rounded-pill bg-info" style="font-size: 0.7rem;">{{ cartCountData.preorders_incomplete }}</span>
                             {% endif %}
                         </div>
                     </a>
@@ -43,7 +43,7 @@
 
                 {% if request.user|has_group:"empl" or request.user.is_staff %}
                     <li class="nav-item">
-                        <a href="/clientsInfo" class="btn btn-soft{% if isClients %} active{% endif %}" aria-current="page">
+                        <a href="/clientsInfo" class="btn btn-soft{% if isClients %} active fw-medium{% endif %}" aria-current="page">
                             <i class="bi bi-people me-1"></i>Клієнти
                         </a>
                     </li>

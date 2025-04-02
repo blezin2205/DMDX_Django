@@ -8,9 +8,16 @@
             <a class="text-decoration-none" href="{% url 'orderDetail' order.id 0 %}?next={{ request.get_full_path|urlencode }}" role="button">
                 <!-- Header Section with Status Background -->
                 <div class="card-header position-relative p-3 border-0 {% if not order.isComplete %} bg-warning bg-opacity-10 {% else %} bg-primary bg-opacity-10 {% endif %}">
+                    {% if request.user|has_group:"empl" or request.user.is_staff %}
+                        {% if order.isPinned %}
+                            <div class="pin-badge" onclick="event.preventDefault(); event.stopPropagation(); toggle_order_pinned_status({{ order.id }}, false)">
+                                <i class="bi bi-pin-angle-fill"></i>
+                            </div>
+                        {% endif %}
+                    {% endif %}
                     <div class="d-flex flex-column gap-2">
                         <!-- Creation Info -->
-                        <div class="d-flex flex-wrap gap-2">
+                        <div class="d-flex flex-wrap gap-2 justify-content-between">
                             <div class="badge bg-light text-dark d-flex align-items-center gap-2">
                                 <i class="bi bi-calendar3"></i>
                                 <span>{{order.dateCreated|date:"d.m.Y"}}</span>
@@ -19,6 +26,13 @@
                                 <i class="bi bi-person"></i>
                                 <span>{{ order.userCreated.first_name }} {{ order.userCreated.last_name }}</span>
                             </div>
+                            {% if request.user|has_group:"empl" or request.user.is_staff %}
+                            {% if not order.isPinned %}
+                                <div class="pin-badge-inline pin-badge-unpinned" onclick="event.preventDefault(); event.stopPropagation(); toggle_order_pinned_status('{{ order.id }}', true)">
+                                    <i class="bi bi-pin-angle-fill text-white"></i>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
                         </div>
 
                         <!-- Order ID and Location -->
@@ -106,7 +120,7 @@
 
                 <!-- Comments -->
                 {% if order.comment %}
-                    <div class="card-footer bg-light p-3 border-top-light">
+                    <div class="card-footer bg-light px-3 py-1 border-top-light">
                         <div class="d-flex align-items-start gap-2">
                             <i class="bi bi-chat-left-text text-muted"></i>
                             <span class="small fw-medium text-break">{{order.comment}}</span>
@@ -116,39 +130,43 @@
             </a>
 
             <!-- Action Buttons Footer -->
-            {% if request.user.is_staff and not order.isComplete %}
-                <div class="card-footer bg-light border-top-light p-3">
-                    <div class="d-flex gap-2">
-                        {% if order.place.address_NP and order.place.worker_NP %}
-                            <div id="np_create_ID_button_subscribe" 
-                                 class="flex-grow-1"
-                                 hx-get="{% url 'np_create_ID_button_subscribe' order.id %}" 
-                                 hx-trigger="np_create_ID_button_subscribe{{order.id}} from:body">
-                                {% include 'partials/delivery/np_create_ID_button.html' %}
-                            </div>
-                        {% endif %}
+            {% if request.user.is_staff %}
+                {% if order.place.address_NP and order.place.worker_NP and not order.isComplete or not order.isComplete %}
+                    <div class="card-footer bg-light border-top-light p-3">
+                        <div class="d-flex gap-2">
+                            {% if order.place.address_NP and order.place.worker_NP and not order.isComplete %}
+                                <div id="np_create_ID_button_subscribe" 
+                                     class="flex-grow-1"
+                                     hx-get="{% url 'np_create_ID_button_subscribe' order.id %}" 
+                                     hx-trigger="np_create_ID_button_subscribe{{order.id}} from:body">
+                                    {% include 'partials/delivery/np_create_ID_button.html' %}
+                                </div>
+                            {% endif %}
 
-                        <button class="btn btn-primary d-flex align-items-center justify-content-center action-button" 
-                                style="width: 45px; height: 45px; border-radius: 8px;"
-                                type="submit" 
-                                hx-target="#order_preview_cell{{ order.id }}" 
-                                hx-post="{% url 'orders_update_status' order.id %}">
-                            <i class="bi bi-send"></i>
-                        </button>
+                            {% if not order.isComplete %}
+                                <button class="btn btn-primary d-flex align-items-center justify-content-center action-button" 
+                                        style="width: 45px; height: 45px; border-radius: 8px;"
+                                        type="submit" 
+                                        hx-target="#order_preview_cell{{ order.id }}" 
+                                        hx-post="{% url 'orders_update_status' order.id %}">
+                                    <i class="bi bi-send"></i>
+                                </button>
 
-                        <div class="form-check d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                            <input class="form-check-input custom-checkbox" 
-                                   type="checkbox" 
-                                   value="{{ order.id }}" 
-                                   id="register_exls_selected_buttons" 
-                                   name="register_exls_selected_buttons" 
-                                   hx-target="#register_exls_selected_buttons" 
-                                   hx-post="{% url 'register_exls_selected_buttons' %}" 
-                                   hx-trigger="click"
-                                   style="width: 24px; height: 24px; margin: 0; cursor: pointer;">
+                                <div class="form-check d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                    <input class="form-check-input custom-checkbox" 
+                                           type="checkbox" 
+                                           value="{{ order.id }}" 
+                                           id="register_exls_selected_buttons" 
+                                           name="register_exls_selected_buttons" 
+                                           hx-target="#register_exls_selected_buttons" 
+                                           hx-post="{% url 'register_exls_selected_buttons' %}" 
+                                           hx-trigger="click"
+                                           style="width: 24px; height: 24px; margin: 0; cursor: pointer;">
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
-                </div>
+                {% endif %}
             {% endif %}
         </div>
     </div>
@@ -170,6 +188,11 @@
     padding: 6px 12px;
     border-radius: 8px;
     font-weight: 500;
+    white-space: normal;
+    display: inline-flex;
+    flex-wrap: wrap;
+    width: fit-content;
+    max-width: 100%;
 }
 .border-top-light {
     border-top: 1px solid rgba(0,0,0,0.05) !important;
@@ -210,7 +233,12 @@
 .card {
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible;
+}
+.card-footer {
+    margin: 0;
+    position: relative;
+    z-index: 1;
 }
 .action-button {
     border-radius: 8px;
@@ -225,5 +253,60 @@
 .btn, .action-button {
     min-height: 44px;
     min-width: 44px;
+}
+
+/* Pin Badge Styles */
+.pin-badge {
+    position: absolute;
+    top: -12px;
+    left: -12px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #dc3545;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease-in-out;
+}
+
+.pin-badge:hover {
+    transform: scale(1.1);
+    background-color: #bb2d3b;
+}
+
+.pin-badge i {
+    color: #fff;
+    font-size: 1.1rem;
+}
+
+.pin-badge-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.pin-badge-inline:hover {
+    transform: scale(1.1);
+}
+
+.pin-badge-inline i {
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+.pin-badge-unpinned i {
+    opacity: 1;
+}
+
+.pin-badge-unpinned:hover i {
+    opacity: 1;
 }
 </style>
