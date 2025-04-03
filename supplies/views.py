@@ -692,15 +692,7 @@ from django_user_agents.utils import get_user_agent
 
 @login_required(login_url='login')
 def home(request):
-    user_agent = get_user_agent(request)
-    if user_agent.is_mobile:
-        # Render mobile template
-        print("MOBILE VERSION")
-    else:
-        print("DESKTOP VERSION")
-
-    uncompleteOrdersExist = Order.objects.filter(isComplete=False).exists()
-    isClient = request.user.groups.filter(name='client').exists() and not request.user.is_staff
+    isClient = request.user.isClient() and not request.user.is_staff
     place = None
     booked_list_exist = False
     if isClient:
@@ -713,7 +705,6 @@ def home(request):
             for quer in categories:
                 user_allowed_categories.add(quer)
         place = user_places.first()
-        uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False, place__user=request.user).exists()
         html_page = 'supplies/home/home_for_client.html'
         supplies = GeneralSupply.objects.filter(category_id__in=user_allowed_categories).order_by('name')
         suppFilter = SupplyFilter(request.GET, queryset=supplies)
@@ -723,11 +714,11 @@ def home(request):
     else:
         supplies = GeneralSupply.objects.all().order_by('name')
         suppFilter = SupplyFilter(request.GET, queryset=supplies)
-        uncompletePreOrdersExist = PreOrder.objects.filter(isComplete=False).exists()
         html_page = 'supplies/home/home.html'
+        if not suppFilter.data:
+            suppFilter.data['ordering'] = SupplyFilter.EXIST_CHOICES.В_наявності
 
-    if not suppFilter.data:
-        suppFilter.data['ordering'] = SupplyFilter.EXIST_CHOICES.В_наявності
+    
     supplies = suppFilter.qs
 
     # if suppFilter.data['ordering'] == "onlyGood":
@@ -772,9 +763,7 @@ def home(request):
                                                   'isHome': True,
                                                   'isAll': True,
                                                   'place': place,
-                                                   'booked_list_exist': booked_list_exist,
-                                                  'uncompleteOrdersExist': uncompleteOrdersExist,
-                                                  'uncompletePreOrdersExist': uncompletePreOrdersExist})
+                                                   'booked_list_exist': booked_list_exist})
 
 
 

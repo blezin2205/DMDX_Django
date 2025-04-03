@@ -40,6 +40,26 @@ class CustomUser(AbstractUser):
     def isClient(self):
         return self.groups.filter(name='client').exists()
 
+    def is_employee(self):
+        return self.groups.filter(name='empl').exists()
+
+    def is_admin(self):
+        return self.groups.filter(name='admin').exists()
+
+    def is_engineer(self):
+        return self.groups.filter(name='engineer').exists()
+
+    def get_role(self):
+        if self.is_admin():
+            return 'admin'
+        elif self.is_employee():
+            return 'empl'
+        elif self.is_client():
+            return 'client'
+        elif self.is_engineer():
+            return 'engineer'
+        return None
+
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
 
