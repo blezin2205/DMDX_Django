@@ -51,35 +51,30 @@
             </ul>
 
             {% if request.user|has_group:"empl" or request.user.is_staff %}
+            {% if cartCountData.order_to_send_today > 0 or cartCountData.expired_orders > 0 %}
                 <ul class="navbar-nav ms-auto me-4">
-                    <li class="nav-item">
-                        {% if cartCountData.order_to_send_today > 0 %}
-                            <div class="btn btn-soft-danger d-inline-flex align-items-center" 
-                                 data-bs-toggle="tooltip" 
-                                 data-bs-placement="bottom" 
-                                 title="Відправити замовлень сьогодні {% if cartCountData.expired_orders > 0 %} (⚠️ Прострочені замовлення){% endif %}">
-                                <i class="bi bi-exclamation-circle me-2"></i>
-                                <span class="bg-danger bg-opacity-50 text-white" style="padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: small;">{{ cartCountData.order_to_send_today }}</span>
-                                {% if cartCountData.expired_orders > 0 %}
-                                <span class="ms-2">
-                                    <span class="bg-danger bg-opacity-50 text-white" style="padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: small;">
-                                        <i class="bi bi-exclamation-triangle"></i>
-                                        {{ cartCountData.expired_orders }}
-                                    </span>
-                                </span>
-                                {% endif %}
-                            </div>
-                            {% elif cartCountData.expired_orders > 0 %}
-                            <div class="btn btn-soft-danger d-inline-flex align-items-center" 
-                            data-bs-toggle="tooltip" 
-                            data-bs-placement="bottom" 
-                            title="Прострочені замовлення">
-                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                <span class="bg-danger bg-opacity-50 text-white" style="padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: small;">{{ cartCountData.expired_orders }}</span>
-                            </div>
-                        {% endif %}
+                    {% if cartCountData.order_to_send_today > 0 %}
+                        <li class="nav-item">
+                        <div class="btn btn-soft-danger d-flex align-items-center justify-content-center gap-2 py-2 px-3" data-bs-toggle="tooltip" 
+                        data-bs-placement="bottom" 
+                        title="Відправити замовлень сьогодні">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span>{{ cartCountData.order_to_send_today }}</span>
+                        </div>
                     </li>
+                    {% endif %}
+                    {% if cartCountData.expired_orders > 0 %}
+                    <li class="nav-item ms-2">
+                        <div class="btn btn-soft-danger d-flex align-items-center justify-content-center gap-2 py-2 px-3" data-bs-toggle="tooltip" 
+                        data-bs-placement="bottom" 
+                        title="Прострочені замовлення">
+                        <i class="bi bi-exclamation-triangle"></i>
+                            <span>{{ cartCountData.expired_orders }}</span>
+                        </div>
+                    </li>
+                    {% endif %}
                 </ul>
+            {% endif %}
             {% elif request.user|has_group:"client" %}
                 <ul class="navbar-nav ms-auto me-4">
                     <li class="nav-item">
@@ -175,14 +170,6 @@
 </nav>
 
 <style>
-    .btn-cart:hover {
-        transform: translateY(-1px);
-    }
-    .btn-cart {
-        border: 1px solid #e9ecef;
-        padding: 0.5rem 1rem;
-        transition: all 0.2s ease-in-out;
-    }
     .btn-soft {
         color: #4a5568;
         background-color: #f8f9fa;
@@ -201,22 +188,6 @@
         background-color: #e9ecef;
         color: #2d3748;
         border-color: #cbd5e0;
-    }
-    
-    .bg-warning-soft {
-        background-color: #fff3cd;
-        color: #856404;
-    }
-    
-    .bg-info-soft {
-        background-color: #d1ecf1;
-        color: #0c5460;
-    }
-    
-    .alert-soft-danger {
-        background-color: #fff5f5;
-        color: #e53e3e;
-        border: 1px solid #fed7d7;
     }
     
     .btn-soft-danger {

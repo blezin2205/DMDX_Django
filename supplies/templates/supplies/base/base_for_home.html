@@ -93,41 +93,6 @@ const csrftoken = getToken('csrftoken');
     {% block content %}{% endblock %}
     </div>
 
-    <style>
-        .title-wrapper {
-            border: 1px solid #e9ecef;
-            transition: all 0.2s ease-in-out;
-        }
-        
-        .title-wrapper:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        }
-        
-        .title-text {
-            color: #2d3748;
-            font-weight: 600;
-            font-size: 1.75rem;
-            line-height: 1.3;
-        }
-        
-        .title-icon {
-            font-size: 2rem;
-            color: #4a5568;
-            opacity: 0.9;
-        }
-        
-        @media (max-width: 768px) {
-            .title-text {
-                font-size: 1.5rem;
-            }
-            
-            .title-icon {
-                font-size: 1.75rem;
-            }
-        }
-    </style>
-
 {% include 'supplies/base/footer.html' %}
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
         <script>window.jQuery || document.write('<script src="https://getbootstrap.com/docs/4.2/assets/js/vendor/jquery-slim.min.js"><\/script>')</script><script src="https://getbootstrap.com/docs/4.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-zDnhMsjVZfS3hiP7oCBRmfjkQC4fzxVxFhBx8Hkz2aZX8gEvA/jsP3eXRCvzTofP" crossorigin="anonymous"></script>

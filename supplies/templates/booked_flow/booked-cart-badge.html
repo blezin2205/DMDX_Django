@@ -1,7 +1,7 @@
 {% load myapp_extras %}
     {% if cartCountData.is_one_cart == 'IS_ONE' %}
                         <a class="btn btn-cart me-3" style="background-color: orange" href="{% url 'booked_cart_details' cartCountData.booked_cart_first.id  %}?next={{ request.get_full_path|urlencode }}">
-  <i class="bi bi-cart3"></i> <span class="bg-danger" style="padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: small;">{{ cartCountData.booked_cart_first.get_cart_items }}</span>
+  <i class="bi bi-cart3"></i> <span class="badge bg-danger">{{ cartCountData.booked_cart_first.get_cart_items }}</span>
 </a>
         {% elif cartCountData.is_one_cart == 'IS_MANY' %}
          <a class="btn  btn-cart me-3" style="background-color: orange" href="{% url 'booked_carts_list' %}?next={{ request.get_full_path|urlencode }}">

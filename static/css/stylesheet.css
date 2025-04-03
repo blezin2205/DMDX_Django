@@ -387,18 +387,18 @@ form .custom-btn:hover {
 
 .card {
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
+  border-radius: 11px;
   overflow: visible;
 }
 
 .card-content {
-  border-radius: 12px;
+  border-radius: 11px;
   overflow: hidden;
 }
 
 .card-header {
-  border-top-left-radius: 12px !important;
-  border-top-right-radius: 12px !important;
+  border-top-left-radius: 11px !important;
+  border-top-right-radius: 11px !important;
 }
 
 .pin-badge {
@@ -478,4 +478,28 @@ form .custom-btn:hover {
         rgba(13, 110, 253, 0.15) 0%,
         rgba(13, 110, 253, 0.08) 50%,
         rgba(102, 16, 242, 0.05) 100%);
+}
+
+
+.title-text {
+  color: #2d3748;
+  font-weight: 600;
+  font-size: 1.75rem;
+  line-height: 1.3;
+}
+
+.title-icon {
+  font-size: 2rem;
+  color: #4a5568;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .title-text {
+      font-size: 1.5rem;
+  }
+  
+  .title-icon {
+      font-size: 1.75rem;
+  }
 }
