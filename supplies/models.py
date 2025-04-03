@@ -239,15 +239,6 @@ class Supply(models.Model):
     def availableCount(self):
         return self.count - self.getTotalOnHold()
 
-    def get_supp_for_history(self):
-        return SupplyForHistory(name=self.name,
-                                general_supply=self.general_supply,
-                                category=self.category,
-                                ref=self.ref,
-                                supplyLot=self.supplyLot,
-                                count=self.count,
-                                dateCreated=timezone.now().date(),
-                                expiredDate=self.expiredDate)
 
     def __str__(self):
         name = "No name"
@@ -383,22 +374,6 @@ class ServiceNote(models.Model):
         verbose_name_plural = 'Сервісні замітки'
 
 
-class Agreement(models.Model):
-    userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
-    description = models.CharField(max_length=300, null=True, blank=True)
-    for_place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
-    dateCreated = models.DateField(auto_now_add=True, null=True)
-    dateSent = models.DateField(null=True, blank=True)
-    isComplete = models.BooleanField(default=False)
-    comment = models.CharField(max_length=300, null=True, blank=True)
-
-    def __str__(self):
-        return f'{self.id}, {self.description}'
-
-    class Meta:
-        verbose_name = 'Договір'
-        verbose_name_plural = 'Договори'
-
 
 class PreOrder(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
@@ -481,7 +456,6 @@ class Order(models.Model):
     isPinned = models.BooleanField(default=False)
     comment = models.CharField(max_length=300, null=True, blank=True)
     documentsId = ArrayField(models.CharField(max_length=200), blank=True, null=True)
-    for_agreement = models.ForeignKey(Agreement, on_delete=models.SET_NULL, null=True, blank=True)
     dateToSend = models.DateField(null=True, blank=True)
     
     def date_send_is_good(self):
@@ -515,47 +489,6 @@ class Order(models.Model):
     class Meta:
         verbose_name = 'Замовлення'
         verbose_name_plural = 'Замовлення'
-
-
-class SupplyForHistory(models.Model):
-    name = models.CharField(max_length=300, null=True, blank=True)
-    history_description = models.CharField(max_length=500, null=True, blank=True)
-    general_supply = models.ForeignKey(GeneralSupply, on_delete=models.CASCADE, null=True)
-    supply_for_order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
-    ref = models.CharField(max_length=50, null=True, blank=True)
-    supplyLot = models.CharField(max_length=50, null=True, blank=True)
-    count = models.PositiveIntegerField(null=True, blank=True)
-    dateCreated = models.DateField(null=True, auto_now_add=True)
-    expiredDate = models.DateField(null=True)
-
-    ACTION_TYPE = (
-        ('added-handle', 'Додано(Вручну)'),
-        ('added-scan', 'Додано(Скан)'),
-        ('added-order', 'Додано в замовлення'),
-        ('deleted', 'Видалено'),
-        ('updated', 'Оновлено'),
-    )
-    action_type = models.CharField(max_length=100, choices=ACTION_TYPE, blank=True, null=True)
-
-    def get_action_type_value(self):
-        return self.get_action_type_display()
-
-    def get_sup_id_in_order_if_exist(self):
-        try:
-            order = self.supply_for_order
-            supsInOrder = order.supplyinorder_set.get(lot=self.supplyLot,
-                                                      date_expired=self.expiredDate)
-            return supsInOrder.id
-        except:
-            return 0
-
-    def __str__(self):
-        return self.general_supply.name
-
-    class Meta:
-        verbose_name = 'Товар (Історія)'
-        verbose_name_plural = 'Товари (Історія)'
 
 
 class NPDeliveryCreatedDetailInfo(models.Model):
@@ -600,50 +533,6 @@ class StatusNPParselFromDoucmentID(models.Model):
     cargoDescriptionString = models.CharField(max_length=300, blank=True, null=True)
     announcedPrice = models.CharField(max_length=50, blank=True, null=True)
 
-
-class SupplyInAgreement(models.Model):
-    count_in_agreement = models.PositiveIntegerField(null=True, blank=True)
-    generalSupply = models.ForeignKey(GeneralSupply, on_delete=models.SET_NULL, null=True, blank=True)
-    supply = models.ForeignKey(Supply, on_delete=models.SET_NULL, null=True, blank=True)
-    supply_for_agreement = models.ForeignKey(Agreement, on_delete=models.CASCADE, null=True)
-    lot = models.CharField(max_length=50, null=True, blank=True)
-    date_expired = models.DateField(null=True)
-    date_created = models.DateField(null=True, blank=True)
-
-    def __str__(self):
-        name = None
-        if self.generalSupply:
-            name = self.generalSupply.name
-        elif self.supply:
-            name = self.supply.general_supply.name
-
-        return f'ID Agreement: {self.supply_for_agreement.id} | name: {name}'
-
-    class Meta:
-        verbose_name = 'Товар в Договорі'
-        verbose_name_plural = 'Товари в Договорах'
-
-    def getAlreadyDeliveredCount(self):
-        count = 0
-        orders = self.supply_for_agreement.order_set.all()
-        for order in orders:
-            print(order.id)
-            gen_sup = order.supplyinorder_set.filter(generalSupply=self.generalSupply)
-            print(gen_sup)
-            counties = gen_sup.aggregate(total_count=Sum('count_in_order'))
-            try:
-                total_count = counties["total_count"]
-                print(f'Total count --------------  {total_count}')
-                count += total_count
-            except:
-                print(f'Total count --------------  {count}')
-
-        return count
-
-    def supIsFullyDelivered(self):
-        print(f'getAlreadyDeliveredCount  --- {self.getAlreadyDeliveredCount()}')
-        print(f'count_in_agreement -----  {self.count_in_agreement}')
-        return self.getAlreadyDeliveredCount() == self.count_in_agreement
 
 
 class SupplyInPreorder(models.Model):

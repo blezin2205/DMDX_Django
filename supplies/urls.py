@@ -14,7 +14,6 @@ urlpatterns = [
     path('add_to_exist_order_from_cart/', views.add_to_exist_order_from_cart, name='add_to_exist_order_from_cart'),
     path('add_to_exist_order_from_booked_cart/', booked_view.add_to_exist_order_from_booked_cart, name='add_to_exist_order_from_booked_cart'),
     path('choose_place_in_cart_not_precart/', views.choose_place_in_cart_not_precart, name='choose_place_in_cart_not_precart'),
-    path('get_agreement_detail_for_cart/', views.get_agreement_detail_for_cart, name='get_agreement_detail_for_cart'),
 
 
      path('update-cart-item-count/', views.updateCartItemCount, name='cart-count'),
@@ -42,7 +41,6 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('app_settings', views.app_settings, name='app_settings'),
     path('childSupply', views.childSupply, name='childSupply'),
-    path('historySupply', views.historySupply, name='historySupply'),
     path('load_xms_data', views.load_xms_data, name='load_xms_data'),
     path('celery-test', view_upload.celery_test, name='celery_test'),
 
@@ -93,7 +91,6 @@ urlpatterns = [
     path('logout', views.logoutUser, name='logout'),
 
     path('orders', views.orders, name='orders'),
-    path('agreements', views.agreements, name='agreements'),
 
     path('preorders', views.preorders, name='preorders'),
     path('delete-preorder/<int:order_id>', views.deletePreorder, name='delete-preorder'),
@@ -138,7 +135,6 @@ urlpatterns = [
 
     path('orders/<int:order_id>/<int:sup_id>', views.orderDetail, name='orderDetail'),
     # path('orders/<int:order_id>/<int:sup_id>', views.orderDetail_with_highlighted, name='orderDetail_with_highlighted'),
-    path('agreements/<int:agreement_id>', views.agreementDetail, name='agreementDetail'),
 
     path('preorders/<int:order_id>', views.preorderDetail, name='preorderDetail'),
     path('preorders/<int:order_id>/generate-order', views.preorderDetail_generateOrder, name='preorderDetail-generate-order'),

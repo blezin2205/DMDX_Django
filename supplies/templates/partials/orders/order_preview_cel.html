@@ -23,7 +23,7 @@
                                         <i class="bi bi-calendar3"></i>
                                         <span>{{order.dateCreated|date:"d.m.Y"}}</span>
                                     </div>
-                                    <div class="badge {% if order.isClientCreated %} bg-warning-subtle text-warning-emphasis {% else %} bg-light text-dark badge {% endif %} d-flex-inline align-items-center gap-2" style="max-width: 200px; white-space: normal; text-align: left;">
+                                    <div class="badge {% if order.isClientCreated %} bg-secondary badge {% else %} bg-light text-dark badge {% endif %} d-flex-inline align-items-center gap-2" style="max-width: 200px; white-space: normal; text-align: left;">
                                         <i class="bi bi-person flex-shrink-0"></i>
                                         <span style="word-wrap: break-word;">{{ order.userCreated.first_name }} {{ order.userCreated.last_name }}</span>
                                     </div>
@@ -50,7 +50,7 @@
                                         </div>
                                     {% else %}
                                         <div class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2">
-                                            Договір №{{order.for_preorder.id}}
+                                            Договір {{order.for_preorder.id}}
                                             {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }}{% endif %}
                                         </div>
                                     {% endif %}

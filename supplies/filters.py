@@ -60,29 +60,6 @@ class BookedSuppliesFilter(django_filters.FilterSet):
           return queryset.filter(general_supply__category__name__exact=value)
 
 
-class HistorySupplyFilter(django_filters.FilterSet):
-
-    name = CharFilter(field_name='general_supply__name', lookup_expr='icontains', label='Назва товару')
-    ref = CharFilter(field_name='general_supply__ref', lookup_expr='icontains', label='REF')
-    action_type = django_filters.MultipleChoiceFilter(choices=SupplyForHistory.ACTION_TYPE,
-                                                            widget=forms.CheckboxSelectMultiple())
-
-    class Meta:
-        model = SupplyForHistory
-        fields = ['action_type', 'category', 'ref', 'supplyLot', 'name']
-
-    def __init__(self, *args, **kwargs):
-        super(HistorySupplyFilter, self).__init__(*args, **kwargs)
-        self.filters['action_type'].label = 'Тип дії'
-        self.filters['category'].label = 'Категорія'
-        self.filters['ref'].label = 'REF'
-        self.filters['supplyLot'].label = 'LOT'
-        self.filters['name'].label = 'Назва'
-
-    def filter_by_category(self, queryset, name, value):
-          return queryset.filter(general_supply__category__name__exact=value)
-
-
 
 class OrderFilter(django_filters.FilterSet):
     ADDRESSED_CHOICES = (

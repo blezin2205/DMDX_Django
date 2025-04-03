@@ -852,44 +852,7 @@ def cartDetailForClient(request):
             is_pinned = request.POST.get('isPinned') is not None
             place = existing_place_for_preorder if existing_place_for_preorder else Place.objects.get(id=place_id)
 
-            if orderType == 'Agreement':
-                agreement_description = request.POST.get('agreement_description')
-                if isComplete:
-                    dateSent = timezone.now().date()
-                else:
-                    dateSent = None
-                agreement = Agreement(userCreated=orderInCart.userCreated, description=agreement_description, for_place=place, isComplete=isComplete, comment=comment)
-                agreement.save()
-
-                for index, sup in enumerate(supplies):
-                    count = request.POST.get(f'count_{sup.id}')
-                    general_sup = sup.general_supply
-                    suppInOrder = SupplyInAgreement(count_in_agreement=count,
-                                                    generalSupply=general_sup,
-                                                    supply_for_agreement=agreement, lot=sup.lot,
-                                                    date_created=sup.date_created,
-                                                    date_expired=sup.date_expired)
-                    suppInOrder.save()
-
-                teams_channel = settings.TEAMS_WEBHOOK_URL_PREORDERS
-
-                myTeamsMessage = pymsteams.connectorcard(teams_channel)
-                myTeamsMessage.title(
-                    f'Договір №{agreement_description},\n\n{place.name}, {place.city_ref.name}')
-
-                myTeamsMessage.addLinkButton("Деталі договору",
-                                             f'https://dmdxstorage.herokuapp.com/agreements/{agreement.id}')
-                created = f'*створив:*  **{agreement.userCreated.first_name} {agreement.userCreated.last_name}**'
-                if comment:
-                    comment = f'*коментар:*  **{comment}**'
-                    myTeamsMessage.text(f'{created}\n\n{comment};')
-                    myTeamsMessage.send()
-                else:
-                    myTeamsMessage.text(f'{created}')
-                    myTeamsMessage.send()
-
-
-            elif orderType == 'Preorder':
+            if orderType == 'Preorder':
                 isPreorder = preorderType == 'new_preorder'
                 state_of_delivery = 'awaiting_from_customer'
                 if isComplete:
@@ -1613,87 +1576,6 @@ def childSupply(request):
                    'suppFilter': suppFilter, 'isHome': True, 'isChild': True})
 
 
-@login_required(login_url='login')
-def historySupply(request):
-    supplies = SupplyForHistory.objects.all().order_by('-id')
-    suppFilter = HistorySupplyFilter(request.GET, queryset=supplies)
-    supplies = suppFilter.qs
-
-    if 'xls_button' in request.GET:
-
-        suppFilter = HistorySupplyFilter(request.POST, queryset=supplies)
-        supplies = suppFilter.qs
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f"attachment; filename=Supplies_History_List.xlsx"
-
-        wb = Workbook(response, {'in_memory': True})
-        ws = wb.add_worksheet('Sup_History_List')
-        format = wb.add_format({'bold': True})
-        format.set_font_size(16)
-
-        columns_table = [{'header': '№'},
-                         {'header': 'ACTION'},
-                         {'header': 'Назва товару'},
-                         {'header': 'REF'},
-                         {'header': 'LOT'},
-                         {'header': 'К-ть'},
-                         {'header': 'Тер.прид.'},
-                         {'header': 'Категорія'},
-                         {'header': 'Оновлено'},
-                         ]
-
-        ws.write(0, 0, f'Загальний список товарів', format)
-
-        format = wb.add_format({'num_format': 'dd.mm.yyyy'})
-        format.set_font_size(12)
-
-        row_num = 3
-
-        for row in supplies:
-            row_num += 1
-            action = row.get_action_type_value()
-            name = ''
-            ref = ''
-            lot = ''
-            category = ''
-            if row.name:
-                name = row.name
-            if row.general_supply:
-                name = row.general_supply.name
-                ref = row.general_supply.ref
-                category = row.general_supply.category.name
-
-            if row.supplyLot:
-                lot = row.supplyLot
-            count = row.count
-            date_expired = row.expiredDate.strftime("%d.%m.%Y")
-            date_created = row.dateCreated.strftime("%d.%m.%Y")
-
-            val_row = [action, name, ref, lot, count, date_expired, category, date_created]
-
-            for col_num in range(len(val_row)):
-                ws.write(row_num, 0, row_num - 3)
-                ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
-
-        ws.set_column(0, 0, 5)
-        ws.set_column(1, 1, 15)
-        ws.set_column(2, 2, 35)
-        ws.set_column(3, 4, 15)
-        ws.set_column(5, 6, 10)
-        ws.set_column(7, 8, 12)
-
-        ws.add_table(3, 0, row_num, len(columns_table) - 1, {'columns': columns_table})
-        wb.close()
-        return response
-
-    cartCountData = countCartItemsHelper(request)
-
-    return render(request, 'supplies/home/home-history.html',
-                  {'title': 'Історія товарів', 'supplies': supplies, 'cartCountData': cartCountData,
-                   'suppFilter': suppFilter, 'isHome': True, 'isHistory': True})
-
-
-
 
 @login_required(login_url='login')
 def order_delete(request, order_id):
@@ -1726,19 +1608,6 @@ def order_delete(request, order_id):
     next = request.GET.get('next')
     return HttpResponseRedirect(next)
 
-
-@login_required(login_url='login')
-def agreements(request):
-    cartCountData = countCartItemsHelper(request)
-    orders = Agreement.objects.all().order_by('-id')
-    totalCount = orders.count()
-
-    title = f'Всі договори. ({totalCount} шт.)'
-
-    return render(request, 'supplies/agreements/agreements.html',
-                  {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True,
-                   'totalCount': totalCount,
-                   'isAgreementsTab': True})
 
 
 def get_selected_xls_orders_sups(supply_in_order_list: defaultdict):
@@ -3488,67 +3357,6 @@ def orderDetail(request, order_id, sup_id):
     return render(request, 'supplies/orders/orderDetail.html',
                   {'title': f'Замовлення № {order_id}', 'order': order, 'supplies': supplies_in_order,
                    'cartCountData': cartCountData, 'isOrders': True, 'highlighted_sup_id': sup_id})
-
-
-@login_required(login_url='login')
-def get_agreement_detail_for_cart(request):
-    agr_id = request.GET.get('agreement_id')
-    try:
-        agreement = Agreement.objects.get(pk=agr_id)
-        supplies_in_agreement = agreement.supplyinagreement_set.all().order_by('id')
-    except:
-        agreement = None
-        supplies_in_agreement = None
-
-
-    return render(request, 'partials/common/get_agreement_detail_for_cart.html',
-                  {'agreement': agreement, 'supplies': supplies_in_agreement, 'agreement_is_exist': agreement != None })
-
-
-
-
-@login_required(login_url='login')
-def agreementDetail(request, agreement_id):
-    agreement = get_object_or_404(Agreement, pk=agreement_id)
-    supplies_in_agreement = agreement.supplyinagreement_set.all().order_by('id')
-    orders_in_agreement = agreement.order_set.all().order_by('-id')
-    cartCountData = countCartItemsHelper(request)
-    next = request.POST.get('next')
-
-    # if request.method == 'POST':
-    #
-    #     if 'delete' in request.POST:
-    #         next = request.POST.get('next')
-    #         if not order.isComplete:
-    #             supps = order.supplyinorder_set.all()
-    #             for el in supps:
-    #                 if el.hasSupply():
-    #                     countInOrder = el.count_in_order
-    #                     supp = el.supply
-    #                     supp.countOnHold -= countInOrder
-    #                     supp.save(update_fields=['countOnHold'])
-    #
-    #         if order.npdeliverycreateddetailinfo_set.exists():
-    #             docrefs = order.npdeliverycreateddetailinfo_set.values_list('ref')
-    #             for ref in docrefs:
-    #                 params = {
-    #                     "apiKey": "99f738524ca3320ece4b43b10f4181b1",
-    #                     "modelName": "InternetDocument",
-    #                     "calledMethod": "delete",
-    #                     "methodProperties": {
-    #                         "DocumentRefs": ref
-    #                     }
-    #                 }
-    #                 data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
-    #                 print(data)
-    #
-    #         order.delete()
-    #         return HttpResponseRedirect(next)
-
-    return render(request, 'supplies/agreements/agreementDetail.html',
-                  {'title': f'Договір № {agreement.description}', 'agreement': agreement, 'supplies': supplies_in_agreement, 'orders': orders_in_agreement,
-                   'cartCountData': cartCountData, 'isOrders': True})
-
 
 
 @login_required(login_url='login')

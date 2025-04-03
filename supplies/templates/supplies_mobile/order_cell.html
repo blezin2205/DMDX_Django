@@ -52,7 +52,7 @@
                                 </div>
                             {% else %}
                                 <div class="badge bg-secondary bg-opacity-10 text-secondary">
-                                    Договір №{{order.for_preorder.id}}
+                                    Договір {{order.for_preorder.id}}
                                     {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }}{% endif %}
                                 </div>
                             {% endif %}
