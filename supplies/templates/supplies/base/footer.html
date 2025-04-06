@@ -1,11 +1,23 @@
-<footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top mx-5">
-    <div class="col-md-4 d-flex align-items-center">
-      <span class="text-muted">© 2021 DMDX, Inc</span>
+{% load static %}
+<footer class="footer py-1">
+  <div class="container">
+    <div class="row justify-content-center">
+      <!-- <div class="col-md-4 text-center text-md-start">
+        <img src="{% static 'images/dmdx_logo.png' %}" alt="DMDX Logo" height="20" class="mb-3 mb-md-0">
+      </div> -->
+      <div class="col-md-4 text-center">
+        <p class="mb-0" style="color: #ffe900; font-weight: bold; font-style: italic;">© {% now "Y" %} DMDX</p>
+      </div>
     </div>
+  </div>
+</footer>
 
-    <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
-      <li class="ms-3"><a class="text-muted" target="_blank" href="https://www.instagram.com/o_stepanov/"><i class="bi bi-instagram"></i></a></li>
-      <li class="ms-3"><a class="text-muted" target="_blank" href="https://www.facebook.com/ckobilka"><i class="bi bi-facebook"></i></a></li>
-      <li class="ms-3"><a class="text-muted" href="https://diamedix.ro/ro" target="_blank"><i class="bi bi-info-square"></i></a></li>
-    </ul>
-  </footer>
+<style>
+.footer {
+  background: linear-gradient(to right,
+    rgba(0, 49, 101, 1) 0%,
+    rgba(0, 49, 101, 1) 50%,
+    rgba(255, 233, 0, 1) 100%);
+  width: 100%;
+}
+</style>

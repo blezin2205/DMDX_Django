@@ -503,3 +503,30 @@ form .custom-btn:hover {
       font-size: 1.75rem;
   }
 }
+
+.dmdx-button {
+    background-color: #003165; /* Темно-синій */
+    color: #ffe900; /* Яскраво-жовтий */
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    font-family: 'Arial Black', sans-serif;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    letter-spacing: 1px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.dmdx-button:hover {
+    background-color: #003366;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    color: #ffe900;
+}
+
+.dmdx-button.active {
+    background-color: #003366;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
