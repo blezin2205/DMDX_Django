@@ -573,6 +573,19 @@ def get_np_delivery_details(order: Order) -> Tuple[QuerySet, bool]:
 
 def complete_all_orders_with_np_status_code():
     """Process orders sequentially"""
+    # Create a handler based on environment
+    if settings.DEBUG:
+        # In development, use a file handler
+        handler = logging.FileHandler('np_status_updates.log')
+        handler.setLevel(logging.INFO)
+        
+        # Create a formatter
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        
+        # Add the handler to the logger
+        logger.addHandler(handler)
+    
     logger.info("Starting evening task execution")
     
     try:
@@ -598,6 +611,9 @@ def complete_all_orders_with_np_status_code():
                 
             except Exception as e:
                 logger.error(f"Error processing order {order.id}: {str(e)}")
+                # Send error to Sentry
+                import sentry_sdk
+                sentry_sdk.capture_exception(e)
             
             logger.info("="*100)
         
@@ -605,8 +621,22 @@ def complete_all_orders_with_np_status_code():
         logger.info(f"Evening task completed at {current_time}")
         logger.info("="*100)
         
+        # Send success event to Sentry
+        import sentry_sdk
+        sentry_sdk.capture_message(
+            f"NP status update task completed successfully at {current_time}. Processed {orders.count()} orders.",
+            level="info"
+        )
+        
     except Exception as e:
         logger.error(f"Error in complete_all_orders_with_np_status_code: {str(e)}")
+        # Send error to Sentry
+        import sentry_sdk
+        sentry_sdk.capture_exception(e)
+    finally:
+        # Remove the handler to avoid duplicate logs in future runs
+        if settings.DEBUG and 'handler' in locals():
+            logger.removeHandler(handler)
 
 def np_delivery_detail_info_for_order(request, order_id):
     """

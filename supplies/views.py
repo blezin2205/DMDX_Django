@@ -2092,7 +2092,10 @@ def updatePreorderStatus(request, order_id):
     order.dateSent = timezone.now().date()
     order.save()
 
-    return render(request, 'partials/preorders/preorder_preview_cell.html', {'order': order})
+    if request.user_agent.is_mobile:
+        return render(request, 'supplies_mobile/preorder_cell.html', {'order': order})
+    else:
+        return render(request, 'partials/preorders/preorder_preview_cell.html', {'order': order})
 
 @login_required(login_url='login')
 def updatePreorderStatusPinned(request, order_id):
@@ -2104,7 +2107,11 @@ def updatePreorderStatusPinned(request, order_id):
     is_pinned_bool = is_pinned.lower() == 'true'
     order.isPinned = is_pinned_bool
     order.save(update_fields=['isPinned'])
-    return render(request, 'partials/preorders/preorder_preview_cell.html', {'order': order})
+    
+    if request.user_agent.is_mobile:
+        return render(request, 'supplies_mobile/preorder_cell.html', {'order': order})
+    else:
+        return render(request, 'partials/preorders/preorder_preview_cell.html', {'order': order})
 
 def updateOrderPinnedStatus(request, order_id):
     if not (request.user.groups.filter(name='empl').exists() or request.user.is_staff):

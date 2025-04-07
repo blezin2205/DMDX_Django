@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 from pathlib import Path
 import os
 import django_heroku
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 import dj_database_url
 import cloudinary
@@ -43,6 +45,15 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 STATICFILES_DIRS = [BASE_DIR / 'templates/src']
 
+
+# Sentry Configuration
+sentry_sdk.init(
+    dsn="https://83fa616ca7eaaf3570093ccf42e02ac3@o4509114063847424.ingest.us.sentry.io/4509114064109568",
+    integrations=[DjangoIntegration()],
+    traces_sample_rate=1.0,
+    send_default_pii=True,
+    environment="development" if DEBUG else "production",
+)
 
 # Application definition
 

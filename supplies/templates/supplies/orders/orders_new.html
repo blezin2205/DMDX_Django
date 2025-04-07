@@ -44,24 +44,25 @@
             <div id="error"></div>
         {% endif %}
 
-        <div class="d-flex align-items-center gap-3">
-            <div class="container bg-light border shadow-sm py-1 px-2 my-2 rounded-3 w-50" style="margin-left: 0;">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="d-flex gap-3">
+        <div class="d-flex {% if request.user_agent.is_mobile %}flex-column{% else %}align-items-center{% endif %} gap-3">
+            <div class="container bg-light border shadow-sm py-1 px-2 my-2 rounded-3 {% if request.user_agent.is_mobile %}w-100{% else %}w-50{% endif %}" style="margin-left: 0;">
+                <div class="d-flex {% if request.user_agent.is_mobile %}flex-column{% else %}align-items-center{% endif %} gap-3">
+                    <div class="d-flex {% if request.user_agent.is_mobile %}flex-column{% else %}gap-3{% endif %}">
                         {{ orderFilter.form.isComplete|as_crispy_field }}
                         {% if request.user|has_group:"empl" or request.user.is_staff %}
                             {{ orderFilter.form.for_state_of_client|as_crispy_field }}
                             {{ orderFilter.form.for_np_delivery_state|as_crispy_field }}
                         {% endif %}
                     </div>
-                    <div class="ms-auto">
-                        <button class="btn btn-primary" type="submit">
+                    <div class="{% if request.user_agent.is_mobile %}w-100 text-center{% else %}ms-auto{% endif %}">
+                        <button class="btn btn-primary {% if request.user_agent.is_mobile %}w-100{% endif %}" type="submit">
                             <i class="bi bi-search me-1"></i>Застосувати
                         </button>
                     </div>
                 </div>
             </div>
-            <div class="container d-flex align-items-center justify-content-between w-50">
+            
+            <div class="container {% if request.user_agent.is_mobile %}w-100{% else %}w-50{% endif %} d-flex align-items-center justify-content-between">
                 {% if request.user|has_group:"empl" or request.user.is_staff %}
                     {% if pinned_orders_exists %}
                     <button type="submit" name="remove_all_pinned_orders_action" class="btn btn-outline-danger" onclick="return confirm('Ви впевнені, що хочете відкріпити всі закріплені замовлення?');">
@@ -70,7 +71,6 @@
                     {% endif %}
                 {% endif %}
                 <div class="d-flex gap-2">
-                
                     <div id="register_print_buttons" style="min-height: 50px;">
                         {% include 'partials/register_print_orders_chekbox_buttons.html' %}
                     </div>
@@ -79,9 +79,8 @@
                     </div>
                 </div>
             </div>
-            
-           
         </div>
+    </div>
 
     </div>
     <div class="container" id="order_delete_cell">

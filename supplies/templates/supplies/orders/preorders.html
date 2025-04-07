@@ -8,41 +8,64 @@
 {% block content %}
      <form method="post" class="form-inline justify-content-center">
       {% csrf_token %}
-     <div class="hstack gap-2">
-         <div class="hstack w-100 gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between">
-             <div class="hstack gap-4">
+     <div class="{% if request.user_agent.is_mobile %}d-flex flex-column gap-3{% else %}hstack gap-2{% endif %}">
+         <div class="{% if request.user_agent.is_mobile %}container bg-light border shadow-sm py-1 px-2 my-2 rounded-3 w-100{% else %}hstack w-100 gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between{% endif %}" style="{% if request.user_agent.is_mobile %}margin-left: 0;{% endif %}">
+             <div class="{% if request.user_agent.is_mobile %}d-flex flex-column gap-3{% else %}hstack gap-4{% endif %}">
                  {{ preorderFilter.form.state_of_delivery|as_crispy_field }}
                  {{ preorderFilter.form.date_range|as_crispy_field }}
                  {% if request.user|has_group:"empl" or request.user.is_staff %}
                  {{ preorderFilter.form.for_state_of_client|as_crispy_field }}
                  {{ preorderFilter.form.isPreorder|as_crispy_field }}
-                     {{ preorderFilter.form.search_text|as_crispy_field }}
+                 {{ preorderFilter.form.search_text|as_crispy_field }}
                  {% endif %}
              </div>
-             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
-
-</div>
-     <div class="col d-flex justify-content-end" id="xls_preorder_print_buttons">
-        {% include 'partials/preorders/xls_preorders_print_buttons.html' %}
-    </div>
-
+             <button class="btn {% if request.user_agent.is_mobile %}btn-primary w-100{% else %}btn-outline-primary my-2{% endif %}" type="submit">
+                 {% if request.user_agent.is_mobile %}<i class="bi bi-search me-1"></i>{% endif %}Застосувати
+             </button>
+         </div>
+         
+         {% if request.user_agent.is_mobile %}
+         <div class="container w-100 d-flex align-items-center justify-content-between">
+             <div class="d-flex gap-2">
+                 <div id="xls_preorder_print_buttons">
+                     {% include 'partials/preorders/xls_preorders_print_buttons.html' %}
+                 </div>
+             </div>
+             
+             <div class="d-flex justify-content-end">
+                 {% if isArchiveChoosed %}
+                     <button type="submit" class="btn btn-outline-primary">
+                         Сховати архів
+                     </button>
+                 {% else %}
+                     <button type="submit" class="btn btn-outline-primary" name="get_archive_preorders">
+                         Показати архів
+                     </button>
+                 {% endif %}
+             </div>
+         </div>
+         {% else %}
+         <div class="col d-flex justify-content-end" id="xls_preorder_print_buttons">
+             {% include 'partials/preorders/xls_preorders_print_buttons.html' %}
+         </div>
+         {% endif %}
      </div>
 
-<div class="col d-flex justify-content-end pe-2">
-    {% if isArchiveChoosed %}
-         <button type="submit" class="btn btn-outline-primary">
-        Сховати архів
-    </button>
-    {% else %}
-         <button type="submit" class="btn btn-outline-primary" name="get_archive_preorders">
-        Показати архів
-    </button>
-    {% endif %}
-
-    </div>
+     {% if not request.user_agent.is_mobile %}
+     <div class="col d-flex justify-content-end pe-2">
+         {% if isArchiveChoosed %}
+             <button type="submit" class="btn btn-outline-primary">
+                 Сховати архів
+             </button>
+         {% else %}
+             <button type="submit" class="btn btn-outline-primary" name="get_archive_preorders">
+                 Показати архів
+             </button>
+         {% endif %}
+     </div>
+     {% endif %}
 
 {% if orders.count == 0 %}
-
     <h3>Передзамовлень ще немає!</h3>
 {% else %}
     <div class="container" id="preorders-list">

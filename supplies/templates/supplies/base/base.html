@@ -88,7 +88,11 @@ const csrftoken = getToken('csrftoken');
 
 </head>
 <body>
-{% include 'supplies/base/header.html' %}
+{% if request.user_agent.is_mobile %}
+    {% include 'supplies/base/header_mobile.html' %}
+{% else %}
+    {% include 'supplies/base/header.html' %}
+{% endif %}
 
     <div class="container">
         <div class="spacer" style="height: 2rem;"></div>

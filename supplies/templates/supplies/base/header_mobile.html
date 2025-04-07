@@ -1,0 +1,378 @@
+{% load myapp_extras %}
+
+<nav class="navbar navbar-expand-md shadow-sm bg-white bg-general-navbar d-md-none">
+    <div class="container-fluid px-3 py-2">
+        <!-- Mobile Menu Toggle -->
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mobileNavbar" aria-controls="mobileNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-list fs-4 menu-icon"></i>
+        </button>
+
+        <!-- Mobile Navigation -->
+        <div class="collapse navbar-collapse" id="mobileNavbar">
+            <ul class="navbar-nav flex-column w-100 gap-2 mt-3">
+                <li class="nav-item w-100">
+                    <a href="/" class="btn btn-soft w-100 text-start{% if isHome %} active fw-medium{% endif %}" aria-current="page">
+                        <i class="bi bi-box-seam me-2"></i>Склад
+                    </a>
+                </li>
+
+                <li class="nav-item w-100">
+                    <a href="/orders" class="btn btn-soft w-100 text-start position-relative{% if isOrders %} active fw-medium{% endif %}" aria-current="page">
+                        <i class="bi bi-clipboard-check me-2"></i>Замовлення 
+                        <div class="position-absolute top-50 end-0 translate-middle-y d-flex gap-1 me-2">
+                            {% if cartCountData.orders_pinned > 0 %}
+                                <span class="badge rounded-pill bg-danger">{{ cartCountData.orders_pinned }}</span>
+                            {% endif %}
+                            {% if cartCountData.orders_incomplete > 0 %}
+                                <span class="badge rounded-pill bg-warning">{{ cartCountData.orders_incomplete }}</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                </li>
+
+                <li class="nav-item w-100">
+                    <a href="/preorders" class="btn btn-soft w-100 text-start position-relative{% if isPreordersTab %} active fw-medium{% endif %}" aria-current="page">
+                        <i class="bi bi-clipboard me-2"></i>Передзамовлення 
+                        <div class="position-absolute top-50 end-0 translate-middle-y d-flex gap-1 me-2">
+                            {% if cartCountData.preorders_pinned > 0 %}
+                                <span class="badge rounded-pill bg-danger">{{ cartCountData.preorders_pinned }}</span>
+                            {% endif %}
+                            {% if cartCountData.preorders_incomplete > 0 %}
+                                <span class="badge rounded-pill bg-info">{{ cartCountData.preorders_incomplete }}</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                </li>
+
+                {% if request.user|has_group:"empl" or request.user.is_staff %}
+                    <li class="nav-item w-100">
+                        <a href="/clientsInfo" class="btn btn-soft w-100 text-start{% if isClients %} active fw-medium{% endif %}" aria-current="page">
+                            <i class="bi bi-people me-2"></i>Клієнти
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% if request.user|has_group:"empl" or request.user.is_staff %}
+                    {% if cartCountData.order_to_send_today > 0 or cartCountData.expired_orders > 0 %}
+                        <li class="nav-item w-100">
+                            <div class="d-flex gap-2">
+                                {% if cartCountData.order_to_send_today > 0 %}
+                                    <div class="btn btn-soft-danger flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        <span>{{ cartCountData.order_to_send_today }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if cartCountData.expired_orders > 0 %}
+                                    <div class="btn btn-soft-danger flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <span>{{ cartCountData.expired_orders }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endif %}
+                {% endif %}
+
+                <!-- Cart Badges -->
+                <li class="nav-item w-100">
+                    <div class="d-flex gap-2">
+                        <div id="booked-cart-badge" class="flex-grow-1" hx-get="{% url 'booked-cart-badge-count' %}" hx-trigger="subscribe-booked-cart-badge-count from:body">
+                            {% include 'booked_flow/booked-cart-badge.html' %}
+                        </div>
+                        <div id="precart-badge" class="flex-grow-1" hx-get="{% url 'precart-count' %}" hx-trigger="subscribe_precart from:body">
+                            {% include 'partials/cart/precart-badge.html' %}
+                        </div>
+                        <div id="cart-badge" class="flex-grow-1" hx-get="{% url 'cart-count' %}" hx-trigger="subscribe from:body">
+                            {% include 'partials/cart/cart-badge.html' %}
+                        </div>
+                    </div>
+                </li>
+
+                <!-- User Info and Logout -->
+                <li class="nav-item w-100">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="text-muted">
+                            <i class="bi bi-person-circle me-2"></i>
+                            {{ request.user.first_name }} {{ request.user.last_name }}
+                        </span>
+                        <a class="btn btn-soft-danger" href="{% url 'logout' %}" role="button">
+                            <i class="bi bi-box-arrow-right"></i>
+                        </a>
+                    </div>
+                </li>
+
+                {% if request.user.is_staff or request.user|has_group:"empl" %}
+                    <li class="nav-item w-100">
+                        <div class="custom-dropdown w-100">
+                            <button class="btn btn-soft w-100 text-start dropdown-toggle" type="button" id="mobileDropdownMenu">
+                                <i class="bi bi-gear me-2"></i>Меню
+                                <i class="bi bi-chevron-down float-end"></i>
+                            </button>
+                            <div class="custom-dropdown-menu w-100 shadow-sm" id="mobileDropdownContent">
+                                <h6 class="dropdown-header">Основне</h6>
+                                <a class="dropdown-item" href="{% url 'nova_poshta_registers' %}">
+                                    <i class="bi bi-truck me-2"></i>Реєстри НП
+                                </a>
+                                <a class="dropdown-item" href="{% url 'all_deliveries' %}">
+                                    <i class="bi bi-box me-2"></i>Поставки
+                                </a>
+                                <a class="dropdown-item" href="/serviceNotes">
+                                    <i class="bi bi-tools me-2"></i>Сервісні записи
+                                </a>
+                                <a class="dropdown-item" href="/allDevices">
+                                    <i class="bi bi-cpu me-2"></i>Прилади
+                                </a>
+
+                                <div class="dropdown-divider"></div>
+                                
+                                <h6 class="dropdown-header">Додати</h6>
+                                <a class="dropdown-item" href="{% url 'create_note' %}">
+                                    <i class="bi bi-journal-plus me-2"></i>Сервісну замітку
+                                </a>
+                                <a class="dropdown-item" href="{% url 'addClient' %}">
+                                    <i class="bi bi-person-plus me-2"></i>Клієнта
+                                </a>
+                                <a class="dropdown-item" href="{% url 'add-new-city' %}">
+                                    <i class="bi bi-building me-2"></i>Місто
+                                </a>
+                                <a class="dropdown-item" href="{% url 'add-new-supply-category' %}">
+                                    <i class="bi bi-tags me-2"></i>Категорію товара
+                                </a>
+                                <a class="dropdown-item" href="{% url 'add-general-supply' %}">
+                                    <i class="bi bi-box-seam me-2"></i>Назву товара
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                
+                                <a class="dropdown-item" href="{% url 'app_settings' %}">
+                                    <i class="bi bi-gear me-2"></i>Налаштування
+                                </a>
+                                <a class="dropdown-item" href="{% url 'list_files' '' %}">
+                                    <i class="bi bi-folder me-2"></i>Storage
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<style>
+    .btn-soft {
+        color: #4a5568;
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        transition: all 0.2s ease-in-out;
+        border-radius: 0.5rem;
+    }
+    
+    .btn-soft:hover {
+        background-color: #e9ecef;
+        color: #2d3748;
+    }
+    
+    .btn-soft.active {
+        background-color: #e9ecef;
+        color: #2d3748;
+        border-color: #cbd5e0;
+    }
+    
+    .btn-soft-danger {
+        color: #dc3545;
+        background-color: #fff5f5;
+        border: 1px solid #fed7d7;
+    }
+    
+    .btn-soft-danger:hover {
+        background-color: #fed7d7;
+        color: #dc3545;
+    }
+    
+    .dropdown-menu, .custom-dropdown-menu {
+        border: 1px solid #e9ecef;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
+        border-radius: 0.5rem;
+    }
+    
+    .dropdown-header {
+        color: #4a5568;
+        font-weight: 600;
+        padding: 0.75rem 1rem;
+    }
+    
+    .dropdown-item {
+        padding: 0.75rem 1rem;
+        color: #4a5568;
+    }
+    
+    .dropdown-item:hover {
+        background-color: #f8f9fa;
+        color: #2d3748;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Custom dropdown styles */
+    .custom-dropdown {
+        position: relative;
+    }
+    
+    .custom-dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        z-index: 1001;
+        margin-top: 0.5rem;
+    }
+    
+    .custom-dropdown-menu.show {
+        display: block;
+    }
+    
+    .custom-dropdown .dropdown-toggle .bi-chevron-down {
+        transition: transform 0.3s ease;
+    }
+    
+    .custom-dropdown .dropdown-toggle.active .bi-chevron-down {
+        transform: rotate(180deg);
+    }
+
+    @media (max-width: 767.98px) {
+        .navbar-collapse {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none; /* Hide by default */
+        }
+        
+        .navbar-collapse.show {
+            display: block; /* Show when .show class is added */
+        }
+    }
+</style>
+
+<script>
+    // Simple mobile menu toggle functionality
+    (function() {
+        // Wait for the DOM to be fully loaded
+        function initMobileMenu() {
+            const mobileNavbar = document.getElementById('mobileNavbar');
+            const menuIcon = document.querySelector('.menu-icon');
+            const toggleButton = document.querySelector('.navbar-toggler');
+            
+            if (!mobileNavbar || !menuIcon || !toggleButton) {
+                // If elements aren't found, try again in a moment
+                setTimeout(initMobileMenu, 100);
+                return;
+            }
+            
+            // Remove Bootstrap's data attributes to prevent conflicts
+            toggleButton.removeAttribute('data-bs-toggle');
+            toggleButton.removeAttribute('data-bs-target');
+            
+            // Function to toggle menu icon
+            function toggleMenuIcon(isOpen) {
+                if (isOpen) {
+                    menuIcon.classList.remove('bi-list');
+                    menuIcon.classList.add('bi-x');
+                } else {
+                    menuIcon.classList.remove('bi-x');
+                    menuIcon.classList.add('bi-list');
+                }
+            }
+            
+            // Function to toggle menu visibility
+            function toggleMenu() {
+                const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
+                
+                if (isExpanded) {
+                    // Close menu
+                    mobileNavbar.classList.remove('show');
+                    toggleButton.setAttribute('aria-expanded', 'false');
+                    toggleMenuIcon(false);
+                } else {
+                    // Open menu
+                    mobileNavbar.classList.add('show');
+                    toggleButton.setAttribute('aria-expanded', 'true');
+                    toggleMenuIcon(true);
+                }
+            }
+            
+            // Handle toggle button click
+            toggleButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleMenu();
+            });
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!mobileNavbar.contains(e.target) && !toggleButton.contains(e.target) && mobileNavbar.classList.contains('show')) {
+                    toggleMenu();
+                }
+            });
+            
+            // Prevent clicks inside the menu from closing it
+            mobileNavbar.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // Initialize the menu state
+            const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
+            toggleMenuIcon(isExpanded);
+            
+            // Custom dropdown functionality
+            const dropdownToggle = document.getElementById('mobileDropdownMenu');
+            const dropdownContent = document.getElementById('mobileDropdownContent');
+            
+            if (dropdownToggle && dropdownContent) {
+                // Remove Bootstrap data attributes
+                dropdownToggle.removeAttribute('data-bs-toggle');
+                dropdownToggle.removeAttribute('aria-expanded');
+                
+                // Toggle dropdown on click
+                dropdownToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Toggle dropdown visibility
+                    dropdownContent.classList.toggle('show');
+                    dropdownToggle.classList.toggle('active');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!dropdownToggle.contains(e.target) && !dropdownContent.contains(e.target) && dropdownContent.classList.contains('show')) {
+                        dropdownContent.classList.remove('show');
+                        dropdownToggle.classList.remove('active');
+                    }
+                });
+                
+                // Prevent clicks inside the dropdown from closing it
+                dropdownContent.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+        }
+        
+        // Start initialization when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMobileMenu);
+        } else {
+            initMobileMenu();
+        }
+    })();
+</script>

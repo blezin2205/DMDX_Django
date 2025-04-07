@@ -2,7 +2,11 @@
 
 
 {% for order in orders %}
-{% include 'partials/preorders/preorder_preview_cell.html' %}
+    {% if request.user_agent.is_mobile %}
+        {% include 'supplies_mobile/preorder_cell.html' %}
+    {% else %}
+        {% include 'partials/preorders/preorder_preview_cell.html' %}
+    {% endif %}
 
     {% if not forloop.last %}
         {% with next_order=orders|next:forloop.counter0 %}

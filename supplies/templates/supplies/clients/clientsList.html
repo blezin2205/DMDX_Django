@@ -102,30 +102,72 @@
         justify-content: center;
         gap: 1rem;
     }
+    
+    /* Mobile-specific styles */
+    @media (max-width: 768px) {
+        .mobile-filter-container {
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        
+        .mobile-filter-field {
+            width: 100%;
+            margin-bottom: 0.75rem;
+        }
+        
+        .mobile-filter-button {
+            width: 100%;
+            margin-top: 1rem;
+        }
+    }
 </style>
 
     <form method="get" class="form-inline justify-content-center">
-         <div class="filter-section">
-             <div class="d-flex flex-column gap-3">
-                 <div>
-                     {{ placeFilter.form.is_has_options_button|as_crispy_field }}
-                 </div>
-                 <div class="d-flex justify-content-center gap-3">
-                    <div style="max-width: 200px;">{{ placeFilter.form.preorder_filter|as_crispy_field }}</div>
-                    <div style="max-width: 200px;">{{ placeFilter.form.city_ref|as_crispy_field }}</div>
-                    <div style="max-width: 200px;">{{ placeFilter.form.isPrivatePlace|as_crispy_field }}</div>
-                    <div style="min-width: 400px;">{{ placeFilter.form.name|as_crispy_field }}</div>
-                 </div>
-             </div>
-             <div class="d-flex justify-content-center mt-3">
-                 <button class="btn btn-primary" type="submit">
-                     <i class="bi bi-search me-2"></i>Застосувати
-                 </button>
-             </div>
-         </div>
+        {% if request.user_agent.is_mobile %}
+            <div class="mobile-filter-container">
+                <div class="d-flex flex-column gap-3">
+                    <div>
+                        {{ placeFilter.form.is_has_options_button|as_crispy_field }}
+                    </div>
+                    <div class="d-flex flex-column">
+                        <div class="mobile-filter-field">{{ placeFilter.form.preorder_filter|as_crispy_field }}</div>
+                        <div class="mobile-filter-field">{{ placeFilter.form.city_ref|as_crispy_field }}</div>
+                        <div class="mobile-filter-field">{{ placeFilter.form.isPrivatePlace|as_crispy_field }}</div>
+                        <div class="mobile-filter-field">{{ placeFilter.form.name|as_crispy_field }}</div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-center">
+                    <button class="btn btn-primary mobile-filter-button" type="submit">
+                        <i class="bi bi-search me-2"></i>Застосувати
+                    </button>
+                </div>
+            </div>
+        {% else %}
+            <div class="filter-section">
+                <div class="d-flex flex-column gap-3">
+                    <div>
+                        {{ placeFilter.form.is_has_options_button|as_crispy_field }}
+                    </div>
+                    <div class="d-flex justify-content-center gap-3">
+                        <div style="max-width: 200px;">{{ placeFilter.form.preorder_filter|as_crispy_field }}</div>
+                        <div style="max-width: 200px;">{{ placeFilter.form.city_ref|as_crispy_field }}</div>
+                        <div style="max-width: 200px;">{{ placeFilter.form.isPrivatePlace|as_crispy_field }}</div>
+                        <div style="min-width: 400px;">{{ placeFilter.form.name|as_crispy_field }}</div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-center mt-3">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search me-2"></i>Застосувати
+                    </button>
+                </div>
+            </div>
+        {% endif %}
     </form>
 
-{% if request.user_agent.is_mobile %}<div class="row row-cols-1 row-cols-lg-1 g-3"> {% else %} <div class="row row-cols-2 row-cols-lg-2 g-3"> {% endif %}
+{% if request.user_agent.is_mobile %}<div class="row row-cols-1 row-cols-lg-1 g-3 py-3"> {% else %} <div class="row row-cols-2 row-cols-lg-2 g-3 py-3"> {% endif %}
     {% for client in clients %}
     {% include 'partials/clients/client_card.html' %}
    

@@ -2,6 +2,7 @@ from django import template
 from ..models import *
 from django.utils import timezone
 from datetime import datetime
+import re
 
 register = template.Library()
 
@@ -150,3 +151,17 @@ def date_color(date):
         return 'orange'
     else:
         return 'red'
+
+@register.filter
+def is_mobile(request):
+    """
+    Detects if the request is from a mobile device.
+    Returns True if the request is from a mobile device, False otherwise.
+    """
+    if not request:
+        return False
+    
+    user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+    mobile_keywords = ['android', 'iphone', 'ipad', 'ipod', 'windows phone', 'mobile']
+    
+    return any(keyword in user_agent for keyword in mobile_keywords)
