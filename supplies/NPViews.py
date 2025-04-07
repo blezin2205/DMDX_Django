@@ -593,6 +593,9 @@ def complete_all_orders_with_np_status_code():
         orders = Order.objects.filter(statusnpparselfromdoucmentid__status_code__gt="3", isComplete=False).distinct()
         logger.info(f"Found {orders.count()} orders with status code greater than 3 to process")
         
+        # Create a list to store order details for the final log
+        order_details_list = []
+        
         # Process each order sequentially
         for order in orders:
             try:
@@ -601,7 +604,24 @@ def complete_all_orders_with_np_status_code():
                 
                 delivery_info = order.npdeliverycreateddetailinfo_set.first()
                 user_sent = delivery_info.userCreated if delivery_info else None
-                logger.info(f"Order {order.id} delivery info found - User: {user_sent}")
+                
+                # Get the status code for this order
+                status_parcel = order.statusnpparselfromdoucmentid_set.first()
+                status_code = status_parcel.status_code if status_parcel else "No status"
+                
+                # Log detailed order information
+                logger.info(f"Order {order.id} details:")
+                logger.info(f"  - User sent: {user_sent}")
+                logger.info(f"  - Status code: {status_code}")
+                logger.info(f"  - Order info: {order}")
+                
+                # Add order details to the list for the final log
+                order_details_list.append({
+                    "order_id": order.id,
+                    "user_sent": str(user_sent),
+                    "status_code": status_code,
+                    "order_info": str(order)
+                })
                 
                 update_order_status_core(order.id, user_sent)
                 logger.info(f"Successfully updated status for order {order.id}")
@@ -621,10 +641,19 @@ def complete_all_orders_with_np_status_code():
         logger.info(f"Evening task completed at {current_time}")
         logger.info("="*100)
         
-        # Send success event to Sentry
+        # Format the order details list for the final log
+        order_details_log = "Order Details:\n"
+        for detail in order_details_list:
+            order_details_log += f"Order {detail['order_id']}:\n"
+            order_details_log += f"  - User sent: {detail['user_sent']}\n"
+            order_details_log += f"  - Status code: {detail['status_code']}\n"
+            order_details_log += f"  - Order info: {detail['order_info']}\n"
+            order_details_log += "  " + "="*50 + "\n"
+        
+        # Send a single comprehensive log to Sentry with all order details
         import sentry_sdk
         sentry_sdk.capture_message(
-            f"NP status update task completed successfully at {current_time}. Processed {orders.count()} orders.",
+            f"NP status update task completed successfully at {current_time}. Processed {orders.count()} orders.\n\n{order_details_log}",
             level="info"
         )
         
