@@ -47,13 +47,14 @@ STATICFILES_DIRS = [BASE_DIR / 'templates/src']
 
 
 # Sentry Configuration
-sentry_sdk.init(
-    dsn="https://83fa616ca7eaaf3570093ccf42e02ac3@o4509114063847424.ingest.us.sentry.io/4509114064109568",
-    integrations=[DjangoIntegration()],
-    traces_sample_rate=1.0,
-    send_default_pii=True,
-    environment="development" if DEBUG else "production",
-)
+if not DEBUG:
+    sentry_sdk.init(
+        dsn="https://83fa616ca7eaaf3570093ccf42e02ac3@o4509114063847424.ingest.us.sentry.io/4509114064109568",
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=1.0,
+        send_default_pii=True,
+        environment="production",
+    )
 
 # Application definition
 
