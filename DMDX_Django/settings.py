@@ -38,9 +38,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'cg#p$g+j9tax!#a3cup@1$8obt2_+&k3q+pmu)5%asj6yjpkag'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Set DEBUG based on environment
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+# For production, ensure DEBUG is False
+if 'DYNO' in os.environ:
+    DEBUG = False
+
+# Set ALLOWED_HOSTS based on environment
+if DEBUG:
+    ALLOWED_HOSTS = ['*']  # Allow all hosts in development
+else:
+    # In production, specify your domain(s)
+    ALLOWED_HOSTS = [
+        'dmdxstorage.herokuapp.com',  # Your Heroku domain
+        'localhost',
+        '127.0.0.1',
+    ]
+
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 STATICFILES_DIRS = [BASE_DIR / 'templates/src']
