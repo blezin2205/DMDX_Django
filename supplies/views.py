@@ -1742,10 +1742,7 @@ def orders(request):
                 refs=listToStr,
                 api_key=settings.NOVA_POSHTA_API_KEY
             )
-            return JsonResponse({
-                'url': np_link_print,
-                'open_in_new_tab': True
-            })
+            return redirect(np_link_print)
 
         if 'export_to_excel_choosed' in request.POST:
             print('---------------------export_to_excel_choosed--------------------------------')
