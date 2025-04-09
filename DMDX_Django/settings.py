@@ -39,16 +39,20 @@ SECRET_KEY = 'cg#p$g+j9tax!#a3cup@1$8obt2_+&k3q+pmu)5%asj6yjpkag'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Set DEBUG based on environment
-DEBUG = True
+DEBUG = False
 
 # For production, ensure DEBUG is False
 if 'DYNO' in os.environ:
     DEBUG = False
     
 ALLOWED_HOSTS = ['*']
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-STATICFILES_DIRS = [BASE_DIR / 'templates/src']
+# Static files configuration
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
 
 
 # Sentry Configuration
@@ -150,8 +154,6 @@ CSRF_TRUSTED_ORIGINS = [
     # You can add other trusted origins as needed
 ]
 
-STATIC_URL = '/static/'
-
 ROOT_URLCONF = 'DMDX_Django.urls'
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
@@ -231,37 +233,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-STATIC_URL = 'static/'
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-DATE_INPUT_FORMATS = '%d-%m-%Y'
-
-# Auto-close setting for NP documents
-IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED = os.environ.get('IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED', 'True').lower() == 'true'
-
-REST_FRAMEWORK = {
-   'DEFAULT_AUTHENTICATION_CLASSES': (
-   'rest_framework.authentication.TokenAuthentication',
-   )
-}
-
-X_FRAME_OPTIONS='SAMEORIGIN'
-
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.0/howto/static-files/
-
-# The absolute path to the directory where collectstatic will collect static files for deployment.
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
 # The URL to use when referring to static files (where they will be served from)
-STATIC_URL = '/static/'
 MEDIA_URL ='/media/'
 MEDIA_ROOT = BASE_DIR/'media'
 
@@ -344,3 +316,24 @@ NOVA_POSHTA_PRINT_MARKING_MULTIPLE_URL_TEMPLATE = 'https://my.novaposhta.ua/orde
 NOVA_POSHTA_PRINT_SCAN_SHEET_URL_TEMPLATE = '//my.novaposhta.ua/scanSheet/printScanSheet/refs[]/{ref}/type/pdf/apiKey/{api_key}'
 NOVA_POSHTA_API_URL = 'https://api.novaposhta.ua/v2.0/json/'
 NOVA_POSHTA_SENDER_DMDX_REF = "3b0e7317-2a6b-11eb-8513-b88303659df5"
+
+X_FRAME_OPTIONS='SAMEORIGIN'
+
+# Remove duplicate STATICFILES_DIRS and STATIC_ROOT settings
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.0/howto/static-files/
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DATE_INPUT_FORMATS = '%d-%m-%Y'
+
+# Auto-close setting for NP documents
+IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED = os.environ.get('IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED', 'True').lower() == 'true'
+
+REST_FRAMEWORK = {
+   'DEFAULT_AUTHENTICATION_CLASSES': (
+   'rest_framework.authentication.TokenAuthentication',
+   )
+}
