@@ -44,18 +44,8 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 # For production, ensure DEBUG is False
 if 'DYNO' in os.environ:
     DEBUG = False
-
-# Set ALLOWED_HOSTS based on environment
-if DEBUG:
-    ALLOWED_HOSTS = ['*']  # Allow all hosts in development
-else:
-    # In production, specify your domain(s)
-    ALLOWED_HOSTS = [
-        'dmdxstorage.herokuapp.com',  # Your Heroku domain
-        'localhost',
-        '127.0.0.1',
-    ]
-
+    
+ALLOWED_HOSTS = ['*']
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 STATICFILES_DIRS = [BASE_DIR / 'templates/src']
