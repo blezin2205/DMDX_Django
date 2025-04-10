@@ -138,15 +138,12 @@
         console.log('Form submission detected');
         console.log('Submitter:', e.submitter);
         
-        if (e.submitter && e.submitter.name === 'print_choosed') {
-            console.log('Print choosed action detected');
+        if (e.submitter && (e.submitter.name === 'print_choosed' || e.submitter.name === 'merge_choosed')) {
+            console.log(e.submitter.name + ' action detected');
             e.preventDefault();
             const formData = new FormData(this);
             // Add submitter information to formData
             formData.append(e.submitter.name, e.submitter.value);
-            console.log('Form data collected:', Object.fromEntries(formData));
-            
-            console.log('Sending fetch request to:', window.location.href);
             fetch(window.location.href, {
                 method: 'POST',
                 body: formData,
@@ -161,9 +158,16 @@
             })
             .then(data => {
                 console.log('Parsed response data:', data);
-                if (data.open_in_new_tab) {
+                if (e.submitter.name === 'print_choosed' && data.open_in_new_tab) {
                     console.log('Opening new tab with URL:', data.url);
                     window.open(data.url, '_blank');
+                } else if (e.submitter.name === 'merge_choosed') {
+                    // Show alert with the message from the response
+                    alert(data.message);
+                    // If merge was successful, reload the page to show the new merged orders
+                    if (data.status === 'success') {
+                        window.location.reload();
+                    }
                 }
             })
             .catch(error => {

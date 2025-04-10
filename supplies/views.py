@@ -213,10 +213,12 @@ def load_xms_data(request):
 @login_required(login_url='login')
 def register_exls_selected_buttons(request):
     cheked = False
+    merge_button_available = False
     if request.method == 'POST':
         selected_orders = request.POST.getlist('register_exls_selected_buttons')
         cheked = len(selected_orders) > 0
-    return render(request, 'partials/register_butons_for_seelcted_orders.html', {'cheked': cheked})
+        merge_button_available = len(selected_orders) > 1
+    return render(request, 'partials/register_butons_for_seelcted_orders.html', {'cheked': cheked, 'merge_button_available': merge_button_available})
 
 @login_required(login_url='login')
 def countCartItemsHelper(request):
@@ -1747,6 +1749,111 @@ def orders(request):
                 'open_in_new_tab': True
             })
 
+        if 'merge_choosed' in request.POST:
+            print('---------------------merge_choosed--------------------------------')
+            print(request.POST)
+            selected_orders = request.POST.getlist('register_exls_selected_buttons')
+            selected_orders = ordersObj.filter(id__in=selected_orders)
+            # Step 1: Group orders by place
+            orders_by_place = defaultdict(list)
+            for order in selected_orders:
+                orders_by_place[order.place].append(order)
+            
+            # Step 2: Create new merged orders for each place
+            merged_orders = []
+            for place, orders in orders_by_place.items():
+                # Only process places with more than 1 order
+                if len(orders) <= 1:
+                    continue
+                    
+                # Initialize aggregated values
+                dateToSend = None
+                documentsId_aggregated = []
+                comment_aggregated = ''
+                
+                # Aggregate values from all orders
+                for order in orders:
+                    # Aggregate dateToSend (take the earliest date if multiple exist)
+                    if order.dateToSend:
+                        if dateToSend is None or order.dateToSend < dateToSend:
+                            dateToSend = order.dateToSend
+                    
+                    # Aggregate documentsId arrays
+                    if order.documentsId:
+                        documentsId_aggregated.extend(order.documentsId)
+                    
+                    # Aggregate comments
+                    if order.comment:
+                        comment_aggregated += f'{order.comment}\n'
+                
+                # Create new order for this place
+                new_order = Order.objects.create(
+                    userCreated=request.user,
+                    place=place,
+                    dateCreated=timezone.now().date(),
+                    isComplete=False,
+                    comment=comment_aggregated + f"Merged from orders: {', '.join(str(order.id) for order in orders)}",
+                    isMerged=True,
+                    dateToSend=dateToSend,  # This will be None if no orders had a dateToSend
+                    documentsId=documentsId_aggregated
+                )
+                
+                # Extract PreOrder objects from the orders
+                preorders = []
+                for order in orders:
+                    if order.for_preorder:
+                        preorders.append(order.for_preorder)
+
+                # Add these PreOrder objects to the related_preorders field
+                new_order.related_preorders.add(*preorders)
+                
+                # Get all SupplyInOrder objects for these orders
+                supply_in_orders = SupplyInOrder.objects.filter(supply_for_order__in=orders)
+                
+                # Group SupplyInOrder objects by Supply to combine quantities
+                supplies_by_supply = defaultdict(list)
+                for supply_in_order in supply_in_orders:
+                    if supply_in_order.supply:
+                        supplies_by_supply[supply_in_order.supply].append(supply_in_order)
+                
+                # Create new SupplyInOrder objects for the merged order
+                for supply, supply_in_orders_list in supplies_by_supply.items():
+                    # Calculate total count for this supply
+                    total_count = sum(sio.count_in_order for sio in supply_in_orders_list)
+                    # Use the first SupplyInOrder as template for creating new one
+                    template_sio = supply_in_orders_list[0]
+                    
+                    # Create new SupplyInOrder with all fields from template
+                    SupplyInOrder.objects.create(
+                        count_in_order=total_count,
+                        generalSupply=template_sio.generalSupply,
+                        supply=template_sio.supply,
+                        supply_in_preorder=template_sio.supply_in_preorder,
+                        supply_for_order=new_order,
+                        supply_in_booked_order=template_sio.supply_in_booked_order,
+                        lot=template_sio.lot,
+                        date_expired=template_sio.date_expired,
+                        date_created=template_sio.date_created,
+                        internalName=template_sio.internalName,
+                        internalRef=template_sio.internalRef
+                    )
+                
+                merged_orders.append(new_order)
+                for order in orders:
+                    order.delete()
+            
+            if not merged_orders:
+                return JsonResponse({
+                    'message': 'Не було об\'єднано жодного замовлення. Для об\'єднання потрібно вибрати щонайменше 2 замовлення для однієї організації',
+                    'status': 'warning'
+                })
+                
+            return JsonResponse({
+                'message': f'Успішно об\'єднано {len(selected_orders)} замовлень у {len(merged_orders)} нових замовлень',
+                'merged_order_ids': [order.id for order in merged_orders],
+                'status': 'success'
+            })
+
         if 'export_to_excel_choosed' in request.POST:
             print('---------------------export_to_excel_choosed--------------------------------')
             selected_orders = request.POST.getlist('register_exls_selected_buttons')
@@ -2188,12 +2295,7 @@ def update_order_status_core(order_id, user):
 
             if order.for_preorder:
                 preorder = order.for_preorder
-                sups_in_preorder = preorder.supplyinpreorder_set.all()
-                if all(sp.state_of_delivery == 'Complete' for sp in sups_in_preorder):
-                    preorder.state_of_delivery = 'Complete'
-                elif any(x.state_of_delivery == 'Partial' or 'Awaiting' for x in sups_in_preorder):
-                    preorder.state_of_delivery = 'Partial'
-                preorder.save(update_fields=['state_of_delivery'])
+                preorder.update_order_state_of_delivery_status()
                     
             order.isComplete = True
             order.dateToSend = None

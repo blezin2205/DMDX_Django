@@ -7,17 +7,34 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>{% block title %}{% endblock %}</title>
-    <link href="{% static 'images/favicon.png' %}" rel="shortcut icon" type="image/x-icon">
-    <link rel="apple-touch-icon" sizes="57x57" href="{% static 'images/favicon.png' %}">
-<link rel="apple-touch-icon" sizes="60x60" href="{% static 'images/favicon.png' %}">
-<link rel="apple-touch-icon" sizes="72x72" href="{% static 'images/favicon.png' %}">
-<link rel="apple-touch-icon" sizes="76x76" href="{% static 'images/favicon.png' %}">
-<link rel="apple-touch-icon" sizes="114x114" href="{% static 'images/favicon.png' %}">
-<link rel="apple-touch-icon" sizes="120x120" href="{% static 'images/favicon.png' %}">
-<link rel="apple-touch-icon" sizes="144x144" href="{% static 'images/favicon.png' %}">
-<link rel="apple-touch-icon" sizes="152x152" href="{% static 'images/favicon.png' %}">
-<link rel="apple-touch-icon" sizes="167x167" href="{% static 'images/favicon.png' %}">
-<link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/favicon.png' %}">
+    
+    <!-- Safari specific meta tags -->
+    <meta name="msapplication-TileImage" content="/static/images/favicon.png">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="DMDX">
+    
+    <!-- Standard favicons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="57x57" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/static/images/favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/favicon.png">
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
 
     <meta name="theme-color" content="#ffffff">
     <link rel="stylesheet" href="{% static 'css/stylesheet.css'%}" type="text/css">

@@ -4,5 +4,17 @@
 {% if cheked %}
 
     {% csrf_token %}
-    <button class="btn btn-lg btn-outline-primary" type="submit" name="export_to_excel_choosed" role="button" data-toggle="tooltip" data-placement="top" title="Export to Excel"><i class="bi bi-file-earmark-excel"></i></button>
+    <button class="btn btn-lg btn-outline-primary" type="submit" name="export_to_excel_choosed" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Export to Excel"><i class="bi bi-file-earmark-excel"></i></button>
+{% endif %}
+
+{% if merge_button_available %}
+
+    {% csrf_token %}
+    <button class="btn btn-lg btn-outline-primary" 
+            type="submit" 
+            name="merge_choosed" 
+            role="button" 
+            data-bs-toggle="tooltip" 
+            data-bs-placement="top" 
+            title="Merge"><i class="bi bi-intersect"></i></button>
 {% endif %}

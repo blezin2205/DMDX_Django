@@ -409,6 +409,15 @@ class PreOrder(models.Model):
     def isAvailableToEdit(self):
         return (self.state_of_delivery == 'awaiting_from_customer' or self.state_of_delivery == 'accepted_by_customer')
 
+    def update_order_state_of_delivery_status(self):
+        """Updates the state_of_delivery based on the status of supplies in the preorder"""
+        sups_in_preorder = self.supplyinpreorder_set.all()
+        if all(sp.state_of_delivery == 'Complete' for sp in sups_in_preorder):
+            self.state_of_delivery = 'Complete'
+        elif any(sp.state_of_delivery in ['Partial', 'Awaiting'] for sp in sups_in_preorder):
+            self.state_of_delivery = 'Partial'
+        self.save(update_fields=['state_of_delivery'])
+
     class Meta:
         verbose_name = 'Передзамовлення'
         verbose_name_plural = 'Передзамовлення'
@@ -449,11 +458,13 @@ class Order(models.Model):
     userSent = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='sent_orders')
     for_preorder = models.ForeignKey(PreOrder, on_delete=models.SET_NULL, null=True, blank=True,
                                      related_name='orders_for_preorder')
+    related_preorders = models.ManyToManyField(PreOrder, blank=True, related_name='related_orders')
     place = models.ForeignKey(Place, on_delete=models.CASCADE, null=True)
     dateCreated = models.DateField(auto_now_add=True, null=True)
     dateSent = models.DateField(null=True, blank=True)
     isComplete = models.BooleanField(default=False)
     isPinned = models.BooleanField(default=False)
+    isMerged = models.BooleanField(default=False)
     comment = models.CharField(max_length=300, null=True, blank=True)
     documentsId = ArrayField(models.CharField(max_length=200), blank=True, null=True)
     dateToSend = models.DateField(null=True, blank=True)
