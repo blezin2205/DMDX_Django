@@ -62,20 +62,46 @@
                 </div>
             </div>
             
-            <div class="container {% if request.user_agent.is_mobile %}w-100{% else %}w-50{% endif %} d-flex align-items-center justify-content-between">
-                {% if request.user|has_group:"empl" or request.user.is_staff %}
-                    {% if pinned_orders_exists %}
-                    <button type="submit" name="remove_all_pinned_orders_action" class="btn btn-outline-danger" onclick="return confirm('Ви впевнені, що хочете відкріпити всі закріплені замовлення?');">
-                        <i class="bi bi-pin-angle-fill"></i>
-                    </button>
+            <div class="container {% if request.user_agent.is_mobile %}w-100{% else %}w-50{% endif %}">
+                <div class="row align-items-center">
+                    {% if request.user|has_group:"empl" or request.user.is_staff %}
+                        <div class="col">
+                            {% if pinned_orders_exists %}
+                            <button type="submit" 
+                            name="remove_all_pinned_orders_action" 
+                            class="btn btn-outline-primary" 
+                            onclick="return confirm('Ви впевнені, що хочете відкріпити всі закріплені замовлення?');"
+                            data-tooltip-content="Відкріпити всі закріплені замовлення"
+                            onmouseover="showTooltip(event, this)"
+                            onmouseout="hideTooltip()">
+                                <i class="bi bi-pin-angle-fill text-danger"></i>
+                            </button>
+                            {% endif %}
+                            {% if is_more_then_one_order_exists_for_the_same_place %}
+                            <button type="submit" 
+                            name="merge_all_orders_for_the_same_place" 
+                            class="btn btn-outline-primary" 
+                            onclick="return confirm('Ви впевнені, що хочете об\'єднати всі замовлення?');" 
+                            data-tooltip-content="Об'єднати всі замовлення.
+                            Всі замовлення будуть об'єднані в одне замовлення для кожної організації."
+                            onmouseover="showTooltip(event, this)"
+                            onmouseout="hideTooltip()">
+                                <i class="bi bi-intersect"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="col"></div>
                     {% endif %}
-                {% endif %}
-                <div class="d-flex gap-2">
-                    <div id="register_print_buttons" style="min-height: 50px;">
-                        {% include 'partials/register_print_orders_chekbox_buttons.html' %}
+                    <div class="col text-center">
+                        <div id="register_print_buttons" style="min-height: 50px;">
+                            {% include 'partials/register_print_orders_chekbox_buttons.html' %}
+                        </div>
                     </div>
-                    <div id="register_exls_selected_buttons" style="min-height: 50px; margin-left: 10px;">
-                        {% include 'partials/register_print_orders_chekbox_buttons.html' %}
+                    <div class="col text-end">
+                        <div id="register_exls_selected_buttons" style="min-height: 50px;">
+                            {% include 'partials/register_print_orders_chekbox_buttons.html' %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -138,7 +164,7 @@
         console.log('Form submission detected');
         console.log('Submitter:', e.submitter);
         
-        if (e.submitter && (e.submitter.name === 'print_choosed' || e.submitter.name === 'merge_choosed')) {
+        if (e.submitter && (e.submitter.name === 'print_choosed' || e.submitter.name === 'merge_choosed' || e.submitter.name === 'merge_all_orders_for_the_same_place')) {
             console.log(e.submitter.name + ' action detected');
             e.preventDefault();
             const formData = new FormData(this);
@@ -161,7 +187,7 @@
                 if (e.submitter.name === 'print_choosed' && data.open_in_new_tab) {
                     console.log('Opening new tab with URL:', data.url);
                     window.open(data.url, '_blank');
-                } else if (e.submitter.name === 'merge_choosed') {
+                } else if (e.submitter.name === 'merge_choosed' || e.submitter.name === 'merge_all_orders_for_the_same_place') {
                     // Show alert with the message from the response
                     alert(data.message);
                     // If merge was successful, reload the page to show the new merged orders

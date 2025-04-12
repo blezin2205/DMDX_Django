@@ -35,6 +35,7 @@ from firebase_admin import storage
 from django.template.loader import render_to_string
 from django.db import transaction
 from .analytics import PreorderAnalytics
+from django.utils import timezone
 
 
 # @login_required(login_url='login')
@@ -782,8 +783,9 @@ def update_count_in_preorder_cart(request, itemId):
 
         supsInPreorderInCart.count_in_order = count
         supsInPreorderInCart.save(update_fields=['count_in_order'])
-
-        return updatePreCartItemCount(request)
+        response = updatePreCartItemCount(request)
+        trigger_client_event(response, 'subscribe_precart', {})
+        return response
 
 
 import threading
@@ -1088,7 +1090,7 @@ def minus_from_preorders_detail_general_item(request):
 
     print(el_id)
     print(for_preorder_id)
-    return render(request, 'supplies/preorder_detail_list_item.html', {'el': gen_sup_in_preorder, 'order': gen_sup_in_preorder.supply_for_order})
+    return render(request, 'supplies/orders/preorder_detail_list_item.html', {'el': gen_sup_in_preorder, 'order': gen_sup_in_preorder.supply_for_order})
 
 @login_required(login_url='login')
 def plus_from_preorders_detail_general_item(request):
@@ -1100,7 +1102,7 @@ def plus_from_preorders_detail_general_item(request):
 
     print(el_id)
     print(for_preorder_id)
-    return render(request, 'supplies/preorder_detail_list_item.html', {'el': gen_sup_in_preorder, 'order': gen_sup_in_preorder.supply_for_order})
+    return render(request, 'supplies/orders/preorder_detail_list_item.html', {'el': gen_sup_in_preorder, 'order': gen_sup_in_preorder.supply_for_order})
 
 @login_required(login_url='login')
 def delete_from_preorders_detail_general_item(request, el_id):
@@ -1695,9 +1697,8 @@ def render_to_xls_selected_order(table_header, place, supplies_in_order, wb):
 @login_required(login_url='login')
 def orders(request):
     cartCountData = countCartItemsHelper(request)
-    
-
     isClient = request.user.groups.filter(name='client').exists()
+    is_more_then_one_order_exists_for_the_same_place = False
     if isClient:
         ordersObj = Order.objects.filter(place__user=request.user).order_by('-isPinned', 'isComplete', 'dateToSend', '-id')
         pinned_orders = ordersObj.filter(isPinned=True)
@@ -1714,9 +1715,24 @@ def orders(request):
 
     orderFilter = OrderFilter(request.POST or None, queryset=ordersObj)
     orders = orderFilter.qs
-    paginator = Paginator(orders, 20)
-    page_number = request.GET.get('page')
-    orders = paginator.get_page(page_number)
+    
+    # Skip pagination if isComplete filter is set to '0' (В очікуванні)
+    if request.POST and request.POST.get('isComplete') == '0':
+        orders = orders  # Return all filtered orders without pagination
+        print("Return all filtered orders without pagination")
+    else:
+        paginator = Paginator(orders, 20)
+        page_number = request.GET.get('page')
+        orders = paginator.get_page(page_number)
+        
+    is_more_then_one_order_exists_for_the_same_place = False
+    if not isClient:
+        filtered_orders = ordersObj.filter(isComplete=False)
+        orders_by_place = defaultdict(list)
+        for order in filtered_orders:
+            orders_by_place[order.place].append(order)
+        is_more_then_one_order_exists_for_the_same_place = any(len(orders) > 1 for orders in orders_by_place.values())    
+            
 
     if request.method == 'POST':
         selected_orders = request.POST.getlist('register_print_buttons')
@@ -1737,6 +1753,23 @@ def orders(request):
             pinned_orders.update(isPinned=False)
             pinned_orders = pinned_orders.filter(isPinned=True)
             pinned_orders_exists = pinned_orders.count() > 0
+        if 'merge_all_orders_for_the_same_place' in request.POST:
+            print('---------------------merge_all_orders_for_the_same_place--------------------------------')
+            # Get all orders from the current queryset
+            filtered_orders = ordersObj.filter(isComplete=False)
+            merged_orders = merge_orders(filtered_orders, request.user)
+            
+            if not merged_orders:
+                return JsonResponse({
+                    'message': 'Не було об\'єднано жодного замовлення. Для об\'єднання потрібно щонайменше 2 замовлення для однієї організації',
+                    'status': 'warning'
+                })
+                
+            return JsonResponse({
+                'message': 'Замовлення успішно об\'єднано',
+                'merged_order_ids': [order.id for order in merged_orders],
+                'status': 'success'
+            })
             
         if 'print_choosed' in request.POST:
             print('---------------------PRINT CHOOSED --------------------------------')
@@ -1754,93 +1787,7 @@ def orders(request):
             print(request.POST)
             selected_orders = request.POST.getlist('register_exls_selected_buttons')
             selected_orders = ordersObj.filter(id__in=selected_orders)
-            # Step 1: Group orders by place
-            orders_by_place = defaultdict(list)
-            for order in selected_orders:
-                orders_by_place[order.place].append(order)
-            
-            # Step 2: Create new merged orders for each place
-            merged_orders = []
-            for place, orders in orders_by_place.items():
-                # Only process places with more than 1 order
-                if len(orders) <= 1:
-                    continue
-                    
-                # Initialize aggregated values
-                dateToSend = None
-                documentsId_aggregated = []
-                comment_aggregated = ''
-                
-                # Aggregate values from all orders
-                for order in orders:
-                    # Aggregate dateToSend (take the earliest date if multiple exist)
-                    if order.dateToSend:
-                        if dateToSend is None or order.dateToSend < dateToSend:
-                            dateToSend = order.dateToSend
-                    
-                    # Aggregate documentsId arrays
-                    if order.documentsId:
-                        documentsId_aggregated.extend(order.documentsId)
-                    
-                    # Aggregate comments
-                    if order.comment:
-                        comment_aggregated += f'{order.comment}\n'
-                
-                # Create new order for this place
-                new_order = Order.objects.create(
-                    userCreated=request.user,
-                    place=place,
-                    dateCreated=timezone.now().date(),
-                    isComplete=False,
-                    comment=comment_aggregated + f"Merged from orders: {', '.join(str(order.id) for order in orders)}",
-                    isMerged=True,
-                    dateToSend=dateToSend,  # This will be None if no orders had a dateToSend
-                    documentsId=documentsId_aggregated
-                )
-                
-                # Extract PreOrder objects from the orders
-                preorders = []
-                for order in orders:
-                    if order.for_preorder:
-                        preorders.append(order.for_preorder)
-
-                # Add these PreOrder objects to the related_preorders field
-                new_order.related_preorders.add(*preorders)
-                
-                # Get all SupplyInOrder objects for these orders
-                supply_in_orders = SupplyInOrder.objects.filter(supply_for_order__in=orders)
-                
-                # Group SupplyInOrder objects by Supply to combine quantities
-                supplies_by_supply = defaultdict(list)
-                for supply_in_order in supply_in_orders:
-                    if supply_in_order.supply:
-                        supplies_by_supply[supply_in_order.supply].append(supply_in_order)
-                
-                # Create new SupplyInOrder objects for the merged order
-                for supply, supply_in_orders_list in supplies_by_supply.items():
-                    # Calculate total count for this supply
-                    total_count = sum(sio.count_in_order for sio in supply_in_orders_list)
-                    # Use the first SupplyInOrder as template for creating new one
-                    template_sio = supply_in_orders_list[0]
-                    
-                    # Create new SupplyInOrder with all fields from template
-                    SupplyInOrder.objects.create(
-                        count_in_order=total_count,
-                        generalSupply=template_sio.generalSupply,
-                        supply=template_sio.supply,
-                        supply_in_preorder=template_sio.supply_in_preorder,
-                        supply_for_order=new_order,
-                        supply_in_booked_order=template_sio.supply_in_booked_order,
-                        lot=template_sio.lot,
-                        date_expired=template_sio.date_expired,
-                        date_created=template_sio.date_created,
-                        internalName=template_sio.internalName,
-                        internalRef=template_sio.internalRef
-                    )
-                
-                merged_orders.append(new_order)
-                for order in orders:
-                    order.delete()
+            merged_orders = merge_orders(selected_orders, request.user)
             
             if not merged_orders:
                 return JsonResponse({
@@ -1848,8 +1795,12 @@ def orders(request):
                     'status': 'warning'
                 })
                 
+            # Count how many orders were merged
+            total_merged = len(merged_orders)
+            total_selected = len(selected_orders)
+            
             return JsonResponse({
-                'message': f'Успішно об\'єднано {len(selected_orders)} замовлень у {len(merged_orders)} нових замовлень',
+                'message': f'Замовлення успішно об\'єднано. \n Вибрано {total_selected} замовлень, створено {total_merged} нових об\'єднаних замовлень.',
                 'merged_order_ids': [order.id for order in merged_orders],
                 'status': 'success'
             })
@@ -1883,7 +1834,6 @@ def orders(request):
                     supply_in_order.count = count
                     supply_in_order_list[(place, sel_orders_ids)].append(supply_in_order)
             return get_selected_xls_orders_sups(supply_in_order_list.items())
-
 
         if 'add_to_register_choosed' in request.POST:
             list_of_refs = list(map(str, documentsIdFromOrders))
@@ -1924,14 +1874,26 @@ def orders(request):
                 for error in errors:
                     messages.info(request, error)
                 return render(request, 'supplies/orders/orders_new.html',
-                              {'title': title, 'orders': orders, 'cartCountData': cartCountData, 'isOrders': True,
+                              {'title': title, 
+                               'orders': orders, 
+                               'orderFilter': orderFilter, 
+                               'cartCountData': cartCountData, 
+                               'isOrders': True,
                                'totalCount': totalCount,
-                               'isOrdersTab': True})
+                               'isOrdersTab': True,
+                               'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place})
 
 
     return render(request, 'supplies/orders/orders_new.html',
-                  {'title': title, 'orders': orders, 'orderFilter': orderFilter, 'cartCountData': cartCountData, 'isOrders': True, 'totalCount': totalCount,
-                   'isOrdersTab': True, 'pinned_orders_exists': pinned_orders_exists})
+                  {'title': title, 
+                   'orders': orders, 
+                   'orderFilter': orderFilter, 
+                   'cartCountData': cartCountData, 
+                   'isOrders': True, 
+                   'totalCount': totalCount,
+                   'isOrdersTab': True, 
+                   'pinned_orders_exists': pinned_orders_exists, 
+                   'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place})
 
 
 
@@ -2296,6 +2258,10 @@ def update_order_status_core(order_id, user):
             if order.for_preorder:
                 preorder = order.for_preorder
                 preorder.update_order_state_of_delivery_status()
+            if order.related_preorders:
+                print("upd order status for related preorders: ", order.related_preorders.all().count())
+                for preorder in order.related_preorders.all():
+                    preorder.update_order_state_of_delivery_status()
                     
             order.isComplete = True
             order.dateToSend = None
@@ -2518,17 +2484,9 @@ def updateSupply(request, supp_id):
             form = SupplyForm(request.POST, instance=note)
             if form.is_valid():
                 obj = form.save(commit=False)
-                # obj.from_user = User.objects.get(pk=request.user.id)
-                suppForHistory = obj.get_supp_for_history()
-                suppForHistory.action_type = 'updated'
-                suppForHistory.save()
                 obj.save()
         elif 'delete' in request.POST:
-            supp = Supply.objects.get(id=supp_id)
-            suppForHistory = supp.get_supp_for_history()
-            suppForHistory.action_type = 'deleted'
-            suppForHistory.save()
-            supp.delete()
+            note.delete()
         
         user_agent = get_user_agent(request)
         if user_agent.is_mobile:
@@ -2754,19 +2712,6 @@ def addNewLotforSupply(request, supp_id):
 
             except:
                 obj.save()
-
-            supHistory = obj.get_supp_for_history()
-
-            try:
-                supForHistory = SupplyForHistory.objects.get(supplyLot=supHistory.supplyLot,
-                                                             dateCreated=supHistory.dateCreated, expiredDate=supHistory.expiredDate)
-                supForHistory.count += supHistory.count
-                supForHistory.action_type = 'added-handle'
-                supForHistory.save()
-
-            except:
-                supHistory.action_type = 'added-handle'
-                supHistory.save()
 
             user_agent = get_user_agent(request)
             if user_agent.is_mobile:
@@ -3418,7 +3363,7 @@ def orderDetail_save_comment(request):
 @login_required(login_url='login')
 def orderDetail(request, order_id, sup_id):
     order = get_object_or_404(Order, pk=order_id)
-    supplies_in_order = order.supplyinorder_set.all().order_by('id')
+    supplies_in_order = order.supplyinorder_set.all().order_by('generalSupply__category', 'generalSupply__name')
     cartCountData = countCartItemsHelper(request)
     next = request.POST.get('next')
 
@@ -3866,4 +3811,167 @@ def teams_reminders_send_message(title, message, attachment=None):
     if attachment:
         myTeamsMessage.addSection(attachment)
     myTeamsMessage.send()
+
+def merge_orders(orders, user):
+    """
+    Merge multiple orders for the same place into a single order.
+    
+    Args:
+        orders: A list of Order objects to merge
+        user: The user who is performing the merge
+        
+    Returns:
+        A list of newly created merged orders
+    """
+    # Step 1: Group orders by place
+    orders_by_place = defaultdict(list)
+    for order in orders:
+        orders_by_place[order.place].append(order)
+    
+    # Step 2: Create new merged orders for each place
+    merged_orders = []
+    for place, orders in orders_by_place.items():
+        # Only process places with more than 1 order
+        if len(orders) <= 1:
+            continue
+            
+        # Initialize aggregated values
+        dateToSend = None
+        documentsId_aggregated = []
+        np_delivery_created_detail_info_aggregated = []
+        status_npp_aggregated = []
+        comment_aggregated = ''
+        
+        # Aggregate values from all orders
+        for order in orders:
+            # Aggregate dateToSend (take the earliest date if multiple exist)
+            if order.dateToSend:
+                if dateToSend is None or order.dateToSend < dateToSend:
+                    dateToSend = order.dateToSend
+            
+            # Aggregate documentsId arrays
+            if order.documentsId:
+                documentsId_aggregated.extend(order.documentsId)
+            
+            # Aggregate comments
+            if order.comment:
+                comment_aggregated += f'{order.comment}\n'
+            if order.npdeliverycreateddetailinfo_set.exists():
+                np_delivery_created_detail_info_aggregated.extend(order.npdeliverycreateddetailinfo_set.all())
+            if order.statusnpparselfromdoucmentid_set.exists():
+                status_npp_aggregated.extend(order.statusnpparselfromdoucmentid_set.all())
+        # Create new order for this place
+        new_order = Order.objects.create(
+            userCreated=user,
+            place=place,
+            dateCreated=timezone.now().date(),
+            isComplete=False,
+            comment=comment_aggregated,
+            isMerged=True,
+            dateToSend=dateToSend,  # This will be None if no orders had a dateToSend
+            documentsId=documentsId_aggregated
+        )
+        new_order.npdeliverycreateddetailinfo_set.add(*np_delivery_created_detail_info_aggregated)
+        new_order.statusnpparselfromdoucmentid_set.add(*status_npp_aggregated)
+        
+        # Extract PreOrder objects from the orders
+        preorders = []
+        for order in orders:
+            if order.for_preorder:
+                preorders.append(order.for_preorder)
+            # Add all related preorders from each order
+            preorders.extend(order.related_preorders.all())
+
+        # Add these PreOrder objects to the related_preorders field
+        new_order.related_preorders.add(*preorders)
+        
+        # Get all SupplyInOrder objects for these orders
+        supply_in_orders = SupplyInOrder.objects.filter(supply_for_order__in=orders)
+        
+        # Separate orders into three categories:
+        # 1. Orders with no preorder or booked order (need merging by supply)
+        # 2. Orders with preorder (need merging by preorder's supply_for_order)
+        # 3. Orders with booked order (need merging by booked order)
+        orders_to_merge_by_supply = [sio for sio in supply_in_orders if sio.supply_in_preorder is None and sio.supply_in_booked_order is None]
+        orders_with_preorder = [sio for sio in supply_in_orders if sio.supply_in_preorder is not None]
+        orders_with_booked = [sio for sio in supply_in_orders if sio.supply_in_booked_order is not None]
+        
+        # 1. Handle orders with no preorder or booked order - merge by supply
+        supplies_by_supply = defaultdict(list)
+        for supply_in_order in orders_to_merge_by_supply:
+            if supply_in_order.supply:
+                supplies_by_supply[supply_in_order.supply].append(supply_in_order)
+        
+        for supply, supply_in_orders_list in supplies_by_supply.items():
+            total_count = sum(sio.count_in_order for sio in supply_in_orders_list)
+            template_sio = supply_in_orders_list[0]
+            
+            SupplyInOrder.objects.create(
+                count_in_order=total_count,
+                generalSupply=template_sio.generalSupply,
+                supply=template_sio.supply,
+                supply_in_preorder=template_sio.supply_in_preorder,
+                supply_for_order=new_order,
+                supply_in_booked_order=template_sio.supply_in_booked_order,
+                lot=template_sio.lot,
+                date_expired=template_sio.date_expired,
+                date_created=template_sio.date_created,
+                internalName=template_sio.internalName,
+                internalRef=template_sio.internalRef
+            )
+        
+        # 2. Handle orders with preorder - merge by preorder's supply_for_order
+        preorders_by_key = defaultdict(list)
+        for sio in orders_with_preorder:
+            # Get the PreOrder associated with this SupplyInPreorder
+            preorder = sio.supply_in_preorder
+            key = preorder.supply_for_order  # This is the PreOrder
+            preorders_by_key[key].append(sio)
+        
+        for preorder, sio_list in preorders_by_key.items():
+            total_count = sum(sio.count_in_order for sio in sio_list)
+            template_sio = sio_list[0]
+            
+            SupplyInOrder.objects.create(
+                count_in_order=total_count,
+                generalSupply=template_sio.generalSupply,
+                supply=template_sio.supply,
+                supply_in_preorder=template_sio.supply_in_preorder,
+                supply_for_order=new_order,
+                supply_in_booked_order=template_sio.supply_in_booked_order,
+                lot=template_sio.lot,
+                date_expired=template_sio.date_expired,
+                date_created=template_sio.date_created,
+                internalName=template_sio.internalName,
+                internalRef=template_sio.internalRef
+            )
+        
+        # 3. Handle orders with booked order - merge by booked order
+        booked_by_key = defaultdict(list)
+        for sio in orders_with_booked:
+            booked_by_key[sio.supply_in_booked_order].append(sio)
+        
+        for booked_order, sio_list in booked_by_key.items():
+            total_count = sum(sio.count_in_order for sio in sio_list)
+            template_sio = sio_list[0]
+            
+            SupplyInOrder.objects.create(
+                count_in_order=total_count,
+                generalSupply=template_sio.generalSupply,
+                supply=template_sio.supply,
+                supply_in_preorder=template_sio.supply_in_preorder,
+                supply_for_order=new_order,
+                supply_in_booked_order=booked_order,
+                lot=template_sio.lot,
+                date_expired=template_sio.date_expired,
+                date_created=template_sio.date_created,
+                internalName=template_sio.internalName,
+                internalRef=template_sio.internalRef
+            )
+
+        merged_orders.append(new_order)
+        for order in orders:
+            order.delete()
+    
+    return merged_orders
 

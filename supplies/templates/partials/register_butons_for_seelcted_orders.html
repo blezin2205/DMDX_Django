@@ -4,7 +4,15 @@
 {% if cheked %}
 
     {% csrf_token %}
-    <button class="btn btn-lg btn-outline-primary" type="submit" name="export_to_excel_choosed" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Export to Excel"><i class="bi bi-file-earmark-excel"></i></button>
+    <button class="btn btn-lg btn-outline-primary" 
+    type="submit" 
+    name="export_to_excel_choosed" 
+    role="button" 
+    data-tooltip-content="Експортувати в Excel вибрані замовлення. 
+    Замовлення для однієї організації будуть обєднані в одну таблицю."
+    onmouseover="showTooltip(event, this)"
+    onmouseout="hideTooltip()"
+    ><i class="bi bi-file-earmark-excel"></i></button>
 {% endif %}
 
 {% if merge_button_available %}
@@ -14,7 +22,9 @@
             type="submit" 
             name="merge_choosed" 
             role="button" 
-            data-bs-toggle="tooltip" 
-            data-bs-placement="top" 
-            title="Merge"><i class="bi bi-intersect"></i></button>
+            data-tooltip-content="Об'єднати вибрані замовлення. 
+            Замовлення для однієї організації будуть обєднані в однe замовлення."
+            onmouseover="showTooltip(event, this)"
+            onmouseout="hideTooltip()"
+            ><i class="bi bi-intersect"></i></button>
 {% endif %}
