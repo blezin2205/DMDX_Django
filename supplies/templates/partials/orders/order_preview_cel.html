@@ -46,11 +46,8 @@
                                     </h6>
                                     {% if order.isMerged %}
                                     <div class="d-flex align-items-center gap-2 merged-order-info" 
-                                         style="display: inline-flex; padding: 4px 8px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 20px; background-color: rgba(0, 0, 0, 0.1); height: 32px; cursor: pointer;"
-                                         data-tooltip-content="Order #{{ order.id }} {% if order.comment %}- {{ order.comment }}{% endif %}"
-                                         onmouseover="showTooltip(event, this)"
-                                         onmouseout="hideTooltip()"
-                                         onclick="event.preventDefault(); event.stopPropagation();">
+                                         style="display: inline-flex; padding: 4px 8px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 20px; background-color: rgba(0, 0, 0, 0.1); height: 32px; cursor: pointer;">
+
                                         <i class="bi bi-intersect text-primary"></i>
                                     </div>
                                     {% endif %}
