@@ -1,4 +1,5 @@
 {% load myapp_extras %}
+{% load static %}
 
 {% include 'supplies/base/header_mobile.html' %}
 
@@ -54,11 +55,9 @@
 
             {% if request.user|has_group:"empl" or request.user.is_staff %}
             <ul class="navbar-nav ms-auto me-4">
-            {% if cartCountData.order_to_send_today > 0 or cartCountData.expired_orders > 0 %}
-                
                     {% if cartCountData.order_to_send_today > 0 %}
                         <li class="nav-item">
-                        <div class="btn btn-soft-danger d-flex align-items-center justify-content-center gap-2 py-2 px-3" data-bs-toggle="tooltip" 
+                        <div class="btn btn-soft-danger d-flex align-items-center justify-content-center gap-2 py-2 px-3" style="height: 40px;" data-bs-toggle="tooltip" 
                         data-bs-placement="bottom" 
                         title="Відправити замовлень сьогодні">
                             <i class="bi bi-exclamation-circle"></i>
@@ -68,7 +67,7 @@
                     {% endif %}
                     {% if cartCountData.expired_orders > 0 %}
                     <li class="nav-item ms-2">
-                        <div class="btn btn-soft-danger d-flex align-items-center justify-content-center gap-2 py-2 px-3" data-bs-toggle="tooltip" 
+                        <div class="btn btn-soft-danger d-flex align-items-center justify-content-center gap-2 py-2 px-3" style="height: 40px;" data-bs-toggle="tooltip" 
                         data-bs-placement="bottom" 
                         title="Прострочені замовлення">
                         <i class="bi bi-exclamation-triangle"></i>
@@ -76,8 +75,17 @@
                         </div>
                     </li>
                     {% endif %}
-               
-            {% endif %}
+                    {% if cartCountData.orders_with_uncompleted_np > 0 %}
+                    <li class="nav-item ms-2">
+                        <div class="btn btn-soft-danger d-flex align-items-center justify-content-center gap-2 py-2 px-2" style="height: 40px;"
+                        data-bs-toggle="tooltip" 
+                        data-bs-placement="bottom" 
+                        title="Накладні НП з незавершеним статусом">
+                        <img src="{% static 'images/np_icon.png' %}" width="30" height="29" style="border-radius: 4px">
+                            <span>{{ cartCountData.orders_with_uncompleted_np }}</span>
+                        </div>
+                    </li>
+                    {% endif %}
         </ul>
             {% elif request.user|has_group:"client" %}
                 <ul class="navbar-nav ms-auto me-4">
