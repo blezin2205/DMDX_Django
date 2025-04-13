@@ -4,7 +4,7 @@
 {% if cheked %}
 
     {% csrf_token %}
-    <button class="btn btn-lg btn-outline-primary" 
+    <button class="btn btn-outline-primary py-0 px-2" 
     type="submit" 
     name="export_to_excel_choosed" 
     role="button" 
@@ -12,13 +12,13 @@
     Замовлення для однієї організації будуть обєднані в одну таблицю."
     onmouseover="showTooltip(event, this)"
     onmouseout="hideTooltip()"
-    ><i class="bi bi-file-earmark-excel"></i></button>
+    ><i class="bi bi-file-earmark-excel fs-4"></i></button>
 {% endif %}
 
 {% if merge_button_available %}
 
     {% csrf_token %}
-    <button class="btn btn-lg btn-outline-primary" 
+    <button class="btn btn-outline-primary py-0 px-2" 
             type="submit" 
             name="merge_choosed" 
             role="button" 
@@ -26,5 +26,5 @@
             Замовлення для однієї організації будуть обєднані в однe замовлення."
             onmouseover="showTooltip(event, this)"
             onmouseout="hideTooltip()"
-            ><i class="bi bi-intersect"></i></button>
+            ><i class="bi bi-intersect fs-4"></i></button>
 {% endif %}

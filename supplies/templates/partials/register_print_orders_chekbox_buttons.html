@@ -4,18 +4,18 @@
 {% if cheked %}
 
     {% csrf_token %}
-    <button class="btn btn-lg btn-outline-danger mx-1" 
+    <button class="btn btn-outline-danger py-0 px-2" 
     type="submit" name="print_choosed" role="button" 
     data-tooltip-content="Друкувати вибрані замовлення."
     onmouseover="showTooltip(event, this)"
     onmouseout="hideTooltip()"
-    ><i class="bi bi-printer-fill"></i></button>
+    ><i class="bi bi-printer-fill fs-4"></i></button>
     
-<button class="btn btn-lg btn-outline-danger" 
+<button class="btn btn-outline-danger py-0 px-2" 
 type="submit" name="add_to_register_choosed" 
 data-tooltip-content="Додати до реєстру вибрані замовлення."
 onmouseover="showTooltip(event, this)"
 onmouseout="hideTooltip()"
-><i class="bi bi-file-earmark-medical"></i></button>
+><i class="bi bi-file-earmark-medical fs-4"></i></button>
 
 {% endif %}
