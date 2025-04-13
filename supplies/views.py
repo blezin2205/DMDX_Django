@@ -290,7 +290,7 @@ def countCartItemsHelper(request):
         preorders_partial = PreOrder.objects.filter(state_of_delivery='Partial').count()
         order_to_send_today = Order.objects.filter(dateToSend=date.today(), isComplete=False).count()
         expired_orders = Order.objects.filter(dateToSend__lt=date.today(), isComplete=False).count()
-        orders_with_uncompleted_np = StatusNPParselFromDoucmentID.objects.filter(status_code__in=['1', '3', '4', '41', '5', '6', '7', '8', '10', '11', '12', '101', '102', '103', '104', '105', '106', '111', '112']).count()
+        orders_with_uncompleted_np = StatusNPParselFromDoucmentID.objects.filter(status_code__in=['3', '4', '41', '5', '6', '7', '8', '10', '11', '12', '101', '102', '103', '104', '105', '106', '111', '112']).count()
         orders_pinned = Order.objects.filter(isPinned=True).count()
         preorders_pinned = PreOrder.objects.filter(isPinned=True).count()
 
