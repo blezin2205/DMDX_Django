@@ -11,25 +11,26 @@
 
 {% block content %}
     <div class="container">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
     {% for register in registers %}
-<div class="card text-center mx-auto my-4 border shadow-sm" style="width: 20rem; min-height: 550px">
-  <div class="card-header">
-    <img src="{{ register.barcode_url }}" width="300" height="100" class="card-img-top" alt="..." style="border-radius: 8px">
+    <div class="col">
+    <div class="card text-center mx-auto border shadow-sm" style="min-height: 550px; min-width: 300px; border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; overflow: hidden;">
+  <div class="card-header px-0 py-2" style="background-color:white">
+    <img src="{{ register.barcode_url }}" style="width: 300px; height: 100px; object-fill: contain; border-radius: 8px" class="card-img-top" alt="...">
   </div>
   <div class="card-body">
     {% for ordr in register.for_orders %}
     <h6 class="card-title"><li>{{ ordr }}</li></h6>
-        {% endfor %}
-    {% for doc in register.documentsId %}
-          <li>{{ doc }}</li>
-      {% endfor %}
-  <a href="{{ register.register_url }}" class="btn btn-primary my-2">Реєстр PDF</a>
+    {% endfor %}
+    <a href="{{ register.register_url }}" class="btn btn-primary my-2">Реєстр PDF</a>
   </div>
   <div class="card-footer text-muted">
     {{ register.date }}
   </div>
 </div>
+    </div>
 {% endfor %}
+    </div>
     </div>
 
     <!-- Pagination -->

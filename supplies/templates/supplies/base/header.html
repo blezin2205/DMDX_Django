@@ -112,47 +112,60 @@
                                 <i class="bi bi-gear me-1"></i>Меню
                             </button>
                             <div class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="dropdownMenuButton">
-                                <h6 class="dropdown-header">Основне</h6>
+                                <!-- Regular menu items at the top -->
                                 <a class="dropdown-item" href="{% url 'nova_poshta_registers' %}">
                                     <i class="bi bi-truck me-2"></i>Реєстри НП
                                 </a>
                                 <a class="dropdown-item" href="{% url 'all_deliveries' %}">
                                     <i class="bi bi-box me-2"></i>Поставки
                                 </a>
-                                    <a class="dropdown-item" href="/serviceNotes">
-                                        <i class="bi bi-tools me-1"></i>Сервісні записи
-                                    </a>
-            
+                                <a class="dropdown-item" href="/serviceNotes">
+                                    <i class="bi bi-tools me-1"></i>Сервісні записи
+                                </a>
                                 <a class="dropdown-item" href="/allDevices">
                                     <i class="bi bi-cpu me-1"></i>Прилади
-                                </a>
-
-                                <div class="dropdown-divider"></div>
-                                
-                                <h6 class="dropdown-header">Додати</h6>
-                                <a class="dropdown-item" href="{% url 'create_note' %}">
-                                    <i class="bi bi-journal-plus me-2"></i>Сервісну замітку
-                                </a>
-                                <a class="dropdown-item" href="{% url 'addClient' %}">
-                                    <i class="bi bi-person-plus me-2"></i>Клієнта
-                                </a>
-                                <a class="dropdown-item" href="{% url 'add-new-city' %}">
-                                    <i class="bi bi-building me-2"></i>Місто
-                                </a>
-                                <a class="dropdown-item" href="{% url 'add-new-supply-category' %}">
-                                    <i class="bi bi-tags me-2"></i>Категорію товара
-                                </a>
-                                <a class="dropdown-item" href="{% url 'add-general-supply' %}">
-                                    <i class="bi bi-box-seam me-2"></i>Назву товара
-                                </a>
-                                <div class="dropdown-divider"></div>
-                                
-                                <a class="dropdown-item" href="{% url 'app_settings' %}">
-                                    <i class="bi bi-gear me-2"></i>Налаштування
                                 </a>
                                 <a class="dropdown-item" href="{% url 'list_files' '' %}">
                                     <i class="bi bi-folder me-2"></i>Storage
                                 </a>
+                                <a class="dropdown-item" href="{% url 'app_settings' %}">
+                                    <i class="bi bi-gear me-2"></i>Налаштування
+                                </a>
+                                <div class="dropdown-divider"></div>
+
+                                <!-- Accordion sections at the bottom -->
+                                <div class="accordion" id="dropdownAccordion">
+                                    <!-- Додати Section -->
+                                    <div class="accordion-item border-0">
+                                        <h2 class="accordion-header" id="headingAdd">
+                                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAdd" aria-expanded="false" aria-controls="collapseAdd">
+                                                <h6 class="mb-0">Додати</h6>
+                                            </button>
+                                        </h2>
+                                        <div id="collapseAdd" class="accordion-collapse collapse" aria-labelledby="headingAdd" data-bs-parent="#dropdownAccordion">
+                                            <div class="accordion-body p-0">
+                                                <a class="dropdown-item" href="{% url 'upload_supplies_for_new_delivery' %}">
+                                                    <i class="bi bi-box me-2"></i>Нову поставку
+                                                </a>
+                                                <a class="dropdown-item" href="{% url 'create_note' %}">
+                                                    <i class="bi bi-journal-plus me-2"></i>Сервісну замітку
+                                                </a>
+                                                <a class="dropdown-item" href="{% url 'addClient' %}">
+                                                    <i class="bi bi-person-plus me-2"></i>Клієнта
+                                                </a>
+                                                <a class="dropdown-item" href="{% url 'add-new-city' %}">
+                                                    <i class="bi bi-building me-2"></i>Місто
+                                                </a>
+                                                <a class="dropdown-item" href="{% url 'add-new-supply-category' %}">
+                                                    <i class="bi bi-tags me-2"></i>Категорію товара
+                                                </a>
+                                                <a class="dropdown-item" href="{% url 'add-general-supply' %}">
+                                                    <i class="bi bi-box-seam me-2"></i>Назву товара
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </li>
@@ -223,6 +236,50 @@
     .dropdown-item:hover {
         background-color: #f8f9fa;
         color: #2d3748;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prevent dropdown from closing when clicking inside accordion
+        const dropdownMenu = document.querySelector('.dropdown-menu');
+        const accordionButtons = document.querySelectorAll('.accordion-button');
+        
+        dropdownMenu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        
+        accordionButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+    });
+</script>
+
+<style>
+    .accordion-button {
+        background-color: transparent;
+        box-shadow: none;
+        padding: 0.5rem 1.5rem;
+    }
+    
+    .accordion-button:not(.collapsed) {
+        background-color: #f8f9fa;
+        color: #2d3748;
+    }
+    
+    .accordion-button:focus {
+        box-shadow: none;
+        border-color: transparent;
+    }
+    
+    .accordion-button::after {
+        margin-left: 0.5rem;
+    }
+    
+    .dropdown-menu {
+        min-width: 250px;
     }
 </style>
 

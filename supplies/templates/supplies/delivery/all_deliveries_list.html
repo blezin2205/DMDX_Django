@@ -8,18 +8,20 @@
 {% endblock %}
 
 {% block content %}
-<div class="container w-50">
-    <a href="/upload_supplies_for_new_delivery" class="btn btn-primary my-4 w-100 rounded-4 shadow-sm hover-shadow-md transition-all d-flex align-items-center justify-content-center gap-2" aria-current="page">
-        <i class="bi bi-plus-circle"></i>
-        <span>Створити нову поставку</span>
-    </a>
+<div class="container {% if request.user_agent.is_mobile %}w-100{% else %}w-50{% endif %} text-center">
+    <div class="p-3">
+        <a href="/upload_supplies_for_new_delivery" class="btn btn-primary rounded-pill shadow-sm hover-shadow-md transition-all d-inline-flex align-items-center justify-content-center gap-2" aria-current="page">
+            <i class="bi bi-plus-circle"></i>
+            <span>Створити нову поставку</span>
+        </a>
+    </div>
 
     <div class="listOrders">
         {% for order in deliveries %}
             <div id="delivery_preview_cell{{ order.id }}" class="my-4">
                 <div class="d-flex gap-3 align-items-center">
                     <a href="{% url 'delivery_detail' order.id %}?next={{ request.get_full_path|urlencode }}" class="text-decoration-none flex-grow-1">
-                        <div class="card shadow-sm hover-shadow-md transition-all">
+                        <div class="card shadow-sm hover-shadow-md transition-all" style="border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; overflow: hidden;">
                             <div class="card-header position-relative p-3 border-0 {% if not order.isHasBeenSaved %} bg-warning bg-opacity-10 {% else %} bg-primary bg-opacity-10 {% endif %}">
                                 <div class="row g-3">
                                     <!-- Left side - Creation info -->
