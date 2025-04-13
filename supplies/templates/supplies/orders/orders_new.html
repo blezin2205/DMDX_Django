@@ -89,26 +89,17 @@
                                 <i class="bi bi-intersect fs-4"></i>
                             </button>
                             {% endif %}
-                            <button type="button" 
-                            id="select_all_orders" 
+                            {% if uncomplete_orders_exists %}
+                            <button type="submit" 
+                            name="uncomplete_orders_complete_all_action" 
                             class="btn btn-outline-primary py-0 px-2" 
-                            data-tooltip-content="Вибрати всі замовлення"
+                            onclick="return confirm('Ви впевнені, що хочете завершити всі замовлення?');"
+                            data-tooltip-content="Завершити всі замовлення"
                             onmouseover="showTooltip(event, this)"
                             onmouseout="hideTooltip()">
-                                <i class="bi bi-check-square fs-4"></i>
+                            <i class="bi bi-send fs-4"></i>
                             </button>
-                        </div>
-                    {% else %}
-                        <div class="col d-flex gap-2">
-                            <button type="button" 
-                            id="select_all_orders" 
-                            class="btn btn-outline-primary py-0 px-2" 
-                            data-tooltip-content="Вибрати всі замовлення"
-                            onmouseover="showTooltip(event, this)"
-                            onmouseout="hideTooltip()">
-                                <i class="bi bi-check-square fs-4"></i>
-                            </button>
-                        </div>
+                            {% endif %}
                     {% endif %}
                     <div class="col d-flex gap-2 justify-content-center" id="register_print_buttons">
                        
@@ -175,47 +166,15 @@
         });
     }
 
-    // Select All functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const selectAllButton = document.getElementById('select_all_orders');
-        if (selectAllButton) {
-            selectAllButton.addEventListener('click', function() {
-                const checkboxes = document.querySelectorAll('input[name="register_exls_selected_buttons"]');
-                const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
-                
-                // Toggle all checkboxes
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = !allChecked;
-                    
-                    // Trigger the HTMX event to update the server
-                    if (checkbox.hasAttribute('hx-post')) {
-                        // Create a custom event to simulate a click
-                        const event = new Event('click', {
-                            bubbles: true,
-                            cancelable: true
-                        });
-                        checkbox.dispatchEvent(event);
-                        
-                        // Also directly trigger the HTMX event
-                        htmx.trigger(checkbox, 'click');
-                    }
-                });
-                
-                // Update button icon based on selection state
-                const icon = selectAllButton.querySelector('i');
-                if (icon) {
-                    icon.className = !allChecked ? 'bi bi-check-square-fill fs-4' : 'bi bi-check-square fs-4';
-                }
-            });
-        }
-    });
-
     // Handle form submission for print_choosed
     document.querySelector('form').addEventListener('submit', function(e) {
         console.log('Form submission detected');
         console.log('Submitter:', e.submitter);
         
-        if (e.submitter && (e.submitter.name === 'print_choosed' || e.submitter.name === 'merge_choosed' || e.submitter.name === 'merge_all_orders_for_the_same_place')) {
+        if (e.submitter && (e.submitter.name === 'print_choosed' || 
+        e.submitter.name === 'merge_choosed' || 
+        e.submitter.name === 'merge_all_orders_for_the_same_place' ||
+        e.submitter.name === 'uncomplete_orders_complete_all_action')) {
             console.log(e.submitter.name + ' action detected');
             e.preventDefault();
             const formData = new FormData(this);
@@ -238,7 +197,9 @@
                 if (e.submitter.name === 'print_choosed' && data.open_in_new_tab) {
                     console.log('Opening new tab with URL:', data.url);
                     window.open(data.url, '_blank');
-                } else if (e.submitter.name === 'merge_choosed' || e.submitter.name === 'merge_all_orders_for_the_same_place') {
+                } else if (e.submitter.name === 'merge_choosed' || 
+                e.submitter.name === 'merge_all_orders_for_the_same_place' ||
+                e.submitter.name === 'uncomplete_orders_complete_all_action') {
                     // Show alert with the message from the response
                     alert(data.message);
                     // If merge was successful, reload the page to show the new merged orders

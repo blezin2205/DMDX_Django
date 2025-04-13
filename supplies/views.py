@@ -1698,7 +1698,6 @@ def render_to_xls_selected_order(table_header, place, supplies_in_order, wb):
 def orders(request):
     cartCountData = countCartItemsHelper(request)
     isClient = request.user.groups.filter(name='client').exists()
-    is_more_then_one_order_exists_for_the_same_place = False
     if isClient:
         ordersObj = Order.objects.filter(place__user=request.user).order_by('-isPinned', 'isComplete', 'dateToSend', '-id')
         pinned_orders = ordersObj.filter(isPinned=True)
@@ -1726,12 +1725,49 @@ def orders(request):
         orders = paginator.get_page(page_number)
         
     is_more_then_one_order_exists_for_the_same_place = False
+    uncomplete_orders_exists = False
     if not isClient:
         filtered_orders = ordersObj.filter(isComplete=False)
+        uncomplete_orders_exists = filtered_orders.count() > 0
         orders_by_place = defaultdict(list)
         for order in filtered_orders:
             orders_by_place[order.place].append(order)
         is_more_then_one_order_exists_for_the_same_place = any(len(orders) > 1 for orders in orders_by_place.values())    
+        
+        if 'uncomplete_orders_complete_all_action' in request.POST:
+            print('---------------------uncomplete_orders_complete_all_action--------------------------------')
+            completed_count = 0
+            for order in filtered_orders:
+                try:
+                    update_order_status_core(order, request.user)
+                    completed_count += 1
+                except Exception as e:
+                    print(f"Error completing order {order.id}: {str(e)}")
+            
+            return JsonResponse({
+                'message': f'Успішно завершено {completed_count} з {len(filtered_orders)} замовлень',
+                'status': 'success',
+                'completed_count': completed_count,
+                'total_count': len(filtered_orders)
+            })
+            
+        if 'merge_all_orders_for_the_same_place' in request.POST:
+            print('---------------------merge_all_orders_for_the_same_place--------------------------------')
+            # Get all orders from the current queryset
+            merged_orders = merge_orders(filtered_orders, request.user)
+            
+            if not merged_orders:
+                return JsonResponse({
+                    'message': 'Не було об\'єднано жодного замовлення. Для об\'єднання потрібно щонайменше 2 замовлення для однієї організації',
+                    'status': 'warning'
+                })
+                
+            return JsonResponse({
+                'message': 'Замовлення успішно об\'єднано',
+                'merged_order_ids': [order.id for order in merged_orders],
+                'status': 'success'
+            })
+            
             
 
     if request.method == 'POST':
@@ -1753,23 +1789,6 @@ def orders(request):
             pinned_orders.update(isPinned=False)
             pinned_orders = pinned_orders.filter(isPinned=True)
             pinned_orders_exists = pinned_orders.count() > 0
-        if 'merge_all_orders_for_the_same_place' in request.POST:
-            print('---------------------merge_all_orders_for_the_same_place--------------------------------')
-            # Get all orders from the current queryset
-            filtered_orders = ordersObj.filter(isComplete=False)
-            merged_orders = merge_orders(filtered_orders, request.user)
-            
-            if not merged_orders:
-                return JsonResponse({
-                    'message': 'Не було об\'єднано жодного замовлення. Для об\'єднання потрібно щонайменше 2 замовлення для однієї організації',
-                    'status': 'warning'
-                })
-                
-            return JsonResponse({
-                'message': 'Замовлення успішно об\'єднано',
-                'merged_order_ids': [order.id for order in merged_orders],
-                'status': 'success'
-            })
             
         if 'print_choosed' in request.POST:
             print('---------------------PRINT CHOOSED --------------------------------')
@@ -1881,7 +1900,8 @@ def orders(request):
                                'isOrders': True,
                                'totalCount': totalCount,
                                'isOrdersTab': True,
-                               'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place})
+                               'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place,
+                               'uncomplete_orders_exists': uncomplete_orders_exists})
 
 
     return render(request, 'supplies/orders/orders_new.html',
@@ -1893,7 +1913,8 @@ def orders(request):
                    'totalCount': totalCount,
                    'isOrdersTab': True, 
                    'pinned_orders_exists': pinned_orders_exists, 
-                   'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place})
+                   'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place,
+                   'uncomplete_orders_exists': uncomplete_orders_exists})
 
 
 
@@ -2202,8 +2223,13 @@ def updateOrderPinnedStatus(request, order_id):
         template = 'partials/orders/order_preview_cel.html'
     return render(request, template, {'order': order})
 
-def update_order_status_core(order_id, user):
-    order = Order.objects.get(id=order_id)
+def update_order_status_core(order_id_or_obj, user):
+    # Check if the first parameter is an Order object or an ID
+    if isinstance(order_id_or_obj, Order):
+        order = order_id_or_obj
+    else:
+        order = Order.objects.get(id=order_id_or_obj)
+    
     if order.isComplete:
         raise ValueError('Це замовлення вже завершено і не може бути оновлено')
     
