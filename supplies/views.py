@@ -27,7 +27,7 @@ from django.contrib import messages
 import requests
 import csv
 import pymsteams
-from django.db.models import Sum, F, Exists, OuterRef, Max, Case, When, Value, IntegerField
+from django.db.models import Sum, F, Exists, OuterRef, Max, Case, When, Value, IntegerField, Q, BooleanField
 from .tasks import *
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -1699,14 +1699,40 @@ def orders(request):
     cartCountData = countCartItemsHelper(request)
     isClient = request.user.groups.filter(name='client').exists()
     if isClient:
-        ordersObj = Order.objects.filter(place__user=request.user).order_by('-isPinned', 'isComplete', 'dateToSend', '-id')
+        ordersObj = Order.objects.filter(place__user=request.user).order_by(
+            '-isPinned', 
+            'isComplete', 
+            'dateToSend', 
+            Case(
+                When(
+                    statusnpparselfromdoucmentid__status_code__in=['1', '2', '3', '4', '41', '5', '6', '7', '8', '10', '11', '12', '101', '102', '103', '104', '105', '106', '111', '112'],
+                    then=Value(0)
+                ),
+                default=Value(1),
+                output_field=IntegerField(),
+            ),
+            '-id'
+        )
         pinned_orders = ordersObj.filter(isPinned=True)
         pinned_orders_exists = pinned_orders.count() > 0
         totalCount = ordersObj.count()
         title = f'Всі замовлення для {request.user.first_name} {request.user.last_name}. ({totalCount} шт.)'
 
     else:
-        ordersObj = Order.objects.all().order_by('-isPinned', 'isComplete', 'dateToSend', '-id')
+        ordersObj = Order.objects.all().order_by(
+            '-isPinned', 
+            'isComplete', 
+            'dateToSend', 
+            Case(
+                When(
+                    statusnpparselfromdoucmentid__status_code__in=['1', '2', '3', '4', '41', '5', '6', '7', '8', '10', '11', '12', '101', '102', '103', '104', '105', '106', '111', '112'],
+                    then=Value(0)
+                ),
+                default=Value(1),
+                output_field=IntegerField(),
+            ),
+            '-id'
+        )
         pinned_orders = ordersObj.filter(isPinned=True)
         pinned_orders_exists = pinned_orders.count() > 0
         totalCount = ordersObj.count()
@@ -2029,7 +2055,7 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook, 
             if row.generalSupply.category:
                 category = row.generalSupply.category
             if row.generalSupply.package_and_tests:
-                pckg_and_tests = row.generalSupply.package_and_tests
+                pckg_and_tests = row.general_supply.package_and_tests
 
         count_in_order = row.count_in_order
         current_delivery_count = row.count_in_order_current
@@ -3276,7 +3302,7 @@ def render_to_xls(request, order_id):
             if row.generalSupply.category:
                 category = row.generalSupply.category
             if row.generalSupply.package_and_tests:
-                packtests = row.generalSupply.package_and_tests
+                packtests = row.general_supply.package_and_tests
         lot = ''
         if row.lot:
             lot = row.lot
