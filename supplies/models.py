@@ -327,7 +327,7 @@ class Workers(models.Model):
         try:
             telNumber = self.telNumber
             counterpartyRef = self.ref_counterparty_NP
-            if counterpartyRef is not None and counterpartyRef == '3b13350b-2a6b-11eb-8513-b88303659df5':
+            if counterpartyRef is not None and counterpartyRef == settings.NOVA_POSHTA_SENDER_DMDX_REF_PRIVATE_COUNTERAGENT:
                 user_np_type = ', (Приватна особа)'
             elif counterpartyRef is not None:
                 user_np_type = ', (Організація)'
@@ -348,7 +348,7 @@ class Workers(models.Model):
     def get_np_status(self):
         counterpartyRef = self.ref_counterparty_NP
         user_np_type = None
-        if counterpartyRef is not None and counterpartyRef == '3b13350b-2a6b-11eb-8513-b88303659df5':
+        if counterpartyRef is not None and counterpartyRef == settings.NOVA_POSHTA_SENDER_DMDX_REF_PRIVATE_COUNTERAGENT:
             user_np_type = 'Приватна особа'
         elif counterpartyRef is not None:
             user_np_type = 'Організація'

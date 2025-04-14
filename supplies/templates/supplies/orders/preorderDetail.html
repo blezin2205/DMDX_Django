@@ -102,14 +102,14 @@
         <div class="card-body">
             <h5 class="card-title mb-3">
                 <i class="bi bi-diagram-3 me-2"></i>
-                {% if order.orders_for_preorder.all %}
+                {% if all_related_orders %}
                 Замовлення, що були зроблені за цим передзамовленням
                 {% else %}
                 За цим передзамовленням ще немає замовлень
                 {% endif %}
             </h5>
             <div class="list-group list-group-flush" id="order_delete_cell">
-                {% with orders=order.orders_for_preorder.all %}
+                {% with orders=all_related_orders %}
                 {% include 'partials/orders/order_delete_cell.html' %}
                 {% endwith %}
             </div>

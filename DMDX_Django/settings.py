@@ -316,6 +316,7 @@ NOVA_POSHTA_PRINT_MARKING_MULTIPLE_URL_TEMPLATE = 'https://my.novaposhta.ua/orde
 NOVA_POSHTA_PRINT_SCAN_SHEET_URL_TEMPLATE = '//my.novaposhta.ua/scanSheet/printScanSheet/refs[]/{ref}/type/pdf/apiKey/{api_key}'
 NOVA_POSHTA_API_URL = 'https://api.novaposhta.ua/v2.0/json/'
 NOVA_POSHTA_SENDER_DMDX_REF = "3b0e7317-2a6b-11eb-8513-b88303659df5"
+NOVA_POSHTA_SENDER_DMDX_REF_PRIVATE_COUNTERAGENT = "3b13350b-2a6b-11eb-8513-b88303659df5"
 
 X_FRAME_OPTIONS='SAMEORIGIN'
 

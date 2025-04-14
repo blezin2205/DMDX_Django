@@ -2940,7 +2940,7 @@ def editWorkerInfo(request, worker_id):
                 if radioButton == 'asOrganization':
                     refNP = place.ref_NP
                 if radioButton == 'asPrivateUser':
-                    refNP = "3b13350b-2a6b-11eb-8513-b88303659df5"
+                    refNP = settings.NOVA_POSHTA_SENDER_DMDX_REF_PRIVATE_COUNTERAGENT
 
                 params = {
                     "apiKey": "99f738524ca3320ece4b43b10f4181b1",
@@ -3476,6 +3476,7 @@ def preorderDetail(request, order_id):
     order = get_object_or_404(PreOrder, pk=order_id)
     supplies_in_order = order.supplyinpreorder_set.all()
     cartCountData = countCartItemsHelper(request)
+    all_related_orders = list(order.orders_for_preorder.all()) + list(order.related_orders.all())
     if order.isPreorder:
         title = f'Передзамовлення № {order_id}'
     else:
@@ -3483,7 +3484,7 @@ def preorderDetail(request, order_id):
 
     return render(request, 'supplies/orders/preorderDetail.html',
                   {'title': title, 'order': order, 'supplies': supplies_in_order,
-                   'cartCountData': cartCountData, 'isOrders': True})
+                   'cartCountData': cartCountData, 'isOrders': True, 'all_related_orders': all_related_orders})
 
 
 @login_required(login_url='login')
