@@ -5,10 +5,4 @@
                  <option value="{{preorder.id}}">Замовлення №{{ preorder.id }}, для: {{ preorder.place.name }}, {{ preorder.place.city_ref.name }}, від {{ preorder.dateCreated|date:"d.m.Y" }}</option>
              {% endfor %}
 </select>
-
-     <input type="hidden" name="next" value="{{ request.GET.next }}">
-     <button class="btn btn-outline-primary my-2" style="width: 100px" type="submit">Зберегти</button>
-{% else %}
-     <input type="hidden" name="next" value="{{ request.GET.next }}">
-     <button class="btn btn-outline-primary my-2" style="width: 100px" type="submit">Зберегти</button>
 {% endif %}

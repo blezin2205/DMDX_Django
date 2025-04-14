@@ -622,7 +622,8 @@ def orderTypeDescriptionField_for_client(request):
     orderType = request.POST.get('orderType')
     place_id_Selected = request.POST.get('place_id')
     isAddedToExistPreorder = orderType == 'add_to_Exist_preorder'
-    preorders = PreOrder.objects.filter(place_id=place_id_Selected).filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer') | Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial'))
+    print("orderType", orderType)
+    preorders = PreOrder.objects.filter(place_id=place_id_Selected).filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer') | Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial')).order_by('-id')
 
     return render(request, 'partials/orders/orderTypeDescriptionField_for_client.html', {'isAddedToExistPreorder': isAddedToExistPreorder, 'preorders': preorders})
 
@@ -793,24 +794,26 @@ def update_count_in_preorder_cart(request, itemId):
 
 import threading
 def sendTeamsMsg(request, order):
-    app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
-    if app_settings.send_teams_msg_preorders:
-        myTeamsMessage = pymsteams.connectorcard(
-            settings.TEAMS_WEBHOOK_URL_PREORDERS)
-        myTeamsMessage.title(f'Передамовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
+    from django.conf import settings
+    if not settings.DEBUG:
+        app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
+        if app_settings.send_teams_msg_preorders:
+            myTeamsMessage = pymsteams.connectorcard(
+                settings.TEAMS_WEBHOOK_URL_PREORDERS)
+            myTeamsMessage.title(f'Передамовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
 
-        myTeamsMessage.addLinkButton("Деталі замовлення",
-                                     f'https://dmdxstorage.herokuapp.com/preorders/{order.id}')
-        myTeamsMessage.addLinkButton("Excel",
-                                     f'https://dmdxstorage.herokuapp.com/preorder-detail-csv/{order.id}')
-        created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
-        if order.comment:
-            comment = f'*коментар:*  **{order.comment}**'
-            myTeamsMessage.text(f'{created}\n\n{comment};')
-            myTeamsMessage.send()
-        else:
-            myTeamsMessage.text(f'{created}')
-            myTeamsMessage.send()
+            myTeamsMessage.addLinkButton("Деталі замовлення",
+                                         f'https://dmdxstorage.herokuapp.com/preorders/{order.id}')
+            myTeamsMessage.addLinkButton("Excel",
+                                         f'https://dmdxstorage.herokuapp.com/preorder-detail-csv/{order.id}')
+            created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
+            if order.comment:
+                comment = f'*коментар:*  **{order.comment}**'
+                myTeamsMessage.text(f'{created}\n\n{comment};')
+                myTeamsMessage.send()
+            else:
+                myTeamsMessage.text(f'{created}')
+                myTeamsMessage.send()
 
 
 @login_required(login_url='login')
@@ -821,7 +824,11 @@ def cartDetailForClient(request):
     supplies = orderInCart.supplyinpreorderincart_set.all()
     total_count_in_cart = supplies.aggregate(total_count=Sum('count_in_order'))['total_count']
     cities = City.objects.all()
-    orderForm = OrderInCartForm(request.POST or None)
+    
+    # Initialize form with isComplete=True only for this view
+    initial_data = {'isComplete': True}
+    orderForm = OrderInCartForm(request.POST or initial_data)
+    
     places = []
     placeChoosed = False
     preorders = None
@@ -853,13 +860,19 @@ def cartDetailForClient(request):
         if orderForm.is_valid():
             comment = orderForm.cleaned_data['comment']
             isComplete = orderForm.cleaned_data['isComplete']
-            orderType = request.POST.get('orderType')
+            orderType = request.POST.get('orderType') or 'Preorder'
             preorderType = request.POST.get('preorderType')
             place_id = request.POST.get('place_id')
             is_pinned = request.POST.get('isPinned') is not None
             place = existing_place_for_preorder if existing_place_for_preorder else Place.objects.get(id=place_id)
 
             if orderType == 'Preorder':
+                print("orderType", orderType)
+                print("preorderType", preorderType)
+                print("place_id", place_id)
+                print("isComplete", isComplete)
+                print("isPinned", is_pinned)
+                print("comment", comment)
                 isPreorder = preorderType == 'new_preorder'
                 state_of_delivery = 'awaiting_from_customer'
                 if isComplete:
@@ -889,13 +902,7 @@ def cartDetailForClient(request):
             elif orderType == 'add_to_Exist_preorder':
                 selected_non_completed_preorder = request.POST.get('selected_non_completed_preorder')
                 selectedPreorder = PreOrder.objects.get(id=selected_non_completed_preorder)
-                if isComplete:
-                    dateSent = timezone.now().date()
-                else:
-                    dateSent = None
-                selectedPreorder.dateSent = dateSent
-                selectedPreorder.isComplete = isComplete
-                selectedPreorder.isPinned = is_pinned
+                
                 if selectedPreorder.comment and comment:
                     selectedPreorder.comment += f' / {comment}'
                 elif comment:
@@ -1125,25 +1132,27 @@ def get_agreement_for_place_for_city_in_cart(request):
 
 
 def sendTeamsMsgCart(request, order):
-    app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
-    if app_settings.send_teams_msg:
-        agreementString = ''
-        if order.for_preorder:
-            agreementString = f'Передзамовлення № {order.for_preorder.id}'
+    from django.conf import settings
+    if not settings.DEBUG:
+        app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
+        if app_settings.send_teams_msg:
+            agreementString = ''
+            if order.for_preorder:
+                agreementString = f'Передзамовлення № {order.for_preorder.id}'
 
-        myTeamsMessage = pymsteams.connectorcard(settings.TEAMS_WEBHOOK_URL_ORDERS)
-        myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
+            myTeamsMessage = pymsteams.connectorcard(settings.TEAMS_WEBHOOK_URL_ORDERS)
+            myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
 
-        myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}/0')
-        myTeamsMessage.addLinkButton("Excel", f'https://dmdxstorage.herokuapp.com/order-detail-csv/{order.id}')
-        created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
-        if order.comment:
-            comment = f'*коментар:*  **{order.comment}**'
-            myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
-            myTeamsMessage.send()
-        else:
-            myTeamsMessage.text(f'{agreementString}\n\n{created}')
-            myTeamsMessage.send()
+            myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}/0')
+            myTeamsMessage.addLinkButton("Excel", f'https://dmdxstorage.herokuapp.com/order-detail-csv/{order.id}')
+            created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
+            if order.comment:
+                comment = f'*коментар:*  **{order.comment}**'
+                myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
+                myTeamsMessage.send()
+            else:
+                myTeamsMessage.text(f'{agreementString}\n\n{created}')
+                myTeamsMessage.send()
 
 
 @login_required(login_url='login')

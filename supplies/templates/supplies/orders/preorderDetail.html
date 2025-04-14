@@ -32,15 +32,42 @@
                 <!-- Status Info -->
                 <div class="col-md-6">
                     <div class="d-flex flex-column align-items-md-end">
-                        {% if order.isComplete %}
-                        <div class="badge bg-success p-2 mb-2">
-                            <i class="bi bi-check-circle me-2"></i>Відправлено {{order.dateSent|date:"d.m.Y" }}
-                        </div>
-                        {% else %}
-                        <div class="badge bg-info p-2 mb-2">
-                            <i class="bi bi-clock me-2"></i>В очікуванні
-                        </div>
+                        {% if order.state_of_delivery == 'Complete' %}
+                            <div class="badge bg-success d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-check-circle"></i>
+                                <span>Повністю поставлено</span>
+                            </div>
+                        {% elif order.state_of_delivery == 'Complete_Handle' %}
+                            <div class="badge bg-success d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-check-circle"></i>
+                                <span>Повністю поставлено (Закрито вручну)</span>
+                            </div>
+                        {% elif order.state_of_delivery == 'Partial' %}
+                            <div class="badge bg-warning d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-hourglass-split"></i>
+                                <span>Частково поставлено</span>
+                            </div>
+                        {% elif order.state_of_delivery == 'awaiting_from_customer' %}
+                            <div class="badge bg-info d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-pencil-square"></i>
+                                <span>Формується замовником</span>
+                            </div>
+                        {% elif order.state_of_delivery == 'accepted_by_customer' %}
+                            <div class="badge bg-primary d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-check2-all"></i>
+                                <span>Підтверджено замовником</span>
+                            </div>
+                        {% elif order.state_of_delivery == 'Awaiting' %}
+                            <div class="badge bg-warning d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-truck"></i>
+                                <span>Замовлено у виробника</span>
+                            </div>
                         {% endif %}
+                        
+                            <div class="badge bg-secondary d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-calendar-check"></i>
+                                <span>{{order.dateCreated|date:"d.m.Y"}}</span>
+                            </div>
                         
                         <!-- Export Actions -->
                         <div class="btn-group">
