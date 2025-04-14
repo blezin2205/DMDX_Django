@@ -2058,7 +2058,7 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook, 
             if row.generalSupply.category:
                 category = row.generalSupply.category
             if row.generalSupply.package_and_tests:
-                pckg_and_tests = row.general_supply.package_and_tests
+                pckg_and_tests = row.generalSupply.package_and_tests
 
         count_in_order = row.count_in_order
         current_delivery_count = row.count_in_order_current
@@ -3305,7 +3305,7 @@ def render_to_xls(request, order_id):
             if row.generalSupply.category:
                 category = row.generalSupply.category
             if row.generalSupply.package_and_tests:
-                packtests = row.general_supply.package_and_tests
+                packtests = row.generalSupply.package_and_tests
         lot = ''
         if row.lot:
             lot = row.lot
