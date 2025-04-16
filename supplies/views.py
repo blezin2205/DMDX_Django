@@ -5,6 +5,7 @@ from django.urls import reverse
 from .decorators import unauthenticated_user, allowed_users
 from .models import *
 from .serializers import *
+from DMDX_Django.mixpanel_config import *
 from datetime import date
 from django.contrib.auth import authenticate, login, logout
 from .filters import *
@@ -699,6 +700,7 @@ from django_user_agents.utils import get_user_agent
 
 @login_required(login_url='login')
 def home(request):
+    track_event('page_viewed', {'page_name': 'home'})
     isClient = request.user.isClient() and not request.user.is_staff
     place = None
     booked_list_exist = False
@@ -3790,6 +3792,143 @@ def analytics_report(request, place_id):
         'cartCountData': cartCountData
     }
     return render(request, 'supplies/analytics_report.html', context)
+
+@login_required
+@allowed_users(allowed_roles=['admin', 'empl'])
+def analytics_report_to_xls(request, place_id):
+    place = get_object_or_404(Place, id=place_id)
+    analytics = PreorderAnalytics(place)
+    report = analytics.get_analytics_report()
+    
+    # Отримуємо всі передзамовлення для цього місця
+    preorders = PreOrder.objects.filter(place=place).order_by('-dateCreated')
+    
+    # Отримуємо всі товари з передзамовлень, згруповані за generalSupply
+    preorder_items = SupplyInPreorder.objects.filter(
+        supply_for_order__in=preorders
+    ).values(
+        'generalSupply',
+        'generalSupply__name',
+        'generalSupply__package_and_tests',
+        'generalSupply__category__name'
+    ).annotate(
+        total_quantity=Sum('count_in_order'),
+        last_order_date=Max('supply_for_order__dateCreated')
+    ).order_by('-total_quantity')
+    
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f"attachment; filename=Analytics-{place.name}-{place.city}.xlsx"
+    
+    wb = Workbook(response, {'in_memory': True})
+    
+    # Create Summary worksheet
+    ws_summary = wb.add_worksheet('Загальна статистика')
+    format_title = wb.add_format({'bold': True, 'font_size': 18})
+    format_header = wb.add_format({'bold': True, 'font_size': 16})
+    format_normal = wb.add_format({'font_size': 14})
+    
+    ws_summary.write(0, 0, f'Аналітика передзамовлень для {place.name}, {place.city_ref.name}', format_title)
+    ws_summary.write(2, 0, 'Загальна статистика', format_header)
+    ws_summary.write(3, 0, 'Всього передзамовлень:', format_normal)
+    ws_summary.write(3, 1, report['total_orders'], format_normal)
+    ws_summary.write(4, 0, 'Останнє передзамовлення:', format_normal)
+    ws_summary.write(4, 1, report['last_order_date'].strftime("%d-%m-%Y") if report['last_order_date'] else '', format_normal)
+    ws_summary.write(5, 0, 'Середня частота (днів):', format_normal)
+    ws_summary.write(5, 1, report['order_frequency'] or 0, format_normal)
+    
+    ws_summary.write(7, 0, 'Прогноз наступного передзамовлення', format_header)
+    ws_summary.write(8, 0, 'Очікувана дата:', format_normal)
+    ws_summary.write(8, 1, report['next_predicted_order'].strftime("%d-%m-%Y") if report['next_predicted_order'] else '', format_normal)
+    
+    ws_summary.set_column(0, 0, 30)
+    ws_summary.set_column(1, 1, 20)
+    
+    # Create Recommendations worksheet
+    ws_recommendations = wb.add_worksheet('Рекомендовані товари')
+    
+    # Write headers
+    headers = [
+        {'header': '№'},
+        {'header': 'Назва товару'},
+        {'header': 'Пакування / Тести'},
+        {'header': 'Категорія'},
+        {'header': 'Рекомендована кількість'},
+        {'header': 'Середня кількість'},
+        {'header': 'Загальна кількість'},
+        {'header': 'Кількість замовлень'}
+    ]
+    
+    # Write data
+    row = 1
+    for suggestion in report['suggestions']:
+        product = suggestion['product']
+        ws_recommendations.write(row, 0, row, format_normal)
+        ws_recommendations.write(row, 1, product.name, format_normal)
+        ws_recommendations.write(row, 2, product.package_and_tests or '', format_normal)
+        ws_recommendations.write(row, 3, product.category.name if product.category else '', format_normal)
+        ws_recommendations.write(row, 4, suggestion['suggested_quantity'], format_normal)
+        ws_recommendations.write(row, 5, int(suggestion['avg_quantity']), format_normal)  # Convert to integer
+        ws_recommendations.write(row, 6, suggestion['total_quantity'], format_normal)
+        ws_recommendations.write(row, 7, suggestion['total_orders'], format_normal)
+        row += 1
+    
+    # Add table with styling
+    if report['suggestions']:
+        ws_recommendations.add_table(0, 0, len(report['suggestions']), len(headers) - 1, {
+            'columns': headers,
+            'style': 'Table Style Medium 2',
+            'first_column': True
+        })
+    
+    # Set column widths
+    ws_recommendations.set_column(0, 0, 5)   # №
+    ws_recommendations.set_column(1, 1, 35)  # Назва товару
+    ws_recommendations.set_column(2, 2, 20)  # Пакування / Тести
+    ws_recommendations.set_column(3, 3, 15)  # Категорія
+    ws_recommendations.set_column(4, 7, 15)  # Numeric columns
+    
+    # # Create Preorder Items worksheet
+    # ws_items = wb.add_worksheet('Товари в передзамовленнях')
+    
+    # # Write headers
+    # item_headers = [
+    #     {'header': '№'},
+    #     {'header': 'Назва товару'},
+    #     {'header': 'Пакування / Тести'},
+    #     {'header': 'Категорія'},
+    #     {'header': 'Загальна кількість'},
+    #     {'header': 'Дата останнього замовлення'}
+    # ]
+    
+    # # Write data
+    # row = 1
+    # for item in preorder_items:
+    #     ws_items.write(row, 0, row, format_normal)
+    #     ws_items.write(row, 1, item['generalSupply__name'], format_normal)
+    #     ws_items.write(row, 2, item['generalSupply__package_and_tests'] or '', format_normal)
+    #     ws_items.write(row, 3, item['generalSupply__category__name'] or '', format_normal)
+    #     ws_items.write(row, 4, item['total_quantity'], format_normal)
+    #     ws_items.write(row, 5, item['last_order_date'].strftime("%d-%m-%Y") if item['last_order_date'] else '', format_normal)
+    #     row += 1
+    
+    # # Add table with styling
+    # if preorder_items:
+    #     ws_items.add_table(0, 0, len(preorder_items), len(item_headers) - 1, {
+    #         'columns': item_headers,
+    #         'style': 'Table Style Medium 2',
+    #         'first_column': True
+    #     })
+    
+    # # Set column widths
+    # ws_items.set_column(0, 0, 5)   # №
+    # ws_items.set_column(1, 1, 35)  # Назва товару
+    # ws_items.set_column(2, 2, 20)  # Пакування / Тести
+    # ws_items.set_column(3, 3, 15)  # Категорія
+    # ws_items.set_column(4, 4, 15)  # Загальна кількість
+    # ws_items.set_column(5, 5, 20)  # Дата останнього замовлення
+    
+    wb.close()
+    return response
 
 @login_required
 def analytics_preorders_list_for_client(request):

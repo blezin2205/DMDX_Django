@@ -190,3 +190,4 @@ zopfli==0.2.3
 pandas==1.4.3
 numpy==1.26.4
 sentry-sdk==1.39.1
+mixpanel==4.10.0

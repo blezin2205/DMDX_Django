@@ -299,6 +299,63 @@
             });
         }
     });
+
+    document.addEventListener('DOMContentLoaded', function() {
+                let currentPopover = null;
+                let currentTrigger = null;
+                
+                // Handle clicks on the orange badges
+                document.addEventListener('click', function(e) {
+                    const trigger = e.target.closest('.on-hold-trigger');
+                    if (trigger) {
+                        e.stopPropagation();
+                        const supplyId = trigger.dataset.supplyId;
+                        const popover = document.getElementById('popover-' + supplyId);
+                        
+                        // If clicking the same trigger, toggle the popover
+                        if (currentPopover === popover && currentTrigger === trigger) {
+                            hidePopover();
+                            return;
+                        }
+                        
+                        // Hide any existing popover
+                        hidePopover();
+                        
+                        // Show and position the new popover
+                        showPopover(popover, trigger);
+                        currentTrigger = trigger;
+                        
+                        // Load the data
+                        loadPopoverDataForSupplyInfoOnHold(supplyId, popover);
+                    } else if (!e.target.closest('.custom-popover-container')) {
+                        // Click outside - hide popover
+                        hidePopover();
+                    }
+                });
+                
+                function showPopover(popover, trigger) {
+                    const triggerRect = trigger.getBoundingClientRect();
+                    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    
+                    popover.style.display = 'block';
+                    // Position to the left of the trigger
+                    const popoverRect = popover.getBoundingClientRect();
+                    popover.style.top = (triggerRect.top + scrollTop - (popoverRect.height / 2) + (triggerRect.height / 2)) + 'px';
+                    popover.style.left = (triggerRect.left + scrollLeft - popoverRect.width - 10) + 'px';
+                    
+                    currentPopover = popover;
+                }
+                
+                function hidePopover() {
+                    if (currentPopover) {
+                        currentPopover.style.display = 'none';
+                        currentPopover = null;
+                        currentTrigger = null;
+                    }
+                }
+            });
+
     </script>
 
 {% endblock %}

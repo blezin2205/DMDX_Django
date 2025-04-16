@@ -94,7 +94,8 @@ INSTALLED_APPS = [
     'django_celery_results',
     'celery_progress',
     'django_user_agents',
-    'channels'
+    'channels',
+    'mixpanel',
 ]
 
 MIDDLEWARE = [
@@ -338,3 +339,6 @@ REST_FRAMEWORK = {
    'rest_framework.authentication.TokenAuthentication',
    )
 }
+
+# Mixpanel Configuration
+MIXPANEL_TOKEN = os.environ.get('MIXPANEL_TOKEN', 'YOUR_PROJECT_TOKEN')

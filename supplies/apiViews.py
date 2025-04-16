@@ -1,4 +1,3 @@
-
 from .serializers import *
 
 from rest_framework import renderers, status
@@ -13,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, login
+from django.utils import timezone
 
 
 
@@ -185,3 +185,60 @@ class LoginAPIView(APIView):
                 return Response(response_data, status=status.HTTP_200_OK)
 
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class SupplyHoldInfoView(APIView):
+    def get(self, request, supply_id):
+        try:
+            supply = Supply.objects.get(id=supply_id)
+            hold_info = []
+            
+            # Get regular orders that have this supply on hold
+            orders_with_supply = supply.inSupply.filter(supply_for_order__isComplete=False)
+            
+            # Add regular orders info
+            for order in orders_with_supply:
+                hold_info.append({
+                    'type': 'order',
+                    'order_id': order.supply_for_order.id,
+                    'sup_in_order_id': order.id,
+                    'place_name': order.supply_for_order.place.name,
+                    'count': order.count_in_order,
+                    'date_created': order.supply_for_order.dateCreated.strftime('%d.%m.%Y') if order.supply_for_order.dateCreated else None
+                })
+            
+            # Get booked orders that have this supply on hold
+            booked_orders_with_supply = supply.supplyinbookedorder_set.all()
+            print("booked_orders_with_supply", booked_orders_with_supply)
+            
+            # Add booked orders info
+            for booked_order in booked_orders_with_supply:
+                hold_info.append({
+                    'type': 'booked',
+                    'place_name': booked_order.supply_for_place.name,
+                    'count': booked_order.count_in_order,
+                    'date_created': booked_order.date_created.strftime('%d.%m.%Y') if booked_order.date_created else None
+                })
+            
+            # Sort all holds by date
+            hold_info.sort(key=lambda x: x['date_created'] if x['date_created'] else '9999-12-31', reverse=True)
+            
+            response_data = {
+                'total_on_hold': supply.countOnHold,
+                'total_pre_hold': supply.preCountOnHold,
+                'holds': hold_info,
+                'last_updated': timezone.now().strftime('%d.%m.%Y %H:%M')
+            }
+            
+            return Response(response_data)
+            
+        except Supply.DoesNotExist:
+            return Response(
+                {'error': 'Supply not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

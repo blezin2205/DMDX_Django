@@ -154,6 +154,7 @@ urlpatterns = [
     path('api/supplies_add_from_scan', apiViews.SuppliesFromScanSaveApiView.as_view()),
     path('api/general-supplies', apiViews.GeneralSuppliesApiView.as_view()),
     path('api/<int:pk>/', apiViews.SupplyDetailView.as_view()),
+    path('api/supply/<int:supply_id>/hold-info/', apiViews.SupplyHoldInfoView.as_view(), name='supply-hold-info'),
 
     path('api/orders', apiViews.OrdersApiView.as_view()),
     path('api/orders/<int:order_id>', apiViews.SuppliesInOrderView.as_view()),
@@ -191,5 +192,6 @@ urlpatterns = [
     path('updateOrderPinnedStatus/<int:order_id>', views.updateOrderPinnedStatus, name='updateOrderPinnedStatus'),
     path('import-general-supplies/', views.import_general_supplies_from_excel, name='import_general_supplies_from_excel'),
     path('analytics/<int:place_id>/', views.analytics_report, name='analytics_report'),
+    path('analytics/<int:place_id>/export-to-excel/', views.analytics_report_to_xls, name='analytics_report_to_xls'),
     path('analytics_preorders_list_for_client/', views.analytics_preorders_list_for_client, name='analytics_preorders_list_for_client'),
 ]

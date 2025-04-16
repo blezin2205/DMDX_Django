@@ -34,7 +34,14 @@
                 </div>
             </div>
         </div>
+        <div class="mb-4">
+            <a href="{% url 'analytics_report_to_xls' place_id=report.place.id %}" class="btn btn-outline-primary">
+                <i class="fas fa-file-excel"></i> Експорт в Excel
+            </a>
+        </div>
     </div>
+
+   
 
     <!-- Пропозиції для наступного передзамовлення -->
     <div class="row mb-4">
