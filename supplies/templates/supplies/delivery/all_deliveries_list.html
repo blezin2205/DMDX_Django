@@ -78,6 +78,30 @@
             </div>
         {% endfor %}
     </div>
+
+    <nav aria-label="Page navigation" class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if deliveries.has_previous %}
+                <li class="page-item"><a class="page-link" href="{% my_url deliveries.previous_page_number 'page' request.GET.urlencode %}">&laquo;</a></li>
+            {% else %}
+                <li class="page-item disabled"><a class="page-link" href="#">&laquo;</a></li>
+            {% endif %}
+
+            {% for n in deliveries.paginator.page_range %}
+                {% if deliveries.number == n %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ n }}</a></li>
+                {% elif n > deliveries.number|add:'-3' and n < deliveries.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="{% my_url n 'page' request.GET.urlencode %}">{{ n }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if deliveries.has_next %}
+                <li class="page-item"><a class="page-link" href="{% my_url deliveries.next_page_number 'page' request.GET.urlencode %}">&raquo;</a></li>
+            {% else %}
+                <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
+            {% endif %}
+        </ul>
+    </nav>
 </div>
 
 <style>

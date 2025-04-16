@@ -20,6 +20,7 @@ from celery.result import AsyncResult
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import threading
+from django.core.paginator import Paginator
 
 # @login_required(login_url='login')
 # @allowed_users(allowed_roles=['admin'])
@@ -224,8 +225,20 @@ def save_delivery(request, delivery_order_id):
 def all_deliveries(request):
     cartCountData = countCartItemsHelper(request)
     deliveries = DeliveryOrder.objects.all().order_by('-id')
+    
+    paginator = Paginator(deliveries, 20)
+    page_number = request.GET.get('page')
+    deliveries = paginator.get_page(page_number)
+    
+    totalCount = deliveries.paginator.count
+    title = f'Всі поставки. ({totalCount} шт.)'
 
-    return render(request, 'supplies/delivery/all_deliveries_list.html', {'cartCountData': cartCountData, 'deliveries': deliveries})
+    return render(request, 'supplies/delivery/all_deliveries_list.html', {
+        'cartCountData': cartCountData, 
+        'deliveries': deliveries,
+        'title': title,
+        'totalCount': totalCount
+    })
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
