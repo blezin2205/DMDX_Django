@@ -12,8 +12,11 @@
                         <span class="text-muted small">{{client.city_ref.name}}</span>
                         {% if client.preorder_set.count > 0 %}
                         <div class="action-buttons">
-                            <a href="{% url 'analytics_report' client.id %}" style="background: #5bc0de" class="btn btn-sm btn-outline-primary" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Аналітика передзамовлень">
+                            <a href="{% url 'analytics_report' client.id %}" style="background: #5bc0de" class="btn btn-sm btn-outline-dark text-white" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Аналітика передзамовлень">
                                 <i class="bi bi-cart-plus text-white"></i>
+                            </a>
+                            <a href="{% url 'preorder_items_table' client.id %}" style="background: #5b62de" class="btn btn-sm btn-outline-dark text-white" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Статистика замовлених товарів">
+                                <i class="bi bi-table"></i>
                             </a>
                         </div>
                         {% endif %}

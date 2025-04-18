@@ -1,0 +1,68 @@
+{% extends 'supplies/base/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- Кнопки експорту -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="btn-group" role="group">
+                <a href="{% url 'preorder_items_table_to_xls' place.id %}" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i> Експортувати в Excel (UA)
+                </a>
+                <a href="{% url 'preorder_items_table_to_xls_en' place.id %}" class="btn btn-primary">
+                    <i class="fas fa-file-excel"></i> Export to Excel (EN)
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблиця товарів -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Назва товару</th>
+                                    <th>REF</th>
+                                    <th>SMN code</th>
+                                    <th>Категорія</th>
+                                    <th>Упаковка/тести</th>
+                                    <th>Загальна кількість</th>
+                                    <th>Середня кількість</th>
+                                    <th>Кількість замовлень</th>
+                                    <th>Дата останнього замовлення</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in preorder_items %}
+                                <tr>
+                                    <td>{{ item.generalSupply__name }}</td>
+                                    <td>{{ item.generalSupply__ref }}</td>
+                                    <td>{{ item.generalSupply__SMN_code }}</td>
+                                    <td>{{ item.generalSupply__category__name }}</td>
+                                    <td>{{ item.generalSupply__package_and_tests }}</td>
+                                    <td>{{ item.total_quantity }}</td>
+                                    <td>{{ item.avg_quantity|floatformat:1 }}</td>
+                                    <td>{{ item.order_count }}</td>
+                                    <td>{{ item.last_order_date|date:"d.m.Y" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center">Немає товарів у передзамовленнях</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

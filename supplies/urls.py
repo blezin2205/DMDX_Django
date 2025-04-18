@@ -193,5 +193,8 @@ urlpatterns = [
     path('import-general-supplies/', views.import_general_supplies_from_excel, name='import_general_supplies_from_excel'),
     path('analytics/<int:place_id>/', views.analytics_report, name='analytics_report'),
     path('analytics/<int:place_id>/export-to-excel/', views.analytics_report_to_xls, name='analytics_report_to_xls'),
+    path('analytics/<int:place_id>/preorder-items/', views.preorder_items_table, name='preorder_items_table'),
+    path('analytics/<int:place_id>/preorder-items/export/', views.preorder_items_table_to_xls, name='preorder_items_table_to_xls'),
+    path('analytics/<int:place_id>/preorder-items/export-en/', views.preorder_items_table_to_xls_en, name='preorder_items_table_to_xls_en'),
     path('analytics_preorders_list_for_client/', views.analytics_preorders_list_for_client, name='analytics_preorders_list_for_client'),
 ]

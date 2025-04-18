@@ -28,7 +28,7 @@ from django.contrib import messages
 import requests
 import csv
 import pymsteams
-from django.db.models import Sum, F, Exists, OuterRef, Max, Case, When, Value, IntegerField, Q, BooleanField
+from django.db.models import Sum, F, Exists, OuterRef, Max, Case, When, Value, IntegerField, Q, BooleanField, Avg, Count
 from .tasks import *
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -37,6 +37,7 @@ from django.template.loader import render_to_string
 from django.db import transaction
 from .analytics import PreorderAnalytics
 from django.utils import timezone
+from googletrans import Translator
 
 
 # @login_required(login_url='login')
@@ -3763,32 +3764,12 @@ def import_general_supplies_from_excel(request):
 def analytics_report(request, place_id):
     cartCountData = countCartItemsHelper(request)
     place = get_object_or_404(Place, id=place_id)
-    analytics = PreorderAnalytics(place)
-    report = analytics.get_analytics_report()
-    
-    # Отримуємо всі передзамовлення для цього місця
-    preorders = PreOrder.objects.filter(place=place).order_by('-dateCreated')
-    
-    # Отримуємо всі товари з передзамовлень, згруповані за generalSupply
-    preorder_items = SupplyInPreorder.objects.filter(
-        supply_for_order__in=preorders
-    ).values(
-        'generalSupply',
-        'generalSupply__name',
-        'generalSupply__package_and_tests',
-        'generalSupply__category__name'
-    ).annotate(
-        total_quantity=Sum('count_in_order'),
-        last_order_date=Max('supply_for_order__dateCreated')
-    ).order_by('-total_quantity')
-    
     # Отримуємо аналітичний звіт
     report = PreorderAnalytics(place).get_analytics_report()
     
     context = {
+        'title': f'Аналітика передзамовлень для:\n{ place.get_place_name() }',
         'report': report,
-        'preorders': preorders,
-        'preorder_items': preorder_items,
         'cartCountData': cartCountData
     }
     return render(request, 'supplies/analytics_report.html', context)
@@ -4178,4 +4159,183 @@ def merge_orders(orders, user):
             order.delete()
     
     return merged_orders
+
+@login_required
+@allowed_users(allowed_roles=['admin', 'empl'])
+def preorder_items_table(request, place_id):
+    cartCountData = countCartItemsHelper(request)
+    place = get_object_or_404(Place, id=place_id)
+    
+    # Отримуємо всі передзамовлення для цього місця
+    preorders = PreOrder.objects.filter(place=place).order_by('-dateCreated')
+    
+    # Отримуємо всі товари з передзамовлень, згруповані за generalSupply
+    preorder_items = SupplyInPreorder.objects.filter(
+        supply_for_order__in=preorders
+    ).values(
+        'generalSupply',
+        'generalSupply__name',
+        'generalSupply__ref',
+        'generalSupply__SMN_code',
+        'generalSupply__package_and_tests',
+        'generalSupply__category__name'
+    ).annotate(
+        total_quantity=Sum('count_in_order'),
+        avg_quantity=Avg('count_in_order'),
+        last_order_date=Max('supply_for_order__dateCreated'),
+        order_count=Count('supply_for_order', distinct=True)  # Count of unique orders for each item
+    ).order_by('-total_quantity')
+    
+    context = {
+        'title': f'Статистика всіх замовлених товарів в передзамовленнях для:\n{place.get_place_name()}',
+        'place': place,
+        'preorder_items': preorder_items,
+        'cartCountData': cartCountData
+    }
+    return render(request, 'supplies/preorder_items_table.html', context)
+
+@login_required
+@allowed_users(allowed_roles=['admin', 'empl'])
+def preorder_items_table_to_xls(request, place_id):
+    """
+    Export preorder items to Excel in Ukrainian language
+    """
+    return _preorder_items_table_to_xls(request, place_id, language='uk')
+
+@login_required
+@allowed_users(allowed_roles=['admin', 'empl'])
+def preorder_items_table_to_xls_en(request, place_id):
+    """
+    Export preorder items to Excel in English language
+    """
+    return _preorder_items_table_to_xls(request, place_id, language='en')
+
+def _preorder_items_table_to_xls(request, place_id, language='uk'):
+    """
+    Helper function to export preorder items to Excel in the specified language
+    """
+    place = get_object_or_404(Place, id=place_id)
+    
+    # Отримуємо всі передзамовлення для цього місця
+    preorders = PreOrder.objects.filter(place=place).order_by('-dateCreated')
+    
+    # Отримуємо всі товари з передзамовлень, згруповані за generalSupply
+    preorder_items = SupplyInPreorder.objects.filter(
+        supply_for_order__in=preorders
+    ).values(
+        'generalSupply',
+        'generalSupply__name',
+        'generalSupply__ref',
+        'generalSupply__SMN_code',
+        'generalSupply__package_and_tests',
+        'generalSupply__category__name'
+    ).annotate(
+        total_quantity=Sum('count_in_order'),
+        avg_quantity=Avg('count_in_order'),
+        last_order_date=Max('supply_for_order__dateCreated'),
+        order_count=Count('supply_for_order', distinct=True)  # Count of unique orders for each item
+    ).order_by('-total_quantity')
+    
+    # Define language-specific strings
+    if language == 'en':
+        # Get translated place name
+        place_name = place.get_place_name_en()
+        # Sanitize filename - remove special characters and limit length
+        safe_place_name = ''.join(c for c in place_name if c.isalnum() or c in ' -_').strip()
+        safe_place_name = safe_place_name[:50]  # Limit length to 50 characters
+        
+        filename = f"PreorderItems-{safe_place_name}.xlsx"
+        worksheet_name = "Preorder Items"
+        title = f"Preorder Items for: {place_name}"
+        city_label = "City:"
+        address_label = "Address:"
+        type_label = "Type:"
+        private_type = "Private Organization"
+        public_type = "Public Organization"
+        headers = [
+            "Item Name", "REF", "SMN Code", "Package/Tests", "Category", 
+            "Total Quantity", "Average Quantity", "Number of Orders", "Last Order Date"
+        ]
+        empty_message = "No items in preorders"
+        
+        # Translate city name and address for English version
+        try:
+            translator = Translator()
+            city_name = translator.translate(place.city_ref.name, src='uk', dest='en').text
+            address = translator.translate(place.address, src='uk', dest='en').text if place.address else ""
+        except Exception:
+            # If translation fails, use original values
+            city_name = place.city_ref.name
+            address = place.address or ""
+    else:  # Ukrainian (default)
+        # Sanitize filename - remove special characters and limit length
+        safe_place_name = ''.join(c for c in place.name if c.isalnum() or c in ' -_').strip()
+        safe_place_name = safe_place_name[:50]  # Limit length to 50 characters
+        
+        filename = f"ТовариПередзамовлень-{safe_place_name}.xlsx"
+        worksheet_name = "Товари передзамовлень"
+        title = f"Товари передзамовлень для: {place.get_place_name()}"
+        city_label = "Місто:"
+        address_label = "Адреса:"
+        type_label = "Тип:"
+        private_type = "Приватна організація"
+        public_type = "Державна організація"
+        headers = [
+            "Назва товару", "REF", "SMN code", "Упаковка/тести", "Категорія", 
+            "Загальна кількість", "Середня кількість", "Кількість замовлень", "Останнє замовлення"
+        ]
+        empty_message = "Немає товарів у передзамовленнях"
+        city_name = place.city_ref.name
+        address = place.address or ""
+    
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f"attachment; filename={filename}"
+    
+    wb = Workbook(response, {'in_memory': True})
+    
+    # Create worksheet
+    ws = wb.add_worksheet(worksheet_name)
+    
+    # Define formats
+    format_title = wb.add_format({'bold': True, 'font_size': 18})
+    format_header = wb.add_format({'bold': True, 'font_size': 14, 'bg_color': '#D9E1F2', 'border': 1})
+    format_normal = wb.add_format({'font_size': 12})
+    format_date = wb.add_format({'font_size': 12, 'num_format': 'dd-mm-yyyy'})
+    format_number = wb.add_format({'font_size': 12, 'num_format': '#,##0'})
+    
+    # Write place information in header
+    ws.write(0, 0, title, format_title)
+    ws.write(1, 0, f"{city_label} {city_name}", format_normal)
+    ws.write(2, 0, f"{address_label} {address}", format_normal)
+    ws.write(3, 0, f"{type_label} {private_type if place.isPrivatePlace else public_type}", format_normal)
+    
+    # Write table headers
+    for col, header in enumerate(headers):
+        ws.write(6, col, header, format_header)
+    
+    # Write data
+    for row, item in enumerate(preorder_items, start=7):
+        ws.write(row, 0, item['generalSupply__name'], format_normal)
+        ws.write(row, 1, item['generalSupply__ref'], format_normal)
+        ws.write(row, 2, item['generalSupply__SMN_code'], format_normal)
+        ws.write(row, 3, item['generalSupply__package_and_tests'], format_normal)
+        ws.write(row, 4, item['generalSupply__category__name'], format_normal)
+        ws.write(row, 5, item['total_quantity'], format_number)
+        ws.write(row, 6, round(item['avg_quantity'], 2), format_number)
+        ws.write(row, 7, item['order_count'], format_number)  # Number of orders for this item
+        ws.write(row, 8, item['last_order_date'], format_date)
+    
+    # Set column widths
+    ws.set_column(0, 0, 40)  # Name
+    ws.set_column(1, 1, 15)  # Ref
+    ws.set_column(2, 2, 15)  # SMN code
+    ws.set_column(3, 3, 20)  # Package/tests
+    ws.set_column(4, 4, 20)  # Category
+    ws.set_column(5, 5, 15)  # Total quantity
+    ws.set_column(6, 6, 15)  # Avg quantity
+    ws.set_column(7, 7, 15)  # Order count
+    ws.set_column(8, 8, 15)  # Last order date
+    
+    wb.close()
+    return response
 

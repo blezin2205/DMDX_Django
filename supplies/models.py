@@ -21,6 +21,7 @@ from django.forms.models import model_to_dict
 from django.forms import ModelForm, Form
 from .NPModels import *
 import json
+from googletrans import Translator
 
 
 class CustomUser(AbstractUser):
@@ -274,6 +275,18 @@ class Place(models.Model):
 
     def get_place_name(self):
         return f'{self.name}, {self.city_ref.name}'
+
+    def get_place_name_en(self):
+        """
+        Get place name translated to English
+        """
+        try:
+            translator = Translator()
+            translated = translator.translate(self.name, src='uk', dest='en')
+            return translated.text
+        except Exception:
+            # If translation fails, return original name
+            return self.name
 
     def isHaveUncompletedPreorders(self):
         if self.preorder_set.exists():
