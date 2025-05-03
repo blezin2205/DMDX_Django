@@ -194,12 +194,16 @@ class ServiceNoteForm(ModelForm):
 class SupplyForm(ModelForm):
     class Meta:
         model = Supply
-        fields = ['supplyLot', 'count', 'expiredDate']
+        fields = ['supplyLot', 'count', 'countOnHold', 'expiredDate']
         widgets = {
             'supplyLot': forms.TextInput(attrs={'style': 'min-width: 150px;'}),
             'count': forms.NumberInput(attrs={
                 'style': 'min-width: 50px;',
                 'required': True
+            }),
+            'countOnHold': forms.NumberInput(attrs={
+                'style': 'min-width: 50px;',
+                'required': False
             }),
             'expiredDate': forms.TextInput(attrs={
                 'style': 'min-width: 150px;',
@@ -208,6 +212,13 @@ class SupplyForm(ModelForm):
                 'title': 'Введіть дату в форматі YYYY-MM-DD'
             }),
         }
+        
+    def __init__(self, *args, **kwargs):
+        super(SupplyForm, self).__init__(*args, **kwargs)
+        self.fields['supplyLot'].label = "LOT"
+        self.fields['count'].label = "Кількість"
+        self.fields['countOnHold'].label = "Кількість на резерві"
+        self.fields['expiredDate'].label = "Термін придатності"
 
     def clean_expiredDate(self):
         date_value = self.cleaned_data['expiredDate']
@@ -235,6 +246,9 @@ class NewGeneralSupplyForm(ModelForm):
         self.fields['name'].label = "Назва"
         self.fields['ref'].label = "REF"
         self.fields['category'].label = "Категорія"
+        self.fields['package_and_tests'].label = "Пакування та кількість тестів"
+        self.fields['image'].label = "Картинка"
+        self.fields['SMN_code'].label = "SMN код"
 
 
 class NewCityForm(ModelForm):
