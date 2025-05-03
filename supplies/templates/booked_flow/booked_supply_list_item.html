@@ -28,20 +28,18 @@
 
       <td style="width: 150px"><div>{% if supp.supply.supplyLot is not none %} {{ supp.supply.supplyLot }} {% endif %}</div></td>
 
-    <td style="width: 100px">
+    <td style="min-width: 120px">
             {% if request.user.is_staff %}
 
                 <button style="border: none; background: none; color: blue; font-weight: bold" hx-post="{% url 'minus_from_booked_supply_list_item' %}" hx-vals='{"del_sup_id": "{{ supp.id }}"}' hx-target="closest tr.main_tr" hx-swap="outerHTML">-</button>
-                <span class="px-2">{{ supp.count_in_order }}</span>
+                <span class="px-2" style="font-weight: 600">{{ supp.count_in_order }}</span>
                 {% if supp.countOnHold %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="В очікуванні в замовленні">{{ supp.countOnHold }}</span> {% endif %}
 
-                {% if supp.supply.count|sub:supp.supply.countOnHold > 0 %}
-                    <button style="border: none; background: none; color: blue; font-weight: bold" hx-post="{% url 'plus_from_booked_supply_list_item' %}" hx-vals='{"del_sup_id": "{{ supp.id }}"}' hx-target="closest tr.main_tr" hx-swap="outerHTML">+</button>
-                {% endif %}
+                <button style="border: none; background: none; color: blue; font-weight: bold; visibility: {% if supp.supply.count|sub:supp.supply.countOnHold > 0 %}visible{% else %}hidden{% endif %};" hx-post="{% url 'plus_from_booked_supply_list_item' %}" hx-vals='{"del_sup_id": "{{ supp.id }}"}' hx-target="closest tr.main_tr" hx-swap="outerHTML">+</button>
 
             {% else %}
 
-                    <span class="px-2">{{ supp.count_in_order }}</span>
+                    <span class="px-2" style="font-weight: 600">{{ supp.count_in_order }}</span>
                 {% if supp.countOnHold %}  <span style="background-color: orange; font-weight: 600" class="px-2 rounded-2" data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="В очікуванні в замовленні">{{ supp.countOnHold }}</span> {% endif %}
 
             {% endif %}

@@ -41,7 +41,7 @@
     </form>
 </div>
 
-<div class="table-responsive">
+<div class="table-responsive {% if not request.user_agent.is_mobile %} px-2 {% endif %}">
     {% if request.user_agent.is_mobile %}
         <div class="d-flex flex-column gap-2">
             {% for el in supplies %}

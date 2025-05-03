@@ -53,7 +53,7 @@
                             <div class="col-md-4">
                                 <div class="d-flex align-items-center gap-2">
                                     {{ orderForm.dateToSend|as_crispy_field }}
-                                    <button type="button" class="btn btn-sm btn-outline-primary mt-4" onclick="setTodayDate()">
+                                    <button type="button" class="btn btn-outline-primary btn-sm ms-2" onclick="toggleDate(this)" data-selected="false" style="margin-bottom: 20px;">
                                         <i class="bi bi-calendar-check"></i> Сьогодні
                                     </button>
                                 </div>
@@ -114,5 +114,84 @@ function setTodayDate() {
         dateInput.dispatchEvent(new Event('change'));
     }
 }
+
+function setTodayDate() {
+    const today = new Date();
+    const dateInput = document.querySelector('input[name="dateToSend"]');
+    if (dateInput) {
+      const formattedDate = today.toISOString().split('T')[0];
+      dateInput.value = formattedDate;
+      // Trigger change event to ensure any listeners are notified
+      dateInput.dispatchEvent(new Event('change'));
+    }
+  }
+
+  function toggleDate(button) {
+    const dateInput = document.querySelector('input[name="dateToSend"]');
+    const isSelected = button.getAttribute('data-selected') === 'true';
+    
+    if (isSelected) {
+      // Remove date and reset button state
+      dateInput.value = '';
+      dateInput.removeAttribute('required');
+      button.classList.remove('btn-primary');
+      button.classList.add('btn-outline-primary');
+      button.setAttribute('data-selected', 'false');
+    } else {
+      // Set today's date and update button state
+      setTodayDate();
+      dateInput.setAttribute('required', 'required');
+      button.classList.remove('btn-outline-primary');
+      button.classList.add('btn-primary');
+      button.setAttribute('data-selected', 'true');
+    }
+  }
+
+  function validateQuantity(input) {
+    const itemId = input.dataset.itemId;
+    const maxAvailable = parseInt(input.dataset.maxAvailable);
+    const availableLabel = document.getElementById(`available_label_${itemId}`);
+    
+    if (isNaN(maxAvailable)) {
+        console.error('Invalid available quantity for item:', itemId);
+        return;
+    }
+    
+    // Get and validate the input value
+    let value = parseInt(input.value) || 0;
+    
+    // Ensure value is not negative
+    if (value < 0) {
+        value = 0;
+    }
+    
+    // If value exceeds available, set it to max available and highlight the label
+    if (value > maxAvailable) {
+        value = maxAvailable;
+        availableLabel.classList.add('text-danger');
+        availableLabel.classList.remove('text-muted');
+    } else {
+        availableLabel.classList.remove('text-danger');
+        availableLabel.classList.add('text-muted');
+    }
+    
+    // Update input value
+    input.value = value;
+}
+
+// Add event listeners when the document is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Add validation to all quantity inputs
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    
+    quantityInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            validateQuantity(this);
+        });
+        input.addEventListener('change', function() {
+            validateQuantity(this);
+        });
+    });
+});
 </script>
 {% endblock %}

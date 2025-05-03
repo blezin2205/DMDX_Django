@@ -4080,7 +4080,7 @@ def merge_orders(orders, user):
         # 3. Orders with booked order (need merging by booked order)
         orders_to_merge_by_supply = [sio for sio in supply_in_orders if sio.supply_in_preorder is None and sio.supply_in_booked_order is None]
         orders_with_preorder = [sio for sio in supply_in_orders if sio.supply_in_preorder is not None]
-        orders_with_booked = [sio for sio in supply_in_orders if sio.supply_in_booked_order is not None]
+        orders_with_booked = [sio for sio in supply_in_orders if sio.supply_in_booked_order is not None and sio.supply_in_preorder is None]
         
         # 1. Handle orders with no preorder or booked order - merge by supply
         supplies_by_supply = defaultdict(list)
