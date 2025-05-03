@@ -2161,7 +2161,8 @@ def preorders(request):
                 for ord in completed_orders:
                     ord.isClosed = True
                     ord.isComplete = True
-                    ord.save(update_fields=['isClosed', 'isComplete'])
+                    ord.isPinned = False    
+                    ord.save(update_fields=['isClosed', 'isComplete', 'isPinned'])
         title = 'Всі передзамовлення'
 
     preorderFilter = PreorderFilter(request.POST, queryset=orders)
@@ -4109,11 +4110,10 @@ def merge_orders(orders, user):
         preorders_by_key = defaultdict(list)
         for sio in orders_with_preorder:
             # Get the PreOrder associated with this SupplyInPreorder
-            preorder = sio.supply_in_preorder
-            key = preorder.supply_for_order  # This is the PreOrder
+            key = (sio.supply_in_preorder, sio.supply)  # Create a tuple as composite key
             preorders_by_key[key].append(sio)
-        
-        for preorder, sio_list in preorders_by_key.items():
+            
+        for (preorder, supply), sio_list in preorders_by_key.items():
             total_count = sum(sio.count_in_order for sio in sio_list)
             template_sio = sio_list[0]
             

@@ -41,21 +41,12 @@
                                     <span 
                                         style="background-color: orange; font-weight: 600; cursor: pointer;" 
                                         class="px-2 rounded-2 on-hold-trigger"
+                                        data-bs-toggle="popover"
+                                        data-bs-trigger="click"
+                                        data-bs-placement="left"
+                                        data-bs-html="true"
+                                        data-bs-content="<div class='popover-data' style='min-width: 200px;'><div class='spinner-border spinner-border-sm' role='status'><span class='visually-hidden'>Loading...</span></div></div>"
                                         data-supply-id="{{ supp.id }}">{{ supp.countOnHold }}</span>
-                                    <div class="custom-popover-container" id="popover-{{ supp.id }}" style="display: none; position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1000;">
-                                        <div class="arrow" style="position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 6px solid white;"></div>
-                                        <div class="popover-content">
-                                            <div class="d-flex justify-content-between gap-1 mb-2">
-                                                <span class="fw-bold">На утриманні всього:</span>
-                                                <span class="px-2 rounded-2" style="background-color: orange; font-weight: 600;">{{ supp.countOnHold }}</span>
-                                            </div>
-                                            <div class="popover-data" style="min-width: 200px;">
-                                                <div class="spinner-border spinner-border-sm" role="status">
-                                                    <span class="visually-hidden">Loading...</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 {% endif %}
                                 {% if supp.preCountOnHold %}
                                     <span style="background-color: #5bc0de; font-weight: 600" class="px-2 rounded-2">{{ supp.preCountOnHold }}</span>

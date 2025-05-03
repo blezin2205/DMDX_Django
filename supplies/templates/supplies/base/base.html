@@ -140,18 +140,13 @@ const csrftoken = getToken('csrftoken');
 <script type="text/javascript" src="{% static 'js/validation.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/htmx.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/custom-tooltip.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/supply-popover.js' %}"></script>
 
     <script>
         document.body.addEventListener('htmx:configRequest', (event) => {
            event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
         })
     </script>
-        <!-- Enables the popover buttons everywhere -->
-        <script>
-            $(function () {
-          $('[data-toggle="popover"]').popover()
-            })
-        </script>
         <!-- Enables the tooltips everywhere -->
         <script>
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))

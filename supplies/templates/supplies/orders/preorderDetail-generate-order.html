@@ -135,7 +135,7 @@
                   {% endif %} 
                   type="number" style="width: 100px"
                   class="form-control form-control-sm"
-                  oninput="validateInput(this)" />
+                  oninput="validateInput(this); this.nextElementSibling.nextElementSibling.querySelector('input[type=checkbox]').checked = this.value > 0;" />
                   <input type="hidden" name="count_list_id" value="{{ supp.id }}">
 
             <div class="form-check">

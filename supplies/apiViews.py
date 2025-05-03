@@ -216,6 +216,7 @@ class SupplyHoldInfoView(APIView):
                 hold_info.append({
                     'type': 'booked',
                     'place_name': booked_order.supply_for_place.name,
+                    'order_id': booked_order.supply_for_place.id,
                     'count': booked_order.count_in_order,
                     'date_created': booked_order.date_created.strftime('%d.%m.%Y') if booked_order.date_created else None
                 })
