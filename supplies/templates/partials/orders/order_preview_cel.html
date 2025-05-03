@@ -169,7 +169,7 @@
                 <button class="btn btn-primary d-flex align-items-center justify-content-center" 
                         style="width: 50px; height: 49px; border-radius: 5px;"
                         type="button" 
-                        onclick="updateOrderStatus({{ order.id }})">
+                        onclick="if(confirm('Замовлення №{{ order.id }}\n{{ order.place.name }}, {{ order.place.city_ref.name }}\n\n Ви впевнені, що хочете відправити це замовлення?')) { updateOrderStatus({{ order.id }}) }">
                     <i class="bi bi-send fs-4"></i>
                 </button>
 

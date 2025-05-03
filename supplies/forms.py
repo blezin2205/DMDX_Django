@@ -194,7 +194,8 @@ class ServiceNoteForm(ModelForm):
 class SupplyForm(ModelForm):
     class Meta:
         model = Supply
-        fields = ['supplyLot', 'count', 'countOnHold', 'expiredDate']
+        # fields = ['supplyLot', 'count', 'countOnHold', 'expiredDate']
+        fields = ['supplyLot', 'count', 'expiredDate']
         widgets = {
             'supplyLot': forms.TextInput(attrs={'style': 'min-width: 150px;'}),
             'count': forms.NumberInput(attrs={
@@ -217,7 +218,7 @@ class SupplyForm(ModelForm):
         super(SupplyForm, self).__init__(*args, **kwargs)
         self.fields['supplyLot'].label = "LOT"
         self.fields['count'].label = "Кількість"
-        self.fields['countOnHold'].label = "Кількість на резерві"
+        # self.fields['countOnHold'].label = "Кількість на резерві"
         self.fields['expiredDate'].label = "Термін придатності"
 
     def clean_expiredDate(self):
