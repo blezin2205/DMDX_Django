@@ -61,6 +61,10 @@ class CustomUser(AbstractUser):
             return 'engineer'
         return None
 
+    def get_app_settings(self):
+        app_settings, created = AppSettings.objects.get_or_create(userCreated=self)
+        return app_settings
+
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
 
@@ -70,6 +74,7 @@ class AppSettings(models.Model):
     send_teams_msg = models.BooleanField(default=True)
     send_teams_msg_preorders = models.BooleanField(default=True)
     enable_show_other_booked_cart = models.BooleanField(default=False)
+    disable_order_confirmation_send_action = models.BooleanField(default=False)
 
     def __str__(self):
         return self.userCreated

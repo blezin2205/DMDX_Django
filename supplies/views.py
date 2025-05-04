@@ -54,7 +54,7 @@ def celery_test(request):
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def app_settings(request):
-    app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
+    app_settings = request.user.get_app_settings()
 
     if request.method == 'POST':
         form = AppSettingsForm(request.POST, instance=app_settings)
@@ -64,7 +64,7 @@ def app_settings(request):
     else:
         form = AppSettingsForm(instance=app_settings)
 
-    return render(request, 'supplies/settings/app_settings.html', {'form': form})
+    return render(request, 'supplies/settings/app_settings.html', {'form': form, 'title': 'Налаштування'})
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -1713,6 +1713,8 @@ def render_to_xls_selected_order(table_header, place, supplies_in_order, wb):
 def orders(request):
     cartCountData = countCartItemsHelper(request)
     isClient = request.user.groups.filter(name='client').exists()
+    app_settings = request.user.get_app_settings()
+    disable_order_confirmation_send_action = app_settings.disable_order_confirmation_send_action
     if isClient:
         ordersObj = Order.objects.filter(place__user=request.user).order_by(
             '-isPinned', 
@@ -1941,6 +1943,7 @@ def orders(request):
                                'isOrders': True,
                                'totalCount': totalCount,
                                'isOrdersTab': True,
+                               'disable_order_confirmation_send_action': disable_order_confirmation_send_action,
                                'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place,
                                'uncomplete_orders_exists': uncomplete_orders_exists})
 
@@ -1953,6 +1956,7 @@ def orders(request):
                    'isOrders': True, 
                    'totalCount': totalCount,
                    'isOrdersTab': True, 
+                   'disable_order_confirmation_send_action': disable_order_confirmation_send_action,
                    'pinned_orders_exists': pinned_orders_exists, 
                    'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place,
                    'uncomplete_orders_exists': uncomplete_orders_exists})
@@ -2435,7 +2439,7 @@ def devicesForClient(request, client_id):
     if not devices:
         title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
 
-    return render(request, 'supplies/devices.html',
+    return render(request, 'supplies/devices/devices.html',
                   {'title': title, 'devices': devices, 'cartCountData': cartCountData, 'isClients': True})
 
 

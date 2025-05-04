@@ -8,125 +8,198 @@
 {% block title %}Settings{% endblock %}
 
 {% block content %}
-<form method="post" action="">
+<div class="settings-container">
     <div class="container py-4">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <div class="card shadow-sm border-0">
+                <div class="card shadow-sm border-1">
                     <div class="card-body p-4">
                         <h4 class="mb-4">Settings</h4>
                         
-                        {% csrf_token %}
-                        
-                        <div class="settings-section mb-4">
-                            <div class="form-check form-switch p-3 bg-light rounded">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <label class="form-check-label d-flex align-items-center" for="{{ form.send_teams_msg.id_for_label }}">
-                                        <img src="{% static 'images/teams.png' %}" width="24" height="24" class="me-2">
-                                        <span>Notifications (Замовлення)</span>
-                                    </label>
-                                    {{ form.send_teams_msg }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="settings-section mb-4">
-                            <div class="form-check form-switch p-3 bg-light rounded">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <label class="form-check-label d-flex align-items-center" for="{{ form.send_teams_msg_preorders.id_for_label }}">
-                                        <img src="{% static 'images/teams.png' %}" width="24" height="24" class="me-2">
-                                        <span>Notifications (Передзамовлення)</span>
-                                    </label>
-                                    {{ form.send_teams_msg_preorders }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="settings-section mb-4">
-                            <div class="form-check form-switch p-3 bg-light rounded">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <label class="form-check-label d-flex align-items-center" for="{{ form.enable_show_other_booked_cart.id_for_label }}">
-                                        <div class="btn btn-soft me-2">
-                                            <i class="bi bi-cart3"></i>
-                                            <span class="badge bg-danger ms-2"></span>
+                        <form method="post" action="">
+                            {% csrf_token %}
+                            
+                            <div class="settings-stack">
+                                <!-- Toggle Settings Section -->
+                                <div class="settings-card">
+                                    <div class="settings-header">
+                                        <i class="bi bi-toggle-on me-2"></i>
+                                        <h6 class="mb-0">Toggle Settings</h6>
+                                    </div>
+                                    <div class="settings-content">
+                                        <div class="settings-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="d-flex align-items-center">
+                                                    <img src="{% static 'images/teams.png' %}" width="20" height="20" class="me-2">
+                                                    <span>Notifications (Замовлення)</span>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    {{ form.send_teams_msg }}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <span>Показувати корзини броньованих товарів інших користувачів</span>
-                                    </label>
-                                    {{ form.enable_show_other_booked_cart }}
+                                        <div class="settings-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="d-flex align-items-center">
+                                                    <img src="{% static 'images/teams.png' %}" width="20" height="20" class="me-2">
+                                                    <span>Notifications (Передзамовлення)</span>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    {{ form.send_teams_msg_preorders }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="settings-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="d-flex align-items-center">
+                                                    <span class="btn btn-cart me-3" style="background-color: orange"> <i class="bi bi-cart3"></i></span>
+                                            
+                                                    <span>Показувати корзини броньованих товарів інших користувачів</span>
+                                                </div>
+                                                
+                                                <div class="form-check form-switch">
+                                                    {{ form.enable_show_other_booked_cart }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="settings-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="d-flex align-items-center">
+                                                    <span class="btn btn-primary btn-cart me-3">
+                                                        <i class="bi bi-send"></i>
+                                                    </span>
+                                                <span>Відключити запит на підтвердження відправки замовлень</span>
+                                                </div>
+                                                  
+                                                <div class="form-check form-switch">
+                                                    {{ form.disable_order_confirmation_send_action }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div class="settings-section mb-4">
-                            <div class="p-3 bg-light rounded">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center">
+                                <!-- Nova Poshta Settings -->
+                                <div class="settings-card">
+                                    <div class="settings-header">
                                         <i class="bi bi-truck me-2"></i>
-                                        <span>Нова пошта REF INFO</span>
+                                        <h6 class="mb-0">Nova Poshta</h6>
                                     </div>
-                                    <a class="btn btn-soft" href="{% url 'np-info' %}" role="button">
-                                        <i class="bi bi-arrow-right me-1"></i>Деталі
-                                    </a>
+                                    <div class="settings-content">
+                                        <div class="settings-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span>REF INFO</span>
+                                                <a class="btn btn-sm btn-outline-primary" href="{% url 'np-info' %}">
+                                                    <i class="bi bi-arrow-right me-1"></i>Деталі
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="settings-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span>Відділення відправки</span>
+                                                <a class="btn btn-sm btn-outline-primary" href="{% url 'add_np_sender_place' %}">
+                                                    <i class="bi bi-arrow-right me-1"></i>Деталі
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="settings-section mb-4">
-                            <div class="p-3 bg-light rounded">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-geo-alt me-2"></i>
-                                        <span>НП Відділення відправки</span>
-                                    </div>
-                                    <a class="btn btn-soft" href="{% url 'add_np_sender_place' %}" role="button">
-                                        <i class="bi bi-arrow-right me-1"></i>Деталі
-                                    </a>
-                                </div>
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save me-1"></i>Save Settings
+                                </button>
                             </div>
-                        </div>
-
-                        <div class="text-center mt-4">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save me-1"></i>Save Settings
-                            </button>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</form>
+</div>
 
 <style>
-    .settings-section {
-        transition: all 0.2s ease-in-out;
+    .settings-container {
+        padding: 2rem 0;
     }
-    
-    .settings-section:hover {
-        transform: translateY(-1px);
+
+    .settings-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
     }
-    
+
+    .settings-card {
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease-in-out;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .settings-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .settings-header {
+        padding: 1rem 1.5rem;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+    }
+
+    .settings-header i {
+        color: #0d6efd;
+        font-size: 1.2rem;
+    }
+
+    .settings-content {
+        padding: 1rem 1.5rem;
+    }
+
+    .settings-item {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .settings-item:last-child {
+        border-bottom: none;
+    }
+
+    .form-switch {
+        padding-left: 0;
+        margin-bottom: 0;
+    }
+
     .form-switch .form-check-input {
-        width: 3em;
-        height: 1.5em;
+        width: 2.5em;
+        height: 1.25em;
+        margin-left: 0;
+        cursor: pointer;
+        background-color: #dee2e6;
+        border-color: #dee2e6;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280, 0, 0, 0.25%29'/%3e%3c/svg%3e");
     }
-    
-    .btn-soft {
-        color: #4a5568;
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        padding: 0.5rem 1rem;
-        transition: all 0.2s ease-in-out;
+
+    .form-switch .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
     }
-    
-    .btn-soft:hover {
-        background-color: #e9ecef;
-        color: #2d3748;
-        transform: translateY(-1px);
+
+    .form-switch .form-check-input:focus {
+        border-color: #86b7fe;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     }
-    
-    .bg-light {
-        background-color: #f8f9fa !important;
+
+
+    .card {
+        border-radius: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     }
 </style>
 {% endblock %}

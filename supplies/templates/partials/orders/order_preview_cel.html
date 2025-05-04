@@ -169,7 +169,12 @@
                 <button class="btn btn-primary d-flex align-items-center justify-content-center" 
                         style="width: 50px; height: 49px; border-radius: 5px;"
                         type="button" 
-                        onclick="if(confirm('Замовлення №{{ order.id }}\n{{ order.place.name }}, {{ order.place.city_ref.name }}\n\n Ви впевнені, що хочете відправити це замовлення?')) { updateOrderStatus({{ order.id }}) }">
+                        {% if disable_order_confirmation_send_action %}
+                        onclick="updateOrderStatus({{ order.id }})">
+                           {% else %}
+                           onclick="if(confirm('Замовлення №{{ order.id }}\n{{ order.place.name }}, {{ order.place.city_ref.name }}\n\n Ви впевнені, що хочете відправити це замовлення?')) { updateOrderStatus({{ order.id }}) }">
+                        {% endif %}
+                        
                     <i class="bi bi-send fs-4"></i>
                 </button>
 
