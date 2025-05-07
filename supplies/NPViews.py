@@ -74,7 +74,7 @@ def httpRequest(request):
 
 def nova_poshta_registers(request):
     registers = RegisterNPInfo.objects.all().order_by('-id')
-    paginator = Paginator(registers, 5)
+    paginator = Paginator(registers, 6)
     page_number = request.GET.get('page')
     registers = paginator.get_page(page_number)
     return render(request, 'supplies/nova_poshta/nova_poshta_registers.html', {'registers': registers})

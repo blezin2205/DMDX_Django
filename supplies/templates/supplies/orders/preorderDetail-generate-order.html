@@ -222,14 +222,44 @@
              <div id="error"></div>
 {% endif %}
 
-     <div class="container py-4 mt-4 shadow-sm rounded" style="background-color: rgba(234,233,233,0.77)">
-
-          <div style="width: 250px">{{ orderForm.dateToSend|as_crispy_field }}</div>
+     <div class="container my-4 p-4 shadow-sm rounded" style="background-color: rgba(234,233,233,0.77)">
+        <div class="d-flex align-items-end">
+            <div style="width: 250px">{{ orderForm.dateToSend|as_crispy_field }}</div>
+            <button type="button" class="btn btn-outline-primary btn-sm ms-2" onclick="toggleDate(this)" data-selected="false" style="margin-bottom: 20px;">
+                <i class="bi bi-calendar-check"></i> Сьогодні
+            </button>
+        </div>
           {{ orderForm.comment|as_crispy_field }}
 
-         <button class="btn btn-outline-primary my-2" type="submit" name="create_order">Створити замовлення</button>
-         <button class="btn btn-outline-primary m-2" type="submit" name="create_booked_order">Створити бронювання</button>
-           </div>
+          {% if uncompleted_orders %}
+          <div class="mt-4">
+              <h6 class="mb-3">Виберіть дію:</h6>
+              <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                  <input type="radio" class="btn-check" name="orderAction" id="createNewOrder" value="new" autocomplete="off" checked>
+                  <label class="btn btn-outline-primary" for="createNewOrder">Створити нове замовлення</label>
+
+                  <input type="radio" class="btn-check" name="orderAction" id="addToExisting" value="existing" autocomplete="off">
+                  <label class="btn btn-outline-primary" for="addToExisting">Додати до існуючого замовлення</label>
+              </div>
+          </div>
+
+          <div id="existingOrdersSection" style="display: none;" class="mt-4">
+              <h6 class="mb-3">Об'єднати з існуючим замовленням:</h6>
+              <select class="form-select" name="uncompleted_orders" id="uncompleted_orders">
+                  {% for uncompleted_order in uncompleted_orders %}
+                  <option value="{{ uncompleted_order.id }}" {% if forloop.first %}selected{% endif %}>
+                      Замовлення №{{ uncompleted_order.id }} ({{ uncompleted_order.place.name }})
+                  </option>
+                  {% endfor %}
+              </select>
+          </div>
+
+          {% endif %}
+
+         <div class="d-flex justify-content-center" style="margin-top: 60px;">
+             <button class="btn btn-outline-primary mx-4" type="submit" name="create_order">Створити замовлення</button>
+             <button class="btn btn-outline-warning mx-4 text-primary" style="border-color: orange" type="submit" name="create_booked_order">Створити бронювання</button>
+         </div>
 
 
 
@@ -238,6 +268,53 @@
         </form>
 
 
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const createNewRadio = document.getElementById('createNewOrder');
+                const addToExistingRadio = document.getElementById('addToExisting');
+                const existingOrdersSection = document.getElementById('existingOrdersSection');
+
+                function toggleExistingOrders() {
+                    existingOrdersSection.style.display = addToExistingRadio.checked ? 'block' : 'none';
+                }
+
+                createNewRadio.addEventListener('change', toggleExistingOrders);
+                addToExistingRadio.addEventListener('change', toggleExistingOrders);
+            });
+
+              
+function setTodayDate() {
+  const today = new Date();
+  const dateInput = document.querySelector('input[name="dateToSend"]');
+  if (dateInput) {
+    const formattedDate = today.toISOString().split('T')[0];
+    dateInput.value = formattedDate;
+    // Trigger change event to ensure any listeners are notified
+    dateInput.dispatchEvent(new Event('change'));
+  }
+}
+
+function toggleDate(button) {
+  const dateInput = document.querySelector('input[name="dateToSend"]');
+  const isSelected = button.getAttribute('data-selected') === 'true';
+  
+  if (isSelected) {
+    // Remove date and reset button state
+    dateInput.value = '';
+    dateInput.removeAttribute('required');
+    button.classList.remove('btn-primary');
+    button.classList.add('btn-outline-primary');
+    button.setAttribute('data-selected', 'false');
+  } else {
+    // Set today's date and update button state
+    setTodayDate();
+    dateInput.setAttribute('required', 'required');
+    button.classList.remove('btn-outline-primary');
+    button.classList.add('btn-primary');
+    button.setAttribute('data-selected', 'true');
+  }
+}
+        </script>
 
 {% endblock %}
 

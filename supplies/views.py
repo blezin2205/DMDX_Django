@@ -3506,11 +3506,13 @@ def preorderDetail(request, order_id):
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin', 'empl'])
+@transaction.atomic
 def preorderDetail_generateOrder(request, order_id):
     order = get_object_or_404(PreOrder, pk=order_id)
     supplies_in_order = order.supplyinpreorder_set.all().order_by('id')
     cartCountData = countCartItemsHelper(request)
     orderForm = OrderInCartForm(request.POST or None)
+    uncompleted_orders = order.place.order_set.filter(isComplete=False)
 
     if request.method == 'POST':
         checkBoxSuppIdList = request.POST.getlist('flexCheckDefault')
@@ -3520,6 +3522,10 @@ def preorderDetail_generateOrder(request, order_id):
         comment_for_order = request.POST.get('comment_for_order')
         count_for_id_dict = dict(zip(count_list_id, count_list))
         result = {k: v for k, v in count_for_id_dict.items() if k in checkBoxSuppIdList}
+
+        # Get the selected action and order
+        order_action = request.POST.get('orderAction')
+        selected_order_id = request.POST.get('uncompleted_orders')
 
         print("-------------------- booked_items_id ----------------------")
         print(booked_items_id)
@@ -3536,20 +3542,36 @@ def preorderDetail_generateOrder(request, order_id):
             t = supDict.setdefault(d.general_supply, [])
             t.append(d)
 
-
         sup_in_preorder_checked_for_booked = supplies_in_order.filter(id__in=booked_items_id)
 
         if 'create_order' in request.POST:
             if supDict or sup_in_preorder_checked_for_booked.count() > 0:
-                new_order = Order(userCreated=request.user, for_preorder=order, place=order.place,
-                                  comment=comment_for_order)
-                if orderForm.is_valid():
-                    comment = orderForm.cleaned_data['comment']
-                    dateToSend = orderForm.cleaned_data['dateToSend']
-                    new_order.comment = comment
-                    new_order.dateToSend = dateToSend
+                # If adding to existing order
+                if order_action == 'existing' and selected_order_id:
+                    new_order = Order.objects.get(id=selected_order_id)
+                    if orderForm.is_valid():
+                        comment = orderForm.cleaned_data['comment']
+                        dateToSend = orderForm.cleaned_data['dateToSend']
+                        if comment:
+                           old_comment = new_order.comment or ""
+                           new_order.comment = old_comment + f"\n{comment}"
+                        new_order.dateToSend = dateToSend
+                        
+                    if new_order.for_preorder:
+                        new_order.for_preorder = None
+                    new_order.related_preorders.add(order)
+                else:
+                    # Create new order
+                    new_order = Order(userCreated=request.user, for_preorder=order, place=order.place,
+                                    comment=comment_for_order)
+                    if orderForm.is_valid():
+                        comment = orderForm.cleaned_data['comment']
+                        dateToSend = orderForm.cleaned_data['dateToSend']
+                        new_order.comment = comment
+                        new_order.dateToSend = dateToSend
                 new_order.save()
 
+                sups_for_preorder = []
                 if sup_in_preorder_checked_for_booked.count() > 0:
                     for sup_in_booked in sup_in_preorder_checked_for_booked:
                         booked_sups = sup_in_booked.supplyinbookedorder_set.all()
@@ -3566,7 +3588,7 @@ def preorderDetail_generateOrder(request, order_id):
                                                         date_expired=sup.date_expired,
                                                         internalName=sup.supply.general_supply.name,
                                                         internalRef=sup.supply.general_supply.ref)
-                            suppInOrder.save()
+                            sups_for_preorder.append(suppInOrder)
                             sup.save(update_fields=['countOnHold'])
 
                 if supDict:
@@ -3590,10 +3612,50 @@ def preorderDetail_generateOrder(request, order_id):
                                                        internalName=s.general_supply.name,
                                                        internalRef=s.general_supply.ref
                                                        )
-                            supInOrder.save()
+                            sups_for_preorder.append(supInOrder)
                             s.countOnHold += s.count
                             s.save(update_fields=['countOnHold'])
-
+                            
+                if order_action == 'existing' and selected_order_id:
+                    print("start merging")
+                    merged_sups = []
+                    existing_sups_in_order = new_order.supplyinorder_set.all()
+                    sups_for_preorder.extend(existing_sups_in_order)
+                    preorders_by_key = defaultdict(list)
+                    sups_for_preorder = [sio for sio in sups_for_preorder if sio.supply_in_preorder is not None]
+                    for sio in sups_for_preorder:
+                        # Get the PreOrder associated with this SupplyInPreorder
+                        key = (sio.supply_in_preorder, sio.supply)  # Create a tuple as composite key
+                        preorders_by_key[key].append(sio)
+                        
+                    for (preorder, supply), sio_list in preorders_by_key.items():
+                        total_count = sum(sio.count_in_order for sio in sio_list)
+                        template_sio = sio_list[0]
+                        print("sup: ", supply.general_supply.name)
+                        print("total_count: ", total_count)
+                        merged_sup = SupplyInOrder(
+                            count_in_order=total_count,
+                            generalSupply=template_sio.generalSupply,
+                            supply=template_sio.supply,
+                            supply_in_preorder=template_sio.supply_in_preorder,
+                            supply_for_order=new_order,
+                            supply_in_booked_order=template_sio.supply_in_booked_order,
+                            lot=template_sio.lot,
+                            date_expired=template_sio.date_expired,
+                            date_created=template_sio.date_created,
+                            internalName=template_sio.internalName,
+                            internalRef=template_sio.internalRef
+                        )
+                        merged_sups.append(merged_sup)
+                    for sup in sups_for_preorder:
+                        if sup.id is not None:  # Only delete if the object has been saved to DB
+                            sup.delete()
+                    for sio in merged_sups:
+                        sio.save()
+                else:
+                    for sio in sups_for_preorder:
+                        sio.save()
+                                
                 t = threading.Thread(target=sendTeamsMsgCart, args=[request, new_order], daemon=True)
                 t.start()
                 return redirect('/orders')
@@ -3632,7 +3694,7 @@ def preorderDetail_generateOrder(request, order_id):
 
     return render(request, 'supplies/orders/preorderDetail-generate-order.html',
                   {'title': f'Передзамовлення № {order_id}', 'order': order, 'orderForm': orderForm, 'supplies': supplies_in_order,
-                   'cartCountData': cartCountData, 'isOrders': True})
+                   'cartCountData': cartCountData, 'isOrders': True, 'uncompleted_orders': uncompleted_orders})
 
 
 @login_required(login_url='login')
