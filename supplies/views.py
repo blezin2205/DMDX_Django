@@ -610,6 +610,7 @@ def orderTypeDescriptionField(request):
 def add_to_exist_order_from_cart(request):
     orderType = request.POST.get('orderType')
     isAdd_to_exist_order = orderType == 'add_to_Exist_order'
+    print("orderType", orderType)
     orders = []
     if isAdd_to_exist_order:
         place_id = request.POST.get('place_id')
@@ -1160,6 +1161,7 @@ def sendTeamsMsgCart(request, order):
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin', 'empl'])
+@transaction.atomic
 def cartDetail(request):
     orderInCart = OrderInCart.objects.first()
     cartCountData = countCartItemsHelper(request)
@@ -1190,20 +1192,35 @@ def cartDetail(request):
                 else:
                     dateSent = None
                 if orderType == 'new_order':
+                    selected_preorder_id = request.POST.get('selectedPreorder')
+                    selectedPreorder = None
+                    if selected_preorder_id:
+                        selectedPreorder = PreOrder.objects.get(id=selected_preorder_id)
 
-                    order = Order(userCreated=orderInCart.userCreated, place=place, dateSent=dateSent,
+                    order = Order(userCreated=orderInCart.userCreated, 
+                                  place=place, 
+                                  dateSent=dateSent,
+                                  for_preorder=selectedPreorder,
                                   isComplete=isComplete, 
                                   isPinned=is_pinned,
                                   comment=comment, 
                                   dateToSend=dateToSend)
                     order.save()
+                    
 
                     for index, sup in enumerate(supplies):
                         count = request.POST.get(f'count_{sup.id}')
+                        suppInPreorder = None
+                        if selectedPreorder:
+                            try:
+                                suppInPreorder = selectedPreorder.supplyinpreorder_set.get(generalSupply=sup.supply.general_supply)
+                            except:
+                                suppInPreorder = None
                         suppInOrder = SupplyInOrder(count_in_order=count,
                                                     supply=sup.supply,
                                                     generalSupply=sup.supply.general_supply,
                                                     supply_for_order=order,
+                                                    supply_in_preorder=suppInPreorder,
                                                     lot=sup.lot,
                                                     date_created=sup.date_created,
                                                     date_expired=sup.date_expired,
@@ -3502,6 +3519,13 @@ def preorderDetail(request, order_id):
     return render(request, 'supplies/orders/preorderDetail.html',
                   {'title': title, 'order': order, 'supplies': supplies_in_order,
                    'cartCountData': cartCountData, 'isOrders': True, 'all_related_orders': all_related_orders})
+    
+@login_required(login_url='login')
+def preorderDetailModal(request, order_id):
+    order = get_object_or_404(PreOrder, pk=order_id)
+    supplies_in_order = order.supplyinpreorder_set.all()
+    return render(request, 'supplies/orders/preorderDetailModal.html',
+                  {'title': f'Передзамовлення № {order_id}', 'order': order, 'supplies': supplies_in_order})
 
 
 @login_required(login_url='login')

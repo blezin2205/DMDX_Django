@@ -1,0 +1,121 @@
+
+{% load myapp_extras %}
+{% load mathfilters %}
+
+<div class="container py-4">
+    <!-- Order Header Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Organization Info -->
+                <div class="col-md-6">
+                    <h5 class="text-muted mb-3">
+                        <i class="bi bi-building me-2"></i>Організація
+                    </h5>
+                    <p class="mb-2 fs-5">{{order.place.name}}, {{order.place.city_ref.name}}</p>
+                    {% if order.comment %}
+                    <p class="mb-2">
+                        <i class="bi bi-chat-left-text me-2"></i>
+                        <span class="text-muted">{{order.comment}}</span>
+                    </p>
+                    {% endif %}
+                    <p class="mb-0">
+                        <i class="bi bi-person me-2"></i>
+                        <span class="text-muted">Створив: {{order.userCreated.last_name}}</span>
+                    </p>
+                </div>
+                
+                <!-- Status Info -->
+                <div class="col-md-6">
+                    <div class="d-flex flex-column align-items-md-end">
+                        {% if order.state_of_delivery == 'Complete' %}
+                            <div class="badge bg-success d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-check-circle"></i>
+                                <span>Повністю поставлено</span>
+                            </div>
+                        {% elif order.state_of_delivery == 'Complete_Handle' %}
+                            <div class="badge bg-success d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-check-circle"></i>
+                                <span>Повністю поставлено (Закрито вручну)</span>
+                            </div>
+                        {% elif order.state_of_delivery == 'Partial' %}
+                            <div class="badge bg-warning d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-hourglass-split"></i>
+                                <span>Частково поставлено</span>
+                            </div>
+                        {% elif order.state_of_delivery == 'awaiting_from_customer' %}
+                            <div class="badge bg-info d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-pencil-square"></i>
+                                <span>Формується замовником</span>
+                            </div>
+                        {% elif order.state_of_delivery == 'accepted_by_customer' %}
+                            <div class="badge bg-primary d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-check2-all"></i>
+                                <span>Підтверджено замовником</span>
+                            </div>
+                        {% elif order.state_of_delivery == 'Awaiting' %}
+                            <div class="badge bg-warning d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-truck"></i>
+                                <span>Замовлено у виробника</span>
+                            </div>
+                        {% endif %}
+                        
+                            <div class="badge bg-secondary d-flex align-items-center gap-2 p-2 mb-2">
+                                <i class="bi bi-calendar-check"></i>
+                                <span>{{order.dateCreated|date:"d.m.Y"}}</span>
+                            </div>
+                        
+                        <!-- Export Actions -->
+                        <div class="btn-group">
+                            <a href="{% url 'preorderDetailCsv' order.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-file-earmark-excel me-2"></i>До поставки
+                            </a>
+                            <a href="{% url 'preorderDetailCsvAll' order.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-file-earmark-excel me-2"></i>Весь список
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card shadow-sm  p-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table centred mt-3 w-auto mx-auto">
+                <thead class="thead-dark">
+                        <tr>
+                            <th scope="col" style="width: 50px">#</th>
+                            <th scope="col" class="text-start">Назва товару ({{supplies|length}})</th>
+                            <th scope="col">Пакування / Тести</th>
+                            <th scope="col">Категорія</th>
+                            <th scope="col">REF</th>
+                            <th scope="col">SMN code</th>
+                            <th scope="col">Замовлено</th>
+                            {% if order.isComplete %}
+                            <th scope="col">Поставлено</th>
+                            <th scope="col">Борг</th>
+                            <th scope="col">
+                                <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %}">
+                                    <div class="px-2">LOT</div>
+                                    <div class="px-2">Кількість</div>
+                                    <div class="px-2">Термін</div>
+                                </div>
+                            </th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for el in supplies %}
+                        {% include 'supplies/orders/preorder_detail_list_item_modal.html' %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+

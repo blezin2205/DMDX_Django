@@ -415,6 +415,36 @@ class PreOrder(models.Model):
     )
     state_of_delivery = models.CharField(max_length=50, choices=STATE_CHOICES, default='awaiting_from_customer')
 
+    def checkIfCartSupsExistInSelf(self):
+        """
+        Check if any supplies from the cart exist in this preorder.
+        
+        Args:
+            sups_in_cart: List of Supply objects to check
+            
+        Returns:
+            bool: True if any of the supplies exist in the preorder, False otherwise
+        """
+        try:
+            orderInCart = OrderInCart.objects.first()
+            sups_in_cart = orderInCart.supplyinorderincart_set.all()
+            general_sups = [sup.supply.general_supply for sup in sups_in_cart]
+            preorder_sups = self.supplyinpreorder_set.all()
+            
+            # Check if any of the cart supplies exist in the preorder
+            for cart_sup in general_sups:
+                if preorder_sups.filter(generalSupply=cart_sup).exists():
+                    return True
+        except:
+            return False
+        
+        # Check if any of the cart supplies exist in the preorder
+        for cart_sup in general_sups:
+            if preorder_sups.filter(generalSupply=cart_sup).exists():
+                return True
+                
+        return False
+
     def __str__(self):
         return f'презаказ № {self.id}, для {self.place.name}, от {self.dateSent}'
 

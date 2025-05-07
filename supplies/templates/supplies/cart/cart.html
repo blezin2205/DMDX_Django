@@ -168,6 +168,85 @@
     </form>
 </div>
 
+<!-- Supply History Modal -->
+<div class="modal fade" id="preorderDetailInfoModalInCart" tabindex="-1" aria-labelledby="preorderDetailInfoModalInCartLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered {% if request.user_agent.is_mobile %} modal-fullscreen-sm-down{% else %} modal-xl{% endif %}">
+        <div class="modal-content">
+            <div class="modal-header justify-content-center position-relative py-2">
+                <h5 class="modal-title d-flex flex-column gap-0 text-center pe-5" id="preorderDetailInfoModalInCartLabel" style="font-size: 1rem;">
+                    <div class="d-flex align-items-center gap-1 justify-content-center">
+                        <span>Деталі передзамовлення</span>
+                    </div>
+                    <div class="text-muted small" style="font-size: 0.85rem;"></div>
+                </h5>
+                <button type="button" class="btn-close position-absolute end-0 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" id="preorderDetailInfoContent" style="height: calc(100vh - 100px);">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<style>
+@media (max-width: 575.98px) {
+    #preorderDetailInfoModalInCart .modal-content {
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
+    #preorderDetailInfoModalInCart .modal-header {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    #preorderDetailInfoModalInCart .modal-body {
+        height: calc(100vh - 56px); /* 56px is the height of modal-header */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0;
+    }
+    #preorderDetailInfoModalInCart .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    #addNewLotModal .modal-content {
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
+    #addNewLotModal .modal-header {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    #addNewLotModal .modal-body {
+        height: calc(100vh - 56px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0;
+    }
+    #addNewLotModal .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+.loading-state {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+</style>
+
 <script>
   function validateQuantity(input) {
       // Log the entire input element to verify data attributes
@@ -270,6 +349,8 @@
           });
       });
   });
+
+
   </script>
 {% endblock %}
 
