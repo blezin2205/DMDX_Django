@@ -3504,13 +3504,67 @@ def orderDetail(request, order_id, sup_id):
                   {'title': f'Замовлення № {order_id}', 'order': order, 'supplies': supplies_in_order,
                    'cartCountData': cartCountData, 'isOrders': True, 'highlighted_sup_id': sup_id})
 
+@login_required(login_url='login')
+@transaction.atomic
+def order_add_to_preorder(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+    # Get all general supplies from the order
+    order_general_supplies = order.supplyinorder_set.values_list('generalSupply', flat=True).distinct()
+    # Get preorders and annotate with hasSupsInOrder
+    preorders = order.place.preorder_set.filter(
+        Q(state_of_delivery='Awaiting') | 
+        Q(state_of_delivery='Partial') | 
+        Q(state_of_delivery='accepted_by_customer')
+    ).annotate(
+        hasSupsInOrder=Exists(
+            SupplyInPreorder.objects.filter(
+                supply_for_order=OuterRef('pk'),
+                generalSupply__in=order_general_supplies
+            )
+        )
+    )
+    if request.method == 'POST':
+        next = request.POST.get('next')
+        if 'save' in request.POST:
+            selected_preorder_id = request.POST.get('selectedPreorder')
+            if selected_preorder_id:
+                selectedPreorder = PreOrder.objects.get(id=selected_preorder_id)
+                sups_in_preorder = selectedPreorder.supplyinpreorder_set.all()
+                sups_in_order = order.supplyinorder_set.all()
+                order.for_preorder = selectedPreorder
+                order.save(update_fields=['for_preorder'])
+                for supp in sups_in_order:
+                    if not supp.supply_in_preorder:
+                        try:
+                            supp.supply_in_preorder = sups_in_preorder.get(generalSupply=supp.generalSupply)
+                            supp.save(update_fields=['supply_in_preorder'])
+                        except:
+                            pass
+                        
+                if order.isComplete:
+                    for supp in sups_in_order:
+                        genSupInPreorder = supp.supply_in_preorder
+                        genSupInPreorder.count_in_order_current += supp.count_in_order
+                        if genSupInPreorder.count_in_order - genSupInPreorder.count_in_order_current <= 0:
+                            genSupInPreorder.state_of_delivery = 'Complete'
+                        else:
+                            genSupInPreorder.state_of_delivery = 'Partial'
+                        genSupInPreorder.save(update_fields=['count_in_order_current', 'state_of_delivery'])
+                    selectedPreorder.update_order_state_of_delivery_status()
+                        
+            return JsonResponse({
+            'success': True
+        })            
+    
+    return render(request, 'supplies/orders/order_add_to_preorder.html',
+                  {'title': f'Додати до передзамовлення', 'order': order, 'preorders': preorders})
 
 @login_required(login_url='login')
 def preorderDetail(request, order_id):
     order = get_object_or_404(PreOrder, pk=order_id)
     supplies_in_order = order.supplyinpreorder_set.all()
     cartCountData = countCartItemsHelper(request)
-    all_related_orders = list(order.orders_for_preorder.all()) + list(order.related_orders.all())
+    all_related_orders = order.orders_for_preorder.all().union(order.related_orders.all()).order_by('-id')
     if order.isPreorder:
         title = f'Передзамовлення № {order_id}'
     else:

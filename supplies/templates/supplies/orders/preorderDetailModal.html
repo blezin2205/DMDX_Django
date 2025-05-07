@@ -1,10 +1,105 @@
-
 {% load myapp_extras %}
 {% load mathfilters %}
 
-<div class="container py-4">
+<style>
+.modal-form {
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    width: 100%;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.modal-form::-webkit-scrollbar {
+    display: none;
+}
+
+.modal-body-content {
+    padding: 1rem;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.alert {
+    margin-bottom: 1rem;
+    word-wrap: break-word;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    .modal-form {
+        max-height: calc(100vh - 100px);
+    }
+    
+    .modal-body-content {
+        padding: 0.5rem;
+    }
+    
+    /* Ensure buttons have enough space at the bottom */
+    .d-flex.gap-2.justify-content-center {
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    /* Adjust alert spacing on mobile */
+    .alert {
+        margin-bottom: 0.75rem;
+    }
+
+    /* Fix hstack overflow on mobile */
+    .hstack {
+        flex-wrap: wrap;
+        gap: 0.5rem !important;
+    }
+
+    .hstack .col-sm {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: 0;
+    }
+
+    /* Ensure form inputs don't overflow */
+    .form-control, .form-select {
+        max-width: 100%;
+    }
+
+    /* Adjust button sizes for better mobile fit */
+    .btn {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    /* Adjust table for mobile */
+    .table-responsive {
+        margin: 0 -0.5rem;
+    }
+
+    .table {
+        font-size: 0.875rem;
+    }
+
+    /* Adjust card spacing on mobile */
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .card-header {
+        padding: 0.75rem;
+    }
+
+    .card-body {
+        padding: 0.75rem;
+    }
+}
+</style>
+
+<div class="container modal-form py-1">
     <!-- Order Header Card -->
     <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Інформація про замовлення</h5>
+        </div>
         <div class="card-body">
             <div class="row g-3">
                 <!-- Organization Info -->
@@ -60,10 +155,10 @@
                             </div>
                         {% endif %}
                         
-                            <div class="badge bg-secondary d-flex align-items-center gap-2 p-2 mb-2">
-                                <i class="bi bi-calendar-check"></i>
-                                <span>{{order.dateCreated|date:"d.m.Y"}}</span>
-                            </div>
+                        <div class="badge bg-secondary d-flex align-items-center gap-2 p-2 mb-2">
+                            <i class="bi bi-calendar-check"></i>
+                            <span>{{order.dateCreated|date:"d.m.Y"}}</span>
+                        </div>
                         
                         <!-- Export Actions -->
                         <div class="btn-group">
@@ -81,14 +176,20 @@
     </div>
 
     <!-- Orders Table -->
-    <div class="card shadow-sm  p-0">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                Список товарів
+                <small class="text-muted">(Всього: {{supplies|length}} шт.)</small>
+            </h5>
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-              <table class="table centred mt-3 w-auto mx-auto">
-                <thead class="thead-dark">
+                <table class="table">
+                    <thead class="thead-light">
                         <tr>
                             <th scope="col" style="width: 50px">#</th>
-                            <th scope="col" class="text-start">Назва товару ({{supplies|length}})</th>
+                            <th scope="col" class="text-start">Назва товару</th>
                             <th scope="col">Пакування / Тести</th>
                             <th scope="col">Категорія</th>
                             <th scope="col">REF</th>

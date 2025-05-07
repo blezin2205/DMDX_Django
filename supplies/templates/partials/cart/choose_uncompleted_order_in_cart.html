@@ -40,10 +40,16 @@
                {% include 'partials/cart/add_to_exist_order_from_cart.html' %}
     </div>
     {% if place.isHaveUncompletedPreorders %}
-        <div id="preorderSection" class="alert alert-warning" role="alert">
-  <h5>Ця організація має незавершені передзамовлення!</h5>
+        <div id="preorderSection" class="bg-info-subtle p-3 rounded-3">
+  <h5><i class="bi bi-info-circle-fill text-primary"></i> Ця організація має незавершені передзамовлення!</h5>
   <li> <small class="text-muted d-block p-0 fst-italic">Якщо ви хочете привязати ваше нове замовлення до існуючого передзамовлення, виберіть його зі списку нижче.<br>Всі товари з вашого замовлення, які є у вибраному передзамовленні будуть додані до цього передзамовлення.</small></li>
   <li> <small class="text-muted d-block p-0 fst-italic">Для перегляду деталей передзамовлення, натисніть на його номер.</small></li>
+  <li>
+    <span class="badge bg-info mx-2">
+        <i class="bi bi-check-circle"></i>
+    </span>
+    <small class="text-muted p-0 fst-italic">Означає, що передзамовлення має товари, що є в цій корзині</small>
+</li>
             <div class="row d-flex justify-content-center align-items-center h-100">
     {% for preorder in preorders %}
     <div class="d-flex align-items-center gap-2">
@@ -52,8 +58,7 @@
            {% if preorder.isPreorder %} Передзамовлення {% else %} Договір {% endif %} №{{ preorder.id }} {% if preorder.comment %} | {{ preorder.comment }} {% endif %}
            {% if preorder.checkIfCartSupsExistInSelf %}
            <span class="badge bg-info mx-2">
-                Є товари, що в корзині
-            
+            <i class="bi bi-check-circle"></i>
            </span>
            {% endif %}
         </button>
@@ -65,10 +70,16 @@
         {% endif %}
                {% else %}
     {% if place.isHaveUncompletedPreorders %}
-        <div class="alert alert-warning" role="alert">
-  <h5>Ця організація має незавершені передзамовлення!</h5>
+        <div id="preorderSection" class="bg-info-subtle p-3 rounded-3">
+            <h5><i class="bi bi-info-circle-fill text-primary"></i> Ця організація має незавершені передзамовлення!</h5>
   <li> <small class="text-muted d-block p-0 fst-italic">Якщо ви хочете привязати ваше нове замовлення до існуючого передзамовлення, виберіть його зі списку нижче.<br>Всі товари з вашого замовлення, які є у вибраному передзамовленні будуть додані до цього передзамовлення.</small></li>
   <li> <small class="text-muted d-block p-0 fst-italic">Для перегляду деталей передзамовлення, натисніть на його номер.</small></li>
+  <li>
+    <span class="badge bg-info mx-2">
+        <i class="bi bi-check-circle"></i>
+    </span>
+    <small class="text-muted p-0 fst-italic">Означає, що передзамовлення має товари, що є в цій корзині</small>
+</li>
             <div class="row d-flex justify-content-center align-items-center h-100">
     {% for preorder in preorders %}
     <div class="d-flex align-items-center gap-2">
@@ -77,7 +88,7 @@
            {% if preorder.isPreorder %} Передзамовлення {% else %} Договір {% endif %} №{{ preorder.id }} {% if preorder.comment %} | {{ preorder.comment }} {% endif %}
            {% if preorder.checkIfCartSupsExistInSelf %}
            <span class="badge bg-info mx-2">
-                Є товари, що в корзині
+            <i class="bi bi-check-circle"></i>
            </span>
            {% endif %}
         </button>
@@ -89,7 +100,7 @@
         <input type="hidden" name="orderType" value="new_order">
        {% endif %}
        <input type="hidden" name="next" value="{{ request.GET.next }}">
-       <div class="d-flex justify-content-evenly">
+       <div class="d-flex justify-content-evenly pt-3">
        <button class="btn btn-primary my-2 w-auto" type="submit" name="save">Замовлення</button>
         <button class="btn btn-warning my-2 w-auto" type="submit" name="save_as_booked_order">Бронювання</button>
        </div>
