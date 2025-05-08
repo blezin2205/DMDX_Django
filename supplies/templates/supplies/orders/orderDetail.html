@@ -35,12 +35,14 @@
                                 <i class="bi bi-box-seam"></i>
                                 <span>№{{order.id}}</span>
                             </div>
+                            {% if not request.user.isClient %}
                             {% if order.isUncompletedPreorderForPlaceExist %}
                             {% if not order.for_preorder and order.related_preorders.count == 0 %}
                             <button class="badge bg-info d-flex align-items-center gap-1 add-to-preorder-btn py-1" data-order-id="{{ order.id }}" type="button" data-bs-toggle="tooltip"
                             title="Додати до передзамовлення">
                                </i> <i class="bi bi-clipboard-plus fs-5"></i>
                             </button>
+                            {% endif %}
                             {% endif %}
                             {% endif %}
                             {% if order.for_preorder %}
@@ -121,7 +123,7 @@
             <div class="d-flex justify-content-between align-items-center mt-3">
                 <!-- Left side - Convert button -->
                 <div>
-                    {% if not order.isComplete %}
+                    {% if not order.isComplete and not request.user.isClient %}
                         <a href="#" onclick="confirmConversion('{{ order.id }}')" class="btn btn-warning btn-sm" data-toggle="tooltip" title="Конвертувати замовлення в бронювання">
                             <i class="bi bi-arrow-left-right"></i>
                         </a>

@@ -117,6 +117,7 @@
                             <div class="col-md-6">
                                 {{ orderForm.isComplete|as_crispy_field }}
                             </div>
+                            {% if not request.user.isClient %}
                             <div class="col-md-6">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="isPinned" name="isPinned">
@@ -125,11 +126,11 @@
                                     </label>
                                 </div>
                             </div>
+                            {% endif %}
+                            
                            
                         </div>
-                        {% if not request.user.isClient %}
-                       
-                        {% endif %}
+                        
                         {% if not isClient %}
                         <div class="mt-3">
                             <div class="btn-group mb-3" role="group" aria-label="Basic radio toggle button group">
