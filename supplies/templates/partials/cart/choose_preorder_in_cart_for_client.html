@@ -1,16 +1,55 @@
 {% load bootstrap %}
 {% if placeChoosed %}
 {% if preorders %}
-               <div class="btn-group pt-3" role="group" aria-label="Basic radio toggle button group" style="width: fit-content">
-  <input type="radio" class="btn-check" name="orderType" value="Preorder" id="btnradio1" autocomplete="off" checked hx-post="{% url 'orderTypeDescriptionField' %}" hx-trigger="click" hx-target="#orderType">
-  <label class="btn btn-outline-primary" for="btnradio1">Нове передзамовлення</label>
+<script>
+    $(document).ready(function() {
+        // Existing preorder detail button handler
+        $('.preorder-detail-btn').on('click', function(e) {
+            e.preventDefault();
+            const preorderId = $(this).data('preorder-id');
+            showModal('#preorderDetailInfoModalInCart', '#preorderDetailInfoContent', `/preorder-detail-modal/${preorderId}`, 'Завантаження деталей передзамовлення...');
+        });
 
-  <input type="radio" class="btn-check" name="orderType" value="add_to_Exist_preorder" id="btnradio2" autocomplete="off" hx-post="{% url 'orderTypeDescriptionField_for_client' %}" hx-trigger="click" hx-target="#orderType">
-  <label class="btn btn-outline-primary" for="btnradio2">Додати до існуючого</label>
-</div>
-               <div id="orderType">
-         {% include 'partials/orders/orderTypeDescriptionField_for_client.html' %}
+         // Show/hide clear button based on selection
+      $('input[name="selected_non_completed_preorder"]').on('change', function() {
+          $('#clearSelection').toggleClass('d-none', !$(this).prop('checked'));
+      });
+
+      // Clear selection button handler
+      $('#clearSelection').on('click', function() {
+          $('input[name="selected_non_completed_preorder"]').prop('checked', false);
+          $(this).addClass('d-none');
+      });
+    });
+  </script>
+<div class="bg-info-subtle p-3 rounded-3">
+    <h6><i class="bi bi-info-circle-fill text-primary"></i> Ви маєте передзамовлення до яких ще можна додати товари!</h6>
+    <ul>
+        <li>
+            <small class="text-muted d-block p-0 fst-italic">
+                Якщо ви хочете додати ваші товари до вже існуючого передзамовлення, виберіть його зі списку нижче.<br>
+            </small>
+        </li>
+        <li>
+            <small class="text-muted d-block p-0 fst-italic">
+                Для перегляду деталей передзамовлення, натисніть на його номер.
+            </small>
+        </li>
+    </ul>
+    <div class="d-flex align-items-center justify-content-between gap-2">
+        <div class="preorder-list mt-1">
+          {% for preorder in preorders %}
+      <div class="d-flex align-items-center gap-2">
+        <input class="form-check-input" type="radio" name="selected_non_completed_preorder" id="preorder{{ preorder.id }}" value="{{ preorder.id }}">
+        <button class="btn btn-link preorder-detail-btn" type="button" data-preorder-id="{{ preorder.id }}">
+            №{{ preorder.id }}{% if preorder.comment %} | {{ preorder.comment }} {% endif %}
+        </button>
+      </div>
+      {% endfor %}
+      </div>
+      <button type="button" class="btn btn-outline-secondary btn-sm align-self-start d-none" id="clearSelection">Очистити вибір</button>
     </div>
+  </div>
                {% else %}
                <input type="hidden" name="orderType" value="Preorder">
        {% endif %}

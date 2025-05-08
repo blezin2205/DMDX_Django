@@ -111,18 +111,24 @@
                 <!-- Order Details Section -->
                 <div class="card border-0 bg-white mt-4">
                     <div class="card-body">
-                        <h6 class="card-title mb-3"><i class="bi bi-calendar-event me-2"></i>Деталі замовлення</h6>
+                        <h6 class="card-title mb-3"><i class="bi bi-calendar-event me-2"></i>Деталі передзамовлення</h6>
                         {{ orderForm.comment|as_crispy_field }}
-                        {{ orderForm.isComplete|as_crispy_field }}
-                        {% if not request.user.isClient %}
-                        <div class="col-md-8 py-2">
-                            <div class="form-check d-flex align-items-center">
-                                <input class="form-check-input custom-checkbox" type="checkbox" id="isPinned" name="isPinned" style="width: 28px; height: 28px; cursor: pointer;">
-                                <label class="form-check-label ms-2" for="isPinned" style="font-size: 1.1em; margin-top: 0;">
-                                    <i class="bi bi-pin-angle-fill me-1"></i>Закріпити передзамовлення
-                                </label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ orderForm.isComplete|as_crispy_field }}
                             </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="isPinned" name="isPinned">
+                                    <label class="form-check-label" for="isPinned">
+                                        <i class="bi bi-pin-angle-fill me-1"></i>Закріпити передзамовлення
+                                    </label>
+                                </div>
+                            </div>
+                           
                         </div>
+                        {% if not request.user.isClient %}
+                       
                         {% endif %}
                         {% if not isClient %}
                         <div class="mt-3">
@@ -138,16 +144,6 @@
                                 </label>
                             </div>
                             {% if existing_place_for_preorder %}
-                            <!-- {% if preorders.count > 0 %}
-                            <div class="btn-group pt-3" role="group" aria-label="Basic radio toggle button group" style="width: fit-content">
-                                <input type="radio" class="btn-check" name="orderType" value="Preorder" id="btnradio1" autocomplete="off" checked hx-post="{% url 'orderTypeDescriptionField' %}" hx-trigger="click" hx-target="#orderType">
-                                <label class="btn btn-outline-primary" for="btnradio1">Нове передзамовлення</label>
-                              
-                                <input type="radio" class="btn-check" name="orderType" value="add_to_Exist_preorder" id="btnradio2" autocomplete="off" hx-post="{% url 'orderTypeDescriptionField_for_client' %}" hx-trigger="click" hx-target="#orderType">
-                                <label class="btn btn-outline-primary" for="btnradio2">Додати до існуючого</label>
-                              </div>
-
-                            {% endif %} -->
                             <div class="container-fluid d-flex justify-content-center">
                             <input type="hidden" name="orderType" value="Preorder">
     <input type="hidden" name="next" value="{{ request.GET.next }}">
@@ -210,6 +206,85 @@ input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
+}
+</style>
+
+<!-- Supply History Modal -->
+<div class="modal fade" id="preorderDetailInfoModalInCart" tabindex="-1" aria-labelledby="preorderDetailInfoModalInCartLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered {% if request.user_agent.is_mobile %} modal-fullscreen-sm-down{% else %} modal-xl{% endif %}">
+        <div class="modal-content">
+            <div class="modal-header justify-content-center position-relative py-2">
+                <h5 class="modal-title d-flex flex-column gap-0 text-center pe-5" id="preorderDetailInfoModalInCartLabel" style="font-size: 1rem;">
+                    <div class="d-flex align-items-center gap-1 justify-content-center">
+                        <span>Деталі передзамовлення</span>
+                    </div>
+                    <div class="text-muted small" style="font-size: 0.85rem;"></div>
+                </h5>
+                <button type="button" class="btn-close position-absolute end-0 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" id="preorderDetailInfoContent" style="height: calc(100vh - 100px);">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<style>
+@media (max-width: 575.98px) {
+    #preorderDetailInfoModalInCart .modal-content {
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
+    #preorderDetailInfoModalInCart .modal-header {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    #preorderDetailInfoModalInCart .modal-body {
+        height: calc(100vh - 56px); /* 56px is the height of modal-header */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0;
+    }
+    #preorderDetailInfoModalInCart .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    #addNewLotModal .modal-content {
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
+    #addNewLotModal .modal-header {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    #addNewLotModal .modal-body {
+        height: calc(100vh - 56px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0;
+    }
+    #addNewLotModal .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+.loading-state {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
 }
 </style>
 {% endblock %}

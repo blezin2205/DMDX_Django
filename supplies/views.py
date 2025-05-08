@@ -853,12 +853,14 @@ def cartDetailForClient(request):
         preorders = []
         for place in places:
             preorders.extend(place.preorder_set.filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer')))
+        preorders = sorted(preorders, key=lambda x: -x.id)
 
         if places.count() == 1:
             print(places.count())
             placeChoosed = True
             # places.fields['place'].initial = places.first()
         print("preorders", preorders)    
+        
     else:
         isPendingPreorderExist = PreOrder.objects.filter(isComplete=False).exists()
 
@@ -869,18 +871,20 @@ def cartDetailForClient(request):
             isComplete = orderForm.cleaned_data['isComplete']
             orderType = request.POST.get('orderType') or 'Preorder'
             preorderType = request.POST.get('preorderType')
+            isPreorder = preorderType == 'new_preorder'
             place_id = request.POST.get('place_id')
             is_pinned = request.POST.get('isPinned') is not None
             place = existing_place_for_preorder if existing_place_for_preorder else Place.objects.get(id=place_id)
-
-            if orderType == 'Preorder':
-                print("orderType", orderType)
-                print("preorderType", preorderType)
-                print("place_id", place_id)
-                print("isComplete", isComplete)
-                print("isPinned", is_pinned)
-                print("comment", comment)
-                isPreorder = preorderType == 'new_preorder'
+            
+            selected_non_completed_preorder = request.POST.get('selected_non_completed_preorder') or None
+            selectedPreorder = None    
+            if selected_non_completed_preorder:
+                try:
+                    selectedPreorder = PreOrder.objects.get(id=selected_non_completed_preorder)
+                except:
+                    selectedPreorder = None    
+                    
+            if selectedPreorder == None:
                 state_of_delivery = 'awaiting_from_customer'
                 if isComplete:
                     dateSent = timezone.now().date()
@@ -891,7 +895,6 @@ def cartDetailForClient(request):
                                  isComplete=isComplete, isPreorder=isPreorder, isPinned=is_pinned,
                                  comment=comment, state_of_delivery=state_of_delivery)
                 order.save()
-                print("----------------PREORDER-------------------")
                 print(state_of_delivery)
 
                 for index, sup in enumerate(supplies):
@@ -906,10 +909,7 @@ def cartDetailForClient(request):
                 t = threading.Thread(target=sendTeamsMsg, args=[request, order], daemon=True)
                 t.start()
 
-            elif orderType == 'add_to_Exist_preorder':
-                selected_non_completed_preorder = request.POST.get('selected_non_completed_preorder')
-                selectedPreorder = PreOrder.objects.get(id=selected_non_completed_preorder)
-                
+            else:
                 if selectedPreorder.comment and comment:
                     selectedPreorder.comment += f' / {comment}'
                 elif comment:
@@ -1133,9 +1133,9 @@ def delete_from_preorders_detail_general_item(request, el_id):
 def get_agreement_for_place_for_city_in_cart(request):
     place_id = request.GET.get('place_id')
     place = Place.objects.get(pk=place_id)
-    agreements = place.preorder_set.filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer'))
+    preorders = place.preorder_set.filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer')).order_by('-id')
 
-    return render(request, 'partials/cart/choose_agreement_forplace_incart.html', {'agreements': agreements, 'isPendingPreorderExist': agreements.exists(), 'isPlaceChoosed': True})
+    return render(request, 'partials/cart/choose_agreement_forplace_incart.html', {'preorders': preorders})
 
 
 def sendTeamsMsgCart(request, order):
