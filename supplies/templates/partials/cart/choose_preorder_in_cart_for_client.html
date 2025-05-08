@@ -13,8 +13,9 @@
     </div>
                {% else %}
                <input type="hidden" name="orderType" value="Preorder">
-    <input type="hidden" name="next" value="{{ request.GET.next }}">
-     <button class="btn btn-outline-primary my-2" style="width: 100px" type="submit">Зберегти</button>
-
        {% endif %}
+       <input type="hidden" name="next" value="{{ request.GET.next }}">
+       <div class="d-flex justify-content-center mt-4">
+           <button class="btn btn-outline-primary" type="submit">Зберегти</button>
+       </div>
        {% endif %}

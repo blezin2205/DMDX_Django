@@ -626,7 +626,7 @@ def orderTypeDescriptionField_for_client(request):
     place_id_Selected = request.POST.get('place_id')
     isAddedToExistPreorder = orderType == 'add_to_Exist_preorder'
     print("orderType", orderType)
-    preorders = PreOrder.objects.filter(place_id=place_id_Selected).filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer') | Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial')).order_by('-id')
+    preorders = PreOrder.objects.filter(place_id=place_id_Selected).filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer')).order_by('-id')
 
     return render(request, 'partials/orders/orderTypeDescriptionField_for_client.html', {'isAddedToExistPreorder': isAddedToExistPreorder, 'preorders': preorders})
 
@@ -850,12 +850,15 @@ def cartDetailForClient(request):
     if isClient:
         places = Place.objects.filter(user=request.user)
         # places.fields['place'].queryset = places
-        preorders = PreOrder.objects.filter(isComplete=False, userCreated=request.user)
+        preorders = []
+        for place in places:
+            preorders.extend(place.preorder_set.filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer')))
 
         if places.count() == 1:
             print(places.count())
             placeChoosed = True
             # places.fields['place'].initial = places.first()
+        print("preorders", preorders)    
     else:
         isPendingPreorderExist = PreOrder.objects.filter(isComplete=False).exists()
 
