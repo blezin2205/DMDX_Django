@@ -1,0 +1,7 @@
+{% load bootstrap %}
+<select class="form-select my-3" aria-label="Default select example" name="place_id">
+  <option selected>Вибрати організацію...</option>
+             {% for place in places %}
+                 <option value="{{place.id}}">{{ place.name }}</option>
+             {% endfor %}
+</select>

@@ -1061,6 +1061,18 @@ def get_place_for_city_in_precart(request):
 
     return render(request, 'partials/cart/choose_place_in_cart_not_precart.html', {'places': places, 'cityChoosed': places != None, 'placeChoosed': False})
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
+def get_place_for_city_in_import_new_preorder(request):
+    city_id = request.GET.get('city')
+    try:
+        places = Place.objects.filter(city_ref_id=city_id)
+    except:
+        places = None
+
+    return render(request, 'partials/preorders/choose_place_in_import_new_preorder.html', {'places': places})
+
+
 
 
 @login_required(login_url='login')
@@ -3564,10 +3576,18 @@ def order_add_to_preorder(request, order_id):
 
 @login_required(login_url='login')
 def preorderDetail(request, order_id):
-    order = get_object_or_404(PreOrder, pk=order_id)
-    supplies_in_order = order.supplyinpreorder_set.all()
+    order = get_object_or_404(PreOrder.objects.select_related('place'), pk=order_id)
+    supplies_in_order = order.supplyinpreorder_set.select_related(
+        'generalSupply',
+        'generalSupply__category'
+    ).all()
     cartCountData = countCartItemsHelper(request)
-    all_related_orders = order.orders_for_preorder.all().union(order.related_orders.all()).order_by('-id')
+    
+    # Optimize the related orders query
+    all_related_orders = Order.objects.filter(
+        Q(for_preorder=order) | Q(related_preorders=order)
+    ).select_related('place').order_by('-id')
+    
     if order.isPreorder:
         title = f'Передзамовлення № {order_id}'
     else:
@@ -3812,6 +3832,8 @@ def serviceNotes(request):
     return render(request, 'supplies/service/serviceNotes.html',
                   {'title': f'Сервiсні записи', 'serviceNotes': serviceNotes, 'cartCountData': cartCountData,
                    'form': form, 'serviceFilters': serviceFilters, 'isService': True})
+    
+    
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def import_general_supplies_from_excel(request):
@@ -3906,6 +3928,164 @@ def import_general_supplies_from_excel(request):
         'cartCountData': countCartItemsHelper(request),
         'categories': categories
     })
+    
+    
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+@transaction.atomic
+def import_new_preorder_from_excel(request):
+    cities = City.objects.all()
+    if request.method == 'POST':
+        if 'excel_file' in request.FILES:
+            try:
+                excel_file = request.FILES['excel_file']
+                ref_col = request.POST.get('ref_column')
+                smn_code_col = request.POST.get('smn_code_column')
+                count_col = request.POST.get('count_column')
+                print("ref_col: ", ref_col)
+                print("smn_code_col: ", smn_code_col)
+                print("count_col: ", count_col)
+                if ref_col:
+                    ref_col = int(ref_col.strip()) - 1
+                    print("ref_col: ", ref_col)
+                if smn_code_col:
+                    smn_code_col = int(smn_code_col.strip()) - 1
+                    print("smn_code_col: ", smn_code_col)
+                if count_col:
+                    count_col = int(count_col.strip()) - 1
+                    print("count_col: ", count_col)
+                # Read excel file
+                import pandas as pd
+                df = pd.read_excel(excel_file)
+                
+                success_count = 0
+                update_count = 0
+                error_count = 0
+                error_messages = []
+                failed_rows = []
+                message = []
+                place_id = request.POST.get('place_id')
+                place = Place.objects.get(id=place_id)
+                dateSent = timezone.now().date()
+                sups_dict = {}
+                
+                for index, row in df.iterrows():
+                    ref = None
+                    smn_code = None
+                    if ref_col is not None:
+                        ref = str(row[ref_col]).strip()
+                    if smn_code_col is not None:
+                        smn_code = str(row[smn_code_col]).strip()
+                        
+                    try:
+                        general_supply = None
+                        print("ref: ", ref)
+                        print("smn_code: ", smn_code)
+                        if ref and smn_code:
+                            print("---1---")
+                            try:
+                                general_supply = GeneralSupply.objects.get(
+                                    ref=ref,
+                                    SMN_code=smn_code
+                                )
+                                print("---1exists---")
+                            except GeneralSupply.DoesNotExist:
+                                pass
+                        
+                        if ref and not general_supply:
+                            print("---2---")
+                            try:
+                                general_supply = GeneralSupply.objects.get(ref=ref)
+                                print("---2exists---")
+                            except GeneralSupply.DoesNotExist:
+                                pass
+                                
+                        # If not found by ref, try SMN_code
+                        if smn_code and not general_supply:
+                            print("---3---")
+                            try:
+                                general_supply = GeneralSupply.objects.get(SMN_code=smn_code)
+                                print("---3exists---")
+                            except GeneralSupply.DoesNotExist:
+                                pass
+                              
+                        if not general_supply:
+                            error_count += 1
+                            error_messages.append(f"Row {index + 1}: Could not find GeneralSupply with provided ref, SMN_code, or name")
+                            failed_rows.append({
+                                    'row': index + 2,  # Excel rows start at 1, and we have header
+                                    'ref': ref,
+                                    'smn_code': smn_code,
+                                    'reason': 'Товар не знайдено'
+                                })
+                            continue
+                        else:
+                            count_in_order_row = row[count_col]
+                            if count_in_order_row:
+                                count_in_order_row = int(str(count_in_order_row).strip())
+                            else:
+                                count_in_order_row = 1
+                            if sups_dict.get(general_supply):
+                                sups_dict[general_supply] += count_in_order_row
+                            else:
+                                sups_dict[general_supply] = count_in_order_row
+
+                    except Exception as e:
+                        print("--4--")
+                        print(e)
+                        error_count += 1
+                        error_messages.append(f"Row {index + 1}: {str(e)}")
+                        failed_rows.append({
+                                    'row': index + 2,  # Excel rows start at 1, and we have header
+                                    'ref': ref,
+                                    'smn_code': smn_code,
+                                    'reason': 'Помилка при імпорті'
+                                })
+                        continue
+                if len(sups_dict) > 0:
+                    preorder = PreOrder(userCreated=request.user, place=place, dateSent=dateSent,
+                                    isComplete=True, isPreorder=True, state_of_delivery='accepted_by_customer')
+                    preorder.save()    
+                    message.append(f'Створено передзамовлення №{preorder.id} для {place.get_place_name()}')
+                    for general_supply, count_in_order in sups_dict.items():
+                        supply_in_preorder = SupplyInPreorder(
+                                    generalSupply=general_supply,
+                                    count_in_order=count_in_order,
+                                    supply_for_order=preorder
+                                )
+                        success_count += 1 
+                        supply_in_preorder.save()
+                else:
+                    message.append(f'Не вдалося створити передзамовлення для {place.get_place_name()} тому що не було знайдено жодного товару')
+
+                if success_count > 0 or update_count > 0:
+                    
+                    if success_count > 0:
+                        message.append(f'Додано успішно {success_count} позицій')
+                    messages.success(request, '\n'.join(message))
+                if error_count > 0:
+                    error_details = "\n".join([
+                        f"Row {row['row']}: Ref: {row['ref']}, SMN: {row['smn_code']} - {row['reason']}"
+                        for row in failed_rows
+                    ])
+                    messages.warning(
+                        request,
+                        f'Не вдалося обробити {error_count} позицій:\n{error_details}'
+                    )
+                return redirect('import_new_preorder_from_excel')
+                
+            except Exception as e:
+                messages.error(request, f'Помилка при імпорті: {str(e)}')
+                return redirect('import_new_preorder_from_excel')
+    
+    
+    return render(request, 'supplies/supplies/import_new_preorder.html', {
+        'title': 'Імпорт нових передзамовлень',
+        'cartCountData': countCartItemsHelper(request),
+        'cities': cities
+    })
+    
+        
 
 @login_required
 @allowed_users(allowed_roles=['admin', 'empl'])

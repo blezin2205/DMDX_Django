@@ -1,6 +1,7 @@
 {% extends 'supplies/base/base.html' %}
 {% load myapp_extras %}
 {% load crispy_forms_filters %}
+{% load static %}
     {% block title %}
 {{ title }}
 {% endblock %}
@@ -33,6 +34,10 @@
              </div>
              
              <div class="d-flex justify-content-end">
+                    <a href="{% url 'import_new_preorder_from_excel' %}" class="btn btn-outline-primary">
+                        <img src="{% static 'images/import_from_excel.png' %}" alt="Import" class="me-2" style="height: 20px;">
+                        Імпорт нових передзамовлень
+                    </a>
                  {% if isArchiveChoosed %}
                      <button type="submit" class="btn btn-outline-primary">
                          Сховати архів
@@ -52,7 +57,11 @@
      </div>
 
      {% if not request.user_agent.is_mobile %}
-     <div class="col d-flex justify-content-end pe-2">
+     <div class="col d-flex justify-content-between">
+        <a href="{% url 'import_new_preorder_from_excel' %}" class="btn btn-sm btn-outline-secondary text-wrap" data-bs-toggle="tooltip" data-bs-placement="top" title="Створити нове передзамовлення з таблиці Excel">
+            <img src="{% static 'images/import_from_excel.png' %}" alt="Import" style="height: 24px;">
+          
+        </a>
          {% if isArchiveChoosed %}
              <button type="submit" class="btn btn-outline-primary">
                  Сховати архів

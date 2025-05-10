@@ -1,0 +1,117 @@
+{% extends 'supplies/base/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container p-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">
+                                {{ message|linebreaks }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="excel_file" class="form-label">Excel файл</label>
+                            <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx,.xls" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Організація</label>
+                            <div class="row">
+                                <div class="col">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                                        <select class="form-select" name="city" 
+                                            hx-get="{% url 'get_place_for_city_in_import_new_preorder' %}" 
+                                            hx-trigger="change" 
+                                            hx-target="#places">
+                                            <option selected>Вибрати місто</option>
+                                            {% for city in cities %}
+                                                <option value="{{city.id}}">{{ city.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="places">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Відповідність колонок</label>
+                            <div class="alert alert-info mb-3">
+                                <h6 class="mb-2">Довідка по колонках Excel:</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Колонка Excel</th>
+                                                <th>A</th>
+                                                <th>B</th>
+                                                <th>C</th>
+                                                <th>D</th>
+                                                <th>E</th>
+                                                <th>F</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Номер колонки</td>
+                                                <td>1</td>
+                                                <td>2</td>
+                                                <td>3</td>
+                                                <td>4</td>
+                                                <td>5</td>
+                                                <td>6</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="ref_column" class="form-label">Колонка REF</label>
+                                    <input type="number" class="form-control" id="ref_column" name="ref_column" value="1">
+                                    <small class="text-muted">Обов'язкове поле (Номер)</small>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <label for="smn_code_column" class="form-label">Колонка SMN code</label>
+                                    <input type="number" class="form-control" id="smn_code_column" name="smn_code_column">
+                                    <small class="text-muted">Обов'язкове поле (Номер)</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="count_column" class="form-label">Колонка кількості</label>
+                                    <input type="number" class="form-control" id="count_column" name="count_column">
+                                    <small class="text-muted">Обов'язкове поле (Номер)</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h5>Інструкції:</h5>
+                            <ul class="mb-0">
+                                <li>Завантажте Excel файл (.xlsx або .xls)</li>
+                                <li>Виберіть організацію для створення нового передамовлення</li>
+                                <li>Використовуйте таблицю відповідності колонок вище для вказання номерів колонок Excel</li>
+                                <li>Обовзяково потрібно задати колонку REF aбо SMN code. Можна задати обидві. Колонка кількості обов'язкова.</li>
+                            </ul>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Створити передзамовлення</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
