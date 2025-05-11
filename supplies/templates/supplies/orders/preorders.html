@@ -34,10 +34,12 @@
              </div>
              
              <div class="d-flex justify-content-end">
+                {% if request.user.isAllowToEditAndCreateActions %}
                     <a href="{% url 'import_new_preorder_from_excel' %}" class="btn btn-outline-primary">
                         <img src="{% static 'images/import_from_excel.png' %}" alt="Import" class="me-2" style="height: 20px;">
                         Імпорт нових передзамовлень
                     </a>
+                {% endif %}
                  {% if isArchiveChoosed %}
                      <button type="submit" class="btn btn-outline-primary">
                          Сховати архів
@@ -58,10 +60,12 @@
 
      {% if not request.user_agent.is_mobile %}
      <div class="col d-flex justify-content-between">
+        {% if request.user.isAllowToEditAndCreateActions %}
         <a href="{% url 'import_new_preorder_from_excel' %}" class="btn btn-sm btn-outline-secondary text-wrap" data-bs-toggle="tooltip" data-bs-placement="top" title="Створити нове передзамовлення з таблиці Excel">
             <img src="{% static 'images/import_from_excel.png' %}" alt="Import" style="height: 24px;">
           
         </a>
+        {% endif %}
          {% if isArchiveChoosed %}
              <button type="submit" class="btn btn-outline-primary">
                  Сховати архів

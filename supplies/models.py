@@ -30,6 +30,9 @@ class CustomUser(AbstractUser):
     mobNumber = models.CharField(max_length=100, null=True)
     np_sender_ref = models.CharField(max_length=100, null=True)
     np_last_choosed_delivery_place_id = models.SmallIntegerField(blank=True, null=True)
+    
+    def isAllowToEditAndCreateActions(self):
+        return self.is_admin() or self.is_engineer() or self.is_staff or self.is_superuser
 
     def get_user_place_id(self):
         try:

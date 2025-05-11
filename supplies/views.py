@@ -2192,7 +2192,7 @@ def preorders(request):
                 output_field=IntegerField(),
                 )
             ).order_by('-isPinned', 'isComplete', 'state_priority', '-id')
-            completed_orders = orders.filter(state_of_delivery='Complete')
+            completed_orders = orders.filter(Q(state_of_delivery='Complete') | Q(state_of_delivery='Complete_Handle'))
             if completed_orders.count() > 0:
                 for ord in completed_orders:
                     ord.isClosed = True
