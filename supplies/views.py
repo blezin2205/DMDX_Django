@@ -38,6 +38,7 @@ from django.db import transaction
 from .analytics import PreorderAnalytics
 from django.utils import timezone
 from googletrans import Translator
+import pandas as pd
 
 
 # @login_required(login_url='login')
@@ -3843,14 +3844,14 @@ def import_general_supplies_from_excel(request):
                 excel_file = request.FILES['excel_file']
                 # Get column mappings from form
                 name_col = int(request.POST.get('name_column', 0))
-                ref_col = request.POST.get('ref_column')
-                smn_code_col = request.POST.get('smn_code_column')
+                ref_col = request.POST.get('ref_column') or None
+                smn_code_col = request.POST.get('smn_code_column') or None
                 package_tests_col = request.POST.get('package_tests_column')
                 category_id = request.POST.get('category')
                 
                 # Read excel file
                 import pandas as pd
-                df = pd.read_excel(excel_file)
+                df = pd.read_excel(excel_file, header=None)  # Add header=None to read first row as data
                 
                 success_count = 0
                 update_count = 0
@@ -3939,8 +3940,8 @@ def import_new_preorder_from_excel(request):
         if 'excel_file' in request.FILES:
             try:
                 excel_file = request.FILES['excel_file']
-                ref_col = request.POST.get('ref_column')
-                smn_code_col = request.POST.get('smn_code_column')
+                ref_col = request.POST.get('ref_column') or None
+                smn_code_col = request.POST.get('smn_code_column') or None
                 count_col = request.POST.get('count_column')
                 print("ref_col: ", ref_col)
                 print("smn_code_col: ", smn_code_col)
@@ -3956,7 +3957,7 @@ def import_new_preorder_from_excel(request):
                     print("count_col: ", count_col)
                 # Read excel file
                 import pandas as pd
-                df = pd.read_excel(excel_file)
+                df = pd.read_excel(excel_file, header=None) 
                 
                 success_count = 0
                 update_count = 0
@@ -3975,7 +3976,7 @@ def import_new_preorder_from_excel(request):
                     if ref_col is not None:
                         ref = str(row[ref_col]).strip()
                     if smn_code_col is not None:
-                        smn_code = str(row[smn_code_col]).strip()
+                        smn_code = str(row[smn_code_col]).strip().split('.')[0] if pd.notna(row[smn_code_col]) else None
                         
                     try:
                         general_supply = None
@@ -4013,7 +4014,7 @@ def import_new_preorder_from_excel(request):
                             error_count += 1
                             error_messages.append(f"Row {index + 1}: Could not find GeneralSupply with provided ref, SMN_code, or name")
                             failed_rows.append({
-                                    'row': index + 2,  # Excel rows start at 1, and we have header
+                                    'row': index + 1,  # Excel rows start at 1, and we have header
                                     'ref': ref,
                                     'smn_code': smn_code,
                                     'reason': 'Товар не знайдено'
@@ -4021,14 +4022,38 @@ def import_new_preorder_from_excel(request):
                             continue
                         else:
                             count_in_order_row = row[count_col]
-                            if count_in_order_row:
-                                count_in_order_row = int(str(count_in_order_row).strip())
-                            else:
-                                count_in_order_row = 1
-                            if sups_dict.get(general_supply):
-                                sups_dict[general_supply] += count_in_order_row
-                            else:
-                                sups_dict[general_supply] = count_in_order_row
+                            try:
+                                # First try to clean the string and extract only digits
+                                if isinstance(count_in_order_row, str):
+                                    # Remove any non-digit characters except decimal point
+                                    cleaned_str = ''.join(c for c in count_in_order_row if c.isdigit() or c == '.')
+                                    if cleaned_str:
+                                        count_in_order_row = int(float(cleaned_str))
+                                    else:
+                                        raise ValueError("No valid number found")
+                                elif isinstance(count_in_order_row, (int, float)):
+                                    count_in_order_row = int(float(count_in_order_row))
+                                else:
+                                    raise ValueError("Invalid data type")
+                                
+                                if count_in_order_row <= 0:
+                                    raise ValueError("Count must be positive")
+                                    
+                                if sups_dict.get(general_supply):
+                                    sups_dict[general_supply] += count_in_order_row
+                                else:
+                                    sups_dict[general_supply] = count_in_order_row
+                                    
+                            except (ValueError, TypeError) as e:
+                                error_count += 1
+                                error_messages.append(f"Row {index + 1}: Неможливо визначити кількість")
+                                failed_rows.append({
+                                    'row': index + 1,
+                                    'ref': ref,
+                                    'smn_code': smn_code,
+                                    'reason': f'Неможливо визначити кількість! Error: {str(e)}'
+                                })
+                            
 
                     except Exception as e:
                         print("--4--")
@@ -4036,10 +4061,10 @@ def import_new_preorder_from_excel(request):
                         error_count += 1
                         error_messages.append(f"Row {index + 1}: {str(e)}")
                         failed_rows.append({
-                                    'row': index + 2,  # Excel rows start at 1, and we have header
+                                    'row': index + 1,  # Excel rows start at 1, and we have header
                                     'ref': ref,
                                     'smn_code': smn_code,
-                                    'reason': 'Помилка при імпорті'
+                                    'reason': 'Помилка при імпорті. Error: ' + str(e)
                                 })
                         continue
                 if len(sups_dict) > 0:
@@ -4075,7 +4100,17 @@ def import_new_preorder_from_excel(request):
                 return redirect('import_new_preorder_from_excel')
                 
             except Exception as e:
-                messages.error(request, f'Помилка при імпорті: {str(e)}')
+                error_message = f'Помилка при імпорті: {str(e)}'
+                if isinstance(e, (ValueError, TypeError)):
+                    error_message = f'Помилка при обробці даних: {str(e)}'
+                elif isinstance(e, FileNotFoundError):
+                    error_message = 'Файл не знайдено'
+                elif isinstance(e, pd.errors.EmptyDataError):
+                    error_message = 'Excel файл порожній'
+                elif isinstance(e, pd.errors.ParserError):
+                    error_message = 'Помилка при читанні Excel файлу. Перевірте формат файлу'
+                print(f"Debug - Exception type: {type(e)}, Message: {str(e)}")  # Add debug logging
+                messages.error(request, error_message)
                 return redirect('import_new_preorder_from_excel')
     
     
