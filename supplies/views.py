@@ -1146,7 +1146,11 @@ def delete_from_preorders_detail_general_item(request, el_id):
 def get_agreement_for_place_for_city_in_cart(request):
     place_id = request.GET.get('place_id')
     place = Place.objects.get(pk=place_id)
-    preorders = place.preorder_set.filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer')).order_by('-id')
+    user_settings = request.user.get_app_settings()
+    if user_settings.enable_preorder_editing_awaiting_state:
+        preorders = place.preorder_set.filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer') | Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial')).order_by('-id')
+    else:
+        preorders = place.preorder_set.filter(Q(state_of_delivery='awaiting_from_customer') | Q(state_of_delivery='accepted_by_customer')).order_by('-id')
 
     return render(request, 'partials/cart/choose_agreement_forplace_incart.html', {'preorders': preorders})
 

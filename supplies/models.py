@@ -67,6 +67,9 @@ class CustomUser(AbstractUser):
     def get_app_settings(self):
         app_settings, created = AppSettings.objects.get_or_create(userCreated=self)
         return app_settings
+    
+    def is_allow_to_edit_preorder(self):
+        return self.get_app_settings().enable_preorder_editing_awaiting_state and self.isAllowToEditAndCreateActions()
 
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
@@ -78,6 +81,7 @@ class AppSettings(models.Model):
     send_teams_msg_preorders = models.BooleanField(default=True)
     enable_show_other_booked_cart = models.BooleanField(default=False)
     disable_order_confirmation_send_action = models.BooleanField(default=False)
+    enable_preorder_editing_awaiting_state = models.BooleanField(default=False)
 
     def __str__(self):
         return self.userCreated
@@ -417,7 +421,7 @@ class PreOrder(models.Model):
         ('Complete_Handle', 'Повністю поставлено(Закрито вручну)'),
     )
     state_of_delivery = models.CharField(max_length=50, choices=STATE_CHOICES, default='awaiting_from_customer')
-
+    
     def checkIfCartSupsExistInSelf(self):
         """
         Check if any supplies from the cart exist in this preorder.

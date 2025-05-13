@@ -21,7 +21,7 @@
     <div class="d-flex align-items-center gap-2">
       <input class="form-check-input" type="radio" name="selected_non_completed_preorder" id="preorder{{ preorder.id }}" value="{{ preorder.id }}">
       <button class="btn btn-link preorder-detail-btn" type="button" data-preorder-id="{{ preorder.id }}">
-         {% if not preorder.isPreorder %}Договір{% endif %}  №{{ preorder.id }}{% if preorder.comment %} | {{ preorder.comment }} {% endif %}
+         {% if not preorder.isPreorder %}Договір{% endif %}  №{{ preorder.id }}{% if preorder.comment %} | {{ preorder.comment }}{% endif %} ({{ preorder.get_state_of_delivery_display }})
       </button>
     </div>
     {% endfor %}
