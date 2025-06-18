@@ -790,8 +790,9 @@ def update_count_in_preorder_cart(request, itemId):
         supsInPreorderInCart = SupplyInPreorderInCart.objects.get(id=itemId)
         print(f'NAME:  {supsInPreorderInCart.general_supply.name} = {count}')
 
-        supsInPreorderInCart.count_in_order = count
-        supsInPreorderInCart.save(update_fields=['count_in_order'])
+        if count != '':  # Only save if count is not empty
+            supsInPreorderInCart.count_in_order = count
+            supsInPreorderInCart.save(update_fields=['count_in_order'])
         response = updatePreCartItemCount(request)
         trigger_client_event(response, 'subscribe_precart', {})
         return response

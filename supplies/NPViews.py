@@ -590,7 +590,7 @@ def complete_all_orders_with_np_status_code():
     
     try:
         # Get orders that need processing
-        orders = Order.objects.filter(statusnpparselfromdoucmentid__status_code__gt="3", isComplete=False).distinct()
+        orders = Order.objects.filter(statusnpparselfromdoucmentid__isnull=False, isComplete=False).distinct()
         logger.info(f"Found {orders.count()} orders with status code greater than 3 to process")
         
         # Create a list to store order details for the final log
