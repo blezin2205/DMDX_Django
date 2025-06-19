@@ -624,7 +624,10 @@ def complete_all_orders_with_np_status_code():
                 })
                 if status_parcel and status_code != "No status" and int(status_code) > 3:
                     update_order_status_core(order.id, user_sent)
-                logger.info(f"Successfully updated status for order {order.id}")
+                    logger.info(f"Successfully updated status for order {order.id}")
+                else:
+                    logger.info(f"No status code for order {order.id} or status code is 3 or less")
+                
                 
                 # Add a small delay between orders to prevent overwhelming the database
                 time.sleep(0.5)

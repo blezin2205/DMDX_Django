@@ -144,7 +144,7 @@
                </thead>
                <tbody>
                   {% for el in supplies %}
-                  <tr>
+                  <tr class="order-row{% if forloop.counter > 10 %} d-none extra-order-row{% endif %}">
                      <th scope="row" style="text-align: left" class="w-50">
                         <a href="{% url 'orderDetail' order_id=el.supply_for_order.id sup_id=el.id %}?next={{ request.get_full_path|urlencode }}" 
                            {% if not el.supply_for_order.isComplete %} class="link-warning" {% endif %}>
@@ -168,6 +168,11 @@
                   {% endfor %}
                </tbody>
             </table>
+            {% if supplies|length > 10 %}
+            <div class="d-flex justify-content-center my-2">
+               <button id="toggle-orders-btn" class="btn btn-outline-primary btn-sm" type="button" onclick="toggleOrdersRows()">Показати всі</button>
+            </div>
+            {% endif %}
          </div>
       </div>
    </div>
@@ -195,7 +200,7 @@
                </thead>
                <tbody>
                   {% for el in in_booked_sup %}
-                  <tr>
+                  <tr class="booked-row{% if forloop.counter > 10 %} d-none extra-booked-row{% endif %}">
                      <th scope="row" style="text-align: left" class="w-50">
                         <span>{{ el.supply_for_place.name }}, {{ el.supply_for_place.city_ref.name }}</span>
                      </th>
@@ -215,6 +220,11 @@
                   {% endfor %}
                </tbody>
             </table>
+            {% if in_booked_sup|length > 10 %}
+            <div class="d-flex justify-content-center my-2">
+               <button id="toggle-booked-btn" class="btn btn-outline-primary btn-sm" type="button" onclick="toggleBookedRows()">Показати всі</button>
+            </div>
+            {% endif %}
          </div>
       </div>
    </div>
@@ -242,7 +252,7 @@
                </thead>
                <tbody>
                   {% for el in in_preorders %}
-                  <tr>
+                  <tr class="preorder-row{% if forloop.counter > 10 %} d-none extra-preorder-row{% endif %}">
                      <th scope="row" style="text-align: left" class="w-50">
                         <a href="{% url 'preorderDetail' el.supply_for_order.id %}?next={{ request.get_full_path }}">
                            № {{el.supply_for_order.id}}
@@ -274,6 +284,11 @@
                   {% endfor %}
                </tbody>
             </table>
+            {% if in_preorders|length > 10 %}
+            <div class="d-flex justify-content-center my-2">
+               <button id="toggle-preorders-btn" class="btn btn-outline-primary btn-sm" type="button" onclick="togglePreorderRows()">Показати всі</button>
+            </div>
+            {% endif %}
          </div>
       </div>
    </div>
@@ -300,7 +315,7 @@
                </thead>
                <tbody>
                   {% for el in in_deliveries %}
-                  <tr>
+                  <tr class="delivery-row{% if forloop.counter > 10 %} d-none extra-delivery-row{% endif %}">
                      <th scope="row" style="text-align: left">
                         <a href="{% url 'delivery_detail' el.delivery_order.id %}?next={{ request.get_full_path }}">
                            № {{el.delivery_order.id}} від {{ el.delivery_order.date_created|date:"d.m.Y" }}
@@ -317,6 +332,11 @@
                   {% endfor %}
                </tbody>
             </table>
+            {% if in_deliveries|length > 10 %}
+            <div class="d-flex justify-content-center my-2">
+               <button id="toggle-deliveries-btn" class="btn btn-outline-primary btn-sm" type="button" onclick="toggleDeliveryRows()">Показати всі</button>
+            </div>
+            {% endif %}
          </div>
       </div>
    </div>
@@ -330,3 +350,34 @@
       </div>
    {% endif %}
 </div>
+
+<script>
+function toggleOrdersRows() {
+   const rows = document.querySelectorAll('.extra-order-row');
+   const btn = document.getElementById('toggle-orders-btn');
+   const isHidden = rows[0] && rows[0].classList.contains('d-none');
+   rows.forEach(row => row.classList.toggle('d-none'));
+   btn.textContent = isHidden ? 'Сховати' : 'Показати всі';
+}
+function toggleBookedRows() {
+   const rows = document.querySelectorAll('.extra-booked-row');
+   const btn = document.getElementById('toggle-booked-btn');
+   const isHidden = rows[0] && rows[0].classList.contains('d-none');
+   rows.forEach(row => row.classList.toggle('d-none'));
+   btn.textContent = isHidden ? 'Сховати' : 'Показати всі';
+}
+function togglePreorderRows() {
+   const rows = document.querySelectorAll('.extra-preorder-row');
+   const btn = document.getElementById('toggle-preorders-btn');
+   const isHidden = rows[0] && rows[0].classList.contains('d-none');
+   rows.forEach(row => row.classList.toggle('d-none'));
+   btn.textContent = isHidden ? 'Сховати' : 'Показати всі';
+}
+function toggleDeliveryRows() {
+   const rows = document.querySelectorAll('.extra-delivery-row');
+   const btn = document.getElementById('toggle-deliveries-btn');
+   const isHidden = rows[0] && rows[0].classList.contains('d-none');
+   rows.forEach(row => row.classList.toggle('d-none'));
+   btn.textContent = isHidden ? 'Сховати' : 'Показати всі';
+}
+</script>
