@@ -4,7 +4,7 @@ from django.conf import settings
 
 from rest_framework import authentication, exceptions
 
-from .models import User
+from .models import CustomUser
 
 
 class JWTAuthentication(authentication.BaseAuthentication):
@@ -76,14 +76,17 @@ class JWTAuthentication(authentication.BaseAuthentication):
         successful, return the user and token. If not, throw an error.
         """
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY)
-        except:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            msg = 'Token has expired.'
+            raise exceptions.AuthenticationFailed(msg)
+        except jwt.InvalidTokenError:
             msg = 'Invalid authentication. Could not decode token.'
             raise exceptions.AuthenticationFailed(msg)
 
         try:
-            user = User.objects.get(pk=payload['id'])
-        except User.DoesNotExist:
+            user = CustomUser.objects.get(pk=payload['id'])
+        except CustomUser.DoesNotExist:
             msg = 'No user matching this token was found.'
             raise exceptions.AuthenticationFailed(msg)
 

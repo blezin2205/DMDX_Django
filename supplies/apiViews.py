@@ -1,7 +1,7 @@
 from .serializers import *
 
 from rest_framework import renderers, status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Q
@@ -13,18 +13,34 @@ from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, login
 from django.utils import timezone
+import jwt
+from datetime import datetime, timedelta
+from django.conf import settings
+from rest_framework.pagination import PageNumberPagination
 
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 
 class GeneralSuppliesApiView(APIView):
+    permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
 
     def get(self, request):
         supplies = GeneralSupply.objects.all()
-        suppliesSerializer = GeneralSupplySerializer(instance=supplies, many=True)
-        return Response(suppliesSerializer.data)
+        paginator = self.pagination_class()
+        paginated_supplies = paginator.paginate_queryset(supplies, request)
+        if paginated_supplies is None:
+            return Response({'error': 'Invalid page'}, status=status.HTTP_404_NOT_FOUND)
+        suppliesSerializer = GeneralSupplySerializer(instance=paginated_supplies, many=True)
+        return paginator.get_paginated_response(suppliesSerializer.data)
 
 
 class SuppliesApiView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         supplies = Supply.objects.all()
@@ -40,6 +56,7 @@ class SuppliesApiView(APIView):
 
 
 class SuppliesFromScanSaveApiView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         searchtext = str(request.data['searchText'])
@@ -92,6 +109,7 @@ class SuppliesFromScanSaveApiView(APIView):
 
 
 class SupplyDetailView(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get_object(self, pk):
         try:
@@ -109,6 +127,8 @@ class SupplyDetailView(APIView):
 
 
 class SuppliesInOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, order_id):
         order = Order.objects.get(id=order_id)
         suppInOrder = order.supplies
@@ -117,6 +137,8 @@ class SuppliesInOrderView(APIView):
 
 
 class OrdersApiView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request):
         orders = Order.objects.all()
         ordersSerializer = OrderSerializer(instance=orders, many=True)
@@ -124,6 +146,8 @@ class OrdersApiView(APIView):
 
 
 class PlacesApiView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request):
         places = Place.objects.all()
         placesSerializer = PlaceSerializer(instance=places, many=True)
@@ -152,17 +176,38 @@ class RegistrationAPIView(APIView):
         """
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user = serializer.save()
+        
+        # Create JWT token for the new user
+        jwt_token = create_jwt_token(user)
 
         return Response(
             {
                 'token': serializer.data.get('token', None),
+                'jwt_token': jwt_token,
+                'user': UserSerializer(user).data,
             },
             status=status.HTTP_201_CREATED,
         )
 
 
+def create_jwt_token(user):
+    """
+    Create JWT token for user
+    """
+    payload = {
+        'id': user.id,
+        'username': user.username,
+        'exp': datetime.utcnow() + timedelta(days=7),  # Token expires in 7 days
+        'iat': datetime.utcnow()
+    }
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    return token
+
+
 class LoginAPIView(APIView):
+    permission_classes = [AllowAny]
+    
     def post(self, request, *args, **kwargs):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
@@ -172,13 +217,17 @@ class LoginAPIView(APIView):
 
             if user:
                 login(request, user)
+                # Create both Token and JWT token
                 token, created = Token.objects.get_or_create(user=user)
+                jwt_token = create_jwt_token(user)
+                
                 # Serialize the User object
                 user_serializer = UserSerializer(user)
 
                 # Include the serialized User data in the response
                 response_data = {
                     'token': token.key,
+                    'jwt_token': jwt_token,
                     'user': user_serializer.data,
                 }
 
@@ -187,7 +236,21 @@ class LoginAPIView(APIView):
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+class LogoutAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            # Delete the token
+            request.user.auth_token.delete()
+            return Response({'message': 'Successfully logged out'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class SupplyHoldInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def get(self, request, supply_id):
         try:
             supply = Supply.objects.get(id=supply_id)
@@ -243,3 +306,26 @@ class SupplyHoldInfoView(APIView):
                 {'error': str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class RefreshTokenAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            # Create new JWT token
+            jwt_token = create_jwt_token(request.user)
+            return Response({
+                'jwt_token': jwt_token,
+                'message': 'Token refreshed successfully'
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        user_serializer = UserSerializer(request.user)
+        return Response(user_serializer.data)

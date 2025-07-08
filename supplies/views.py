@@ -3581,7 +3581,7 @@ def order_add_to_preorder(request, order_id):
                   {'title': f'Додати до передзамовлення', 'order': order, 'preorders': preorders})
 
 @login_required(login_url='login')
-def preorderDetail(request, order_id):
+def preorderDetail(request, order_id, sup_id=None):
     order = get_object_or_404(PreOrder.objects.select_related('place'), pk=order_id)
     supplies_in_order = order.supplyinpreorder_set.select_related(
         'generalSupply',
@@ -3601,7 +3601,8 @@ def preorderDetail(request, order_id):
 
     return render(request, 'supplies/orders/preorderDetail.html',
                   {'title': title, 'order': order, 'supplies': supplies_in_order,
-                   'cartCountData': cartCountData, 'isOrders': True, 'all_related_orders': all_related_orders})
+                   'cartCountData': cartCountData, 'isOrders': True, 'all_related_orders': all_related_orders,
+                   'highlighted_sup_id': sup_id})
     
 @login_required(login_url='login')
 def preorderDetailModal(request, order_id):
@@ -3663,13 +3664,9 @@ def preorderDetail_generateOrder(request, order_id):
                            old_comment = new_order.comment or ""
                            new_order.comment = old_comment + f"\n{comment}"
                         new_order.dateToSend = dateToSend
-                        
-                    if new_order.for_preorder:
-                        new_order.for_preorder = None
-                    new_order.related_preorders.add(order)
                 else:
                     # Create new order
-                    new_order = Order(userCreated=request.user, for_preorder=order, place=order.place,
+                    new_order = Order(userCreated=request.user, place=order.place,
                                     comment=comment_for_order)
                     if orderForm.is_valid():
                         comment = orderForm.cleaned_data['comment']
@@ -3677,7 +3674,8 @@ def preorderDetail_generateOrder(request, order_id):
                         new_order.comment = comment
                         new_order.dateToSend = dateToSend
                 new_order.save()
-
+                new_order.add_preorder_to_related(order)
+                
                 sups_for_preorder = []
                 if sup_in_preorder_checked_for_booked.count() > 0:
                     for sup_in_booked in sup_in_preorder_checked_for_booked:

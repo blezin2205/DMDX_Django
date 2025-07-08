@@ -336,8 +336,14 @@ IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED = os.environ.get('IS_ORDER_AUTO_CLOSE_
 
 REST_FRAMEWORK = {
    'DEFAULT_AUTHENTICATION_CLASSES': (
-   'rest_framework.authentication.TokenAuthentication',
-   )
+       'rest_framework.authentication.TokenAuthentication',
+       'supplies.backends.JWTAuthentication',
+   ),
+   'DEFAULT_PERMISSION_CLASSES': (
+       'rest_framework.permissions.IsAuthenticated',
+   ),
+   'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+   'PAGE_SIZE': 50,
 }
 
 # Mixpanel Configuration

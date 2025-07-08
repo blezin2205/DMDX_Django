@@ -537,7 +537,7 @@ class Order(models.Model):
         return self.dateToSend == timezone.now().date()
 
     def isForPreorderOrItemHasPreorder(self):
-        return (self.for_preorder is None) and self.supplyinorder_set.filter(supply_in_preorder__isnull=False)
+        return self.supplyinorder_set.filter(supply_in_preorder__isnull=False)
 
     def get_np_DocumetsIdList(self):
         set = self.npdeliverycreateddetailinfo_set.all()
@@ -554,6 +554,13 @@ class Order(models.Model):
     
     def isUncompletedPreorderForPlaceExist(self):
         return self.place.preorder_set.filter(Q(state_of_delivery='Awaiting') | Q(state_of_delivery='Partial') | Q(state_of_delivery='accepted_by_customer')).exists()
+    
+    def add_preorder_to_related(self, preorder):
+        if self.for_preorder:
+            self.related_preorders.add(self.for_preorder)
+            self.for_preorder = None
+            self.save(update_fields=['for_preorder'])
+        self.related_preorders.add(preorder)   
 
     def __str__(self):
         return f'Заказ № {self.id}, для {self.place.name}, от {self.dateSent}'

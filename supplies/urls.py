@@ -137,7 +137,8 @@ urlpatterns = [
     path('orders/<int:order_id>/<int:sup_id>', views.orderDetail, name='orderDetail'),
     # path('orders/<int:order_id>/<int:sup_id>', views.orderDetail_with_highlighted, name='orderDetail_with_highlighted'),
 
-    path('preorders/<int:order_id>', views.preorderDetail, name='preorderDetail'),
+    path('preorders/<int:order_id>/', views.preorderDetail, name='preorderDetail'),
+    path('preorders/<int:order_id>/<int:sup_id>/', views.preorderDetail, name='preorderDetail'),
     path('preorder-detail-modal/<int:order_id>', views.preorderDetailModal, name='preorderDetailModal'),
     path('preorders/<int:order_id>/generate-order', views.preorderDetail_generateOrder, name='preorderDetail-generate-order'),
 
@@ -165,6 +166,9 @@ urlpatterns = [
 
     # path('api/auth', views.RegistrationAPIView.as_view()),
     path('api/login', apiViews.LoginAPIView.as_view()),
+    path('api/logout', apiViews.LogoutAPIView.as_view()),
+    path('api/profile', apiViews.UserProfileAPIView.as_view()),
+    path('api/refresh-token', apiViews.RefreshTokenAPIView.as_view()),
 
     path('add_np_sender_place', views.add_np_sender_place, name='add_np_sender_place'),
     path('delete_my_np_sender_place', NPViews.delete_my_np_sender_place, name='delete_my_np_sender_place'),

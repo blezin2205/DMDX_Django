@@ -2,7 +2,7 @@
 {% load mathfilters %}
  <tr class="{% if order.isComplete %} {% if el.state_of_delivery == 'Complete' %} table-success {% elif el.state_of_delivery == 'Partial' %} table-warning {% else %} table-danger{% endif %}{% endif %}">
       <td scope="row">{{forloop.counter}}.</td>
-      <td style="text-align: left; font-weight: bolder">{% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</td>
+      <td style="text-align: left; font-weight: bolder; color: {% if el.id == highlighted_sup_id %} red {% endif %}">{% if el.generalSupply %} {{ el.generalSupply.name }} {% else %} {{ el.internalName }} {% endif %}</td>
      <td class="supplyRow">
                     {% if el.generalSupply.package_and_tests is not none %}
                         {{ el.generalSupply.package_and_tests }}
