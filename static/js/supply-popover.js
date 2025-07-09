@@ -173,7 +173,7 @@ function loadPopoverDataForSupplyInfoOnHold(supplyId, contentDiv) {
     const timeoutId = setTimeout(() => {
         console.log('API request timed out, showing mock data');
         showMockData(contentDiv, supplyId);
-    }, 3000); // 3 second timeout
+    }, 5000); // 3 second timeout
     
     fetch(apiUrl, {
         headers: {

@@ -336,6 +336,7 @@ IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED = os.environ.get('IS_ORDER_AUTO_CLOSE_
 
 REST_FRAMEWORK = {
    'DEFAULT_AUTHENTICATION_CLASSES': (
+       'rest_framework.authentication.SessionAuthentication',
        'rest_framework.authentication.TokenAuthentication',
        'supplies.backends.JWTAuthentication',
    ),
