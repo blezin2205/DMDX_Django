@@ -54,23 +54,44 @@
                                 {% if order.for_preorder %}
                                     {% if order.for_preorder.isPreorder %}
                                     <div class="badge bg-info p-2">
-                                            <i class="bi bi-clock-history"></i>
+                                            <i class="bi bi-clock-history"> </i>
                                             {{order.for_preorder.id}}
                                         </div>
                                     {% else %}
                                         <div class="badge bg-secondary bg-opacity-10 text-secondary p-2">
-                                            <i class="bi bi-clipboard2"></i> {{order.for_preorder.id}}
+                                            <i class="bi bi-clipboard2"> </i> {{order.for_preorder.id}}
                                             {% if order.for_preorder.comment %} | {{ order.for_preorder.comment }}{% endif %}
                                         </div>
                                     {% endif %}
                                 {% endif %}
                                 {% if order.related_preorders.count > 0 %}
+                                   {% if order.related_preorders.count == 1 %}
+                                   {% if order.related_preorders.first.isPreorder %}
                                     <div class="badge bg-info p-2">
-                                        <i class="bi bi-clock-history"></i>
-                                        {% for preorder in order.related_preorders.all %}
-                                            {{ preorder.id }}{% if not forloop.last %}, {% endif %}
-                                        {% endfor %}
-                                    </div>
+                                            <i class="bi bi-clock-history"> </i>
+                                            {{order.related_preorders.first.id}}
+                                        </div>
+                                    {% else %}
+                                        <div class="badge bg-secondary bg-opacity-10 text-secondary p-2">
+                                            <i class="bi bi-clipboard2"> </i> {{order.related_preorders.first.id}}
+                                            {% if order.related_preorders.first.comment %} | {{ order.related_preorders.first.comment }}{% endif %}
+                                        </div>
+                                    {% endif %}
+                                   {% else %}
+                                   <div class="badge bg-info p-2">
+                                    <i class="bi bi-clock-history"> </i>
+                                    {% for preorder in order.related_preorders.all %}
+                                        {% if preorder.isPreorder %}
+                                        {{ preorder.id }}{% if not forloop.last %}, {% endif %}
+                                        {% else %}
+                                        <span class="text-secondary">
+                                            {{ preorder.id }}{% if preorder.comment %} | {{ preorder.comment }}{% endif %}{% if not forloop.last %}, {% endif %}
+                                        </span>
+                                       
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                   {% endif %}
                                 {% endif %}
                                 <h6 class="text-muted">{{order.place.name}}, {{order.place.city_ref.name}}</h6>
                             </div>

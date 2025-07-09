@@ -1,6 +1,7 @@
 {% extends 'supplies/base/base.html' %}
 {% load myapp_extras %}
 {% load mathfilters %}
+{% load static %}
 {% block title %}
 {{ title }}
 {% endblock %}
@@ -63,12 +64,18 @@
                             {% endif %}
                             {% if order.related_preorders.count > 0 %}
                             {% for preorder in order.related_preorders.all %}
-                            <div class="badge bg-info d-flex align-items-center gap-2 p-2">
-                            <a href="{% url 'preorderDetail' preorder.id %}?next={{ request.get_full_path }}" class="text-white text-decoration-none">
-                                <i class="bi bi-clipboard"></i>
-                                <span>№{{preorder.id}}</span>
-                            </a>
-                        </div>
+                            {% if preorder.isPreorder %}
+                                        <a href="{% url 'preorderDetail' preorder.id %}?next={{ request.get_full_path }}" class="badge bg-info d-flex align-items-center gap-2 p-2">
+                                            <i class="bi bi-clipboard"></i>
+                                            {{preorder.id}}
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'preorderDetail' preorder.id %}?next={{ request.get_full_path }}" class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-2 text-decoration-none">
+                                            <i class="bi bi-file-text"></i>
+                                            {{preorder.id}}
+                                            {% if preorder.comment %}<span class="ms-1">| {{ preorder.comment }}</span>{% endif %}
+                                        </a>
+                                    {% endif %}
                         {% endfor %}
                             {% endif %}
                         </div>
@@ -185,9 +192,9 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="d-flex align-items-center gap-2 mb-2">
-                                        <span class="badge {% if document.status_code == '9' %}bg-success{% elif document.status_code == '2' %}bg-danger{% else %}bg-warning{% endif %} p-2">
-                                            <i class="bi bi-circle-fill me-1 {% if document.status_code == '9' %}text-success{% elif document.status_code == '2' %}text-danger{% else %}text-warning{% endif %}"></i>
-                                            {{ document.status_desc }}
+                                        <span class="badge {% if document.status_code == '9' %}bg-success{% elif document.status_code == '2' %}bg-danger{% else %}bg-warning{% endif %} py-1 px-2 d-inline-flex align-items-center gap-2">
+                                            <img src="{% static 'images/np_icon.png' %}" class="np-icon" alt="NP" style="height: 1.6em; width: auto;">
+                                            <span>{{ document.status_desc }}</span>
                                         </span>
                                     </div>
                                     <div class="vstack gap-1 small">
