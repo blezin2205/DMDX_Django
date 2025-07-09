@@ -29,8 +29,10 @@
      {% if request.user|has_group:"empl" or request.user.is_staff %}
           <td style="min-width: 100px">{{ el.date_created|date:"d.m.Y" }}</td>
      {% endif %}
-        {% if request.user|has_group:"empl" or request.user.is_staff and order.isForPreorderOrItemHasPreorder and el.supply_in_preorder %}
-            <td><a href="{% url 'preorderDetail' el.supply_in_preorder.supply_for_order.id el.supply_in_preorder.id %}?next={{ request.get_full_path }}">№ {{ el.supply_in_preorder.supply_for_order.id }} від {{ el.supply_in_preorder.supply_for_order.dateCreated|date:"d.m.Y" }}</a></td>
+        {% if request.user|has_group:"empl" or request.user.is_staff %}
+            {% if order.isForPreorderOrItemHasPreorder and el.supply_in_preorder %}
+                <td><a href="{% url 'preorderDetail' el.supply_in_preorder.supply_for_order.id el.supply_in_preorder.id %}?next={{ request.get_full_path }}">№ {{ el.supply_in_preorder.supply_for_order.id }} від {{ el.supply_in_preorder.supply_for_order.dateCreated|date:"d.m.Y" }}</a></td>
+            {% endif %}
         {% endif %}
      {% if not order.isComplete and request.user.is_staff %}
      <td>{% include 'order_detail_buttons/sup_delete_button.html' %}</td>
@@ -65,8 +67,10 @@
      {% if request.user|has_group:"empl" or request.user.is_staff %}
           <td style="min-width: 100px">{{ el.supply.dateCreated|date:"d.m.Y" }}</td>
      {% endif %}
-      {% if request.user|has_group:"empl" or request.user.is_staff and order.isForPreorderOrItemHasPreorder and el.supply_in_preorder %}
+      {% if request.user|has_group:"empl" or request.user.is_staff %}
+        {% if order.isForPreorderOrItemHasPreorder and el.supply_in_preorder %}
             <td style="min-width: 100px"><a href="{% url 'preorderDetail' el.supply_in_preorder.supply_for_order.id el.supply_in_preorder.id %}?next={{ request.get_full_path }}">№ {{ el.supply_in_preorder.supply_for_order.id }} від {{ el.supply_in_preorder.supply_for_order.dateCreated|date:"d.m.Y" }}</a></td>
+        {% endif %}
         {% endif %}
      {% if not order.isComplete and request.user.is_staff %}
      <td>{% include 'order_detail_buttons/sup_delete_button.html' %}</td>

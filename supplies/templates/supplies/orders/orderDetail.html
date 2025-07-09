@@ -265,8 +265,10 @@
                             {% if request.user|has_group:"empl" or request.user.is_staff %}
                                 <th scope="col">Оновлено**</th>
                             {% endif %}
-                            {% if request.user|has_group:"empl" or request.user.is_staff and order.isForPreorderOrItemHasPreorder %}
-                                <th scope="col">preorder</th>
+                            {% if request.user|has_group:"empl" or request.user.is_staff %}
+                                {% if order.isForPreorderOrItemHasPreorder %}
+                                    <th scope="col">preorder</th>
+                                {% endif %}
                             {% endif %}
                             {% if not order.isComplete and request.user.is_staff %}
                                 <th scope="col">Action</th>
