@@ -2361,6 +2361,8 @@ def update_order_status_core(order_id_or_obj, user):
                         else:
                             genSupInPreorder.state_of_delivery = 'Partial'
                         genSupInPreorder.save()
+                        if order.for_preorder is None and genSupInPreorder.supply_for_order is not None:
+                            genSupInPreorder.supply_for_order.update_order_state_of_delivery_status()
                 except SupplyInPreorder.DoesNotExist:
                     # If the preorder doesn't exist, just continue with the next item
                     continue
