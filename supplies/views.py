@@ -2043,8 +2043,11 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook, 
         supplies_in_order = supplies_in_order_all
     else:
         for sup in supplies_in_order_all:
-          if sup.count_in_order - sup.count_in_order_current - sup.get_booked_count() > 0:
-            supplies_in_order.append(sup)
+            count_in_order = sup.count_in_order if sup.count_in_order is not None else 0
+            count_in_order_current = sup.count_in_order_current if sup.count_in_order_current is not None else 0
+            booked_count = sup.get_booked_count() if sup.get_booked_count() is not None else 0
+            if count_in_order - count_in_order_current - booked_count > 0:
+                supplies_in_order.append(sup)
     row_num = 4
     init_row_num = row_num
 
@@ -2309,6 +2312,8 @@ def updateOrderPinnedStatus(request, order_id):
 
 def update_order_status_core(order_id_or_obj, user):
     # Check if the first parameter is an Order object or an ID
+    
+    preorder_from_supply = None
     if isinstance(order_id_or_obj, Order):
         order = order_id_or_obj
     else:
@@ -2362,7 +2367,9 @@ def update_order_status_core(order_id_or_obj, user):
                             genSupInPreorder.state_of_delivery = 'Partial'
                         genSupInPreorder.save()
                         if order.for_preorder is None and genSupInPreorder.supply_for_order is not None:
-                            genSupInPreorder.supply_for_order.update_order_state_of_delivery_status()
+                            if preorder_from_supply != genSupInPreorder.supply_for_order:
+                                preorder_from_supply = genSupInPreorder.supply_for_order
+                                preorder_from_supply.update_order_state_of_delivery_status()
                 except SupplyInPreorder.DoesNotExist:
                     # If the preorder doesn't exist, just continue with the next item
                     continue
