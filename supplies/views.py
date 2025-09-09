@@ -661,22 +661,19 @@ def updateCartItem(request):
 
     return JsonResponse({'isLastItemInCart': isLastItemInCart}, safe=False)
 
-
+@login_required(login_url='login')
 def registerPage(request):
-    if request.user.is_authenticated:
-        return redirect('/')
-    else:
-        form = CreateUserForm()
-        if request.method == 'POST':
-            form = CreateUserForm(request.POST)
-            if form.is_valid():
-                user = form.save(commit=False)
-                user.save()
-                user_group = Group.objects.get(name='client')
-                user.groups.add(user_group)
-                return redirect('login')
+    form = CreateUserForm()
+    if request.method == 'POST':
+        form = CreateUserForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.save()
+            # Apply pending relations (places, categories, and client group)
+            form.apply_pending_relations(user)
+            return redirect('/')
 
-        context = {'form': form}
+    context = {'title': 'Створити новий аккаунт для клієнта', 'form': form}
     return render(request, 'auth/register.html', context)
 
 

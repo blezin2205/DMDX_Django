@@ -7,6 +7,7 @@ from .models import *
 from django.forms import ModelForm, Form
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.models import Group
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit, Layout, MultiField, Div
 from django.forms import formset_factory
@@ -168,9 +169,72 @@ class WorkerForm(ModelForm):
 
 
 class CreateUserForm(UserCreationForm):
+    places = forms.ModelMultipleChoiceField(
+        queryset=Place.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(),
+        label="Організації (Place)",
+        help_text="Щоб обрати кілька — утримуйте Ctrl"
+    )
+    allowed_categories = forms.ModelMultipleChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(),
+        label="Дозволені категорії",
+        help_text=mark_safe("Щоб обрати кілька — утримуйте Ctrl<br>Обрані категорії буде додано до всіх вибраних організацій")
+    )
+
     class Meta:
         model = CustomUser
         fields = ['username', 'first_name', 'last_name', 'password1', 'password2' ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].label = "Логін"
+        self.fields['first_name'].label = "Ім'я"
+        self.fields['last_name'].label = "Прізвище"
+        self.fields['password1'].label = "Пароль"
+        self.fields['password2'].label = "Підтвердження пароля"
+
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+        # Ensure user has a primary key before assigning M2M
+        if commit:
+            user.save()
+            selected_places = self.cleaned_data.get('places')
+            selected_categories = self.cleaned_data.get('allowed_categories')
+            if selected_places:
+                for place in selected_places:
+                    place.user.add(user)
+                    if selected_categories:
+                        place.allowed_categories.add(*selected_categories)
+            try:
+                client_group = Group.objects.get(name='client')
+                user.groups.add(client_group)
+            except Group.DoesNotExist:
+                pass
+        else:
+            # If commit=False, defer M2M assignment to caller after saving user
+            self._pending_places = list(self.cleaned_data.get('places', []))
+            self._pending_categories = list(self.cleaned_data.get('allowed_categories', []))
+            self._pending_add_client_group = True
+        return user
+
+    def apply_pending_relations(self, user):
+        """Call this after saving user when form.save(commit=False) was used."""
+        selected_places = getattr(self, '_pending_places', [])
+        selected_categories = getattr(self, '_pending_categories', [])
+        if selected_places:
+            for place in selected_places:
+                place.user.add(user)
+                if selected_categories:
+                    place.allowed_categories.add(*selected_categories)
+        if getattr(self, '_pending_add_client_group', False):
+            try:
+                client_group = Group.objects.get(name='client')
+                user.groups.add(client_group)
+            except Group.DoesNotExist:
+                pass
 
 
 class LoginForm(AuthenticationForm):
