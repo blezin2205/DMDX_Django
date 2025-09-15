@@ -2309,32 +2309,24 @@ def updateOrderPinnedStatus(request, order_id):
 
 def update_order_status_core(order_id_or_obj, user):
     # Check if the first parameter is an Order object or an ID
-    print(f"[LOG] Starting update_order_status_core for order_id_or_obj: {order_id_or_obj}, user: {user}")
     
     preorder_from_supply = None
     if isinstance(order_id_or_obj, Order):
         order = order_id_or_obj
-        print(f"[LOG] Using provided Order object with ID: {order.id}")
     else:
         order = Order.objects.get(id=order_id_or_obj)
-        print(f"[LOG] Retrieved Order object with ID: {order.id}")
     
     if order.isComplete:
-        print(f"[LOG] Order {order.id} is already complete")
         raise ValueError('Це замовлення вже завершено і не може бути оновлено')
     
     try:
         with transaction.atomic():
             supps = order.supplyinorder_set.all()
-            print(f"[LOG] Processing {supps.count()} supplies in order")
-            
             for el in supps:
                 countInOrder = el.count_in_order
-                print(f"[LOG] Processing supply element: ID={el.id}, count_in_order={countInOrder}")
                 
                 if el.supply:
                     supp = el.supply
-                    print(f"[LOG] Processing supply: ID={supp.id}, countOnHold={supp.countOnHold}, count={supp.count}")
                     
                     # Fix None values
                     if supp.countOnHold is None:
@@ -2342,25 +2334,19 @@ def update_order_status_core(order_id_or_obj, user):
                     if supp.count is None:
                         supp.count = 0
                     
-                    print(f"[LOG] About to calculate: supp.countOnHold - countInOrder = {supp.countOnHold} - {countInOrder}")
                     new_count_on_hold = max(0, supp.countOnHold - countInOrder)
-                    print(f"[LOG] About to calculate: supp.count - countInOrder = {supp.count} - {countInOrder}")
                     new_count = max(0, supp.count - countInOrder)
-                    print(f"[LOG] New counts - on_hold: {new_count_on_hold}, count: {new_count}")
                     
                     supp.countOnHold = new_count_on_hold
                     supp.count = new_count
                     if new_count == 0:
-                        print(f"[LOG] Deleting supply ID={supp.id} (count=0)")
                         supp.delete()
                     else:
                         supp.save(update_fields=['countOnHold', 'count'])
-                        print(f"[LOG] Saved supply ID={supp.id}")
 
                 try:
                     if el.supply_in_booked_order:
                         supply_in_booked_order = el.supply_in_booked_order
-                        print(f"[LOG] Processing booked order supply: ID={supply_in_booked_order.id}, countOnHold={supply_in_booked_order.countOnHold}, count_in_order={supply_in_booked_order.count_in_order}")
                         
                         # Fix None values
                         if supply_in_booked_order.countOnHold is None:
@@ -2368,33 +2354,26 @@ def update_order_status_core(order_id_or_obj, user):
                         if supply_in_booked_order.count_in_order is None:
                             supply_in_booked_order.count_in_order = 0
                         
-                        print(f"[LOG] About to calculate: supply_in_booked_order.countOnHold - countInOrder = {supply_in_booked_order.countOnHold} - {countInOrder}")
                         new_count_on_hold = max(
                             0, supply_in_booked_order.countOnHold - countInOrder)
-                        print(f"[LOG] About to calculate: supply_in_booked_order.count_in_order - countInOrder = {supply_in_booked_order.count_in_order} - {countInOrder}")
                         new_count_in_order = max(
                             0, supply_in_booked_order.count_in_order - countInOrder)
-                        print(f"[LOG] New booked order counts - on_hold: {new_count_on_hold}, in_order: {new_count_in_order}")
                         
                         supply_in_booked_order.countOnHold = new_count_on_hold
                         supply_in_booked_order.count_in_order = new_count_in_order
 
                         if supply_in_booked_order.count_in_order == 0:
-                            print(f"[LOG] Deleting booked order supply ID={supply_in_booked_order.id}")
                             supply_in_booked_order.delete()
                         else:
                             supply_in_booked_order.save(
                                 update_fields=['countOnHold', 'count_in_order'])
-                            print(f"[LOG] Saved booked order supply ID={supply_in_booked_order.id}")
                 except SupplyInBookedOrder.DoesNotExist:
-                    print(f"[LOG] SupplyInBookedOrder.DoesNotExist for element ID={el.id}")
                     # If the booked order doesn't exist, just continue with the next item
                     continue
 
                 try:
                     if el.supply_in_preorder:
                         genSupInPreorder = el.supply_in_preorder
-                        print(f"[LOG] Processing preorder supply: ID={genSupInPreorder.id}, count_in_order={genSupInPreorder.count_in_order}, count_in_order_current={genSupInPreorder.count_in_order_current}")
                         
                         # Fix None values
                         if genSupInPreorder.count_in_order is None:
@@ -2403,53 +2382,38 @@ def update_order_status_core(order_id_or_obj, user):
                             genSupInPreorder.count_in_order_current = 0
                         
                         genSupInPreorder.count_in_order_current += el.count_in_order
-                        print(f"[LOG] Updated count_in_order_current to: {genSupInPreorder.count_in_order_current}")
                         
-                        print(f"[LOG] About to calculate: genSupInPreorder.count_in_order - genSupInPreorder.count_in_order_current = {genSupInPreorder.count_in_order} - {genSupInPreorder.count_in_order_current}")
                         if genSupInPreorder.count_in_order - genSupInPreorder.count_in_order_current <= 0:
                            genSupInPreorder.state_of_delivery = 'Complete'
-                           print(f"[LOG] Set state_of_delivery to Complete for ID={genSupInPreorder.id}")
                         else:
                             genSupInPreorder.state_of_delivery = 'Partial'
-                            print(f"[LOG] Set state_of_delivery to Partial for ID={genSupInPreorder.id}")
                         
                         genSupInPreorder.save()
-                        print(f"[LOG] Saved preorder supply ID={genSupInPreorder.id}")
                         
                         if order.for_preorder is None and genSupInPreorder.supply_for_order is not None:
                             if preorder_from_supply != genSupInPreorder.supply_for_order:
                                 preorder_from_supply = genSupInPreorder.supply_for_order
-                                print(f"[LOG] Updating order state for preorder_from_supply ID={preorder_from_supply.id}")
                                 preorder_from_supply.update_order_state_of_delivery_status()
                 except SupplyInPreorder.DoesNotExist:
-                    print(f"[LOG] SupplyInPreorder.DoesNotExist for element ID={el.id}")
                     # If the preorder doesn't exist, just continue with the next item
                     continue
 
             if order.for_preorder:
                 preorder = order.for_preorder
-                print(f"[LOG] Updating order state for for_preorder ID={preorder.id}")
                 preorder.update_order_state_of_delivery_status()
             if order.related_preorders:
                 print("upd order status for related preorders: ", order.related_preorders.all().count())
                 for preorder in order.related_preorders.all():
-                    print(f"[LOG] Updating order state for related preorder ID={preorder.id}")
                     preorder.update_order_state_of_delivery_status()
                     
             order.isComplete = True
             order.dateToSend = None
             order.dateSent = timezone.now().date()
             order.userSent = user
-            order.save()
-            print(f"[LOG] Order {order.id} marked as complete and saved")
+            order.save()        
 
-        print(f"[LOG] Successfully completed update_order_status_core for order {order.id}")
         return order
     except Exception as e:
-        print(f"[ERROR] Exception in update_order_status_core: {str(e)}")
-        print(f"[ERROR] Exception type: {type(e)}")
-        import traceback
-        print(f"[ERROR] Traceback: {traceback.format_exc()}")
         # Re-raise the exception to be handled by the calling function
         raise ValueError(f'Помилка при оновленні статусу замовлення: {str(e)}')
 
