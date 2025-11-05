@@ -3,8 +3,11 @@ from . import views, NPViews, view_upload, firebase_view
 from . import apiViews
 from .NPModels import *
 from .booked_flow import booked_view
+from .utils import csrf_token_view
 
 urlpatterns = [
+    # CSRF token endpoint
+    path('api/csrf-token/', csrf_token_view, name='csrf_token'),
 
     path('cart/', views.cartDetail, name='cart'),
     path('preorders-cart/', views.cartDetailForClient, name='precart'),
@@ -68,6 +71,7 @@ urlpatterns = [
     path('allDevices/', views.devicesList, name='allDevices'),
     path('allDevices/full_image_view_for_device_image/<int:device_id>', views.full_image_view_for_device_image, name='full_image_view_for_device_image'),
     path('allDevices/export-to-xls', views.devices_render_to_xls, name='devices_render_to_xls'),
+    path('allDevices/export-to-xls-en', views.devices_render_to_xls_en, name='devices_render_to_xls_en'),
 
 
 

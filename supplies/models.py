@@ -32,7 +32,7 @@ class CustomUser(AbstractUser):
     np_last_choosed_delivery_place_id = models.SmallIntegerField(blank=True, null=True)
     
     def isAllowToEditAndCreateActions(self):
-        return self.is_admin() or self.is_engineer() or self.is_staff or self.is_superuser
+        return self.is_admin() or self.is_engineer() or self.is_staff or self.is_superuser or self.isClient()
 
     def get_user_place_id(self):
         try:
@@ -43,6 +43,10 @@ class CustomUser(AbstractUser):
 
     def isClient(self):
         return self.groups.filter(name='client').exists()
+
+    # Backward-compatible alias (some code calls snake_case)
+    def is_client(self):
+        return self.isClient()
 
     def is_employee(self):
         return self.groups.filter(name='empl').exists()
@@ -58,7 +62,7 @@ class CustomUser(AbstractUser):
             return 'admin'
         elif self.is_employee():
             return 'empl'
-        elif self.is_client():
+        elif self.isClient():
             return 'client'
         elif self.is_engineer():
             return 'engineer'

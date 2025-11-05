@@ -104,6 +104,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'supplies.middleware.CSRFErrorMiddleware',  # Custom CSRF error handling
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -152,8 +153,26 @@ WKHTMLTOPDF_CMD_OPTIONS = {
 
 CSRF_TRUSTED_ORIGINS = [
     'https://dmdxstorage.herokuapp.com',
+    'https://www.dmdxstorage.herokuapp.com',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
     # You can add other trusted origins as needed
 ]
+
+# CSRF Settings
+CSRF_COOKIE_SECURE = not DEBUG  # True in production (HTTPS only)
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript access for AJAX requests
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_USE_SESSIONS = False  # Use cookies instead of sessions for CSRF tokens
+CSRF_COOKIE_AGE = 31449600  # 1 year
+
+# Session Settings
+SESSION_COOKIE_AGE = 1209600  # 2 weeks
+SESSION_COOKIE_SECURE = not DEBUG  # True in production (HTTPS only)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_SAVE_EVERY_REQUEST = True  # Save session on every request
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session after browser close
 
 ROOT_URLCONF = 'DMDX_Django.urls'
 

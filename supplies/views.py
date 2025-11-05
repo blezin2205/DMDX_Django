@@ -3426,37 +3426,79 @@ def preorder_render_to_xls_all_items(request, order_id):
 
 @login_required(login_url='login')
 def devices_render_to_xls(request):
+    """
+    Export devices to Excel in Ukrainian language (default)
+    """
+    return _devices_render_to_xls(request, language='uk')
+
+@login_required(login_url='login')
+def devices_render_to_xls_en(request):
+    """
+    Export devices to Excel in English language
+    """
+    return _devices_render_to_xls(request, language='en')
+
+def _devices_render_to_xls(request, language='uk'):
+    """
+    Helper function to export devices to Excel in the specified language
+    """
     devices = Device.objects.all()
 
+    # Define language-specific strings
+    if language == 'en':
+        filename = "Devices-List.xlsx"
+        worksheet_name = "Devices-List"
+        title = "Devices List DIAMEDIX Ukraine"
+        headers = ['№', 'Name', 'S/N', 'Customer City', 'Customer Name', 'Date Installed']
+    else:  # Ukrainian (default)
+        filename = "Список-Пристроїв.xlsx"
+        worksheet_name = "Список пристроїв"
+        title = "Список пристроїв DIAMEDIX Ukraine"
+        headers = ['№', 'Назва', 'Серійний номер', 'Місто клієнта', 'Назва клієнта', 'Дата встановлення']
+
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f"attachment; filename=Devices-List.xlsx"
+    response['Content-Disposition'] = f"attachment; filename={filename}"
 
     row_num = 3
 
     wb = Workbook(response, {'in_memory': True})
-    ws = wb.add_worksheet('Devices-List')
+    ws = wb.add_worksheet(worksheet_name)
     format = wb.add_format({'bold': True})
     format.set_font_size(24)
 
-    columns_table = [{'header': '№'},
-                     {'header': 'Name'},
-                     {'header': 'S/N'},
-                     {'header': 'Customer City'},
-                     {'header': 'Customer Name'},
-                     {'header': 'Date Installed'}
-                     ]
+    columns_table = [{'header': header} for header in headers]
 
-    ws.write(0, 0,
-             'Devices List DIAMEDIX Ukraine',
-             format)
+    ws.write(0, 0, title, format)
 
     format = wb.add_format({'text_wrap': True})
     format.set_font_size(22)
+    
+    # Translate customer city names if English version
+    translator = None
+    if language == 'en':
+        try:
+            translator = Translator()
+        except Exception:
+            translator = None
+    
     for row in devices:
         row_num += 1
         name = row.general_device.name
-        customer = row.in_place.name
+        
+        # Get customer name - use English version if available for English language
+        if language == 'en':
+            customer = row.in_place.get_place_name_en()
+        else:
+            customer = row.in_place.name
+        
+        # Translate city name for English version
         customer_city = row.in_place.city
+        if language == 'en' and translator and customer_city:
+            try:
+                customer_city = translator.translate(customer_city, src='uk', dest='en').text
+            except Exception:
+                pass  # Use original if translation fails
+        
         serial_number = ''
         if row.serial_number:
             serial_number = row.serial_number
@@ -3968,10 +4010,17 @@ def import_general_supplies_from_excel(request):
     
     
 @login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
 @transaction.atomic
 def import_new_preorder_from_excel(request):
+    isClient = request.user.isClient() and not request.user.is_staff
     cities = City.objects.all()
+    place = None
+    title = 'Імпорт нових передзамовлень'
+    if isClient:
+        place = Place.objects.get(user=request.user)
+        title = f'Імпорт нових передзамовлень для {place.get_place_name()}'
+    
+    
     if request.method == 'POST':
         if 'excel_file' in request.FILES:
             try:
@@ -4001,8 +4050,9 @@ def import_new_preorder_from_excel(request):
                 error_messages = []
                 failed_rows = []
                 message = []
-                place_id = request.POST.get('place_id')
-                place = Place.objects.get(id=place_id)
+                if not isClient:
+                    place_id = request.POST.get('place_id')
+                    place = Place.objects.get(id=place_id)
                 dateSent = timezone.now().date()
                 sups_dict = {}
                 
@@ -4148,12 +4198,12 @@ def import_new_preorder_from_excel(request):
                 print(f"Debug - Exception type: {type(e)}, Message: {str(e)}")  # Add debug logging
                 messages.error(request, error_message)
                 return redirect('import_new_preorder_from_excel')
-    
-    
+            
     return render(request, 'supplies/supplies/import_new_preorder.html', {
-        'title': 'Імпорт нових передзамовлень',
+        'title': title,
         'cartCountData': countCartItemsHelper(request),
-        'cities': cities
+        'cities': cities,
+        'isClient': isClient
     })
     
         

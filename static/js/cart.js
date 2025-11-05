@@ -138,11 +138,9 @@ function sendCartAction(productId, action, url) {
         },
         body: JSON.stringify({'productId': productId, 'action': action})
     })
-
-     .then((response) =>{
-            return response.json()
-        })
-
+    .then((response) => {
+        return response.json()
+    })
     .then((data) => {
         console.log('data:', data)
         console.log(data.isLastItemInCart)
@@ -152,7 +150,10 @@ function sendCartAction(productId, action, url) {
         } else {
             location.reload()
         }
-        })
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
 }
 
 function updateOrderStatus(orderId) {

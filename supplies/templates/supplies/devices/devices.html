@@ -24,7 +24,10 @@
 </div>
         </form>
 
-        <a href="{% url 'devices_render_to_xls'%}">Export to Excel</a>
+        <div class="mb-3">
+            <a href="{% url 'devices_render_to_xls'%}" class="btn btn-outline-success me-2">Експорт в Excel (Українською)</a>
+            <a href="{% url 'devices_render_to_xls_en'%}" class="btn btn-outline-success">Export to Excel (English)</a>
+        </div>
     {% endif %}
 
 <table class="table table-striped">
