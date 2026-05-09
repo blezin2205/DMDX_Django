@@ -28,6 +28,7 @@ from math import ceil
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from asgiref.sync import async_to_sync
 
 from .dmdx_telegram_bot import process_telegram_webhook
 
@@ -1280,7 +1281,7 @@ class UserProfileAPIView(APIView):
 
 
 @csrf_exempt
-async def telegram_webhook(request):
+def telegram_webhook(request):
     if request.method != 'POST':
         return JsonResponse({'detail': 'Method not allowed'}, status=405)
 
@@ -1296,7 +1297,7 @@ async def telegram_webhook(request):
         return JsonResponse({'detail': 'Invalid JSON'}, status=400)
 
     try:
-        await process_telegram_webhook(payload)
+        async_to_sync(process_telegram_webhook)(payload)
     except Exception:
         return JsonResponse({'detail': 'Webhook processing failed'}, status=500)
 
