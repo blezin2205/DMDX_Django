@@ -159,6 +159,15 @@ urlpatterns = [
 
 
     path('api/supplies', apiViews.SuppliesApiView.as_view()),
+    path('api/desktop/cart/add', apiViews.DesktopCartAddAPIView.as_view()),
+    path('api/desktop/precart/add-general', apiViews.DesktopPrecartAddGeneralAPIView.as_view()),
+    path('api/desktop/lots/add', apiViews.DesktopAddLotAPIView.as_view()),
+    path('api/desktop/lots/<int:supply_id>', apiViews.DesktopLotDetailAPIView.as_view()),
+    path('api/desktop/general-supplies/<int:general_supply_id>', apiViews.DesktopGeneralSupplyDetailAPIView.as_view()),
+    path('api/desktop/cart', apiViews.DesktopCartAPIView.as_view()),
+    path('api/desktop/cart/items/<int:item_id>', apiViews.DesktopCartItemDetailAPIView.as_view()),
+    path('api/desktop/cart/checkout', apiViews.DesktopCartCheckoutAPIView.as_view()),
+    path('api/desktop/supplies/<int:general_supply_id>/history', apiViews.DesktopSupplyHistoryAPIView.as_view()),
     path('api/supplies_add_from_scan', apiViews.SuppliesFromScanSaveApiView.as_view()),
     path('api/general-supplies', apiViews.GeneralSuppliesApiView.as_view()),
     path('api/<int:pk>/', apiViews.SupplyDetailView.as_view()),
@@ -166,6 +175,11 @@ urlpatterns = [
 
     path('api/orders', apiViews.OrdersApiView.as_view()),
     path('api/orders/<int:order_id>', apiViews.SuppliesInOrderView.as_view()),
+    path('api/desktop/deliveries/upload', apiViews.DesktopDeliveryUploadAPIView.as_view()),
+    path('api/desktop/orders/<int:order_id>/meta', apiViews.DesktopOrderMetaAPIView.as_view()),
+    path('api/desktop/orders/<int:order_id>/pin', apiViews.DesktopOrderPinnedAPIView.as_view()),
+    path('api/desktop/orders/<int:order_id>/complete', apiViews.DesktopOrderCompleteAPIView.as_view()),
+    path('api/desktop/orders/<int:order_id>/np-refresh', apiViews.DesktopOrderNPRefreshAPIView.as_view()),
     path('api/places', apiViews.PlacesApiView.as_view()),
 
     # path('api/auth', views.RegistrationAPIView.as_view()),

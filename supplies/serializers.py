@@ -39,10 +39,11 @@ class SupplySerializer(serializers.ModelSerializer):
     smn_code = serializers.CharField(source='general_supply.SMN_code', allow_null=True)
     category = serializers.CharField(source='category.name', allow_null=True)
     package_and_tests = serializers.CharField(source='general_supply.package_and_tests', allow_null=True)
+    general_supply_id = serializers.IntegerField(source='general_supply.id', allow_null=True)
 
     class Meta:
         model = Supply
-        fields = ['id', 'supplyLot', 'dateCreated', 'expiredDate', 'name', 'ref', 'category', 'count', 'countOnHold', 'smn_code', 'package_and_tests']
+        fields = ['id', 'general_supply_id', 'supplyLot', 'dateCreated', 'expiredDate', 'name', 'ref', 'category', 'count', 'countOnHold', 'smn_code', 'package_and_tests']
 
     # def to_representation(self, instance):
     #     self.fields['category'] = CategorySerializer(read_only=True)
