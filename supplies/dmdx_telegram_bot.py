@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from datetime import date
 
@@ -25,9 +24,6 @@ from .models import (
 
 
 logger = logging.getLogger(__name__)
-
-_application = None
-_application_lock = asyncio.Lock()
 
 
 @sync_to_async
@@ -259,30 +255,26 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
 
-async def get_telegram_application() -> Application:
-    global _application
-    if _application is not None:
-        return _application
-
-    async with _application_lock:
-        if _application is not None:
-            return _application
-
-        token = settings.TELEGRAM_BOT_TOKEN
-        app = Application.builder().token(token).updater(None).build()
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(CommandHandler("login", login))
-        app.add_handler(CommandHandler("logout", logout))
-        app.add_handler(CallbackQueryHandler(handle_login_callback))
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
-        app.add_error_handler(error_handler)
-
-        await app.initialize()
-        _application = app
-        return _application
+async def _build_application() -> Application:
+    token = settings.TELEGRAM_BOT_TOKEN
+    app = Application.builder().token(token).updater(None).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("login", login))
+    app.add_handler(CommandHandler("logout", logout))
+    app.add_handler(CallbackQueryHandler(handle_login_callback))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_message))
+    app.add_error_handler(error_handler)
+    await app.initialize()
+    return app
 
 
 async def process_telegram_webhook(payload: dict) -> None:
-    app = await get_telegram_application()
-    update = Update.de_json(payload, app.bot)
-    await app.process_update(update)
+    # Under WSGI each request can run on a short-lived event loop.
+    # Build and shutdown a fresh PTB Application per webhook to avoid
+    # reusing an HTTP client bound to a closed loop.
+    app = await _build_application()
+    try:
+        update = Update.de_json(payload, app.bot)
+        await app.process_update(update)
+    finally:
+        await app.shutdown()
