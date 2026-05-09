@@ -149,6 +149,7 @@ type SupplyHistoryPayload = {
 }
 
 type ProductGroup = {
+  id: number
   key: string
   name: string
   packageAndTests: string
@@ -193,7 +194,7 @@ type ColumnConfig = Record<
 type SuppliesPreferences = {
   supplySearch?: string
   categoryFilter?: string
-  stockFilter?: 'all' | 'positive' | 'on_hold'
+  stockFilter?: 'all' | 'with_children' | 'without_children'
   expiredOnly?: boolean
   groupSort?: GroupSort
   columns?: Partial<Record<ColumnKey, Partial<ColumnConfig[ColumnKey]>>>
@@ -208,20 +209,11 @@ type UserPreferences = {
   }
 }
 
-const parseDate = (value: string | null) => {
-  if (!value) return null
-  const [day, month, year] = value.split('-').map(Number)
-  if (!day || !month || !year) return null
-  return new Date(year, month - 1, day)
-}
-
-const compareDates = (left: string | null, right: string | null) => {
-  const leftDate = parseDate(left)
-  const rightDate = parseDate(right)
-  if (!leftDate && !rightDate) return 0
-  if (!leftDate) return 1
-  if (!rightDate) return -1
-  return leftDate.getTime() - rightDate.getTime()
+type ProfileIdentity = {
+  username?: string | null
+  full_name?: string | null
+  first_name?: string | null
+  last_name?: string | null
 }
 
 const STORAGE_KEYS = {
@@ -248,6 +240,7 @@ const DEFAULT_COLUMNS: ColumnConfig = {
 }
 
 const ORDERS_PAGE_SIZE = 12
+const SUPPLIES_PAGE_SIZE = 20
 
 const isCrmModule = (value: string | undefined): value is CrmModule => {
   return (
@@ -259,6 +252,34 @@ const isCrmModule = (value: string | undefined): value is CrmModule => {
     value === 'deals' ||
     value === 'tasks'
   )
+}
+
+const isSupplyStockFilter = (
+  value: string | undefined,
+): value is 'all' | 'with_children' | 'without_children' => {
+  return value === 'all' || value === 'with_children' || value === 'without_children'
+}
+
+const buildProfileLabel = (profile?: ProfileIdentity | null, fallback?: string) => {
+  const fullName = profile?.full_name?.trim()
+  if (fullName) {
+    return fullName
+  }
+
+  const firstName = profile?.first_name?.trim() ?? ''
+  const lastName = profile?.last_name?.trim() ?? ''
+  const fullNameByParts = `${firstName} ${lastName}`.trim()
+  if (fullNameByParts) {
+    return fullNameByParts
+  }
+
+  const fallbackLabel = fallback?.trim()
+  if (fallbackLabel) {
+    return fallbackLabel
+  }
+
+  const username = profile?.username?.trim()
+  return username || 'Користувач'
 }
 
 const readJsonFromStorage = <T,>(key: string, fallback: T): T => {
@@ -337,10 +358,6 @@ function App() {
     () => `${normalizedBase}/api/profile`,
     [normalizedBase],
   )
-  const suppliesUrl = useMemo(
-    () => `${normalizedBase}/api/supplies`,
-    [normalizedBase],
-  )
   const cartAddUrl = useMemo(
     () => `${normalizedBase}/api/desktop/cart/add`,
     [normalizedBase],
@@ -385,6 +402,10 @@ function App() {
     () => `${normalizedBase}/api/desktop/supplies`,
     [normalizedBase],
   )
+  const desktopSuppliesUrl = useMemo(
+    () => `${normalizedBase}/api/desktop/supplies`,
+    [normalizedBase],
+  )
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('Готово до входу')
@@ -403,17 +424,25 @@ function App() {
   const [jwtToken, setJwtToken] = useState(() => {
     return localStorage.getItem(STORAGE_KEYS.jwtToken) ?? ''
   })
-  const [supplies, setSupplies] = useState<SupplyRow[]>([])
+  const [supplyGroups, setSupplyGroups] = useState<ProductGroup[]>([])
   const [suppliesLoading, setSuppliesLoading] = useState(false)
   const [suppliesLoaded, setSuppliesLoaded] = useState(false)
+  const [suppliesTotalCount, setSuppliesTotalCount] = useState(0)
+  const [suppliesTotalPages, setSuppliesTotalPages] = useState(1)
+  const [suppliesPageSize, setSuppliesPageSize] = useState(SUPPLIES_PAGE_SIZE)
+  const [suppliesPage, setSuppliesPage] = useState(1)
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([])
   const [supplySearch, setSupplySearch] = useState(
     () => getStoredUserPreferences().supplies?.supplySearch ?? '',
   )
   const [categoryFilter, setCategoryFilter] = useState(
     () => getStoredUserPreferences().supplies?.categoryFilter ?? 'all',
   )
-  const [stockFilter, setStockFilter] = useState<'all' | 'positive' | 'on_hold'>(
-    () => getStoredUserPreferences().supplies?.stockFilter ?? 'all',
+  const [stockFilter, setStockFilter] = useState<'all' | 'with_children' | 'without_children'>(
+    () => {
+      const value = getStoredUserPreferences().supplies?.stockFilter
+      return isSupplyStockFilter(value) ? value : 'with_children'
+    },
   )
   const [expiredOnly, setExpiredOnly] = useState(
     () => getStoredUserPreferences().supplies?.expiredOnly ?? false,
@@ -421,7 +450,6 @@ function App() {
   const [groupSort, setGroupSort] = useState<GroupSort>(
     () => getStoredUserPreferences().supplies?.groupSort ?? 'name_asc',
   )
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
   const [columns, setColumns] = useState<ColumnConfig>(() =>
     mergeColumns(getStoredUserPreferences().supplies?.columns),
   )
@@ -463,6 +491,13 @@ function App() {
     y: number
     group: ProductGroup | null
   }>({ visible: false, x: 0, y: 0, group: null })
+  const [lotContextMenu, setLotContextMenu] = useState<{
+    visible: boolean
+    x: number
+    y: number
+    group: ProductGroup | null
+    lot: SupplyRow | null
+  }>({ visible: false, x: 0, y: 0, group: null, lot: null })
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyData, setHistoryData] = useState<SupplyHistoryPayload | null>(null)
@@ -497,6 +532,14 @@ function App() {
   const [deliveryCatalogLoading, setDeliveryCatalogLoading] = useState(false)
   const [deliveryScannedItems, setDeliveryScannedItems] = useState<LocalScannedItem[]>([])
   const [deliveryUploadLoading, setDeliveryUploadLoading] = useState(false)
+
+  const sidebarUserInitial = useMemo(() => {
+    const normalized = profileName.trim()
+    if (!normalized) {
+      return 'U'
+    }
+    return normalized[0].toUpperCase()
+  }, [profileName])
   const deliveryScanSequenceRef = useRef(0)
   const deliveryLiveBufferRef = useRef('')
   const deliveryAudioContextRef = useRef<AudioContext | null>(null)
@@ -545,110 +588,9 @@ function App() {
     return response
   }
 
-  const groupedSupplies = useMemo<ProductGroup[]>(() => {
-    const grouped = new Map<string, ProductGroup>()
-
-    for (const item of supplies) {
-      const name = item.name ?? '-'
-      const packageAndTests = item.package_and_tests ?? '-'
-      const category = item.category ?? '-'
-      const ref = item.ref ?? '-'
-      const smn = item.smn_code ?? '-'
-      const key = [name, packageAndTests, category, ref, smn].join('||')
-
-      const existing = grouped.get(key)
-      if (!existing) {
-        grouped.set(key, {
-          key,
-          name,
-          packageAndTests,
-          category,
-          ref,
-          smn,
-          lots: [item],
-          totalCount: item.count ?? 0,
-          totalOnHold: item.countOnHold ?? 0,
-          nearestExpiry: item.expiredDate ?? null,
-        })
-      } else {
-        existing.lots.push(item)
-        existing.totalCount += item.count ?? 0
-        existing.totalOnHold += item.countOnHold ?? 0
-        if (compareDates(item.expiredDate ?? null, existing.nearestExpiry) < 0) {
-          existing.nearestExpiry = item.expiredDate ?? null
-        }
-      }
-    }
-
-    for (const group of grouped.values()) {
-      group.lots.sort((a, b) => compareDates(a.expiredDate ?? null, b.expiredDate ?? null))
-    }
-
-    return Array.from(grouped.values())
-  }, [supplies])
-
-  const categoryOptions = useMemo(() => {
-    return Array.from(new Set(groupedSupplies.map((item) => item.category))).sort()
-  }, [groupedSupplies])
-
-  const filteredGroups = useMemo<ProductGroup[]>(() => {
-    const query = supplySearch.trim().toLowerCase()
-    const now = new Date()
-    now.setHours(0, 0, 0, 0)
-
-    let next = groupedSupplies.filter((group) => {
-      if (categoryFilter !== 'all' && group.category !== categoryFilter) {
-        return false
-      }
-      if (stockFilter === 'positive' && group.totalCount <= 0) {
-        return false
-      }
-      if (stockFilter === 'on_hold' && group.totalOnHold <= 0) {
-        return false
-      }
-      if (expiredOnly) {
-        const hasExpiredLot = group.lots.some((lot) => {
-          const lotDate = parseDate(lot.expiredDate)
-          return lotDate ? lotDate < now : false
-        })
-        if (!hasExpiredLot) {
-          return false
-        }
-      }
-      if (!query) {
-        return true
-      }
-
-      const productText = [
-        group.name,
-        group.packageAndTests,
-        group.category,
-        group.ref,
-        group.smn,
-      ]
-        .join(' ')
-        .toLowerCase()
-
-      const lotText = group.lots
-        .map((lot) => [lot.supplyLot, lot.expiredDate, lot.count].join(' '))
-        .join(' ')
-        .toLowerCase()
-
-      return `${productText} ${lotText}`.includes(query)
-    })
-
-    const compareBySort = (left: ProductGroup, right: ProductGroup) => {
-      if (groupSort === 'name_asc') return left.name.localeCompare(right.name, 'uk')
-      if (groupSort === 'name_desc') return right.name.localeCompare(left.name, 'uk')
-      if (groupSort === 'count_desc') return right.totalCount - left.totalCount
-      if (groupSort === 'count_asc') return left.totalCount - right.totalCount
-      if (groupSort === 'expiry_asc') return compareDates(left.nearestExpiry, right.nearestExpiry)
-      return compareDates(right.nearestExpiry, left.nearestExpiry)
-    }
-
-    next = [...next].sort(compareBySort)
-    return next
-  }, [groupedSupplies, supplySearch, categoryFilter, stockFilter, expiredOnly, groupSort])
+  const filteredGroups = supplyGroups
+  const totalSuppliesPagesSafe = Math.max(1, suppliesTotalPages)
+  const safeSuppliesPage = Math.min(Math.max(suppliesPage, 1), totalSuppliesPagesSafe)
 
   const totalOrdersPagesSafe = Math.max(1, ordersTotalPages)
   const safeOrdersPage = Math.min(Math.max(ordersPage, 1), totalOrdersPagesSafe)
@@ -760,8 +702,15 @@ function App() {
     data?: unknown,
     headers?: Record<string, string>,
   ): Promise<ApiResponse> => {
-    if (!import.meta.env.DEV && window.desktop?.isElectron && window.desktop.apiRequest) {
-      return window.desktop.apiRequest({ method, url, data, headers })
+    const isAbsoluteHttpUrl = /^https?:\/\//i.test(url)
+    const electronApiRequest = window.desktop?.apiRequest
+    const shouldUseElectronIpc =
+      window.desktop?.isElectron &&
+      electronApiRequest &&
+      (!import.meta.env.DEV || isAbsoluteHttpUrl)
+
+    if (shouldUseElectronIpc && electronApiRequest) {
+      return electronApiRequest({ method, url, data, headers })
     }
 
     try {
@@ -812,11 +761,10 @@ function App() {
         typeof response.data === 'object' && response.data !== null ? response.data : {}
       const token = (payload as { token?: string }).token
       const jwtToken = (payload as { jwt_token?: string }).jwt_token
-      const profile = (payload as { user?: { username?: string; full_name?: string } }).user
+      const profile = (payload as { user?: ProfileIdentity }).user
 
       if (token || jwtToken) {
-        const profileLabel =
-          profile?.full_name || profile?.username || username || 'Користувач'
+        const profileLabel = buildProfileLabel(profile, username)
         setProfileName(profileLabel)
         const userKey = (profile?.username || username).trim().toLowerCase()
         const userPreferences = getUserPreferencesMap()[userKey] ?? {}
@@ -895,23 +843,50 @@ function App() {
 
     const payload =
       typeof response.data === 'object' && response.data !== null ? response.data : {}
-    const label =
-      (payload as { full_name?: string; username?: string }).full_name ||
-      (payload as { full_name?: string; username?: string }).username ||
-      profileName
+    const label = buildProfileLabel(payload as ProfileIdentity, profileName)
     setProfileName(label)
     localStorage.setItem(STORAGE_KEYS.profileName, label)
     setMessage('Профіль оновлено.')
   }
 
-  const loadSupplies = async () => {
+  const loadSupplies = async (params?: {
+    page?: number
+    search?: string
+    category?: string
+    stock?: 'all' | 'with_children' | 'without_children'
+    expiredOnly?: boolean
+    sort?: GroupSort
+  }) => {
     if (!getAuthHeaderCandidates().length) {
       setMessage('Немає токена для завантаження товарів.')
       return
     }
 
+    const targetPage = params?.page ?? suppliesPage
+    const targetSearch = (params?.search ?? supplySearch).trim()
+    const targetCategory = params?.category ?? categoryFilter
+    const targetStock = params?.stock ?? stockFilter
+    const targetExpiredOnly = params?.expiredOnly ?? expiredOnly
+    const targetSort = params?.sort ?? groupSort
+    const query = new URLSearchParams()
+    query.set('page', String(targetPage))
+    query.set('page_size', String(SUPPLIES_PAGE_SIZE))
+    query.set('sort', targetSort)
+    if (targetSearch) {
+      query.set('q', targetSearch)
+    }
+    if (targetCategory !== 'all') {
+      query.set('category', targetCategory)
+    }
+    if (targetStock !== 'all') {
+      query.set('availability', targetStock)
+    }
+    if (targetExpiredOnly) {
+      query.set('expired_only', '1')
+    }
+
     setSuppliesLoading(true)
-    const response = await requestWithAuth('GET', suppliesUrl)
+    const response = await requestWithAuth('GET', `${desktopSuppliesUrl}?${query.toString()}`)
     setSuppliesLoading(false)
 
     if (!response.ok) {
@@ -923,14 +898,33 @@ function App() {
       return
     }
 
-    if (!Array.isArray(response.data)) {
+    const payload = (response.data ?? {}) as {
+      count?: number
+      page?: number
+      page_size?: number
+      total_pages?: number
+      results?: ProductGroup[]
+      category_options?: string[]
+    }
+
+    if (!Array.isArray(payload.results)) {
       setMessage('Отримано неочікуваний формат списку товарів.')
       return
     }
 
-    setSupplies(response.data as SupplyRow[])
+    const results = payload.results
+    setSupplyGroups(results)
+    setSuppliesTotalCount(payload.count ?? results.length)
+    setSuppliesTotalPages(Math.max(1, payload.total_pages ?? 1))
+    setSuppliesPageSize(payload.page_size ?? SUPPLIES_PAGE_SIZE)
+    setSuppliesPage(payload.page ?? targetPage)
+    setCategoryOptions(
+      Array.isArray(payload.category_options)
+        ? payload.category_options.filter((item): item is string => Boolean(item))
+        : [],
+    )
     setSuppliesLoaded(true)
-    setMessage(`Завантажено товарів: ${(response.data as SupplyRow[]).length}`)
+    setMessage(`Завантажено груп товарів: ${results.length}`)
   }
 
   const loadPlaces = async () => {
@@ -1429,7 +1423,7 @@ function App() {
   }
 
   const openEditGeneralModal = (group: ProductGroup) => {
-    const generalSupplyId = group.lots[0]?.general_supply_id ?? 0
+    const generalSupplyId = group.id
     if (!generalSupplyId) {
       setMessage('Не вдалося визначити ID товару для редагування.')
       return
@@ -1479,8 +1473,13 @@ function App() {
     localStorage.removeItem(STORAGE_KEYS.cartTotalRows)
     localStorage.removeItem(STORAGE_KEYS.userKey)
     setActiveModule('dashboard')
-    setSupplies([])
+    setSupplyGroups([])
     setSuppliesLoaded(false)
+    setSuppliesTotalCount(0)
+    setSuppliesTotalPages(1)
+    setSuppliesPageSize(SUPPLIES_PAGE_SIZE)
+    setSuppliesPage(1)
+    setCategoryOptions([])
     setOrders([])
     setOrdersLoaded(false)
     setOrdersTotalCount(0)
@@ -1578,6 +1577,7 @@ function App() {
 
   const openGroupContextMenu = (event: MouseEvent<HTMLTableRowElement>, group: ProductGroup) => {
     event.preventDefault()
+    setLotContextMenu({ visible: false, x: 0, y: 0, group: null, lot: null })
     setContextMenu({
       visible: true,
       x: event.clientX,
@@ -1586,27 +1586,32 @@ function App() {
     })
   }
 
-  const handleGroupMouseDown = (event: MouseEvent<HTMLTableRowElement>, group: ProductGroup) => {
-    if (event.button === 2) {
-      openGroupContextMenu(event, group)
-    }
-  }
-
-  const handleGroupClick = (event: MouseEvent<HTMLTableRowElement>, group: ProductGroup) => {
-    // macOS users often emulate right click with Ctrl+Click.
-    if (event.ctrlKey) {
-      openGroupContextMenu(event, group)
-      return
-    }
-    toggleGroup(group.key)
+  const openLotContextMenu = (
+    event: MouseEvent<HTMLTableRowElement>,
+    group: ProductGroup,
+    lot: SupplyRow,
+  ) => {
+    event.preventDefault()
+    setContextMenu({ visible: false, x: 0, y: 0, group: null })
+    setLotContextMenu({
+      visible: true,
+      x: event.clientX,
+      y: event.clientY,
+      group,
+      lot,
+    })
   }
 
   const closeContextMenu = () => {
     setContextMenu({ visible: false, x: 0, y: 0, group: null })
   }
 
+  const closeLotContextMenu = () => {
+    setLotContextMenu({ visible: false, x: 0, y: 0, group: null, lot: null })
+  }
+
   const openSupplyHistory = async (group: ProductGroup) => {
-    const generalSupplyId = group.lots[0]?.general_supply_id
+    const generalSupplyId = group.id
     if (!generalSupplyId) {
       setMessage('Не вдалося визначити товар для історії.')
       return
@@ -1628,21 +1633,6 @@ function App() {
     }
 
     setHistoryData(response.data as SupplyHistoryPayload)
-  }
-
-  const toggleGroup = (groupKey: string) => {
-    setExpandedGroups((prev) => ({
-      ...prev,
-      [groupKey]: !prev[groupKey],
-    }))
-  }
-
-  const setAllGroupsExpanded = (expanded: boolean) => {
-    const next: Record<string, boolean> = {}
-    for (const group of filteredGroups) {
-      next[group.key] = expanded
-    }
-    setExpandedGroups(next)
   }
 
   const toggleColumnVisibility = (column: ColumnKey) => {
@@ -1671,11 +1661,15 @@ function App() {
     )
     setSupplySearch(preferences.supplies?.supplySearch ?? '')
     setCategoryFilter(preferences.supplies?.categoryFilter ?? 'all')
-    setStockFilter(preferences.supplies?.stockFilter ?? 'all')
+    setStockFilter(
+      isSupplyStockFilter(preferences.supplies?.stockFilter)
+        ? preferences.supplies?.stockFilter
+        : 'with_children',
+    )
     setExpiredOnly(preferences.supplies?.expiredOnly ?? false)
     setGroupSort(preferences.supplies?.groupSort ?? 'name_asc')
+    setSuppliesPage(1)
     setColumns(mergeColumns(preferences.supplies?.columns))
-    setExpandedGroups({})
     setOrdersSearch(preferences.orders?.search ?? '')
     setOrdersStatusFilter(preferences.orders?.statusFilter ?? 'all')
     setOrdersPage(1)
@@ -1684,13 +1678,14 @@ function App() {
   }
 
   useEffect(() => {
-    if (!contextMenu.visible) {
+    if (!contextMenu.visible && !lotContextMenu.visible) {
       return
     }
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         closeContextMenu()
+        closeLotContextMenu()
       }
     }
 
@@ -1698,7 +1693,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', onKey)
     }
-  }, [contextMenu.visible])
+  }, [contextMenu.visible, lotContextMenu.visible])
 
   useEffect(() => {
     if (activeModule !== 'delivery') {
@@ -1786,44 +1781,48 @@ function App() {
   const renderModuleContent = () => {
     if (activeModule === 'dashboard') {
       return (
-        <div className="module-grid">
-          <article className="metric-card">
-            <p className="metric-title">Клієнти</p>
-            <p className="metric-value">0</p>
-            <p className="metric-hint">Підключимо реальні дані на наступному кроці</p>
-          </article>
-          <article className="metric-card">
-            <p className="metric-title">Активні угоди</p>
-            <p className="metric-value">0</p>
-            <p className="metric-hint">Синхронізується з Django API</p>
-          </article>
-          <article className="metric-card">
-            <p className="metric-title">Задачі на сьогодні</p>
-            <p className="metric-value">0</p>
-            <p className="metric-hint">Додамо фільтри і пріоритети</p>
-          </article>
-        </div>
+        <>
+          <div className="dashboard-user-actions">
+            <button type="button" onClick={fetchProfile} disabled={loading}>
+              Оновити профіль
+            </button>
+            <button type="button" className="danger-btn" onClick={logout}>
+              Вийти
+            </button>
+          </div>
+          <div className="module-grid">
+            <article className="metric-card">
+              <p className="metric-title">Клієнти</p>
+              <p className="metric-value">0</p>
+              <p className="metric-hint">Підключимо реальні дані на наступному кроці</p>
+            </article>
+            <article className="metric-card">
+              <p className="metric-title">Активні угоди</p>
+              <p className="metric-value">0</p>
+              <p className="metric-hint">Синхронізується з Django API</p>
+            </article>
+            <article className="metric-card">
+              <p className="metric-title">Задачі на сьогодні</p>
+              <p className="metric-value">0</p>
+              <p className="metric-hint">Додамо фільтри і пріоритети</p>
+            </article>
+          </div>
+        </>
       )
     }
 
     if (activeModule === 'clients') {
       return (
-        <section className="module-card">
+        <section className="module-card supplies-module-flat">
           <div className="module-toolbar">
             <div>
               <h3>Список товарів</h3>
               <p className="module-toolbar-hint">
-                Десктопна ієрархічна таблиця: товар до вкладених партій (LOT).
+                General supplies + дочірні LOT, серверні фільтри та пагінація.
               </p>
             </div>
             <div className="module-toolbar-actions">
-              <button type="button" onClick={() => setAllGroupsExpanded(true)}>
-                Розгорнути все
-              </button>
-              <button type="button" onClick={() => setAllGroupsExpanded(false)}>
-                Згорнути все
-              </button>
-              <button type="button" onClick={loadSupplies} disabled={suppliesLoading}>
+              <button type="button" onClick={() => void loadSupplies({ page: safeSuppliesPage })} disabled={suppliesLoading}>
                 {suppliesLoading ? 'Оновлення...' : 'Оновити'}
               </button>
             </div>
@@ -1833,12 +1832,34 @@ function App() {
             <input
               type="text"
               value={supplySearch}
-              onChange={(event) => setSupplySearch(event.target.value)}
+              onChange={(event) => {
+                const nextValue = event.target.value
+                setSupplySearch(nextValue)
+                void loadSupplies({
+                  page: 1,
+                  search: nextValue,
+                  category: categoryFilter,
+                  stock: stockFilter,
+                  expiredOnly,
+                  sort: groupSort,
+                })
+              }}
               placeholder="Пошук: назва, REF, SMN, LOT"
             />
             <select
               value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.target.value)}
+              onChange={(event) => {
+                const nextValue = event.target.value
+                setCategoryFilter(nextValue)
+                void loadSupplies({
+                  page: 1,
+                  search: supplySearch,
+                  category: nextValue,
+                  stock: stockFilter,
+                  expiredOnly,
+                  sort: groupSort,
+                })
+              }}
             >
               <option value="all">Усі категорії</option>
               {categoryOptions.map((category) => (
@@ -1850,16 +1871,38 @@ function App() {
             <select
               value={stockFilter}
               onChange={(event) =>
-                setStockFilter(event.target.value as 'all' | 'positive' | 'on_hold')
+                {
+                  const nextValue = event.target.value as 'all' | 'with_children' | 'without_children'
+                  setStockFilter(nextValue)
+                  void loadSupplies({
+                    page: 1,
+                    search: supplySearch,
+                    category: categoryFilter,
+                    stock: nextValue,
+                    expiredOnly,
+                    sort: groupSort,
+                  })
+                }
               }
             >
-              <option value="all">Усі товари</option>
-              <option value="positive">Лише з залишком</option>
-              <option value="on_hold">Лише з On Hold</option>
+              <option value="all">Усі general supplies</option>
+              <option value="with_children">Лише з дочірніми</option>
+              <option value="without_children">Лише без дочірніх</option>
             </select>
             <select
               value={groupSort}
-              onChange={(event) => setGroupSort(event.target.value as GroupSort)}
+              onChange={(event) => {
+                const nextValue = event.target.value as GroupSort
+                setGroupSort(nextValue)
+                void loadSupplies({
+                  page: 1,
+                  search: supplySearch,
+                  category: categoryFilter,
+                  stock: stockFilter,
+                  expiredOnly,
+                  sort: nextValue,
+                })
+              }}
             >
               <option value="name_asc">Назва A-Z</option>
               <option value="name_desc">Назва Z-A</option>
@@ -1872,7 +1915,18 @@ function App() {
               <input
                 type="checkbox"
                 checked={expiredOnly}
-                onChange={(event) => setExpiredOnly(event.target.checked)}
+                onChange={(event) => {
+                  const nextValue = event.target.checked
+                  setExpiredOnly(nextValue)
+                  void loadSupplies({
+                    page: 1,
+                    search: supplySearch,
+                    category: categoryFilter,
+                    stock: stockFilter,
+                    expiredOnly: nextValue,
+                    sort: groupSort,
+                  })
+                }}
               />
               Лише прострочені
             </label>
@@ -1882,9 +1936,17 @@ function App() {
               onClick={() => {
                 setSupplySearch('')
                 setCategoryFilter('all')
-                setStockFilter('all')
+                setStockFilter('with_children')
                 setExpiredOnly(false)
                 setGroupSort('name_asc')
+                void loadSupplies({
+                  page: 1,
+                  search: '',
+                  category: 'all',
+                  stock: 'with_children',
+                  expiredOnly: false,
+                  sort: 'name_asc',
+                })
               }}
             >
               Скинути фільтри
@@ -1919,169 +1981,160 @@ function App() {
           </details>
 
           <div className="supplies-stats-row">
-            <span>Груп товарів: {filteredGroups.length}</span>
-            <span>
-              Партій: {filteredGroups.reduce((acc, item) => acc + item.lots.length, 0)}
-            </span>
+            <span>General supplies: {suppliesTotalCount}</span>
+            <span>На сторінці: {filteredGroups.length}</span>
+            <span>Розмір сторінки: {suppliesPageSize}</span>
+            <span>Партій на сторінці: {filteredGroups.reduce((acc, item) => acc + item.lots.length, 0)}</span>
           </div>
 
           <div className="supplies-table-wrapper">
             <table className="supplies-table">
-              <colgroup>
-                <col style={{ width: '46px' }} />
-                {columns.name.visible && <col style={{ width: `${columns.name.width}px` }} />}
-                {columns.package.visible && (
-                  <col style={{ width: `${columns.package.width}px` }} />
-                )}
-                {columns.category.visible && (
-                  <col style={{ width: `${columns.category.width}px` }} />
-                )}
-                {columns.ref.visible && <col style={{ width: `${columns.ref.width}px` }} />}
-                {columns.smn.visible && <col style={{ width: `${columns.smn.width}px` }} />}
-                {columns.lots.visible && <col style={{ width: `${columns.lots.width}px` }} />}
-                {columns.count.visible && (
-                  <col style={{ width: `${columns.count.width}px` }} />
-                )}
-                {columns.onhold.visible && (
-                  <col style={{ width: `${columns.onhold.width}px` }} />
-                )}
-                {columns.expiry.visible && (
-                  <col style={{ width: `${columns.expiry.width}px` }} />
-                )}
-                {columns.actions.visible && (
-                  <col style={{ width: `${columns.actions.width}px` }} />
-                )}
-              </colgroup>
               <thead>
                 <tr>
-                  <th></th>
-                  {columns.name.visible && <th>Назва товару</th>}
-                  {columns.package.visible && <th>Пакування / Тести</th>}
-                  {columns.category.visible && <th>Категорія</th>}
-                  {columns.ref.visible && <th>REF</th>}
-                  {columns.smn.visible && <th>SMN</th>}
-                  {columns.lots.visible && <th>Партій</th>}
-                  {columns.count.visible && <th>К-сть</th>}
-                  {columns.onhold.visible && <th>On Hold</th>}
-                  {columns.expiry.visible && <th>Найближчий термін</th>}
-                  {columns.actions.visible && <th>Дії</th>}
+                  <th>Назва товару</th>
+                  <th>Товар</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredGroups.map((group) => {
-                  const isExpanded = Boolean(expandedGroups[group.key])
-                  const visibleColumnsCount =
-                    1 +
-                    (columns.name.visible ? 1 : 0) +
-                    (columns.package.visible ? 1 : 0) +
-                    (columns.category.visible ? 1 : 0) +
-                    (columns.ref.visible ? 1 : 0) +
-                    (columns.smn.visible ? 1 : 0) +
-                    (columns.lots.visible ? 1 : 0) +
-                    (columns.count.visible ? 1 : 0) +
-                    (columns.onhold.visible ? 1 : 0) +
-                    (columns.expiry.visible ? 1 : 0) +
-                    (columns.actions.visible ? 1 : 0)
-
                   return (
                     <Fragment key={group.key}>
-                      <tr
-                        className="group-row"
-                        onClick={(event) => handleGroupClick(event, group)}
-                        onMouseDown={(event) => handleGroupMouseDown(event, group)}
-                        onContextMenu={(event) => openGroupContextMenu(event, group)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault()
-                            toggleGroup(group.key)
-                          }
-                        }}
-                      >
-                        <td>
-                          <span className="row-expander" aria-hidden="true">
-                            {isExpanded ? '▾' : '▸'}
-                          </span>
-                        </td>
-                        {columns.name.visible && <td className="product-name">{group.name}</td>}
-                        {columns.package.visible && <td>{group.packageAndTests}</td>}
-                        {columns.category.visible && <td>{group.category}</td>}
-                        {columns.ref.visible && <td>{group.ref}</td>}
-                        {columns.smn.visible && <td>{group.smn}</td>}
-                        {columns.lots.visible && <td>{group.lots.length}</td>}
-                        {columns.count.visible && <td>{group.totalCount}</td>}
-                        {columns.onhold.visible && <td>{group.totalOnHold}</td>}
-                        {columns.expiry.visible && <td>{group.nearestExpiry ?? '-'}</td>}
-                        {columns.actions.visible && (
-                          <td className="row-actions-hint">ПКМ для дій</td>
-                        )}
-                      </tr>
-                      {isExpanded && (
-                        <tr className="nested-row">
-                          <td colSpan={visibleColumnsCount}>
-                            <div className="nested-table-wrap">
-                              <table className="nested-table">
-                                <thead>
-                                  <tr>
-                                    <th>LOT</th>
-                                    <th>Кількість</th>
-                                    <th>On Hold</th>
-                                    <th>Термін</th>
-                                    <th>Дії</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {group.lots.map((lot) => (
-                                    <tr key={lot.id}>
-                                      <td>{lot.supplyLot || '-'}</td>
-                                      <td>{lot.count ?? '-'}</td>
-                                      <td>{lot.countOnHold ?? 0}</td>
-                                      <td>{lot.expiredDate || '-'}</td>
-                                      <td>
-                                        <div className="row-actions">
-                                          <button
-                                            type="button"
-                                            className="action-btn action-cart"
-                                            title="Додати в кошик"
-                                            onClick={() => void addLotToCart(lot.id)}
-                                            disabled={rowActionBusy}
-                                          >
-                                            🛒
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="action-btn action-edit"
-                                            title="Редагувати LOT"
-                                            onClick={() => openEditLotModal(lot)}
-                                            disabled={rowActionBusy}
-                                          >
-                                            ✎
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="action-btn action-delete"
-                                            title="Видалити LOT"
-                                            onClick={() => void deleteLot(lot.id)}
-                                            disabled={rowActionBusy}
-                                          >
-                                            🗑
-                                          </button>
-                                        </div>
-                                      </td>
+                      <tr className="group-combined-row" onContextMenu={(event) => openGroupContextMenu(event, group)}>
+                        <td colSpan={2}>
+                          <div className="group-item-card">
+                            <div className="group-split-layout">
+                              <div className="group-general-panel">
+                                {columns.name.visible && <p className="group-main-name">{group.name}</p>}
+                                <div className="group-meta-grid">
+                                {columns.package.visible && (
+                                  <div className="group-meta-item">
+                                    <span className="meta-badge" title="Пакування / Тести">🧪 Пакування</span>
+                                    <span className="meta-value">{group.packageAndTests}</span>
+                                  </div>
+                                )}
+                                {columns.category.visible && (
+                                  <div className="group-meta-item">
+                                    <span className="meta-badge" title="Категорія">🏷 Категорія</span>
+                                    <span className="meta-value">{group.category}</span>
+                                  </div>
+                                )}
+                                {columns.ref.visible && (
+                                  <div className="group-meta-item">
+                                    <span className="meta-badge" title="REF">🔖 REF</span>
+                                    <span className="meta-value">{group.ref}</span>
+                                  </div>
+                                )}
+                                {columns.smn.visible && (
+                                  <div className="group-meta-item">
+                                    <span className="meta-badge" title="SMN">🧬 SMN</span>
+                                    <span className="meta-value">{group.smn}</span>
+                                  </div>
+                                )}
+                                {columns.lots.visible && (
+                                  <div className="group-meta-item">
+                                    <span className="meta-badge" title="Партій">📦 Партій</span>
+                                    <span className="meta-value">{group.lots.length}</span>
+                                  </div>
+                                )}
+                                {columns.count.visible && (
+                                  <div className="group-meta-item">
+                                    <span className="meta-badge" title="Кількість">🔢 К-сть</span>
+                                    <span className="meta-value">{group.totalCount}</span>
+                                  </div>
+                                )}
+                                {columns.onhold.visible && (
+                                  <div className="group-meta-item">
+                                    <span className="meta-badge" title="On Hold">🟧 Hold</span>
+                                    <span className="meta-value">{group.totalOnHold}</span>
+                                  </div>
+                                )}
+                                {columns.expiry.visible && (
+                                  <div className="group-meta-item">
+                                    <span className="meta-badge" title="Найближчий термін">⏰ Термін</span>
+                                    <span className="meta-value">{group.nearestExpiry ?? '-'}</span>
+                                  </div>
+                                )}
+                                </div>
+                              </div>
+                              <div className="nested-row-panel">
+                                <div className="nested-table-wrap">
+                                  <table className="nested-table">
+                                  <thead>
+                                    <tr>
+                                      <th><span className="col-badge">🏷 LOT</span></th>
+                                      <th><span className="col-badge">🔢 К-сть</span></th>
+                                      <th><span className="col-badge">🟧 Hold</span></th>
+                                      <th><span className="col-badge">⏰ Термін</span></th>
+                                      <th><span className="col-badge">🛒</span></th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                  </thead>
+                                  <tbody>
+                                      {group.lots.length === 0 ? (
+                                        <tr>
+                                          <td colSpan={5}>
+                                            Немає дочірніх LOT для цього товару.
+                                          </td>
+                                        </tr>
+                                      ) : (
+                                        group.lots.map((lot) => (
+                                          <tr
+                                            key={lot.id}
+                                            onContextMenu={(event) => openLotContextMenu(event, group, lot)}
+                                          >
+                                            <td>{lot.supplyLot || '-'}</td>
+                                            <td>{lot.count ?? '-'}</td>
+                                            <td>{lot.countOnHold ?? 0}</td>
+                                            <td>{lot.expiredDate || '-'}</td>
+                                            <td>
+                                              <div className="row-actions">
+                                                <button
+                                                  type="button"
+                                                  className="action-btn action-cart"
+                                                  title="Додати в кошик"
+                                                  onClick={() => void addLotToCart(lot.id)}
+                                                  disabled={rowActionBusy}
+                                                >
+                                                  🛒
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        ))
+                                      )}
+                                  </tbody>
+                                  </table>
+                                </div>
+                              </div>
                             </div>
-                          </td>
-                        </tr>
-                      )}
+                          </div>
+                        </td>
+                      </tr>
                     </Fragment>
                   )
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="pagination-bar">
+            <span>
+              Сторінка {safeSuppliesPage} з {totalSuppliesPagesSafe}
+            </span>
+            <div className="pagination-actions">
+              <button
+                type="button"
+                disabled={safeSuppliesPage <= 1 || suppliesLoading}
+                onClick={() => void loadSupplies({ page: safeSuppliesPage - 1 })}
+              >
+                ← Назад
+              </button>
+              <button
+                type="button"
+                disabled={safeSuppliesPage >= totalSuppliesPagesSafe || suppliesLoading}
+                onClick={() => void loadSupplies({ page: safeSuppliesPage + 1 })}
+              >
+                Далі →
+              </button>
+            </div>
           </div>
 
           {lotModalOpen && (
@@ -2216,7 +2269,7 @@ function App() {
                   type="button"
                   className="context-menu-item"
                   onClick={() => {
-                    const generalId = contextMenu.group?.lots[0]?.general_supply_id ?? 0
+                    const generalId = contextMenu.group?.id ?? 0
                     if (generalId) {
                       void addGeneralToPrecart(generalId)
                     }
@@ -2229,7 +2282,7 @@ function App() {
                   type="button"
                   className="context-menu-item"
                   onClick={() => {
-                    const generalId = contextMenu.group?.lots[0]?.general_supply_id ?? 0
+                    const generalId = contextMenu.group?.id ?? 0
                     if (generalId) {
                       openAddLotModal(generalId)
                     }
@@ -2249,6 +2302,51 @@ function App() {
                   }}
                 >
                   ✎ Редагувати товар
+                </button>
+              </div>
+            </div>
+          )}
+
+          {lotContextMenu.visible && lotContextMenu.group && lotContextMenu.lot && (
+            <div
+              className="context-menu-overlay"
+              onClick={closeLotContextMenu}
+              onContextMenu={(event) => event.preventDefault()}
+            >
+              <div
+                className="context-menu"
+                style={{ top: `${lotContextMenu.y}px`, left: `${lotContextMenu.x}px` }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="context-menu-item"
+                  onClick={() => {
+                    openEditLotModal(lotContextMenu.lot!)
+                    closeLotContextMenu()
+                  }}
+                >
+                  ✎ Редагувати LOT
+                </button>
+                <button
+                  type="button"
+                  className="context-menu-item"
+                  onClick={() => {
+                    void deleteLot(lotContextMenu.lot!.id)
+                    closeLotContextMenu()
+                  }}
+                >
+                  🗑 Видалити LOT
+                </button>
+                <button
+                  type="button"
+                  className="context-menu-item"
+                  onClick={() => {
+                    openAddLotModal(lotContextMenu.group!.id)
+                    closeLotContextMenu()
+                  }}
+                >
+                  ＋ Додати LOT
                 </button>
               </div>
             </div>
@@ -3115,7 +3213,12 @@ function App() {
       ) : (
         <main className="crm-layout">
           <aside className="sidebar">
-            <h2>DMDX CRM</h2>
+            <div className="sidebar-user-chip">
+              <span className="sidebar-user-icon" aria-hidden="true">
+                {sidebarUserInitial}
+              </span>
+              <span className="sidebar-user-name">{profileName}</span>
+            </div>
             <div className="sidebar-main-tabs">
               <button
                 className={activeModule === 'dashboard' ? 'menu-btn active' : 'menu-btn'}
@@ -3174,21 +3277,6 @@ function App() {
           </aside>
 
           <section className="content">
-            <header className="topbar">
-              <div>
-                <p className="topbar-label">Користувач</p>
-                <p className="topbar-name">{profileName}</p>
-              </div>
-              <div className="topbar-actions">
-                <button type="button" onClick={fetchProfile} disabled={loading}>
-                  Оновити профіль
-                </button>
-                <button type="button" className="danger-btn" onClick={logout}>
-                  Вийти
-                </button>
-              </div>
-            </header>
-
             <section className="content-body">
               {renderModuleContent()}
               <p className="status">{message}</p>

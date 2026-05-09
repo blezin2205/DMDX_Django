@@ -159,6 +159,7 @@ urlpatterns = [
 
 
     path('api/supplies', apiViews.SuppliesApiView.as_view()),
+    path('api/desktop/supplies', apiViews.DesktopSuppliesApiView.as_view()),
     path('api/desktop/cart/add', apiViews.DesktopCartAddAPIView.as_view()),
     path('api/desktop/precart/add-general', apiViews.DesktopPrecartAddGeneralAPIView.as_view()),
     path('api/desktop/lots/add', apiViews.DesktopAddLotAPIView.as_view()),
@@ -187,6 +188,7 @@ urlpatterns = [
     path('api/logout', apiViews.LogoutAPIView.as_view()),
     path('api/profile', apiViews.UserProfileAPIView.as_view()),
     path('api/refresh-token', apiViews.RefreshTokenAPIView.as_view()),
+    path('telegram/webhook/', apiViews.telegram_webhook, name='telegram_webhook'),
 
     path('add_np_sender_place', views.add_np_sender_place, name='add_np_sender_place'),
     path('delete_my_np_sender_place', NPViews.delete_my_np_sender_place, name='delete_my_np_sender_place'),

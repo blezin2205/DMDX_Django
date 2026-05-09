@@ -79,6 +79,27 @@ class CustomUser(AbstractUser):
         return f'{self.first_name} {self.last_name}'
 
 
+class TelegramAuthenticatedSession(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='telegram_sessions')
+    telegram_user_id = models.BigIntegerField(unique=True)
+    username = models.CharField(max_length=255)
+    first_name = models.CharField(max_length=255, blank=True, null=True)
+    last_name = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_activity = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.telegram_user_id} -> {self.username}'
+
+
+class TelegramPendingLogin(models.Model):
+    telegram_user_id = models.BigIntegerField(unique=True)
+    requested_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'pending login {self.telegram_user_id}'
+
+
 class AppSettings(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
     send_teams_msg = models.BooleanField(default=True)

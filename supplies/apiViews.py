@@ -5,7 +5,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db.models import Q
+from django.db.models import Q, Count, Sum, Min, Prefetch, Value, IntegerField, F
+from django.db.models.functions import Coalesce
 from django.http import Http404
 from .forms import *
 from rest_framework import status
@@ -24,6 +25,11 @@ from .NPViews import get_np_delivery_details
 from .views import update_order_status_core
 from .tasks import makeDataUpload_nonCelery
 from math import ceil
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+from .dmdx_telegram_bot import process_telegram_webhook
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -60,6 +66,154 @@ class SuppliesApiView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DesktopSuppliesApiView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication, JWTAuthentication]
+
+    def get(self, request):
+        queryset = GeneralSupply.objects.select_related('category').all()
+
+        is_client = (
+            hasattr(request.user, 'isClient')
+            and callable(request.user.isClient)
+            and request.user.isClient()
+            and not request.user.is_staff
+        )
+        if is_client:
+            user_places = request.user.place_set.all()
+            allowed_category_ids = set()
+            for place in user_places:
+                for category_id in place.allowed_categories.values_list('id', flat=True):
+                    allowed_category_ids.add(category_id)
+            queryset = queryset.filter(category_id__in=allowed_category_ids)
+
+        query = (request.query_params.get('q') or '').strip()
+        if query:
+            query_filter = (
+                Q(name__icontains=query)
+                | Q(ref__icontains=query)
+                | Q(SMN_code__icontains=query)
+                | Q(general__supplyLot__icontains=query)
+            )
+            queryset = queryset.filter(query_filter)
+
+        category = (request.query_params.get('category') or '').strip()
+        if category and category != 'all':
+            queryset = queryset.filter(category__name=category)
+
+        availability = (request.query_params.get('availability') or 'all').strip()
+        if availability == 'with_children':
+            queryset = queryset.filter(general__isnull=False)
+        elif availability == 'without_children':
+            queryset = queryset.filter(general__isnull=True)
+
+        expired_only = _as_bool(request.query_params.get('expired_only'))
+        if expired_only:
+            queryset = queryset.filter(general__expiredDate__lt=timezone.now().date())
+
+        queryset = queryset.annotate(
+            child_count=Count('general', distinct=True),
+            total_count=Coalesce(Sum('general__count'), Value(0), output_field=IntegerField()),
+            total_on_hold=Coalesce(Sum('general__countOnHold'), Value(0), output_field=IntegerField()),
+            nearest_expiry=Min('general__expiredDate'),
+        ).distinct()
+
+        sort = (request.query_params.get('sort') or 'name_asc').strip()
+        if sort == 'name_desc':
+            queryset = queryset.order_by('-name', '-id')
+        elif sort == 'count_desc':
+            queryset = queryset.order_by('-total_count', 'name', 'id')
+        elif sort == 'count_asc':
+            queryset = queryset.order_by('total_count', 'name', 'id')
+        elif sort == 'expiry_asc':
+            queryset = queryset.order_by(F('nearest_expiry').asc(nulls_last=True), 'name', 'id')
+        elif sort == 'expiry_desc':
+            queryset = queryset.order_by(F('nearest_expiry').desc(nulls_last=True), 'name', 'id')
+        else:
+            queryset = queryset.order_by('name', 'id')
+
+        try:
+            page_size = int(request.query_params.get('page_size', 20))
+        except (TypeError, ValueError):
+            page_size = 20
+        page_size = max(1, min(page_size, 200))
+
+        try:
+            page = int(request.query_params.get('page', 1))
+        except (TypeError, ValueError):
+            page = 1
+        page = max(1, page)
+
+        total_count = queryset.count()
+        total_pages = max(1, ceil(total_count / page_size)) if total_count else 1
+        if page > total_pages:
+            page = total_pages
+
+        start = (page - 1) * page_size
+        end = start + page_size
+        page_queryset = queryset[start:end].prefetch_related(
+            Prefetch('general', queryset=Supply.objects.select_related('general_supply').order_by('expiredDate', 'id'))
+        )
+
+        results = []
+        for item in page_queryset:
+            lots_payload = []
+            lots = list(item.general.all())
+            for lot in lots:
+                lots_payload.append(
+                    {
+                        'id': lot.id,
+                        'general_supply_id': item.id,
+                        'name': item.name,
+                        'package_and_tests': item.package_and_tests,
+                        'category': item.category.name if item.category else None,
+                        'ref': item.ref,
+                        'smn_code': item.SMN_code,
+                        'supplyLot': lot.supplyLot,
+                        'count': lot.count,
+                        'countOnHold': lot.countOnHold,
+                        'expiredDate': lot.expiredDate.strftime('%d-%m-%Y') if lot.expiredDate else None,
+                        'dateCreated': lot.dateCreated.strftime('%d-%m-%Y') if lot.dateCreated else None,
+                    }
+                )
+
+            nearest_expiry = item.nearest_expiry.strftime('%d-%m-%Y') if item.nearest_expiry else None
+            results.append(
+                {
+                    'id': item.id,
+                    'key': f'g-{item.id}',
+                    'name': item.name or '-',
+                    'packageAndTests': item.package_and_tests or '-',
+                    'category': item.category.name if item.category else '-',
+                    'ref': item.ref or '-',
+                    'smn': item.SMN_code or '-',
+                    'lots': lots_payload,
+                    'totalCount': item.total_count or 0,
+                    'totalOnHold': item.total_on_hold or 0,
+                    'nearestExpiry': nearest_expiry,
+                }
+            )
+
+        category_options = list(
+            queryset.exclude(category__name__isnull=True)
+            .values_list('category__name', flat=True)
+            .distinct()
+            .order_by('category__name')
+        )
+
+        return Response(
+            {
+                'count': total_count,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': total_pages,
+                'results': results,
+                'category_options': category_options,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 def _is_admin_user(user):
@@ -1123,3 +1277,27 @@ class UserProfileAPIView(APIView):
     def get(self, request, *args, **kwargs):
         user_serializer = UserSerializer(request.user)
         return Response(user_serializer.data)
+
+
+@csrf_exempt
+async def telegram_webhook(request):
+    if request.method != 'POST':
+        return JsonResponse({'detail': 'Method not allowed'}, status=405)
+
+    webhook_secret = getattr(settings, 'TELEGRAM_WEBHOOK_SECRET', '')
+    if webhook_secret:
+        header_secret = request.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
+        if header_secret != webhook_secret:
+            return JsonResponse({'detail': 'Forbidden'}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'detail': 'Invalid JSON'}, status=400)
+
+    try:
+        await process_telegram_webhook(payload)
+    except Exception:
+        return JsonResponse({'detail': 'Webhook processing failed'}, status=500)
+
+    return JsonResponse({'ok': True}, status=200)
