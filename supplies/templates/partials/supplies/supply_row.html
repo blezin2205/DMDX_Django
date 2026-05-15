@@ -81,22 +81,14 @@
         <div class="hstack gap-1 justify-content-end">
             {% include 'partials/cart/add_precart_button_general.html' with el=el %}
             {% if request.user|has_group:"admin" %}
-                <div class="dropdown">
-                    <button class="btn btn-link p-0 text-muted compact-menu-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Дії">
+                <div class="supply-row-dropdown">
+                    <button type="button" class="btn btn-link p-0 text-muted supply-row-menu-btn compact-menu-trigger" title="Дії" aria-expanded="false" aria-haspopup="true">
                         <i class="bi bi-three-dots-vertical"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <button class="dropdown-item add-lot-btn" data-supply-id="{{ el.id }}" type="button">
-                                Додати LOT
-                            </button>
-                        </li>
-                        <li>
-                            <button class="dropdown-item edit-gen-sup-btn" data-supply-id="{{ el.id }}" type="button">
-                                Редагувати назву
-                            </button>
-                        </li>
-                    </ul>
+                    <div class="supply-row-actions-panel" role="menu" hidden>
+                        <button type="button" class="supply-row-actions-item add-lot-btn" data-supply-id="{{ el.id }}" role="menuitem">Додати LOT</button>
+                        <button type="button" class="supply-row-actions-item edit-gen-sup-btn" data-supply-id="{{ el.id }}" role="menuitem">Редагувати назву</button>
+                    </div>
                 </div>
             {% endif %}
         </div>
