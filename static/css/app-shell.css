@@ -1,0 +1,393 @@
+/**
+ * Shell layout: desktop topbar, mobile nav, shared page chrome.
+ * Load after Bootstrap (see base.html / base_for_home.html).
+ * Rules are scoped (.app-topbar, .app-mobile-shell) so they do not
+ * override generic Bootstrap classes elsewhere.
+ */
+
+/* --- Desktop topbar --- */
+.app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    margin: 0;
+    border-radius: 0;
+    border: 0;
+    background: linear-gradient(
+        140deg,
+        rgba(0, 49, 101, 0.88) 0%,
+        rgba(0, 49, 101, 0.78) 58%,
+        rgba(255, 233, 0, 0.34) 100%
+    );
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow:
+        inset 0 -1px 0 rgba(15, 23, 42, 0.1),
+        0 10px 28px rgba(15, 23, 42, 0.16),
+        0 2px 8px rgba(15, 23, 42, 0.12);
+}
+
+.app-topbar::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -10px;
+    height: 10px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(15, 23, 42, 0.16), rgba(15, 23, 42, 0));
+    opacity: 0.55;
+}
+
+.app-topbar-inner {
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.topbar-button-with-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.topbar-button-with-badges.has-badges {
+    justify-content: space-between;
+    min-width: 180px;
+}
+
+.topbar-inline-badges {
+    display: inline-flex;
+    gap: 0.25rem;
+    align-items: center;
+    min-height: 1rem;
+}
+
+.app-topbar .btn-soft {
+    color: #f8fafc;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 0.5rem 0.95rem;
+    border-radius: 10px;
+    transition: all 0.2s ease-in-out;
+}
+
+.app-topbar .btn-soft:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.app-topbar .btn-soft.active {
+    background-color: rgba(255, 233, 0, 0.2);
+    color: #fff;
+    border-color: rgba(255, 233, 0, 0.6);
+    box-shadow: inset 0 0 0 1px rgba(255, 233, 0, 0.2);
+}
+
+.app-topbar .btn-soft-danger {
+    color: #fff;
+    background-color: rgba(220, 53, 69, 0.2);
+    border: 1px solid rgba(255, 148, 148, 0.45);
+    border-radius: 10px;
+}
+
+.app-topbar .btn-soft-danger:hover {
+    background-color: rgba(220, 53, 69, 0.34);
+    color: #fff;
+}
+
+.topbar-user {
+    color: #0f172a;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 0.35rem 0.25rem;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.app-menu-dropdown {
+    position: absolute !important;
+    top: calc(100% + 0.45rem);
+    right: 0;
+    left: auto;
+    z-index: 1100;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 12px;
+    min-width: 270px;
+    overflow: hidden;
+    background: #f8fafc;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 18px 36px rgba(2, 6, 23, 0.18);
+}
+
+.app-menu-dropdown.show {
+    display: block;
+}
+
+.app-menu-dropdown .dropdown-item {
+    padding: 0.42rem 0.9rem;
+    color: #0f172a;
+    font-size: 0.92rem;
+    border-radius: 8px;
+    margin: 0 0.35rem 0.08rem;
+}
+
+.app-menu-dropdown .dropdown-item:hover {
+    background-color: rgba(15, 23, 42, 0.06);
+    color: #020617;
+}
+
+.app-menu-dropdown .dropdown-divider {
+    border-top-color: rgba(148, 163, 184, 0.35);
+}
+
+.app-menu-dropdown .dropdown-section-title {
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #475569;
+    padding: 0.5rem 0.85rem 0.3rem;
+    margin-top: 0.08rem;
+}
+
+.app-menu-dropdown .dropdown-section-toggle {
+    width: calc(100% - 0.7rem);
+    margin: 0.15rem 0.35rem 0.15rem;
+    border: 1px solid rgba(148, 163, 184, 0.38);
+    background: rgba(255, 255, 255, 0.56);
+    border-radius: 8px;
+    padding: 0.2rem 0.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #334155;
+}
+
+.app-menu-dropdown .dropdown-section-toggle:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.app-menu-dropdown .dropdown-section-body {
+    display: none;
+    padding-bottom: 0.15rem;
+}
+
+.app-menu-dropdown .dropdown-section-body.show {
+    display: block;
+}
+
+.app-menu-dropdown .section-arrow {
+    margin-right: 0.6rem;
+    transition: transform 0.2s ease;
+}
+
+.app-menu-dropdown .dropdown-section-toggle[aria-expanded="true"] .section-arrow {
+    transform: rotate(180deg);
+}
+
+.app-topbar #dropdownMenuButton.btn-soft {
+    color: #0f172a;
+    background-color: rgba(248, 250, 252, 0.78);
+    border-color: rgba(148, 163, 184, 0.45);
+    font-weight: 600;
+    width: 52px;
+    height: 40px;
+    padding: 0 0.35rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.app-topbar #dropdownMenuButton.btn-soft:hover,
+.app-topbar #dropdownMenuButton.btn-soft:focus {
+    color: #020617;
+    background-color: rgba(248, 250, 252, 0.95);
+    border-color: rgba(100, 116, 139, 0.5);
+}
+
+.app-topbar #dropdownMenuButton.dropdown-toggle::after {
+    margin-left: 0.3rem;
+    vertical-align: 0.1rem;
+}
+
+.app-topbar .badge {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.app-topbar .text-muted {
+    color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.app-topbar .dropdown-menu {
+    border: 1px solid rgba(0, 49, 101, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
+}
+
+.app-topbar .dropdown-header {
+    color: #4a5568;
+    font-weight: 600;
+}
+
+.app-topbar .dropdown-item {
+    padding: 0.5rem 1.5rem;
+    color: #334155;
+}
+
+.app-topbar .dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #0f172a;
+}
+
+.app-topbar .btn-cart {
+    margin-right: 0 !important;
+    border-radius: 10px;
+}
+
+/* --- Mobile topbar (scoped; was leaking global .btn-soft) --- */
+.app-mobile-shell .btn-soft {
+    color: #4a5568;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease-in-out;
+    border-radius: 0.5rem;
+}
+
+.app-mobile-shell .btn-soft:hover {
+    background-color: #e9ecef;
+    color: #2d3748;
+}
+
+.app-mobile-shell .btn-soft.active {
+    background-color: #e9ecef;
+    color: #2d3748;
+    border-color: #cbd5e0;
+}
+
+.app-mobile-shell .btn-soft-danger {
+    color: #dc3545;
+    background-color: #fff5f5;
+    border: 1px solid #fed7d7;
+}
+
+.app-mobile-shell .btn-soft-danger:hover {
+    background-color: #fed7d7;
+    color: #dc3545;
+}
+
+.app-mobile-shell .dropdown-menu,
+.app-mobile-shell .custom-dropdown-menu {
+    border: 1px solid #e9ecef;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
+    border-radius: 0.5rem;
+}
+
+.app-mobile-shell .dropdown-header {
+    color: #4a5568;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+}
+
+.app-mobile-shell .dropdown-item {
+    padding: 0.75rem 1rem;
+    color: #4a5568;
+}
+
+.app-mobile-shell .dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #2d3748;
+}
+
+.app-mobile-shell .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.app-mobile-shell .custom-dropdown {
+    position: relative;
+}
+
+.app-mobile-shell .custom-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    z-index: 1001;
+    margin-top: 0.5rem;
+}
+
+.app-mobile-shell .custom-dropdown-menu.show {
+    display: block;
+}
+
+.app-mobile-shell .custom-dropdown .dropdown-toggle .bi-chevron-down {
+    transition: transform 0.3s ease;
+}
+
+.app-mobile-shell .custom-dropdown .dropdown-toggle.active .bi-chevron-down {
+    transform: rotate(180deg);
+}
+
+@media (max-width: 767.98px) {
+    .app-mobile-shell .navbar-collapse {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        display: none;
+    }
+
+    .app-mobile-shell .navbar-collapse.show {
+        display: block;
+    }
+}
+
+/* --- Gradient page title (pages using .app-page-title) --- */
+.app-page-title {
+    background: linear-gradient(
+        140deg,
+        rgba(0, 49, 101, 0.86) 0%,
+        rgba(0, 49, 101, 0.74) 60%,
+        rgba(255, 233, 0, 0.28) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.app-page-title .title-text {
+    color: #f8fafc;
+    font-size: 1.45rem;
+    line-height: 1.2;
+    font-weight: 600;
+}
+
+.app-page-title .title-icon {
+    color: rgba(248, 250, 252, 0.9);
+    font-size: 1.7rem;
+}
+
+.app-page-title .subtitle-text {
+    color: rgba(248, 250, 252, 0.82);
+    font-size: 0.92rem;
+}
+
+@media (max-width: 768px) {
+    .app-page-title .title-text {
+        font-size: 1.2rem;
+    }
+
+    .app-page-title .title-icon {
+        font-size: 1.45rem;
+    }
+}

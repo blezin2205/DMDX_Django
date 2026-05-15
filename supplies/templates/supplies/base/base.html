@@ -40,7 +40,6 @@
     <link rel="stylesheet" href="{% static 'css/stylesheet.css'%}" type="text/css">
     <link rel="stylesheet" href="{% static 'css/custom-tooltip.css'%}" type="text/css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <script type="text/javascript">
         var user = '{{ request.user }}'
 
@@ -90,6 +89,8 @@ if (!csrftoken) {
 
     <!-- Tempus Dominus Bootstrap 4 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/app-shell.css'%}" type="text/css">
+    {% block extra_css %}{% endblock %}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 
 <script type="module">
@@ -115,45 +116,6 @@ if (!csrftoken) {
   const app = initializeApp(firebaseConfig);
   const analytics = getAnalytics(app);
 </script>
-
-<style>
-    .app-page-title {
-        background: linear-gradient(140deg,
-            rgba(0, 49, 101, 0.86) 0%,
-            rgba(0, 49, 101, 0.74) 60%,
-            rgba(255, 233, 0, 0.28) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.24);
-        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    }
-
-    .app-page-title .title-text {
-        color: #f8fafc;
-        font-size: 1.45rem;
-        line-height: 1.2;
-        font-weight: 600;
-    }
-
-    .app-page-title .title-icon {
-        color: rgba(248, 250, 252, 0.9);
-        font-size: 1.7rem;
-    }
-
-    .app-page-title .subtitle-text {
-        color: rgba(248, 250, 252, 0.82);
-        font-size: 0.92rem;
-    }
-
-    @media (max-width: 768px) {
-        .app-page-title .title-text {
-            font-size: 1.2rem;
-        }
-        .app-page-title .title-icon {
-            font-size: 1.45rem;
-        }
-    }
-</style>
 
 </head>
 <body>

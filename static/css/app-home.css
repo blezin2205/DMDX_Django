@@ -1,0 +1,263 @@
+/**
+ * Home / child supply list views only.
+ * Included via {% block extra_css %} on home.html and homeChild.html.
+ */
+
+@media (max-width: 575.98px) {
+    #supplyHistoryModal .modal-content {
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
+    #supplyHistoryModal .modal-header {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    #supplyHistoryModal .modal-body {
+        height: calc(100vh - 56px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0;
+    }
+    #supplyHistoryModal .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    #addNewLotModal .modal-content {
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
+    #addNewLotModal .modal-header {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    #addNewLotModal .modal-body {
+        height: calc(100vh - 56px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0;
+    }
+    #addNewLotModal .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+.loading-state {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.filter-panel {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0.55rem 0.65rem;
+}
+
+.home-view-switch {
+    background-color: rgba(248, 250, 252, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 10px;
+    padding: 0.2rem;
+    gap: 0.2rem;
+}
+
+.home-view-switch .home-view-btn {
+    border: none;
+    border-radius: 8px !important;
+    color: #334155;
+    font-weight: 600;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.9rem;
+    background-color: transparent;
+}
+
+.home-view-switch .home-view-btn:hover {
+    color: #0f172a;
+    background-color: rgba(226, 232, 240, 0.8);
+}
+
+.home-view-switch .home-view-btn.active {
+    color: #0f172a;
+    background-color: #e2e8f0;
+    box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.25);
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
+    gap: 0.45rem 0.6rem;
+    align-items: end;
+}
+
+.filter-field.field-name {
+    grid-column: span 2;
+}
+
+.filter-panel .mb-3 {
+    margin-bottom: 0 !important;
+}
+
+.filter-panel label {
+    margin-bottom: 0.15rem;
+    font-size: 0.77rem;
+    color: #6c757d;
+}
+
+.filter-panel .form-control,
+.filter-panel .form-select {
+    min-height: calc(1.5em + 0.45rem + 2px);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.88rem;
+}
+
+.filter-actions {
+    margin-top: 0.45rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.compact-menu-trigger,
+.lot-inline-edit-btn {
+    color: #6c757d;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.compact-menu-trigger:hover,
+.lot-inline-edit-btn:hover {
+    color: #212529;
+}
+
+.compact-menu-trigger i,
+.lot-inline-edit-btn i {
+    font-size: 0.95rem;
+}
+
+.lot-content {
+    position: relative;
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.lot-content .lot-inline-edit-btn {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.lot-content .lot-value {
+    display: inline-block;
+}
+
+@media (max-width: 991.98px) {
+    .filter-grid {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+    }
+    .filter-field.field-name {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .filter-panel {
+        padding: 0.5rem;
+    }
+    .filter-grid {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+    }
+    .filter-field.field-name {
+        grid-column: span 1;
+    }
+    .filter-actions {
+        justify-content: stretch;
+    }
+    .filter-actions .btn {
+        flex: 1 1 auto;
+    }
+}
+
+@media (min-width: 992px) {
+    .compact-supply-table {
+        font-size: 0.9rem;
+    }
+    .compact-supply-table th,
+    .compact-supply-table td {
+        padding: 0.35rem 0.45rem;
+        vertical-align: middle;
+    }
+    .compact-supply-table .col-name {
+        min-width: 280px;
+        max-width: 320px;
+    }
+    .compact-supply-table .col-pack {
+        max-width: 130px;
+    }
+    .compact-supply-table .col-category {
+        max-width: 110px;
+    }
+    .compact-supply-table .col-ref,
+    .compact-supply-table .col-smn {
+        max-width: 95px;
+    }
+    .compact-supply-table .truncate-cell {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    /* Main home table (nested LOT columns) */
+    .compact-supply-table .supply-lot-head {
+        width: 140px;
+    }
+    .compact-supply-table .supply-qty-head {
+        width: 115px;
+    }
+    .compact-supply-table .supply-exp-head {
+        width: 95px;
+    }
+    .compact-supply-table .nested-supply-table td {
+        padding: 0.25rem 0.35rem;
+    }
+    .compact-supply-table .supply-lot-col {
+        width: 140px;
+        text-align: center;
+    }
+    .compact-supply-table .supply-qty-col {
+        width: 115px;
+    }
+    .compact-supply-table .supply-exp-col {
+        width: 95px;
+        white-space: nowrap;
+    }
+    /* childSupply flat table columns */
+    .compact-supply-table .col-lot {
+        width: 140px;
+        text-align: center;
+    }
+    .compact-supply-table .col-qty {
+        width: 150px;
+    }
+    .compact-supply-table .col-exp {
+        width: 95px;
+        white-space: nowrap;
+    }
+    .compact-supply-table .col-updated {
+        width: 95px;
+        white-space: nowrap;
+    }
+}

@@ -1,6 +1,6 @@
 {% load myapp_extras %}
 
-<nav class="navbar navbar-expand-md shadow-sm bg-white bg-general-navbar d-md-none">
+<nav class="app-mobile-shell navbar navbar-expand-md shadow-sm bg-white bg-general-navbar d-md-none">
     <div class="container-fluid px-3 py-2">
         <!-- Mobile Menu Toggle -->
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mobileNavbar" aria-controls="mobileNavbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -160,112 +160,6 @@
         </div>
     </div>
 </nav>
-
-<style>
-    .btn-soft {
-        color: #4a5568;
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        padding: 0.75rem 1rem;
-        transition: all 0.2s ease-in-out;
-        border-radius: 0.5rem;
-    }
-    
-    .btn-soft:hover {
-        background-color: #e9ecef;
-        color: #2d3748;
-    }
-    
-    .btn-soft.active {
-        background-color: #e9ecef;
-        color: #2d3748;
-        border-color: #cbd5e0;
-    }
-    
-    .btn-soft-danger {
-        color: #dc3545;
-        background-color: #fff5f5;
-        border: 1px solid #fed7d7;
-    }
-    
-    .btn-soft-danger:hover {
-        background-color: #fed7d7;
-        color: #dc3545;
-    }
-    
-    .dropdown-menu, .custom-dropdown-menu {
-        border: 1px solid #e9ecef;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
-        border-radius: 0.5rem;
-    }
-    
-    .dropdown-header {
-        color: #4a5568;
-        font-weight: 600;
-        padding: 0.75rem 1rem;
-    }
-    
-    .dropdown-item {
-        padding: 0.75rem 1rem;
-        color: #4a5568;
-    }
-    
-    .dropdown-item:hover {
-        background-color: #f8f9fa;
-        color: #2d3748;
-    }
-
-    .badge {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
-    }
-
-    /* Custom dropdown styles */
-    .custom-dropdown {
-        position: relative;
-    }
-    
-    .custom-dropdown-menu {
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        z-index: 1001;
-        margin-top: 0.5rem;
-    }
-    
-    .custom-dropdown-menu.show {
-        display: block;
-    }
-    
-    .custom-dropdown .dropdown-toggle .bi-chevron-down {
-        transition: transform 0.3s ease;
-    }
-    
-    .custom-dropdown .dropdown-toggle.active .bi-chevron-down {
-        transform: rotate(180deg);
-    }
-
-    @media (max-width: 767.98px) {
-        .navbar-collapse {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            padding: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            display: none; /* Hide by default */
-        }
-        
-        .navbar-collapse.show {
-            display: block; /* Show when .show class is added */
-        }
-    }
-</style>
 
 <script>
     // Simple mobile menu toggle functionality
