@@ -77,12 +77,48 @@
         background-color: #f8f9fa;
     }
     
-    .filter-section {
+    .clients-filter-panel {
         background-color: #f8f9fa;
         border-radius: 0.5rem;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
+        padding: 0.55rem 0.65rem;
+        margin-bottom: 1rem;
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .clients-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(130px, 1fr));
+        gap: 0.45rem 0.6rem;
+        align-items: end;
+    }
+
+    .clients-filter-grid .field-name {
+        grid-column: span 2;
+    }
+
+    .clients-filter-panel .mb-3 {
+        margin-bottom: 0 !important;
+    }
+
+    .clients-filter-panel label {
+        margin-bottom: 0.15rem;
+        font-size: 0.77rem;
+        color: #6c757d;
+    }
+
+    .clients-filter-panel .form-control,
+    .clients-filter-panel .form-select {
+        min-height: calc(1.5em + 0.45rem + 2px);
+        padding: 0.2rem 0.5rem;
+        font-size: 0.88rem;
+    }
+
+    .clients-filter-actions {
+        margin-top: 0.45rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.4rem;
     }
 
     /* Horizontal checkboxes styles */
@@ -103,68 +139,50 @@
         gap: 1rem;
     }
     
-    /* Mobile-specific styles */
-    @media (max-width: 768px) {
-        .mobile-filter-container {
-            background-color: #f8f9fa;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    @media (max-width: 991.98px) {
+        .clients-filter-grid {
+            grid-template-columns: repeat(2, minmax(140px, 1fr));
         }
-        
-        .mobile-filter-field {
-            width: 100%;
-            margin-bottom: 0.75rem;
+        .clients-filter-grid .field-name {
+            grid-column: span 2;
         }
-        
-        .mobile-filter-button {
-            width: 100%;
-            margin-top: 1rem;
+    }
+
+    @media (max-width: 575.98px) {
+        .clients-filter-grid {
+            grid-template-columns: 1fr;
+            gap: 0.35rem;
+        }
+        .clients-filter-grid .field-name {
+            grid-column: span 1;
+        }
+        .clients-filter-actions {
+            justify-content: stretch;
+        }
+        .clients-filter-actions .btn {
+            flex: 1 1 auto;
         }
     }
 </style>
 
     <form method="get" class="form-inline justify-content-center">
-        {% if request.user_agent.is_mobile %}
-            <div class="mobile-filter-container">
-                <div class="d-flex flex-column gap-3">
-                    <div>
-                        {{ placeFilter.form.is_has_options_button|as_crispy_field }}
-                    </div>
-                    <div class="d-flex flex-column">
-                        <div class="mobile-filter-field">{{ placeFilter.form.preorder_filter|as_crispy_field }}</div>
-                        <div class="mobile-filter-field">{{ placeFilter.form.city_ref|as_crispy_field }}</div>
-                        <div class="mobile-filter-field">{{ placeFilter.form.isPrivatePlace|as_crispy_field }}</div>
-                        <div class="mobile-filter-field">{{ placeFilter.form.name|as_crispy_field }}</div>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-center">
-                    <button class="btn btn-primary mobile-filter-button" type="submit">
-                        <i class="bi bi-search me-2"></i>Застосувати
-                    </button>
-                </div>
+        <div class="clients-filter-panel w-100">
+            <div class="mb-2">
+                {{ placeFilter.form.is_has_options_button|as_crispy_field }}
             </div>
-        {% else %}
-            <div class="filter-section">
-                <div class="d-flex flex-column gap-3">
-                    <div>
-                        {{ placeFilter.form.is_has_options_button|as_crispy_field }}
-                    </div>
-                    <div class="d-flex justify-content-center gap-3">
-                        <div style="max-width: 200px;">{{ placeFilter.form.preorder_filter|as_crispy_field }}</div>
-                        <div style="max-width: 200px;">{{ placeFilter.form.city_ref|as_crispy_field }}</div>
-                        <div style="max-width: 200px;">{{ placeFilter.form.isPrivatePlace|as_crispy_field }}</div>
-                        <div style="min-width: 400px;">{{ placeFilter.form.name|as_crispy_field }}</div>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-center mt-3">
-                    <button class="btn btn-primary" type="submit">
-                        <i class="bi bi-search me-2"></i>Застосувати
-                    </button>
-                </div>
+            <div class="clients-filter-grid">
+                <div>{{ placeFilter.form.preorder_filter|as_crispy_field }}</div>
+                <div>{{ placeFilter.form.city_ref|as_crispy_field }}</div>
+                <div>{{ placeFilter.form.isPrivatePlace|as_crispy_field }}</div>
+                <div class="field-name">{{ placeFilter.form.name|as_crispy_field }}</div>
             </div>
-        {% endif %}
+            <div class="clients-filter-actions">
+                <button class="btn btn-primary btn-sm" type="submit">
+                    <i class="bi bi-search me-1"></i>Застосувати
+                </button>
+                <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
+            </div>
+        </div>
     </form>
 
 {% if request.user_agent.is_mobile %}<div class="row row-cols-1 row-cols-lg-1 g-3 py-3"> {% else %} <div class="row row-cols-2 row-cols-lg-2 g-3 py-3"> {% endif %}

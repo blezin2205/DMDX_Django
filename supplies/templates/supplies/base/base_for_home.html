@@ -125,17 +125,17 @@ const csrftoken = getToken('csrftoken');
     <div class="content-wrapper">
         <div class="w-auto">
             <div class="container">
-                <div class="spacer" style="height: 2rem;"></div>
+                <div class="spacer" style="height: 0.75rem;"></div>
                 {% if title %}
-                <div class="title-wrapper mb-2 p-4 bg-general-navbar rounded-3 shadow-sm">
-                    <div class="d-flex align-items-center">
+                <div class="title-wrapper mb-2 pb-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
                         {% if title_icon %}
-                            <i class="bi {{ title_icon }} me-3 title-icon"></i>
+                            <i class="bi {{ title_icon }} text-secondary"></i>
                         {% endif %}
-                        <h3 class="title-text mb-0" style="white-space: pre-line">{{ title }}</h3>
+                        <h5 class="mb-0 fw-semibold" style="white-space: pre-line">{{ title }}</h5>
                     </div>
                     {% if subtitle %}
-                        <p class="text-muted mb-0 mt-2">{{ subtitle }}</p>
+                        <p class="text-muted small mb-0 mt-1">{{ subtitle }}</p>
                     {% endif %}
                 </div>
                 {% endif %}

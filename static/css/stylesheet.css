@@ -478,6 +478,12 @@ form .custom-btn:hover {
   opacity: 1;
 }
 
+/* Коментарі з textarea / переноси рядків із форми */
+.comment-pre-wrap {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .bg-gradient-warning {
     background: linear-gradient(135deg, 
         rgba(255, 193, 7, 0.3) 0%,

@@ -3,62 +3,82 @@
 {% load crispy_forms_tags %}
 {% load bootstrap %}
 
-<form class="modal-form" id="npOrderForm" method="post" action="{% url 'create_np_document_for_order' order.id %}" onsubmit="return npOrderDoc_handleFormSubmit(event)">
+<form class="modal-form np-order-form" id="npOrderForm" method="post" action="{% url 'create_np_document_for_order' order.id %}" onsubmit="return npOrderDoc_handleFormSubmit(event)">
     {% csrf_token %}
     <input type="hidden" name="order_id" value="{{ order.id }}">
     <div class="modal-body-content">
-        {{ placeForm|crispy }}
-        {{ inputForm.sender_np_place|as_crispy_field }}
-        <div class="row g-3">
-            <div class="col-sm">
-                {{ inputForm.payment_user_type|as_crispy_field }}
+        <div class="np-section">
+            <p class="np-section-title mb-3">Дані відправлення</p>
+            {{ placeForm|crispy }}
+            {{ inputForm.sender_np_place|as_crispy_field }}
+            <div class="row g-3">
+                <div class="col-sm">
+                    {{ inputForm.payment_user_type|as_crispy_field }}
+                </div>
+                <div class="col-sm">
+                    {{ inputForm.payment_money_type|as_crispy_field }}
+                </div>
             </div>
-            <div class="col-sm">
-                {{ inputForm.payment_money_type|as_crispy_field }}
-            </div>
-        </div>
-        <div class="row g-3">
-            <div class="col-sm">
-                {{ inputForm.cargo_type|as_crispy_field }}
-            </div>
-        </div>
-        <div id="cargo-dimensions-container">
-            <div class="row bg-light rounded p-2 mx-auto my-2">
-                <div class="hstack gap-2">
-                    <div class="col-sm">
-                        {{ inputForm.weight|as_crispy_field }}
-                    </div>
-                    <div class="col-sm">
-                        {{ inputForm.width|as_crispy_field }}
-                    </div>
-                    <div class="col-sm">
-                        {{ inputForm.length|as_crispy_field }}
-                    </div>
-                    <div class="col-sm">
-                        {{ inputForm.height|as_crispy_field }}
-                    </div>
-                    <button type="button" class="btn btn-outline-primary" onclick="npOrderDoc_addMorePlaces()"><i class="bi bi-plus-circle"></i></button>
-                    <button type="button" class="btn btn-outline-warning" onclick="npOrderDoc_copyPlaces()"><i class="bi bi-clipboard2-fill"></i></button>
+            <div class="row g-3">
+                <div class="col-sm">
+                    {{ inputForm.cargo_type|as_crispy_field }}
                 </div>
             </div>
         </div>
 
-        <div id="add_more_places_input_group">
-        </div>
-
-        <div class="row g-3">
-            <div class="col-sm">
-                {{ inputForm.description|as_crispy_field }}
+        <div id="cargo-dimensions-container">
+            <div class="np-section np-dimensions-card">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                    <p class="np-section-title mb-0">Параметри місця</p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm np-icon-btn" onclick="npOrderDoc_addMorePlaces()" title="Додати місце">
+                            <i class="bi bi-plus-circle"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm np-icon-btn" onclick="npOrderDoc_copyPlaces()" title="Скопіювати параметри">
+                            <i class="bi bi-clipboard2-fill"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="np-places-list" class="np-places-list">
+                    <div class="row g-2 row-cell-add-more-parcels np-place-row" data-place-item>
+                        <div class="col-12">
+                            <span class="np-place-number">Місце №1</span>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            {{ inputForm.weight|as_crispy_field }}
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            {{ inputForm.width|as_crispy_field }}
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            {{ inputForm.length|as_crispy_field }}
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            {{ inputForm.height|as_crispy_field }}
+                        </div>
+                    </div>
+                </div>
+                <div class="form-text np-muted-hint mt-2">Заповнюйте габарити фактичного пакування для точного тарифу.</div>
             </div>
         </div>
 
-        <div class="row g-3">
-            <div class="col-sm">
-                {{ inputForm.cost|as_crispy_field }}
+        <div class="np-section">
+            <p class="np-section-title mb-3">Опис та терміни</p>
+            <div class="row g-3">
+                <div class="col-sm">
+                    {{ inputForm.description|as_crispy_field }}
+                </div>
             </div>
-            <div class="col-sm">
-                {{ inputForm.dateDelivery|as_crispy_field }}
+
+            <div class="row g-3">
+                <div class="col-sm">
+                    {{ inputForm.cost|as_crispy_field }}
+                </div>
+                <div class="col-sm">
+                    {{ inputForm.dateDelivery|as_crispy_field }}
+                </div>
             </div>
+            <div class="form-text np-muted-hint">Вкажіть оголошену вартість та бажану дату доставки.</div>
         </div>
 
         {% if messages %}
@@ -78,10 +98,10 @@
         
         <div class="d-flex justify-content-center my-2">
           <div id="mainButtons">
-            <button class="btn btn-primary m-2" type="submit" style="height: 38px;" name="save_and_print" value="1">
+            <button class="btn btn-primary m-2 px-3" type="submit" style="height: 38px;" name="save_and_print" value="1">
               <i class="bi bi-printer"></i> Зберегти та друкувати
             </button>
-            <button class="btn btn-primary m-2" type="submit" style="height: 38px;" name="save_and_exit" id="submitButton" value="1">
+            <button class="btn btn-outline-secondary m-2 px-3" type="submit" style="height: 38px;" name="save_and_exit" id="submitButton" value="1">
               <i class="bi bi-x-square"></i> Зберегти та вийти
             </button>
           </div>
@@ -184,8 +204,8 @@
     // Add these new functions at the beginning of your script section
     window.npOrderDoc_addMorePlaces = function() {
         htmx.ajax('POST', "{% url 'add_more_np_places_input_group' %}", {
-            target: '#add_more_places_input_group',
-            swap: 'beforebegin'
+            target: '#np-places-list',
+            swap: 'beforeend'
         });
     }
 
@@ -196,8 +216,8 @@
         const height = document.querySelector('input[name="height"]').value;
 
         htmx.ajax('POST', "{% url 'copy_np_places_input_group' %}", {
-            target: '#add_more_places_input_group',
-            swap: 'beforebegin',
+            target: '#np-places-list',
+            swap: 'beforeend',
             values: {
                 weight: weight,
                 width: width,
@@ -206,6 +226,24 @@
             }
         });
     }
+
+    window.npOrderDoc_refreshPlacesNumbers = function() {
+        const placeRows = document.querySelectorAll('#np-places-list [data-place-item]');
+        placeRows.forEach((row, index) => {
+            const placeNumberEl = row.querySelector('.np-place-number');
+            if (placeNumberEl) {
+                placeNumberEl.textContent = `Місце №${index + 1}`;
+            }
+        });
+    }
+
+    if (window.npOrderDoc_afterSwapHandler) {
+        document.body.removeEventListener('htmx:afterSwap', window.npOrderDoc_afterSwapHandler);
+    }
+    window.npOrderDoc_afterSwapHandler = function() {
+        npOrderDoc_refreshPlacesNumbers();
+    };
+    document.body.addEventListener('htmx:afterSwap', window.npOrderDoc_afterSwapHandler);
 
     // Show loading spinner
     window.npOrderDoc_showSubmitButtonsLoadingSpinner = function() {
@@ -266,6 +304,7 @@
 
         return false;
     }
+    npOrderDoc_refreshPlacesNumbers();
 })();
 </script>
 <style>
@@ -287,6 +326,103 @@
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+}
+
+.np-section {
+    padding: 0;
+    margin-bottom: 0.55rem;
+}
+
+.np-section + .np-section {
+    position: relative;
+    margin-top: 0.35rem;
+    padding-top: 0.8rem;
+}
+
+.np-section + .np-section::before {
+    content: "";
+    position: absolute;
+    left: -1rem;
+    right: -1rem;
+    top: 0;
+    border-top: 2px solid #d6dde6;
+}
+
+.np-section-title {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.np-order-form .form-label {
+    font-size: 0.78rem;
+    color: #8892a5;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.np-order-form .form-control,
+.np-order-form .form-select {
+    min-height: 40px;
+    border-radius: 10px;
+    border-color: #dee2e6;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.np-order-form .form-control:focus,
+.np-order-form .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.14);
+}
+
+.np-order-form .mb-3 {
+    margin-bottom: 0.55rem !important;
+}
+
+.np-dimensions-card {
+    border: 1px solid #e3e9f1;
+    border-radius: 12px;
+    padding: 0.75rem;
+    background: #f8fafc;
+    box-shadow: 0 1px 2px rgba(18, 38, 63, 0.04);
+}
+
+.np-icon-btn {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.np-muted-hint {
+    color: #6c757d;
+}
+
+.np-places-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.np-place-row {
+    padding: 0.35rem 0;
+    border-bottom: 1px solid #edf1f5;
+    align-items: end;
+}
+
+.np-places-list .np-place-row:last-child {
+    border-bottom: 0;
+}
+
+.np-place-number {
+    display: inline-block;
+    font-size: 0.76rem;
+    letter-spacing: 0.03em;
+    color: #6c757d;
+    text-transform: uppercase;
+    font-weight: 600;
 }
 
 .alert {
@@ -317,6 +453,15 @@
     .modal-body-content {
         padding: 0.5rem;
     }
+
+    .np-section {
+        margin-bottom: 0.45rem;
+    }
+
+    .np-section + .np-section::before {
+        left: -0.5rem;
+        right: -0.5rem;
+    }
     
     /* Ensure buttons have enough space at the bottom */
     .d-flex.gap-2.justify-content-center {
@@ -329,15 +474,12 @@
         margin-bottom: 0.75rem;
     }
 
-    /* Fix hstack overflow on mobile */
-    .hstack {
+    .np-dimensions-card .d-flex.justify-content-between {
         flex-wrap: wrap;
-        gap: 0.5rem !important;
     }
 
-    .hstack .col-sm {
-        flex: 1 1 calc(50% - 0.5rem);
-        min-width: 0;
+    .np-dimensions-card {
+        padding: 0.6rem;
     }
 
     /* Ensure form inputs don't overflow */

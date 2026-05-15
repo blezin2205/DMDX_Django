@@ -10,6 +10,26 @@ from ..filters import *
 from ..forms import *
 from ..tasks import *
 from ..views import *
+from urllib.parse import urlparse
+from django.utils.http import url_has_allowed_host_and_scheme
+
+def _safe_redirect_target(request, explicit_next=None, default='/'):
+    """Return safe redirect URL preferring explicit next, then HTTP referer."""
+    candidate = explicit_next or request.GET.get('next')
+    if candidate and url_has_allowed_host_and_scheme(candidate, allowed_hosts={request.get_host()}):
+        return candidate
+
+    referer = request.META.get('HTTP_REFERER', '')
+    if referer and url_has_allowed_host_and_scheme(referer, allowed_hosts={request.get_host()}):
+        parsed = urlparse(referer)
+        if parsed.path:
+            redirect_path = parsed.path
+            if parsed.query:
+                redirect_path = f'{redirect_path}?{parsed.query}'
+            return redirect_path
+
+    return default
+
 
 @login_required(login_url='login')
 def booked_supplies_list(request, client_id):
@@ -196,7 +216,20 @@ def booked_cart_badge_count_refresh(request):
         is_one_cart = "IS_MANY"
     booked_cart_first = booked_carts.first()
     cartCountData = {'is_one_cart': is_one_cart, 'booked_cart_first': booked_cart_first}
-    return render(request, 'booked_flow/booked-cart-badge.html', {'cartCountData': cartCountData})
+    hx_current_url = request.headers.get('HX-Current-URL', '')
+    parsed_url = urlparse(hx_current_url) if hx_current_url else None
+    next_url = '/'
+    if parsed_url and parsed_url.path:
+        is_service_url = parsed_url.path == '/booked-cart-badge-count'
+        if not is_service_url:
+            next_url = parsed_url.path
+            if parsed_url.query:
+                next_url = f'{next_url}?{parsed_url.query}'
+    return render(
+        request,
+        'booked_flow/booked-cart-badge.html',
+        {'cartCountData': cartCountData, 'booked_next_url': next_url},
+    )
 
 
 @login_required(login_url='login')
@@ -212,7 +245,10 @@ def add_to_exist_order_from_booked_cart(request):
     return render(request, 'booked_flow/add_to_exist_order_from_booked_cart.html', {'isAdd_to_exist_order': isAdd_to_exist_order, 'orders': orders})
 
 def booked_cart_details(request, booked_cart_id):
-    booked_cart = BookedOrderInCart.objects.get(id=booked_cart_id)
+    fallback_redirect_url = _safe_redirect_target(request)
+    booked_cart = BookedOrderInCart.objects.filter(id=booked_cart_id).first()
+    if booked_cart is None:
+        return redirect(fallback_redirect_url)
     sups_in_booked_cart = booked_cart.bookedsupplyinorderincart_set.all()
     cartCountData = countCartItemsHelper(request)
     orderForm = OrderInCartForm(request.POST or None)
@@ -222,9 +258,9 @@ def booked_cart_details(request, booked_cart_id):
     if request.method == 'POST':
 
         if 'delete' in request.POST:
-            next = request.POST.get('next')
+            next_url = _safe_redirect_target(request, explicit_next=request.POST.get('next'))
             booked_cart.delete()
-            return HttpResponseRedirect(next)
+            return HttpResponseRedirect(next_url)
         else:
             if orderForm.is_valid():
                 orderType = request.POST.get('orderType')
@@ -312,8 +348,19 @@ def booked_cart_details(request, booked_cart_id):
 
                 return redirect('/orders')
 
-    return render(request, 'booked_flow/booked_cart.html',
-                  {'booked_cart': booked_cart, 'orderForm': orderForm, 'sups_in_booked_cart': sups_in_booked_cart, 'cartCountData': cartCountData, 'uncompleted_orders': uncompleted_orders})
+    initial_next_url = _safe_redirect_target(request, default='/')
+    return render(
+        request,
+        'booked_flow/booked_cart.html',
+        {
+            'booked_cart': booked_cart,
+            'orderForm': orderForm,
+            'sups_in_booked_cart': sups_in_booked_cart,
+            'cartCountData': cartCountData,
+            'uncompleted_orders': uncompleted_orders,
+            'initial_next_url': initial_next_url,
+        },
+    )
 
 
 def booked_carts_list(request):
@@ -326,6 +373,7 @@ def booked_carts_list(request):
 def delete_sup_from_booked_cart_delete_action(request):
     del_sup_id = request.POST.get('del_sup_id')
     cart_id = request.POST.get('booked_cart_id')
+    next_url = request.POST.get('next') or '/'
     booked_cart = BookedOrderInCart.objects.get(id=cart_id)
     try:
         sup_delivery = BookedSupplyInOrderInCart.objects.get(id=del_sup_id)
@@ -334,7 +382,14 @@ def delete_sup_from_booked_cart_delete_action(request):
         pass
     if booked_cart.bookedsupplyinorderincart_set.count() == 0:
         booked_cart.delete()
-    return HttpResponse(status=200)
+        response = HttpResponse(status=200)
+        response['HX-Redirect'] = next_url
+        trigger_client_event(response, 'subscribe-booked-cart-badge-count', {})
+        return response
+    total_count = booked_cart.get_cart_items
+    response = HttpResponse(f'<span id="booked-cart-total-count" hx-swap-oob="true">{total_count} шт.</span>')
+    trigger_client_event(response, 'subscribe-booked-cart-badge-count', {})
+    return response
 
 
 def minus_from_booked_supply_list_item(request):

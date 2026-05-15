@@ -58,12 +58,12 @@ $(function() {
         
         // Update modal header with order information
         $('#npModalLabel').html(`
-            <div class="d-flex align-items-center gap-1 justify-content-center">
+            <div class="d-flex align-items-center gap-1 justify-content-center fw-semibold">
                 <i class="bi bi-box-seam"></i>
                 <span>${orderNumber}</span>
             </div>
-            <div class="text-muted small" style="font-size: 0.85rem;">${placeName}</div>
-            ${orderComment ? `<div class="text-muted small text-break" style="font-size: 0.85rem;">${orderComment}</div>` : ''}
+            <div class="text-muted small" style="font-size: 0.8rem;">${placeName}</div>
+            ${orderComment ? `<div class="text-muted small text-break" style="font-size: 0.8rem;">${orderComment}</div>` : ''}
         `);
         
         // Show modal

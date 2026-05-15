@@ -39,6 +39,7 @@ from .analytics import PreorderAnalytics
 from django.utils import timezone
 from googletrans import Translator
 import pandas as pd
+from urllib.parse import urlparse
 
 
 # @login_required(login_url='login')
@@ -548,12 +549,30 @@ def updateItem(request, supp_id):
 
 def updateCartItemCount(request):
     cartCountData = countCartItemsHelper(request)
-    return render(request, 'partials/cart/cart-badge.html', {'cartCountData': cartCountData})
+    hx_current_url = request.headers.get('HX-Current-URL', '')
+    parsed_url = urlparse(hx_current_url) if hx_current_url else None
+    next_url = '/'
+    if parsed_url and parsed_url.path:
+        is_service_url = parsed_url.path in ('/update-cart-item-count/', '/update-precart-item-count/')
+        if not is_service_url:
+            next_url = parsed_url.path
+            if parsed_url.query:
+                next_url = f'{next_url}?{parsed_url.query}'
+    return render(request, 'partials/cart/cart-badge.html', {'cartCountData': cartCountData, 'cart_next_url': next_url})
 
 
 def updatePreCartItemCount(request):
     cartCountData = countCartItemsHelper(request)
-    return render(request, 'partials/cart/precart-badge.html', {'cartCountData': cartCountData})
+    hx_current_url = request.headers.get('HX-Current-URL', '')
+    parsed_url = urlparse(hx_current_url) if hx_current_url else None
+    next_url = '/'
+    if parsed_url and parsed_url.path:
+        is_service_url = parsed_url.path in ('/update-cart-item-count/', '/update-precart-item-count/')
+        if not is_service_url:
+            next_url = parsed_url.path
+            if parsed_url.query:
+                next_url = f'{next_url}?{parsed_url.query}'
+    return render(request, 'partials/cart/precart-badge.html', {'cartCountData': cartCountData, 'precart_next_url': next_url})
 
 
 @login_required(login_url='login')
@@ -638,6 +657,7 @@ def updateCartItem(request):
     data = json.loads(request.body)
     prodId = data['productId']
     action = data['action']
+    next_url = data.get('next') or '/'
 
     print('Action', action)
     print('id', prodId)
@@ -659,11 +679,12 @@ def updateCartItem(request):
         if isLastItemInCart:
             order.delete()
 
-    return JsonResponse({'isLastItemInCart': isLastItemInCart}, safe=False)
+    return JsonResponse({'isLastItemInCart': isLastItemInCart, 'redirectUrl': next_url}, safe=False)
 
 @login_required(login_url='login')
 def registerPage(request):
     form = CreateUserForm()
+    cartCountData = countCartItemsHelper(request)
     if request.method == 'POST':
         form = CreateUserForm(request.POST)
         if form.is_valid():
@@ -671,10 +692,14 @@ def registerPage(request):
             user.save()
             # Apply pending relations (places, categories, and client group)
             form.apply_pending_relations(user)
-            return redirect('/')
+            messages.success(request, 'Акаунт клієнта створено')
+            return redirect('auth')
 
-    context = {'title': 'Створити новий аккаунт для клієнта', 'form': form}
-    return render(request, 'auth/register.html', context)
+    return render(request, 'auth/register.html', {
+        'title': 'Створити новий аккаунт для клієнта',
+        'form': form,
+        'cartCountData': cartCountData,
+    })
 
 
 @unauthenticated_user
@@ -2906,10 +2931,54 @@ def addNewCity(request):
         form = NewCityForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('/')
+            messages.success(request, 'Місто додано')
+            return redirect('add-new-city')
 
-    return render(request, 'supplies/supplies/createSupply.html',
-                  {'title': f'Додати нове місто', 'form': form, 'cartCountData': cartCountData})
+    cities = City.objects.annotate(
+        place_count=Count('place', distinct=True),
+    ).order_by('name')
+    for city in cities:
+        city.device_count = Device.objects.filter(in_city_id=city.id).count()
+    return render(request, 'supplies/supplies/add_city.html', {
+        'title': 'Міста',
+        'form': form,
+        'cities': cities,
+        'cartCountData': cartCountData,
+    })
+
+
+def _annotate_city_counts(city):
+    city.place_count = Place.objects.filter(city_ref=city).count()
+    city.device_count = Device.objects.filter(in_city=city).count()
+    return city
+
+
+def _cascade_delete_city(city):
+    Place.objects.filter(city_ref=city).delete()
+    Device.objects.filter(in_city=city).delete()
+    city.delete()
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
+def update_city(request, city_id):
+    city = get_object_or_404(City, id=city_id)
+    name = (request.POST.get('name') or '').strip()
+    if name:
+        city.name = name
+        city.save()
+    return render(request, 'partials/supplies/city_row.html', {
+        'city': _annotate_city_counts(city),
+    })
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
+@transaction.atomic
+def delete_city(request, city_id):
+    city = get_object_or_404(City, id=city_id)
+    _cascade_delete_city(city)
+    return HttpResponse('')
 
 
 @login_required(login_url='login')
@@ -2921,10 +2990,65 @@ def addNewCategory(request):
         form = NewCategoryForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('/')
+            messages.success(request, 'Категорію додано')
+            return redirect('add-new-supply-category')
 
-    return render(request, 'supplies/supplies/createSupply.html',
-                  {'title': f'Додати нову категорію для товара', 'form': form, 'cartCountData': cartCountData})
+    categories = Category.objects.annotate(
+        general_supply_count=Count('generalsupply', distinct=True),
+    ).order_by('name')
+    for category in categories:
+        category.supply_lot_count = Supply.objects.filter(
+            Q(category_id=category.id) | Q(general_supply__category_id=category.id)
+        ).distinct().count()
+    return render(request, 'supplies/supplies/add_supply_category.html', {
+        'title': 'Категорії товарів',
+        'form': form,
+        'categories': categories,
+        'cartCountData': cartCountData,
+    })
+
+
+def _annotate_category_counts(category):
+    category.general_supply_count = GeneralSupply.objects.filter(category=category).count()
+    category.supply_lot_count = Supply.objects.filter(
+        Q(category_id=category.id) | Q(general_supply__category_id=category.id)
+    ).distinct().count()
+    return category
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
+def update_supply_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    name = (request.POST.get('name') or '').strip()
+    if name:
+        category.name = name
+        category.save()
+    return render(request, 'partials/supplies/category_row.html', {
+        'category': _annotate_category_counts(category),
+    })
+
+
+def _cascade_delete_category(category):
+    general_supplies = GeneralSupply.objects.filter(category=category)
+    gs_ids = list(general_supplies.values_list('pk', flat=True))
+
+    if gs_ids:
+        SupplyInPreorder.objects.filter(generalSupply_id__in=gs_ids).delete()
+        SupplyInOrder.objects.filter(generalSupply_id__in=gs_ids).delete()
+        general_supplies.delete()
+
+    Supply.objects.filter(category=category).delete()
+    category.delete()
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
+@transaction.atomic
+def delete_supply_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    _cascade_delete_category(category)
+    return HttpResponse('')
 
 
 
@@ -2936,62 +3060,76 @@ def addgeneralSupplyOnly(request):
         form = NewGeneralSupplyForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            return redirect('/')
+            messages.success(request, 'Назву товару додано')
+            return redirect('add-general-supply')
 
-    return render(request, 'supplies/supplies/createSupply.html',
-                  {'title': f'Додати нову назву товару', 'form': form, 'cartCountData': cartCountData})
+    return render(request, 'supplies/supplies/add_general_supply.html', {
+        'title': 'Назви товарів',
+        'form': form,
+        'cartCountData': cartCountData,
+    })
+
+
+ADD_CLIENT_TEMPLATE = 'supplies/clients/add_client.html'
+
+
+def _render_add_client_page(request, form, cartCountData):
+    return render(request, ADD_CLIENT_TEMPLATE, {
+        'title': 'Додати нового клієнта',
+        'form': form,
+        'cartCountData': cartCountData,
+    })
 
 
 @login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
 def addNewClient(request):
-    form = CreateClientForm()
     cartCountData = countCartItemsHelper(request)
+    form = CreateClientForm(request.POST or None)
 
-    if request.method == 'POST':
-        form = CreateClientForm(request.POST)
-        if form.is_valid():
-            name = form.cleaned_data['name']
-            city_ref = form.cleaned_data['city_ref']
-            address = form.cleaned_data['address']
-            link = form.cleaned_data['link']
-            organization_code = form.cleaned_data['organization_code']
-            isPrivatePlace = form.cleaned_data['isPrivatePlace']
+    if request.method == 'POST' and form.is_valid():
+        name = form.cleaned_data['name']
+        city_ref = form.cleaned_data['city_ref']
+        address = form.cleaned_data['address']
+        link = form.cleaned_data['link']
+        organization_code = form.cleaned_data['organization_code']
+        isPrivatePlace = form.cleaned_data['isPrivatePlace']
 
-            org = Place(name=name, city_ref=city_ref, address=address, link=link, isPrivatePlace=isPrivatePlace)
+        org = Place(name=name, city_ref=city_ref, address=address, link=link, isPrivatePlace=isPrivatePlace)
 
-            if organization_code is not None:
-                params = {
-                    "apiKey": "99f738524ca3320ece4b43b10f4181b1",
-                    "modelName": "Counterparty",
-                    "calledMethod": "save",
-                    "methodProperties": {
-                        "CounterpartyType": "Organization",
-                        "EDRPOU": f'{organization_code}',
-                        "CounterpartyProperty": "Recipient"
-                    }
+        if organization_code:
+            params = {
+                "apiKey": "99f738524ca3320ece4b43b10f4181b1",
+                "modelName": "Counterparty",
+                "calledMethod": "save",
+                "methodProperties": {
+                    "CounterpartyType": "Organization",
+                    "EDRPOU": f'{organization_code}',
+                    "CounterpartyProperty": "Recipient"
                 }
-                data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
-                print(data["data"])
-                if data["data"]:
-                    orgData = data["data"][0]
-                    org.organization_code = int(orgData["EDRPOU"])
-                    org.ref_NP = orgData["Ref"]
-                    org.isAddedToNP = data["success"]
-                    org.name_in_NP = orgData["Description"]
+            }
+            data = requests.get('https://api.novaposhta.ua/v2.0/json/', data=json.dumps(params)).json()
+            print(data["data"])
+            if data["data"]:
+                orgData = data["data"][0]
+                org.organization_code = int(orgData["EDRPOU"])
+                org.ref_NP = orgData["Ref"]
+                org.isAddedToNP = data["success"]
+                org.name_in_NP = orgData["Description"]
 
-                if data["errors"]:
-                    errors = data["errors"]
-                    print(errors)
-                    for error in errors:
-                        messages.error(request, error)
-                    return render(request, 'supplies/nova_poshta/create_np_order_doucment.html',
-                                  {'title': f'Додати нового клієнта', 'inputForm': form,
-                                   'cartCountData': cartCountData})
+            if data.get("errors"):
+                for error in data["errors"]:
+                    messages.error(request, error)
+                return _render_add_client_page(request, form, cartCountData)
 
-            org.save()
-            return redirect('/clientsInfo')
-    return render(request, 'supplies/nova_poshta/create_np_order_doucment.html',
-                  {'title': f'Додати нового клієнта', 'inputForm': form, 'cartCountData': cartCountData})
+        org.save()
+        allowed_categories = form.cleaned_data.get('allowed_categories')
+        if allowed_categories:
+            org.allowed_categories.set(allowed_categories)
+        messages.success(request, 'Клієнта додано')
+        return redirect('/clientsInfo')
+
+    return _render_add_client_page(request, form, cartCountData)
 
 
 @login_required(login_url='login')
@@ -3527,9 +3665,13 @@ def _devices_render_to_xls(request, language='uk'):
 @login_required(login_url='login')
 def orderDetail_add_comment(request):
     order_id = request.POST.get("order_id")
-    comment = request.POST.get("comment") or ""
-    print("order_id = ", order_id)
-    print("comment = ", comment)
+    comment = ""
+    if order_id:
+        try:
+            order = Order.objects.get(pk=order_id)
+            comment = order.comment or ""
+        except (Order.DoesNotExist, ValueError):
+            pass
     return render(request, 'partials/common/comment_input_textfield_area.html', {'order_id': order_id, 'comment': comment})
 
 
@@ -3537,6 +3679,8 @@ def orderDetail_add_comment(request):
 def orderDetail_save_comment(request):
     order_id = request.POST.get("order_id")
     comment_textfield = request.POST.get("comment_textfield")
+    if isinstance(comment_textfield, str):
+        comment_textfield = comment_textfield.replace("\r\n", "\n").replace("\r", "\n")
     order = Order.objects.get(id=order_id)
     order.comment = comment_textfield
     order.save(update_fields=["comment"])

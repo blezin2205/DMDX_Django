@@ -1,5 +1,6 @@
 {% if cartCountData.precart_items > 0 %}
-                            <a class="btn btn-cart btn-primary me-3" aria-current="page" style="background: #5bc0de" href="{% url 'precart' %}" >
+                            {% firstof precart_next_url request.get_full_path '/' as next_url %}
+                            <a class="btn btn-cart btn-primary me-3" aria-current="page" style="background: #5bc0de" href="{% url 'precart' %}?next={{ next_url|urlencode }}" >
   <i class="bi bi-basket"></i> <span class="badge bg-danger">{{ cartCountData.precart_items }}</span>
 </a>
                              {% endif %}

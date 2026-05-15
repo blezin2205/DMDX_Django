@@ -1,32 +1,185 @@
-{% extends 'supplies/base/base_for_home.html' %}
-{% load crispy_forms_filters %}
-{% load crispy_forms_tags %}
-{% load bootstrap %}
-{% load mathfilters %}
-{% load myapp_extras %}
+{% extends 'supplies/base/base.html' %}
+{% load static %}
 
-
-{% block title %}
-{{ title }}
-{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-12 col-md-10 col-lg-7 col-xl-6">
-            <div class="card shadow-sm">
-                <div class="card-body p-4 p-md-5">
-                    <h1 class="h4 mb-4 text-center">{{ title }}</h1>
-                    <form method="POST" action="">
-                        {% csrf_token %}
-                        {{ form|crispy }}
-                        <div class="d-flex justify-content-end mt-3">
-                            <button type="submit" class="btn btn-primary">Створити аккаунт</button>
-                        </div>
-                    </form>
+<div class="category-page-outer d-flex justify-content-center px-3">
+    <div class="category-page-container w-100 pb-5 mb-5">
+        <h4 class="title-text mb-4 text-center">
+            <i class="bi bi-person-plus title-icon me-2"></i>{{ title }}
+        </h4>
+
+        {% if messages %}
+        <ul class="messages list-unstyled mb-3">
+            {% for message in messages %}
+            <li class="alert alert-{{ message.tags|default:'info' }} py-2 mb-2">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 mb-3">
+            {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if form.errors %}
+        <div class="alert alert-danger py-2 mb-3">
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                <div>{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="category-section">
+            <p class="category-section-title">Дані користувача</p>
+            <form method="POST" action="">
+                {% csrf_token %}
+
+                <label class="category-field-label" for="id_username">Логін</label>
+                <div class="input-group category-form-input mb-3">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text"
+                           name="username"
+                           id="id_username"
+                           class="form-control"
+                           placeholder="Логін"
+                           value="{{ form.username.value|default:'' }}"
+                           required
+                           maxlength="150"
+                           autofocus>
                 </div>
-            </div>
+
+                <label class="category-field-label" for="id_first_name">Ім'я</label>
+                <div class="input-group category-form-input mb-3">
+                    <span class="input-group-text"><i class="bi bi-person-vcard"></i></span>
+                    <input type="text"
+                           name="first_name"
+                           id="id_first_name"
+                           class="form-control"
+                           placeholder="Ім'я"
+                           value="{{ form.first_name.value|default:'' }}"
+                           maxlength="150">
+                </div>
+
+                <label class="category-field-label" for="id_last_name">Прізвище</label>
+                <div class="input-group category-form-input mb-3">
+                    <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                    <input type="text"
+                           name="last_name"
+                           id="id_last_name"
+                           class="form-control"
+                           placeholder="Прізвище"
+                           value="{{ form.last_name.value|default:'' }}"
+                           maxlength="150">
+                </div>
+
+                <label class="category-field-label" for="id_password1">Пароль</label>
+                <div class="input-group category-form-input mb-3">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password"
+                           name="password1"
+                           id="id_password1"
+                           class="form-control"
+                           placeholder="Пароль"
+                           required>
+                </div>
+
+                <label class="category-field-label" for="id_password2">Підтвердження пароля</label>
+                <div class="input-group category-form-input mb-3">
+                    <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                    <input type="password"
+                           name="password2"
+                           id="id_password2"
+                           class="form-control"
+                           placeholder="Підтвердіть пароль"
+                           required>
+                </div>
+
+                <label class="category-field-label" for="id_places">Організації</label>
+                {{ form.places }}
+                <p class="text-muted small mb-3">{{ form.places.help_text }}</p>
+
+                <label class="category-field-label" for="id_allowed_categories">Дозволені категорії</label>
+                {{ form.allowed_categories }}
+                <p class="text-muted small mb-4">{{ form.allowed_categories.help_text|safe }}</p>
+
+                <button class="btn btn-primary px-4" type="submit">
+                    <i class="bi bi-person-check me-1"></i>Створити аккаунт
+                </button>
+            </form>
         </div>
     </div>
 </div>
+
+<style>
+.category-page-outer {
+    width: 100%;
+}
+
+.category-page-container {
+    max-width: 720px;
+}
+
+.category-section {
+    border: 1px solid #e3e9f1;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    background: #f8fafc;
+}
+
+.category-section-title {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.category-field-label {
+    display: block;
+    font-size: 0.8rem;
+    color: #7c8698;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.category-form-input .form-control,
+.category-form-input .input-group-text {
+    min-height: 40px;
+    border-color: #dee2e6;
+}
+
+.category-form-input .form-control {
+    border-radius: 0 10px 10px 0;
+}
+
+.category-form-input .input-group-text {
+    border-radius: 10px 0 0 10px;
+    background: #fff;
+    color: #6c757d;
+}
+
+.category-form-input .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.16rem rgba(13, 110, 253, 0.14);
+}
+
+.category-multiselect {
+    min-height: 120px;
+    border-radius: 10px;
+    border-color: #dee2e6;
+}
+
+.category-multiselect:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.16rem rgba(13, 110, 253, 0.14);
+}
+</style>
 {% endblock %}

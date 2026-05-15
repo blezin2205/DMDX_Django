@@ -7,22 +7,91 @@
 {% endblock %}
 
 {% block content %}
+<style>
+.preorders-filter-panel {
+    padding: 0.55rem 0.65rem;
+}
+
+.preorders-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(130px, 1fr));
+    gap: 0.45rem 0.6rem;
+    align-items: end;
+}
+
+.preorders-filter-grid .field-search {
+    grid-column: span 2;
+}
+
+.preorders-filter-panel .mb-3 {
+    margin-bottom: 0 !important;
+}
+
+.preorders-filter-panel label {
+    margin-bottom: 0.15rem;
+    font-size: 0.77rem;
+    color: #6c757d;
+}
+
+.preorders-filter-panel .form-control,
+.preorders-filter-panel .form-select {
+    min-height: calc(1.5em + 0.45rem + 2px);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.88rem;
+}
+
+.preorders-filter-actions {
+    margin-top: 0.45rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 991.98px) {
+    .preorders-filter-grid {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+    }
+    .preorders-filter-grid .field-search {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .preorders-filter-grid {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+    }
+    .preorders-filter-grid .field-search {
+        grid-column: span 1;
+    }
+    .preorders-filter-actions {
+        justify-content: stretch;
+    }
+    .preorders-filter-actions .btn {
+        flex: 1 1 auto;
+    }
+}
+</style>
      <form method="post" class="form-inline justify-content-center">
       {% csrf_token %}
-     <div class="{% if request.user_agent.is_mobile %}d-flex flex-column gap-3{% else %}hstack gap-2{% endif %}">
-         <div class="{% if request.user_agent.is_mobile %}container bg-light border shadow-sm py-1 px-2 my-2 rounded-3 w-100{% else %}hstack w-100 gap-2 bg-light border shadow-sm px-4 py-2 my-3 bg-body rounded justify-content-between{% endif %}" style="{% if request.user_agent.is_mobile %}margin-left: 0;{% endif %}">
-             <div class="{% if request.user_agent.is_mobile %}d-flex flex-column gap-3{% else %}hstack gap-4{% endif %}">
-                 {{ preorderFilter.form.state_of_delivery|as_crispy_field }}
-                 {{ preorderFilter.form.date_range|as_crispy_field }}
+     <div class="{% if request.user_agent.is_mobile %}d-flex flex-column gap-3{% else %}d-flex flex-column gap-2{% endif %}">
+         <div class="preorders-filter-panel bg-light border shadow-sm rounded-3 w-100">
+             <div class="preorders-filter-grid">
+                 <div>{{ preorderFilter.form.state_of_delivery|as_crispy_field }}</div>
+                 <div>{{ preorderFilter.form.date_range|as_crispy_field }}</div>
                  {% if request.user|has_group:"empl" or request.user.is_staff %}
-                 {{ preorderFilter.form.for_state_of_client|as_crispy_field }}
-                 {{ preorderFilter.form.isPreorder|as_crispy_field }}
-                 {{ preorderFilter.form.search_text|as_crispy_field }}
+                 <div>{{ preorderFilter.form.for_state_of_client|as_crispy_field }}</div>
+                 <div>{{ preorderFilter.form.isPreorder|as_crispy_field }}</div>
+                 <div class="field-search">{{ preorderFilter.form.search_text|as_crispy_field }}</div>
                  {% endif %}
              </div>
-             <button class="btn {% if request.user_agent.is_mobile %}btn-primary w-100{% else %}btn-outline-primary my-2{% endif %}" type="submit">
-                 {% if request.user_agent.is_mobile %}<i class="bi bi-search me-1"></i>{% endif %}Застосувати
-             </button>
+             <div class="preorders-filter-actions">
+                 <button class="btn btn-primary btn-sm" type="submit">
+                     <i class="bi bi-search me-1"></i>Застосувати
+                 </button>
+                 <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
+             </div>
          </div>
          
          {% if request.user_agent.is_mobile %}

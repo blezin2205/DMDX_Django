@@ -69,9 +69,9 @@
     <div class="col-md-2 d-flex justify-content-end">
         <button class="btn btn-sm btn-outline-danger" 
             hx-post="{% url 'delete_sup_from_booked_cart_delete_action' %}" 
-            hx-vals='{"del_sup_id": {{ item.id }}, "booked_cart_id": {{ booked_cart.id }}}' 
-            hx-target="closest div .card" 
-            hx-swap="outerHTML">
+            hx-vals='{"del_sup_id": {{ item.id }}, "booked_cart_id": {{ booked_cart.id }}, "next": "{{ initial_next_url|default:'/'|escapejs }}"}' 
+            hx-target="closest .card" 
+            hx-swap="delete">
             <i class="bi bi-trash"></i>
         </button>
     </div>

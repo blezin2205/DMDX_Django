@@ -6,7 +6,7 @@
 
 {% csrf_token %}
 <tr id="supply-row-{{ el.id }}">
-    <th scope="row" style="text-align: left; max-width: 350px">
+    <th scope="row" class="text-start col-name">
         {% if el.image %}
             <div style="display:flex; flex-direction: row;">
                 <a href="#" class="pop">
@@ -22,19 +22,26 @@
             {{ el.name }}
         {% endif %}
     </th>
-    <td>{% if el.package_and_tests is not none %}{{ el.package_and_tests }}{% endif %}</td>
-    <td>{{ el.category.name }}</td>
-    <td>{% if el.ref is not none %}{{ el.ref }}{% endif %}</td>
-    <td>{% if el.SMN_code is not none %}{{ el.SMN_code }}{% endif %}</td>
+    <td class="truncate-cell col-pack" title="{{ el.package_and_tests|default_if_none:'' }}">{% if el.package_and_tests is not none %}{{ el.package_and_tests }}{% endif %}</td>
+    <td class="truncate-cell col-category" title="{{ el.category.name }}">{{ el.category.name }}</td>
+    <td class="truncate-cell col-ref" title="{{ el.ref|default_if_none:'' }}">{% if el.ref is not none %}{{ el.ref }}{% endif %}</td>
+    <td class="truncate-cell col-smn" title="{{ el.SMN_code|default_if_none:'' }}">{% if el.SMN_code is not none %}{{ el.SMN_code }}{% endif %}</td>
     <td class="supplyRow">
-        <table class="rounded-3 overflow-hidden table table-light table-borderless mb-0">
+        <table class="rounded-3 overflow-hidden table table-light table-borderless table-sm mb-0 nested-supply-table">
             <tbody>
                 {% for supp in el.general.all %}
                     <tr>
-                        <td style="width: 200px">
-                            <div>{% if supp.supplyLot is not none %}{{ supp.supplyLot }}{% endif %}</div>
+                        <td class="supply-lot-col">
+                            <div class="lot-content">
+                                {% if request.user|has_group:"admin" %}
+                                    <button class="btn btn-link p-0 lot-inline-edit-btn edit-lot-btn" data-supply-id="{{ supp.id }}" role="button" title="Редагувати LOT">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                {% endif %}
+                                <span class="lot-value">{% if supp.supplyLot is not none %}{{ supp.supplyLot }}{% endif %}</span>
+                            </div>
                         </td>
-                        <td style="width: 150px">
+                        <td class="supply-qty-col">
                             <div>
                                 <span style="font-weight: 600">{{ supp.count }}</span>
                                 {% if supp.countOnHold %}
@@ -53,7 +60,7 @@
                                 {% endif %}
                             </div>
                         </td>
-                        <td style="width: 100px">
+                        <td class="supply-exp-col">
                             <div style="color:{% if supp.date_is_good %}blue{% elif supp.date_is_today %}orange{% else %}red{% endif %};">
                                 {{ supp.expiredDate|date:"d.m.Y" }}
                             </div>
@@ -62,9 +69,6 @@
                             <div class="hstack gap-1 justify-content-end">
                                 {% if request.user.is_staff or request.user|has_group:"empl" %}
                                     {% include 'partials/cart/add_cart_button.html' with supp=supp %}
-                                    {% if request.user|has_group:"admin" %}
-                                        <button class="btn btn-sm btn-warning edit-lot-btn" data-supply-id="{{ supp.id }}" role="button" title="Редагувати LOT"><i class="bi bi-pencil"></i></button>
-                                    {% endif %}
                                 {% endif %}
                             </div>
                         </td>
@@ -75,11 +79,26 @@
     </td>
     <td>
         <div class="hstack gap-1 justify-content-end">
+            {% include 'partials/cart/add_precart_button_general.html' with el=el %}
             {% if request.user|has_group:"admin" %}
-                <button class="btn btn-sm btn-primary add-lot-btn" data-supply-id="{{ el.id }}" role="button" title="Додати LOT"><i class="bi bi-plus-square"></i></button>
-                <button class="btn btn-sm btn-warning edit-gen-sup-btn" data-supply-id="{{ el.id }}" role="button" title="Редагувати назву"><i class="bi bi-pencil"></i></button>
+                <div class="dropdown">
+                    <button class="btn btn-link p-0 text-muted compact-menu-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Дії">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <button class="dropdown-item add-lot-btn" data-supply-id="{{ el.id }}" type="button">
+                                Додати LOT
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item edit-gen-sup-btn" data-supply-id="{{ el.id }}" type="button">
+                                Редагувати назву
+                            </button>
+                        </li>
+                    </ul>
+                </div>
             {% endif %}
-                {% include 'partials/cart/add_precart_button_general.html' with el=el %}
         </div>
     </td>
 </tr>

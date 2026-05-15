@@ -1,10 +1,12 @@
 {% load myapp_extras %}
     {% if cartCountData.is_one_cart == 'IS_ONE' %}
-                        <a class="btn btn-cart me-3" style="background-color: orange" href="{% url 'booked_cart_details' cartCountData.booked_cart_first.id  %}?next={{ request.get_full_path|urlencode }}">
+                        {% firstof booked_next_url request.get_full_path '/' as next_url %}
+                        <a class="btn btn-cart me-3" style="background-color: orange" href="{% url 'booked_cart_details' cartCountData.booked_cart_first.id  %}?next={{ next_url|urlencode }}">
   <i class="bi bi-cart3"></i> <span class="badge bg-danger">{{ cartCountData.booked_cart_first.get_cart_items }}</span>
 </a>
         {% elif cartCountData.is_one_cart == 'IS_MANY' %}
-         <a class="btn  btn-cart me-3" style="background-color: orange" href="{% url 'booked_carts_list' %}?next={{ request.get_full_path|urlencode }}">
+         {% firstof booked_next_url request.get_full_path '/' as next_url %}
+         <a class="btn  btn-cart me-3" style="background-color: orange" href="{% url 'booked_carts_list' %}?next={{ next_url|urlencode }}">
   <i class="bi bi-cart3"></i><span><i class="bi bi-chevron-right"></i></span>
 </a>
     {% endif %}

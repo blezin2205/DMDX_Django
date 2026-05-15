@@ -1,34 +1,29 @@
-         <div class="row row-cell-add-more-parcels bg-light rounded p-2 m-2">
-              <div class="hstack gap-2">
-                              <div class="col-sm">
-    <div class="w-auto">
-              <span class="text-muted">вага: </span>
-              <input id="form1" min="0" name="weight_input_field" value="{{ weight }}" type="number"
-                  class="form-control form-control-sm" />
-          </div>
-  </div>
-  <div class="col-sm">
-      <div class="w-auto">
-              <span class="text-muted">ширина: </span>
-              <input id="form1" min="0" name="width_input_field" value="{{ width }}" type="number"
-                  class="form-control form-control-sm" />
-          </div>
-  </div>
-  <div class="col-sm">
-      <div class="w-auto">
-              <span class="text-muted">довжина: </span>
-              <input id="form1" min="0" name="length_input_field" value="{{ length }}" type="number"
-                  class="form-control form-control-sm" />
-          </div>
-  </div>
-             <div class="col-sm">
-                 <div class="w-auto">
-              <span class="text-muted">висота: </span>
-              <input id="form1" min="0" name="height_input_field" value="{{ height }}" type="number"
-                  class="form-control form-control-sm" />
-          </div>
-  </div>
-                  <button class="btn btn-danger" hx-post="{% url 'minus_add_more_np_places_input_group' %}" hx-target="closest .row-cell-add-more-parcels" hx-swap="outerHTML"><i class="bi bi-trash"></i></button>
-             </div>
-
+<div class="row g-2 row-cell-add-more-parcels np-place-row" data-place-item>
+    <div class="col-12 d-flex align-items-center justify-content-between">
+        <span class="np-place-number">Місце №2</span>
+        <button class="btn btn-outline-danger btn-sm np-icon-btn"
+                type="button"
+                title="Видалити місце"
+                hx-post="{% url 'minus_add_more_np_places_input_group' %}"
+                hx-target="closest .row-cell-add-more-parcels"
+                hx-swap="outerHTML">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <label class="form-label">Вага</label>
+        <input min="0" name="weight_input_field" value="{{ weight }}" type="number" class="form-control form-control-sm" />
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <label class="form-label">Ширина</label>
+        <input min="0" name="width_input_field" value="{{ width }}" type="number" class="form-control form-control-sm" />
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <label class="form-label">Довжина</label>
+        <input min="0" name="length_input_field" value="{{ length }}" type="number" class="form-control form-control-sm" />
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <label class="form-label">Висота</label>
+        <input min="0" name="height_input_field" value="{{ height }}" type="number" class="form-control form-control-sm" />
+    </div>
 </div>

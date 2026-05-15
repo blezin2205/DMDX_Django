@@ -8,12 +8,12 @@
         <h2 class="{% if status_of_task == "SUCCESS" %} text-success {% else %} text-danger {% endif %}"><u>{{ status_of_task }}</u></h2>
     {% endif %}
 
-<section class="h-100 shadow p-3 mb-5 rounded row d-flex justify-content-center align-items-center" style="background-color: #eee;">
+<section class="h-100 shadow p-3 mb-5 rounded row d-flex justify-content-center align-items-center delivery-cart-shell" style="background-color: #eee;">
 <div class="d-flex justify-content-between">
-    <h6>Створив: {{ delivery_order.from_user.first_name  }} {{ delivery_order.from_user.last_name  }}</h6>
+    <h6><span class="delivery-section-label">Створив</span><br>{{ delivery_order.from_user.first_name  }} {{ delivery_order.from_user.last_name  }}</h6>
     <h3>Поставка №{{ delivery_order.id}}</h3>
     <div style="align-content: end">
-        <h6>Дата створення: <u>{{ delivery_order.date_created|date:"d.m.Y" }}</u> </h6>
+        <h6><span class="delivery-section-label">Дата створення</span><br><u>{{ delivery_order.date_created|date:"d.m.Y" }}</u></h6>
         <form method="POST" action="{% url 'delivery_order_export_to_excel' delivery_order.id %}">
             {% csrf_token %}
         <button type="submit" class="btn btn-outline-primary w-100" name="xls_button">
@@ -25,6 +25,7 @@
 </div>
 
 <div class="container w-auto">
+    <p class="delivery-section-label mb-1">Підсумок</p>
     <h5>Всього: {{ supDict|total_values_count }} назв.</h5>
     <h5>Всього: {{ total_count }} шт.</h5>
 </div>
@@ -97,6 +98,7 @@
 
           <form method="POST" action="{% url 'save-delivery' delivery_order.id %}">
                <section class="h-100 p-3 my-4 row d-flex shadow-sm rounded justify-content-center align-items-center" style="background-color: #f8f8f8;">
+               <p class="delivery-section-label mb-2">Коментар до поставки</p>
                {{ form.description|as_crispy_field }}
               {% csrf_token %}
           <button class="w-50 btn btn-primary my-2" type="submit" name="save">Зберегти коментар</button>
@@ -170,6 +172,22 @@ document.getElementById('deliveryForm').addEventListener('submit', function(even
     }
 });
 </script>
+
+<style>
+.delivery-section-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.delivery-cart-shell .form-label {
+    font-size: 0.82rem;
+    color: #7c8698;
+    font-weight: 600;
+}
+</style>
 
 
 </section>

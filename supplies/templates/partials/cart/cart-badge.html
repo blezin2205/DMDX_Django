@@ -1,7 +1,8 @@
 {% load myapp_extras %}
 {% if request.user.is_staff or request.user|has_group:"empl" %}
     {% if cartCountData.cart_items > 0 %}
-                        <a class="btn btn-cart btn-primary me-3" href="{% url 'cart' %}?next={{ request.get_full_path|urlencode }}">
+                        {% firstof cart_next_url request.get_full_path '/' as next_url %}
+                        <a class="btn btn-cart btn-primary me-3" href="{% url 'cart' %}?next={{ next_url|urlencode }}">
   <i class="bi bi-cart3"></i> <span class="badge bg-danger">{{ cartCountData.cart_items }}</span>
 </a>
                             {% endif %}

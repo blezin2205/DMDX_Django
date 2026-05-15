@@ -1,0 +1,38 @@
+<tr id="category-row-{{ category.id }}">
+    <td>
+        <form id="category-form-{{ category.id }}"
+              class="category-row-form m-0"
+              hx-post="{% url 'update-supply-category' category.id %}"
+              hx-target="#category-row-{{ category.id }}"
+              hx-swap="outerHTML">
+            {% csrf_token %}
+            <div class="input-group category-form-input input-group-sm">
+                <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                <input type="text"
+                       name="name"
+                       class="form-control"
+                       value="{{ category.name }}"
+                       aria-label="Назва категорії"
+                       required
+                       maxlength="50">
+            </div>
+        </form>
+    </td>
+    <td class="text-end text-nowrap" style="width: 120px;">
+        <button type="submit"
+                form="category-form-{{ category.id }}"
+                class="btn btn-sm btn-success me-1"
+                title="Зберегти">
+            <i class="bi bi-check-lg"></i>
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger"
+                hx-delete="{% url 'delete-supply-category' category.id %}"
+                hx-target="#category-row-{{ category.id }}"
+                hx-swap="outerHTML"
+                hx-confirm="Видалити категорію «{{ category.name }}»?{% if category.general_supply_count or category.supply_lot_count %} Буде безповоротно видалено{% if category.general_supply_count %} {{ category.general_supply_count }} назв товарів{% endif %}{% if category.general_supply_count and category.supply_lot_count %} та{% endif %}{% if category.supply_lot_count %} {{ category.supply_lot_count }} партій на складі{% endif %}.{% else %} Пов’язаних товарів немає.{% endif %}"
+                title="Видалити">
+            <i class="bi bi-trash"></i>
+        </button>
+    </td>
+</tr>

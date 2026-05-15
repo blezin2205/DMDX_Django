@@ -90,7 +90,14 @@ class CreateClientForm(ModelForm):
         self.fields['city_ref'].label = "Місто"
         self.fields['address'].label = "Адреса"
         self.fields['link'].label = "Ссилка"
-        self.fields['organization_code'].label = "ЄДРПОУ (Якщо поле заповнене, організація буде додана в НП)"
+        self.fields['organization_code'].label = "ЄДРПОУ"
+        self.fields['allowed_categories'].label = "Дозволені категорії"
+        self.fields['isPrivatePlace'].label = "Приватна організація"
+        self.fields['city_ref'].widget.attrs.update({'class': 'form-select'})
+        self.fields['allowed_categories'].widget.attrs.update({
+            'class': 'form-select category-multiselect mb-1',
+            'size': '6',
+        })
 
 
     def clean_organization_code(self):
@@ -195,6 +202,9 @@ class CreateUserForm(UserCreationForm):
         self.fields['last_name'].label = "Прізвище"
         self.fields['password1'].label = "Пароль"
         self.fields['password2'].label = "Підтвердження пароля"
+        multiselect_attrs = {'class': 'form-select category-multiselect mb-1', 'size': '6'}
+        self.fields['places'].widget.attrs.update(multiselect_attrs)
+        self.fields['allowed_categories'].widget.attrs.update(multiselect_attrs)
 
     def save(self, commit=True):
         user = super().save(commit=commit)
@@ -352,6 +362,7 @@ class OrderInCartForm(ModelForm):
     class Meta:
         model = OrderInCart
         fields = ['comment', 'isComplete', 'dateToSend']
+
     def __init__(self, *args, **kwargs):
         super(OrderInCartForm, self).__init__(*args, **kwargs)
         self.fields['comment'].label = "Коментар"

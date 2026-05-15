@@ -2,7 +2,8 @@ import django_filters
 from .models import *
 from django import forms
 from django_filters import CharFilter, ChoiceFilter, ModelChoiceFilter
-from django.db.models import Exists, OuterRef, Q, Prefetch
+from django.db.models import Exists, OuterRef, Q, Prefetch, CharField
+from django.db.models.functions import Cast
 from django.utils import timezone
 from django.forms.widgets import *
 
@@ -80,10 +81,11 @@ class OrderFilter(django_filters.FilterSet):
 
     for_state_of_client = ChoiceFilter(choices=PRIVATE_CHOICES, label='Тип організації', method='filter_by_state_of_client')
     for_np_delivery_state = ChoiceFilter(choices=NP_DELIVERY_STATE, label='НП Статус', method='filter_by_state_of_np')
+    search_text = CharFilter(method='filter_by_search_text', label='Пошук...')
 
     class Meta:
         model = Order
-        fields = ['isComplete', 'for_state_of_client', 'for_np_delivery_state']
+        fields = ['isComplete', 'for_state_of_client', 'for_np_delivery_state', 'search_text']
 
     def __init__(self, *args, **kwargs):
         super(OrderFilter, self).__init__(*args, **kwargs)
@@ -94,6 +96,9 @@ class OrderFilter(django_filters.FilterSet):
             {'empty_label': 'Всі'})
         self.filters['for_np_delivery_state'].extra.update(
             {'empty_label': 'Всі'})
+        self.filters['search_text'].field.widget.attrs.update({
+            'placeholder': 'Місто / Організація / № замовлення'
+        })
 
     def filter_by_state_of_client(self, queryset, name, value):
         if value == '1':
@@ -107,6 +112,19 @@ class OrderFilter(django_filters.FilterSet):
         elif value == '0':
             excluded_status_codes = [1, 2, 3, 4, 41, 5, 6, 7, 8, 10, 11, 12, 101, 102, 103, 104, 105, 106, 111, 112]
             return queryset.filter(statusnpparselfromdoucmentid__status_code__in=excluded_status_codes)
+
+    def filter_by_search_text(self, queryset, name, value):
+        if not value:
+            return queryset
+
+        return queryset.annotate(
+            order_id_str=Cast('id', output_field=CharField())
+        ).filter(
+            Q(place__city_ref__name__icontains=value)
+            | Q(place__city__icontains=value)
+            | Q(place__name__icontains=value)
+            | Q(order_id_str__icontains=value)
+        ).distinct()
 
 
 class PreorderFilter(django_filters.FilterSet):

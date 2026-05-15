@@ -4,31 +4,91 @@
 {% load bootstrap %}
 
 
-<div class="modal-header py-2">
-  <h6 class="modal-title" id="addNewLotModalLabel">{{ title }}<br><i class="bi bi-dot"><span>{{ generalSupp.name }}</span></i></h6>
-<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="modal-header lot-modal-header">
+  <div>
+    <h6 class="modal-title mb-1" id="addNewLotModalLabel">{{ title }}</h6>
+    <small class="text-muted"><i class="bi bi-box-seam me-1"></i>{{ generalSupp.name }}</small>
+  </div>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
 
-<div class="modal-body p-0" style="min-height: 330px;">
-  <div class="container-fluid p-3">
-      <div class="row">
-          <div class="col-12">
-                  {% csrf_token %}
-                  <div class="messages">
-                      {% if messages %}
-                          {% for message in messages %}
-                              <div class="alert alert-{{ message.tags }}">
-                                  {{ message }}
-                              </div>
-                          {% endfor %}
-                      {% endif %}
-                  </div>
-                  {{ form|crispy }}
-                  <div class="d-flex justify-content-evenly gap-2">
-                    <button class="btn btn-outline-primary" type="submit" name="save">Зберегти</button>
-                    <button class="btn btn-outline-danger" type="submit" name="delete">Видалити</button>
-                  </div>
+<div class="modal-body lot-modal-body">
+  <div class="container-fluid lot-modal-container">
+      <div class="lot-modal-section">
+          <p class="lot-modal-section-title">Дані позиції</p>
+          <div class="messages">
+              {% if messages %}
+                  {% for message in messages %}
+                      <div class="alert alert-{{ message.tags }} py-2">
+                          {{ message }}
+                      </div>
+                  {% endfor %}
+              {% endif %}
           </div>
+          <div class="lot-modal-form">
+              {{ form|crispy }}
+          </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 pt-2">
+        <button class="btn btn-primary px-3" type="submit" name="save">Зберегти</button>
+        <button class="btn btn-outline-danger px-3" type="submit" name="delete">Видалити</button>
       </div>
   </div>
 </div>
+
+<style>
+.lot-modal-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.lot-modal-body {
+    min-height: 330px;
+    padding: 0;
+}
+
+.lot-modal-container {
+    padding: 0.95rem;
+}
+
+.lot-modal-section {
+    border: 1px solid #e3e9f1;
+    border-radius: 12px;
+    padding: 0.8rem;
+    background: #f8fafc;
+}
+
+.lot-modal-section-title {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+}
+
+.lot-modal-form .form-label {
+    font-size: 0.8rem;
+    color: #7c8698;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.lot-modal-form .form-control,
+.lot-modal-form .form-select {
+    min-height: 40px;
+    border-radius: 10px;
+    border-color: #dee2e6;
+}
+
+.lot-modal-form .form-control:focus,
+.lot-modal-form .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.16rem rgba(13, 110, 253, 0.14);
+}
+
+.lot-modal-form .mb-3 {
+    margin-bottom: 0.55rem !important;
+}
+</style>

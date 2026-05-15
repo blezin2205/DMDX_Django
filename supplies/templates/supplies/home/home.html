@@ -12,30 +12,25 @@
 
 {% block content %}
 <div class="container py-1">
-    <div class="btn-group my-3">
-        <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
-        <a href="/childSupply" class="btn btn-primary mx-2 {% if isChild %} active {% endif %}">Список товарів</a>
+    <div class="btn-group my-3 home-view-switch" role="group" aria-label="Перемикання виду списку">
+        <a href="/" class="btn home-view-btn {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+        <a href="/childSupply" class="btn home-view-btn {% if isChild %} active {% endif %}">Список товарів</a>
     </div>
 
-    <form method="get" class="form-inline justify-content-center">
-        <div class="container bg-light border shadow-sm py-1 px-2 mb-2 rounded-3">
-            <div class="d-flex flex-wrap gap-3 align-items-start">
-                <div class="d-flex flex-column gap-1" style="min-width: 100px; flex: 1;">
-                    {{ suppFilter.form.ordering|as_crispy_field }}
-                    {{ suppFilter.form.category|as_crispy_field }}
-                </div>
-                <div class="d-flex flex-column gap-1" style="min-width: 100px; flex: 1;">
-                    {{ suppFilter.form.ref|as_crispy_field }}
-                    {{ suppFilter.form.SMN_code|as_crispy_field }}
-                </div>
-                <div class="d-flex flex-column gap-1" style="min-width: 250px; flex: 2;">
-                    {{ suppFilter.form.name|as_crispy_field }}
-                    <div class="d-flex justify-content-end">
-                        <button class="btn btn-primary mt-3" type="submit">
-                            <i class="bi bi-search me-1"></i>Застосувати
-                        </button>
-                    </div>
-                </div>
+    <form method="get" class="filter-toolbar-form mb-2">
+        <div class="filter-panel bg-light border shadow-sm rounded-3">
+            <div class="filter-grid">
+                <div class="filter-field">{{ suppFilter.form.ordering|as_crispy_field }}</div>
+                <div class="filter-field">{{ suppFilter.form.category|as_crispy_field }}</div>
+                <div class="filter-field">{{ suppFilter.form.ref|as_crispy_field }}</div>
+                <div class="filter-field">{{ suppFilter.form.SMN_code|as_crispy_field }}</div>
+                <div class="filter-field field-name">{{ suppFilter.form.name|as_crispy_field }}</div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-primary btn-sm" type="submit">
+                    <i class="bi bi-search me-1"></i>Застосувати
+                </button>
+                <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
             </div>
         </div>
     </form>
@@ -49,19 +44,19 @@
             {% endfor %}
         </div>
     {% else %}
-        <table class="table centred mt-3 w-auto mx-auto">
+        <table class="table centred mt-3 w-auto mx-auto table-sm align-middle compact-supply-table">
             <thead class="thead-dark">
                 <tr>
-                    <th scope="col" class="textAlignLeft">({{supplies|length}}) Назва товару</th>
-                    <th scope="col">Пакування / Тести</th>
-                    <th scope="col">Категорія</th>
-                    <th scope="col">REF</th>
-                    <th scope="col">SMN</th>
+                    <th scope="col" class="textAlignLeft col-name">({{supplies|length}}) Назва товару</th>
+                    <th scope="col" class="col-pack">Пакування / Тести</th>
+                    <th scope="col" class="col-category">Категорія</th>
+                    <th scope="col" class="col-ref">REF</th>
+                    <th scope="col" class="col-smn">SMN</th>
                     <th scope="col">
                         <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %}">
-                            <div style="width: 200px;">LOT</div>
-                            <div style="width: 150px;">Кількість</div>
-                            <div style="width: 100px;">Термін</div>
+                            <div class="supply-lot-head">LOT</div>
+                            <div class="supply-qty-head">Кількість</div>
+                            <div class="supply-exp-head">Термін</div>
                         </div>
                     </th>
                     <th></th>
@@ -177,6 +172,192 @@
     justify-content: center;
     align-items: center;
     min-height: 200px;
+}
+
+.filter-panel {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0.55rem 0.65rem;
+}
+
+.home-view-switch {
+    background-color: rgba(248, 250, 252, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 10px;
+    padding: 0.2rem;
+    gap: 0.2rem;
+}
+
+.home-view-switch .home-view-btn {
+    border: none;
+    border-radius: 8px !important;
+    color: #334155;
+    font-weight: 600;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.9rem;
+    background-color: transparent;
+}
+
+.home-view-switch .home-view-btn:hover {
+    color: #0f172a;
+    background-color: rgba(226, 232, 240, 0.8);
+}
+
+.home-view-switch .home-view-btn.active {
+    color: #0f172a;
+    background-color: #e2e8f0;
+    box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.25);
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
+    gap: 0.45rem 0.6rem;
+    align-items: end;
+}
+
+.filter-field.field-name {
+    grid-column: span 2;
+}
+
+.filter-panel .mb-3 {
+    margin-bottom: 0 !important;
+}
+
+.filter-panel label {
+    margin-bottom: 0.15rem;
+    font-size: 0.77rem;
+    color: #6c757d;
+}
+
+.filter-panel .form-control,
+.filter-panel .form-select {
+    min-height: calc(1.5em + 0.45rem + 2px);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.88rem;
+}
+
+.filter-actions {
+    margin-top: 0.45rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.4rem;
+}
+
+.compact-menu-trigger,
+.lot-inline-edit-btn {
+    color: #6c757d;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.compact-menu-trigger:hover,
+.lot-inline-edit-btn:hover {
+    color: #212529;
+}
+
+.compact-menu-trigger i,
+.lot-inline-edit-btn i {
+    font-size: 0.95rem;
+}
+
+.lot-content {
+    position: relative;
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.lot-content .lot-inline-edit-btn {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.lot-content .lot-value {
+    display: inline-block;
+}
+
+@media (max-width: 991.98px) {
+    .filter-grid {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+    }
+    .filter-field.field-name {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .filter-panel {
+        padding: 0.5rem;
+    }
+    .filter-grid {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+    }
+    .filter-field.field-name {
+        grid-column: span 1;
+    }
+    .filter-actions {
+        justify-content: stretch;
+    }
+    .filter-actions .btn {
+        flex: 1 1 auto;
+    }
+}
+
+@media (min-width: 992px) {
+    .compact-supply-table {
+        font-size: 0.9rem;
+    }
+    .compact-supply-table th,
+    .compact-supply-table td {
+        padding: 0.35rem 0.45rem;
+        vertical-align: middle;
+    }
+    .compact-supply-table .col-name {
+        min-width: 280px;
+        max-width: 320px;
+    }
+    .compact-supply-table .col-pack {
+        max-width: 130px;
+    }
+    .compact-supply-table .col-category {
+        max-width: 110px;
+    }
+    .compact-supply-table .col-ref,
+    .compact-supply-table .col-smn {
+        max-width: 95px;
+    }
+    .compact-supply-table .truncate-cell {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .compact-supply-table .supply-lot-head {
+        width: 140px;
+    }
+    .compact-supply-table .supply-qty-head {
+        width: 115px;
+    }
+    .compact-supply-table .supply-exp-head {
+        width: 95px;
+    }
+    .compact-supply-table .nested-supply-table td {
+        padding: 0.25rem 0.35rem;
+    }
+    .compact-supply-table .supply-lot-col {
+        width: 140px;
+        text-align: center;
+    }
+    .compact-supply-table .supply-qty-col {
+        width: 115px;
+    }
+    .compact-supply-table .supply-exp-col {
+        width: 95px;
+        white-space: nowrap;
+    }
 }
 </style>
 
@@ -298,6 +479,7 @@
                  showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`, 'Завантаження історії...');
             });
         }
+
     });
 
     // The custom popover implementation has been replaced with Bootstrap's popover component

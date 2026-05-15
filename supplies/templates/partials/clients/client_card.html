@@ -4,7 +4,7 @@
 {% load myapp_extras %}
 
 <div class="col">
-    <div class="card shadow-sm hover-shadow-md transition-all" style="border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; overflow: visible;">
+    <div class="card client-card shadow-sm hover-shadow-md transition-all" data-client-id="{{ client.id }}" style="border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; overflow: visible;">
         <div class="card-content">
             <div class="card-header position-relative p-3 border-0 {% if client.isPrivatePlace %} bg-warning bg-opacity-10 {% else %} bg-primary bg-opacity-10 {% endif %} rounded-top">
                 <div class="d-flex flex-column">

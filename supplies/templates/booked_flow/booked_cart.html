@@ -20,7 +20,7 @@
                     <small class="text-muted"><i class="bi bi-person"></i> Створив:</small> <span class="fw-bold">{{ booked_cart.userCreated }}</span>
                 </div>
                 <div>
-                    <small class="text-muted"><i class="bi bi-box-seam"></i> Всього:</small> <span class="fw-bold">{{ booked_cart.get_cart_items }} шт.</span>
+                    <small class="text-muted"><i class="bi bi-box-seam"></i> Всього:</small> <span class="fw-bold" id="booked-cart-total-count">{{ booked_cart.get_cart_items }} шт.</span>
                 </div>
             </div>
         </div>
@@ -49,22 +49,38 @@
                 <div class="card border-0 bg-white mt-4">
                     <div class="card-body">
                         <h6 class="card-title mb-3"><i class="bi bi-calendar-event me-2"></i>Деталі замовлення</h6>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="d-flex align-items-center gap-2">
-                                    {{ orderForm.dateToSend|as_crispy_field }}
-                                    <button type="button" class="btn btn-outline-primary btn-sm ms-2" onclick="toggleDate(this)" data-selected="false" style="margin-bottom: 20px;">
-                                        <i class="bi bi-calendar-check"></i> Сьогодні
-                                    </button>
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <div class="border rounded p-3 h-100 bg-light-subtle">
+                                    <label class="form-label fw-semibold mb-2">Дата відправки</label>
+                                    <div class="cart-date-field-shell">
+                                        {{ orderForm.dateToSend|as_crispy_field }}
+                                        <button type="button" class="btn btn-link btn-sm date-send-clear-btn d-none" onclick="clearDateSelection()" title="Очистити дату" aria-label="Очистити дату" aria-hidden="true">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap mt-2">
+                                        <button type="button" class="btn btn-outline-primary btn-sm quick-date-btn" onclick="toggleDate(this, 0)" data-selected="false">
+                                            <i class="bi bi-calendar-check"></i> Сьогодні
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm quick-date-btn" onclick="toggleDate(this, 1)" data-selected="false">
+                                            <i class="bi bi-calendar-plus"></i> Завтра
+                                        </button>
+                                    </div>
+                                    <small class="text-muted d-block mt-2">Швидкий вибір дати для зручного оформлення</small>
                                 </div>
                             </div>
-                            <div class="col-md-8">
-                                {{ orderForm.comment|as_crispy_field }}
+                            <div class="col-md-7">
+                                <div class="border rounded p-3 h-100 bg-light-subtle">
+                                    <label class="form-label fw-semibold mb-2">Коментар до замовлення</label>
+                                    {{ orderForm.comment|as_crispy_field }}
+                                </div>
                             </div>
                         </div>
 
                         {% if uncompleted_orders.count > 0 %}
-                        <div class="mt-3">
+                        <div class="mt-3 border rounded p-3 bg-white">
+                            <p class="booked-section-title mb-2">Спосіб збереження</p>
                             <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
                                 <input type="radio" class="btn-check" name="orderType" value="new_order" id="btnradio1" autocomplete="off" checked 
                                     hx-post="{% url 'add_to_exist_order_from_booked_cart' %}" hx-trigger="click" hx-target="#orderType">
@@ -98,52 +114,100 @@
             </button>
         </div>
 
-        <input type="hidden" name="next" value="{{ request.GET.next }}">
+        <input type="hidden" name="next" value="{{ initial_next_url|default:'/' }}">
         {% csrf_token %}
     </form>
 </div>
 
 <script>
-function setTodayDate() {
-    const today = new Date();
-    const dateInput = document.querySelector('input[name="dateToSend"]');
-    if (dateInput) {
-        const formattedDate = today.toISOString().split('T')[0];
-        dateInput.value = formattedDate;
-        // Trigger change event to ensure any listeners are notified
-        dateInput.dispatchEvent(new Event('change'));
-    }
+function formatLocalYMD(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
 }
 
-function setTodayDate() {
-    const today = new Date();
+function setRelativeDate(daysToAdd) {
+    const date = new Date();
+    date.setDate(date.getDate() + daysToAdd);
     const dateInput = document.querySelector('input[name="dateToSend"]');
     if (dateInput) {
-      const formattedDate = today.toISOString().split('T')[0];
-      dateInput.value = formattedDate;
-      // Trigger change event to ensure any listeners are notified
-      dateInput.dispatchEvent(new Event('change'));
+        dateInput.value = formatLocalYMD(date);
+        dateInput.dispatchEvent(new Event('change'));
     }
-  }
+    updateDateClearButtonState();
+}
 
-  function toggleDate(button) {
+function clearQuickDateButtons() {
+    const quickDateButtons = document.querySelectorAll('.quick-date-btn');
+    quickDateButtons.forEach((btn) => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline-primary');
+        btn.setAttribute('data-selected', 'false');
+    });
+}
+
+function syncDateClearBtnPositions() {
+    document.querySelectorAll('.cart-date-field-shell').forEach(function (shell) {
+        const inp = shell.querySelector('input[name="dateToSend"]');
+        const btn = shell.querySelector('.date-send-clear-btn');
+        if (!inp || !btn || btn.classList.contains('d-none')) {
+            return;
+        }
+        const inpRect = inp.getBoundingClientRect();
+        const shellRect = shell.getBoundingClientRect();
+        const top = inpRect.top - shellRect.top + inpRect.height / 2 - btn.offsetHeight / 2;
+        btn.style.top = Math.max(0, top) + 'px';
+        btn.style.right = '0.35rem';
+    });
+}
+
+function updateDateClearButtonState() {
+    const inp = document.querySelector('input[name="dateToSend"]');
+    const btns = document.querySelectorAll('.date-send-clear-btn');
+    if (!inp || !btns.length) {
+        return;
+    }
+    const hasValue = !!(inp.value && String(inp.value).trim());
+    btns.forEach(function (btn) {
+        if (hasValue) {
+            btn.classList.remove('d-none');
+            btn.setAttribute('aria-hidden', 'false');
+        } else {
+            btn.classList.add('d-none');
+            btn.setAttribute('aria-hidden', 'true');
+        }
+    });
+    requestAnimationFrame(function () {
+        syncDateClearBtnPositions();
+    });
+}
+
+function clearDateSelection() {
+    const dateInput = document.querySelector('input[name="dateToSend"]');
+    if (dateInput) {
+        dateInput.value = '';
+        dateInput.removeAttribute('required');
+        dateInput.dispatchEvent(new Event('change'));
+    }
+    clearQuickDateButtons();
+    updateDateClearButtonState();
+}
+
+  function toggleDate(button, preset) {
     const dateInput = document.querySelector('input[name="dateToSend"]');
     const isSelected = button.getAttribute('data-selected') === 'true';
     
     if (isSelected) {
-      // Remove date and reset button state
-      dateInput.value = '';
-      dateInput.removeAttribute('required');
-      button.classList.remove('btn-primary');
-      button.classList.add('btn-outline-primary');
-      button.setAttribute('data-selected', 'false');
+      clearDateSelection();
     } else {
-      // Set today's date and update button state
-      setTodayDate();
+      clearQuickDateButtons();
+      setRelativeDate(preset);
       dateInput.setAttribute('required', 'required');
       button.classList.remove('btn-outline-primary');
       button.classList.add('btn-primary');
       button.setAttribute('data-selected', 'true');
+      updateDateClearButtonState();
     }
   }
 
@@ -181,6 +245,14 @@ function setTodayDate() {
 
 // Add event listeners when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
+    const dateSendInput = document.querySelector('input[name="dateToSend"]');
+    if (dateSendInput) {
+        dateSendInput.addEventListener('input', updateDateClearButtonState);
+        dateSendInput.addEventListener('change', updateDateClearButtonState);
+    }
+    window.addEventListener('resize', syncDateClearBtnPositions);
+    updateDateClearButtonState();
+
     // Add validation to all quantity inputs
     const quantityInputs = document.querySelectorAll('.quantity-input');
     
@@ -194,4 +266,35 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<style>
+.booked-section-title {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.cart-date-field-shell {
+    position: relative;
+    min-width: 0;
+}
+
+.cart-date-field-shell input[name="dateToSend"] {
+    padding-right: 2.35rem;
+}
+
+.cart-date-field-shell .date-send-clear-btn {
+    position: absolute;
+    z-index: 3;
+    line-height: 1;
+    padding: 0.2rem 0.4rem;
+    text-decoration: none;
+    border-radius: 0.25rem;
+}
+
+.cart-date-field-shell .date-send-clear-btn:hover {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+</style>
 {% endblock %}

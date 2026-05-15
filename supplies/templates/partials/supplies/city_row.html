@@ -1,0 +1,38 @@
+<tr id="city-row-{{ city.id }}">
+    <td>
+        <form id="city-form-{{ city.id }}"
+              class="city-row-form m-0"
+              hx-post="{% url 'update-city' city.id %}"
+              hx-target="#city-row-{{ city.id }}"
+              hx-swap="outerHTML">
+            {% csrf_token %}
+            <div class="input-group category-form-input input-group-sm">
+                <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                <input type="text"
+                       name="name"
+                       class="form-control"
+                       value="{{ city.name }}"
+                       aria-label="Назва міста"
+                       required
+                       maxlength="50">
+            </div>
+        </form>
+    </td>
+    <td class="text-end text-nowrap" style="width: 120px;">
+        <button type="submit"
+                form="city-form-{{ city.id }}"
+                class="btn btn-sm btn-success me-1"
+                title="Зберегти">
+            <i class="bi bi-check-lg"></i>
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger"
+                hx-delete="{% url 'delete-city' city.id %}"
+                hx-target="#city-row-{{ city.id }}"
+                hx-swap="outerHTML"
+                hx-confirm="Видалити місто «{{ city.name }}»?{% if city.place_count or city.device_count %} Буде безповоротно видалено{% if city.place_count %} {{ city.place_count }} клієнтів{% endif %}{% if city.place_count and city.device_count %} та{% endif %}{% if city.device_count %} {{ city.device_count }} приладів{% endif %}.{% else %} Пов’язаних записів немає.{% endif %}"
+                title="Видалити">
+            <i class="bi bi-trash"></i>
+        </button>
+    </td>
+</tr>

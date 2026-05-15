@@ -104,7 +104,7 @@ for(var i = 0; i < updateDetailBtns.length; i++) {
         if (user === 'AnonymousUser') {
             console.log('Not logged in')
         } else {
-            sendCartAction(productId, action, url)
+            sendCartAction(productId, action, url, this)
         }
     })
 }
@@ -129,14 +129,68 @@ function senadAction(productId, action, url) {
         })
 }
 
-function sendCartAction(productId, action, url) {
+function getNextRedirectUrl() {
+    const hiddenNextInput = document.querySelector('input[name="next"]');
+    const queryNext = new URLSearchParams(window.location.search).get('next');
+    const nextValue = (hiddenNextInput && hiddenNextInput.value) || queryNext || '/';
+    const fallbackUrl = '/';
+
+    if (!nextValue || nextValue === 'None') {
+        return fallbackUrl;
+    }
+
+    try {
+        const parsedUrl = new URL(nextValue, window.location.origin);
+        const forbiddenPaths = new Set([
+            '/update-cart-item-count/',
+            '/update-precart-item-count/',
+            '/cart/update_item/',
+            '/preorders-cart/update_item/',
+        ]);
+
+        if (forbiddenPaths.has(parsedUrl.pathname)) {
+            return fallbackUrl;
+        }
+    } catch (error) {
+        return fallbackUrl;
+    }
+
+    return nextValue;
+}
+
+function updateCartBadge(action) {
+    if (!window.htmx) {
+        return;
+    }
+
+    const eventName = action === 'delete-precart' ? 'subscribe_precart' : 'subscribe';
+    htmx.trigger(document.body, eventName, {});
+}
+
+function updateCartTotal(removedCount) {
+    const totalElement = document.getElementById('cart-total-count');
+    if (!totalElement || Number.isNaN(removedCount)) {
+        return;
+    }
+
+    const totalMatch = totalElement.textContent.match(/\d+/);
+    if (!totalMatch) {
+        return;
+    }
+
+    const currentTotal = parseInt(totalMatch[0], 10);
+    const nextTotal = Math.max(currentTotal - removedCount, 0);
+    totalElement.textContent = `${nextTotal} шт.`;
+}
+
+function sendCartAction(productId, action, url, clickedButton) {
     fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': csrftoken,
         },
-        body: JSON.stringify({'productId': productId, 'action': action})
+        body: JSON.stringify({'productId': productId, 'action': action, 'next': getNextRedirectUrl()})
     })
     .then((response) => {
         return response.json()
@@ -146,9 +200,19 @@ function sendCartAction(productId, action, url) {
         console.log(data.isLastItemInCart)
 
         if (data.isLastItemInCart) {
-            location.replace('/')
+            location.replace(data.redirectUrl || getNextRedirectUrl() || '/')
         } else {
-            location.reload()
+            const itemRow = clickedButton && clickedButton.closest('[data-cart-item-row]');
+            if (itemRow) {
+                const removedCount = parseInt(itemRow.dataset.itemCount || '0', 10);
+                itemRow.remove();
+                updateCartTotal(removedCount);
+            } else {
+                location.reload();
+                return;
+            }
+
+            updateCartBadge(action);
         }
     })
     .catch(error => {

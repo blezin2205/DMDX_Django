@@ -1,102 +1,104 @@
 {% extends 'supplies/base/base.html' %}
 {% load myapp_extras %}
-{% load crispy_forms_filters %}
-{% load bootstrap %}
 {% load static %}
 
-{% block title %}
-  {{ title }}
-{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<section class="h-100 shadow p-3 mb-5 rounded align-content-center" style="background-color: #f5f5f5; display: flex; justify-content: center; align-items: center;">
+<div class="category-page-outer d-flex justify-content-center px-3">
+    <div class="category-page-container w-100 pb-5 mb-5">
+        <h4 class="title-text mb-4 text-center">
+            <i class="bi bi-upc-scan title-icon me-2"></i>{{ title }}
+        </h4>
 
-    <div class="d-flex justify-content-around w-100">
-        <div>
-            <div class="card shadow-sm" style="margin: 20px;">
-                <div class="card-header fw-bold text-center">
-                    Synchronous Mode
+        <section class="category-section mb-4">
+            <p class="category-section-title">Підказки сканера</p>
+            <div class="row g-2 g-md-3">
+                <div class="col-6 col-md-4">
+                    <div class="scanner-hint-card">
+                        <p class="scanner-hint-card__title">Synchronous Mode</p>
+                        <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903384/syncMode_cr1ova.png" alt="Synchronous Mode" class="scanner-hint-card__img">
+                    </div>
                 </div>
-                <div class="card-body text-center" style="padding: 20px;">
-                    <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903384/syncMode_cr1ova.png" alt="alldata" style="width: 100%; height: 80px; object-fit: contain;">
+                <div class="col-6 col-md-4">
+                    <div class="scanner-hint-card">
+                        <p class="scanner-hint-card__title">Storage Mode</p>
+                        <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903295/storeMode_mohdkj.png" alt="Storage Mode" class="scanner-hint-card__img">
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <div class="scanner-hint-card">
+                        <p class="scanner-hint-card__title">Total Data Count</p>
+                        <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903277/totalCount_hvm7zt.png" alt="Total Data Count" class="scanner-hint-card__img">
+                    </div>
                 </div>
             </div>
-            <div class="card shadow-sm" style="margin: 20px;">
-                <div class="card-header fw-bold text-center">
-                    Storage Mode
-                </div>
-                <div class="card-body text-center" style="padding: 20px;">
-                    <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903295/storeMode_mohdkj.png" alt="alldata" style="width: 320px; height: 80px; object-fit: contain;">
-                </div>
-            </div>
-        </div>
 
-        <div>
-            <div class="card shadow-sm" style="margin: 20px;">
-                <div class="card-header fw-bold text-center">
-                    Upload All Data
-                </div>
-                <div class="card-body text-center" style="padding: 20px;">
-                    <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903286/uploadAllData_g0mul9.png" alt="alldata" style="width: 320px; height: 80px; object-fit: contain;">
-                </div>
-            </div>
-            <div class="card shadow-sm" style="margin: 20px;">
-                <div class="card-header fw-bold text-center">
-                    Total Data Count
-                </div>
-                <div class="card-body text-center" style="padding: 20px;">
-                    <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903277/totalCount_hvm7zt.png" alt="alldata" style="width: 320px; height: 80px; object-fit: contain;">
+            <div class="scanner-actions-subsection">
+                <p class="scanner-subsection-title">Завантаження та очищення</p>
+                <div class="scanner-actions-spread">
+                    <div class="scanner-hint-card scanner-hint-card--action">
+                        <p class="scanner-hint-card__title">Upload All Data</p>
+                        <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903286/uploadAllData_g0mul9.png" alt="Upload All Data" class="scanner-hint-card__img scanner-hint-card__img--action">
+                    </div>
+                    <div class="scanner-hint-card scanner-hint-card--action">
+                        <p class="scanner-hint-card__title">Clear All Data</p>
+                        <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714902868/clearAllData_niur7l.png" alt="Clear All Data" class="scanner-hint-card__img scanner-hint-card__img--action">
+                    </div>
                 </div>
             </div>
-            <div class="card shadow-sm" style="margin: 20px;">
-                <div class="card-header fw-bold text-center">
-                    Clear All Data
+        </section>
+
+        <form method="post" action="" id="upload_supplies_for_new_delivery">
+            {% csrf_token %}
+
+            <section class="category-section mb-4">
+                <p class="category-section-title">Тип штрих-коду</p>
+                <div class="barcode-type-options">
+                    <label class="barcode-type-option" for="radioDataMatrix">
+                        <input class="form-check-input" type="radio" name="barcode_type" id="radioDataMatrix" value="Data Matrix" checked>
+                        <span class="barcode-type-option__label">
+                            <i class="bi bi-qr-code-scan me-1"></i>Lifotronic
+                        </span>
+                    </label>
+                    <label class="barcode-type-option" for="radioSiemens">
+                        <input class="form-check-input" type="radio" name="barcode_type" id="radioSiemens" value="Siemens">
+                        <span class="barcode-type-option__label">
+                            <i class="bi bi-upc me-1"></i>Siemens
+                        </span>
+                    </label>
                 </div>
-                <div class="card-body text-center" style="padding: 20px;">
-                    <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714902868/clearAllData_niur7l.png" alt="alldata" style="width: 320px; height: 80px; object-fit: contain;">
-                </div>
+            </section>
+
+            <section class="category-section mb-4">
+                <p class="category-section-title">Дані сканування</p>
+                <label class="category-field-label" for="id_description">
+                    {{ form.description.label }}
+                </label>
+                <textarea name="description"
+                          id="id_description"
+                          class="form-control delivery-description-field"
+                          rows="14"
+                          placeholder="Вставте відскановані штрих-коди…">{{ form.description.value|default:'' }}</textarea>
+                {% if form.description.help_text %}
+                <p class="text-muted small mt-2 mb-0">{{ form.description.help_text }}</p>
+                {% endif %}
+            </section>
+
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary px-4" type="submit" id="submitButton">
+                    <i class="bi bi-check-lg me-1"></i>Зберегти
+                </button>
+                <button class="btn btn-primary px-4" type="button" id="loadingButton" style="display: none;" disabled>
+                    <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                    <span role="status">Завантаження…</span>
+                </button>
             </div>
-        </div>
+        </form>
     </div>
-</section>
-
-<section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #f5f5f5;">
-<form method="post" action="" id="upload_supplies_for_new_delivery">
-  {% csrf_token %}
-  <div class="container {% if request.user_agent.is_mobile %} w-100 p-1 align-items-start {% else %} w-50 p-3 align-items-start {% endif %}">
-      
-      <div class="container w-100 p-3 my-3 align-items-start bg-light border shadow-sm">
-          <h5>Тип штрих-коду</h5>
-          
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="barcode_type" id="radioDataMatrix" value="Data Matrix" checked>
-            <label class="form-check-label" for="radioDataMatrix">
-              Data Matrix (Універсальний)
-            </label>
-          </div>
-          
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="barcode_type" id="radioSiemens" value="Siemens">
-            <label class="form-check-label" for="radioSiemens">
-              Siemens
-            </label>
-          </div>
-          
-      </div>
-
-      {{ form.description|as_crispy_field }}
-      
-      <button class="btn btn-outline-primary my-5 w-100" type="submit" id="submitButton">Зберегти</button>
-      <button class="btn btn-primary my-5 w-100" type="button" id="loadingButton" style="display: none;" disabled>
-          <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-          <span role="status">Loading...</span>
-      </button>
-  </div>
-
-</form>
+</div>
 
 <script>
-    // Показати лоадінг кнопку
     function showLoadingButton() {
         document.getElementById('submitButton').style.display = 'none';
         document.getElementById('loadingButton').style.display = 'block';
@@ -107,14 +109,10 @@
         document.getElementById('loadingButton').style.display = 'none';
     }
 
-    // Показати попап і лоадінг кнопку перед відправкою форми
     document.getElementById('upload_supplies_for_new_delivery').onsubmit = function(event) {
-        // Prevent the form from submitting normally
         event.preventDefault();
-
-        // Get the values of the radio buttons and description
         var barcodeType = document.querySelector('input[name="barcode_type"]:checked').value;
-        var description = document.getElementById('id_description').value; // Replace 'id_description' with the actual ID of your description field
+        var description = document.getElementById('id_description').value;
         var deliveryOrderId = "{{ delivery_order_id }}";
         retrive_all_scanned_barcodes_for_new_delivery(deliveryOrderId, barcodeType, description);
     };
@@ -133,7 +131,7 @@
         .then(data => {
             hideLoadingButton();
             alert(data.message);
-            window.location.href = `/all_deliveries/${data.delivery_order_id}`; 
+            window.location.href = `/all_deliveries/${data.delivery_order_id}`;
         })
         .catch(error => {
             hideLoadingButton();
@@ -143,7 +141,161 @@
     }
 </script>
 
-{# {% include 'partials/common/progress-bar.html' %} #}
-</section>
-    
+<style>
+.category-page-outer {
+    width: 100%;
+}
+
+.category-page-container {
+    max-width: 900px;
+}
+
+.category-section {
+    border: 1px solid #e3e9f1;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    background: #f8fafc;
+}
+
+.category-section-title {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.category-field-label {
+    display: block;
+    font-size: 0.8rem;
+    color: #7c8698;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.scanner-hint-card {
+    background: #fff;
+    border: 1px solid #e3e9f1;
+    border-radius: 10px;
+    padding: 0.5rem;
+    height: 100%;
+    text-align: center;
+}
+
+.scanner-hint-card__title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.35rem;
+    line-height: 1.2;
+}
+
+.scanner-hint-card__img {
+    width: 100%;
+    max-height: 56px;
+    object-fit: contain;
+}
+
+.scanner-actions-subsection {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px dashed #d5dde8;
+}
+
+.scanner-subsection-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.scanner-actions-spread {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    width: 100%;
+    gap: 0;
+    padding: 0.25rem 0;
+    min-height: 110px;
+}
+
+.scanner-hint-card--action {
+    flex: 0 1 42%;
+    max-width: 320px;
+    min-width: 140px;
+    padding: 0.75rem 0.85rem;
+}
+
+.scanner-hint-card__img--action {
+    max-height: 72px;
+}
+
+@media (max-width: 575.98px) {
+    .scanner-actions-spread {
+        flex-direction: column;
+        align-items: center;
+        gap: 3.5rem;
+    }
+
+    .scanner-hint-card--action {
+        width: 100%;
+        max-width: 280px;
+    }
+}
+
+.barcode-type-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.barcode-type-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.55rem 0.85rem;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.barcode-type-option:has(input:checked) {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.16rem rgba(13, 110, 253, 0.14);
+    background: #fff;
+}
+
+.barcode-type-option__label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.delivery-description-field {
+    border-radius: 10px;
+    border-color: #dee2e6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    resize: vertical;
+    min-height: 280px;
+}
+
+.delivery-description-field:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.16rem rgba(13, 110, 253, 0.14);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+</style>
 {% endblock %}

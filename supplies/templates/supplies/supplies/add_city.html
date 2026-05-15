@@ -1,0 +1,148 @@
+{% extends 'supplies/base/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="category-page-outer d-flex justify-content-center px-3">
+    <div class="category-page-container w-100 pb-5 mb-5">
+        <h4 class="title-text mb-4 text-center">
+            <i class="bi bi-geo-alt title-icon me-2"></i>{{ title }}
+        </h4>
+
+        {% if messages %}
+        <ul class="messages list-unstyled mb-3">
+            {% for message in messages %}
+            <li class="alert alert-{{ message.tags|default:'info' }} py-2 mb-2">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if form.errors %}
+        <div class="alert alert-danger py-2 mb-3">
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                <div>{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="category-section mb-4">
+            <p class="category-section-title">Нове місто</p>
+            <form method="POST" action="">
+                {% csrf_token %}
+                <div class="input-group category-form-input mb-3">
+                    <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                    <input type="text"
+                           name="name"
+                           id="id_name"
+                           class="form-control"
+                           placeholder="Назва міста"
+                           aria-label="Назва міста"
+                           value="{{ form.name.value|default:'' }}"
+                           required
+                           maxlength="50"
+                           autofocus>
+                </div>
+                <button class="btn btn-primary px-4" type="submit">
+                    <i class="bi bi-plus-lg me-1"></i>Додати
+                </button>
+            </form>
+        </div>
+
+        <div class="category-section">
+            <p class="category-section-title">Наявні міста</p>
+            <div class="alert alert-warning py-2 mb-3 small category-delete-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                <strong>Увага при видаленні:</strong> разом із містом безповоротно видаляються усі клієнти (організації) цього міста, їх працівники, передзамовлення, замовлення, сервісні замітки та прилади, прив’язані до міста.
+            </div>
+            {% if cities %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle category-table mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Назва</th>
+                            <th scope="col" class="text-end" style="width: 120px;">Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cities-list">
+                        {% for city in cities %}
+                            {% include 'partials/supplies/city_row.html' %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0 small">Міст ще немає.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.category-page-outer {
+    width: 100%;
+}
+
+.category-page-container {
+    max-width: 720px;
+}
+
+.category-section {
+    border: 1px solid #e3e9f1;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    background: #f8fafc;
+}
+
+.category-section-title {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.category-delete-warning {
+    border-radius: 10px;
+    border-color: #ffe69c;
+    background: #fff9e6;
+}
+
+.category-form-input .form-control,
+.category-form-input .input-group-text {
+    min-height: 40px;
+    border-color: #dee2e6;
+}
+
+.category-form-input .form-control {
+    border-radius: 0 10px 10px 0;
+}
+
+.category-form-input .input-group-text {
+    border-radius: 10px 0 0 10px;
+    background: #fff;
+    color: #6c757d;
+}
+
+.category-form-input .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.16rem rgba(13, 110, 253, 0.14);
+}
+
+.category-table thead th {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+    font-weight: 600;
+    border-bottom-width: 1px;
+}
+
+.category-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.65);
+}
+</style>
+{% endblock %}
