@@ -185,6 +185,147 @@
         </div>
     </form>
 
+{% if clients_analytics %}
+{{ clients_analytics|json_script:"clients-info-analytics-data" }}
+<style>
+.orders-analytics-wrap .oa-kpi-cell {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+}
+.orders-analytics-wrap .oa-kpi-label {
+    font-size: 0.75rem;
+    line-height: 1.25;
+    color: #6c757d;
+    white-space: normal;
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+.orders-analytics-wrap .oa-kpi-val {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2;
+    flex-shrink: 0;
+    text-align: right;
+    margin: 0;
+}
+.orders-analytics-wrap .oa-chart-scroll-y {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 320px;
+    min-height: 220px;
+    max-height: min(720px, 85vh);
+    resize: vertical;
+    -webkit-overflow-scrolling: touch;
+}
+.orders-analytics-wrap .oa-bar-chart-sizer {
+    min-height: 180px;
+    position: relative;
+}
+</style>
+<div class="orders-analytics-wrap mb-3 w-100">
+    <div class="card border shadow-sm rounded-3 overflow-hidden">
+        <button class="btn btn-light w-100 text-start d-flex align-items-center justify-content-between py-2 px-3 border-0 rounded-0"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#clientsInfoAnalyticsBody"
+                aria-expanded="false"
+                aria-controls="clientsInfoAnalyticsBody">
+            <span class="fw-semibold"><i class="bi bi-bar-chart-line text-primary me-2"></i>Аналітика клієнтів</span>
+            <span class="text-muted small">усі організації з поточної вибірки після фільтрів (не лише сторінка)</span>
+            <i class="bi bi-chevron-down ms-2"></i>
+        </button>
+        <div id="clientsInfoAnalyticsBody" class="collapse">
+            <div class="card-body border-top bg-white pt-3">
+                <div class="oa-kpi-compact row g-1 row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 mb-3">
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                            <div class="oa-kpi-label">Організацій у вибірці</div>
+                            <div class="oa-kpi-val" id="ci-total">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                            <div class="oa-kpi-label">Приватні</div>
+                            <div class="oa-kpi-val text-primary" id="ci-private">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                            <div class="oa-kpi-label">Державні / інші</div>
+                            <div class="oa-kpi-val text-secondary" id="ci-public">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Хоча б один користувач у звʼязці з організацією">
+                            <div class="oa-kpi-label">З обліковим записом</div>
+                            <div class="oa-kpi-val" id="ci-with-users">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                            <div class="oa-kpi-label">Без прив’язаного логіну</div>
+                            <div class="oa-kpi-val" id="ci-without-users">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                            <div class="oa-kpi-label">Додані до НП</div>
+                            <div class="oa-kpi-val" id="ci-np">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Усього записів Order для організацій вибірки">
+                            <div class="oa-kpi-label">Замовлень (усього)</div>
+                            <div class="oa-kpi-val" id="ci-orders">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                            <div class="oa-kpi-label">Передзамовлень (усього)</div>
+                            <div class="oa-kpi-val" id="ci-preorders">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                            <div class="oa-kpi-label">Працівників (усього)</div>
+                            <div class="oa-kpi-val" id="ci-workers">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                            <div class="oa-kpi-label">Приладів (усього)</div>
+                            <div class="oa-kpi-val" id="ci-devices">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-lg-5">
+                        <h6 class="text-muted small text-uppercase mb-2">Тип організації</h6>
+                        <div class="border rounded-2 bg-white p-3 d-flex justify-content-center" style="max-height: 300px;">
+                            <canvas id="ciChartType" style="max-width: 100%;"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <h6 class="text-muted small text-uppercase mb-2">Топ міст за кількістю організацій</h6>
+                        <p class="text-muted small mb-2">До 20 міст за поточними фільтрами.</p>
+                        <div class="oa-chart-scroll-y border rounded-2 bg-white">
+                            <div id="ciCitiesChartSizer" class="oa-bar-chart-sizer">
+                                <canvas id="ciChartCities"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% if request.user_agent.is_mobile %}<div class="row row-cols-1 row-cols-lg-1 g-3 py-3"> {% else %} <div class="row row-cols-2 row-cols-lg-2 g-3 py-3"> {% endif %}
     {% for client in clients %}
     {% include 'partials/clients/client_card.html' %}
@@ -334,6 +475,84 @@
     });
 
  </script>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+    var el = document.getElementById('clients-info-analytics-data');
+    if (!el || typeof Chart === 'undefined') return;
+    var D;
+    try { D = JSON.parse(el.textContent); } catch (e) { return; }
+    if (!D || D.total == null) return;
+
+    function setText(id, v) {
+        var n = document.getElementById(id);
+        if (n) n.textContent = v;
+    }
+    setText('ci-total', String(D.total));
+    setText('ci-private', String(D.private_places));
+    setText('ci-public', String(D.public_places));
+    setText('ci-with-users', String(D.with_login_users));
+    setText('ci-without-users', String(D.without_login_users));
+    setText('ci-np', String(D.in_np));
+    setText('ci-orders', String(D.related_orders));
+    setText('ci-preorders', String(D.related_preorders));
+    setText('ci-workers', String(D.related_workers));
+    setText('ci-devices', String(D.related_devices));
+
+    var tc = D.type_chart;
+    if (tc && tc.counts && tc.counts.some(function (x) { return x > 0; })) {
+        new Chart(document.getElementById('ciChartType'), {
+            type: 'doughnut',
+            data: {
+                labels: tc.labels,
+                datasets: [{
+                    data: tc.counts,
+                    backgroundColor: tc.colors || ['#0d6efd', '#6c757d'],
+                    borderWidth: 1,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { position: 'bottom' } },
+                cutout: '52%'
+            }
+        });
+    }
+
+    var cities = D.top_cities;
+    if (cities && cities.labels && cities.labels.length) {
+        var cs = document.getElementById('ciCitiesChartSizer');
+        var scr = cs ? cs.closest('.oa-chart-scroll-y') : null;
+        var n = cities.labels.length;
+        if (cs && scr) { cs.style.minHeight = Math.max(200, n * 24 + 56) + 'px'; }
+        var ch = new Chart(document.getElementById('ciChartCities'), {
+            type: 'bar',
+            data: {
+                labels: cities.labels,
+                datasets: [{ label: 'Організацій', data: cities.counts, backgroundColor: '#198754' }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { precision: 0 } },
+                    y: { ticks: { font: { size: n > 15 ? 9 : 10 }, maxRotation: 0 } }
+                }
+            }
+        });
+        if (scr && typeof ResizeObserver !== 'undefined') {
+            var ro = new ResizeObserver(function () { try { ch.resize(); } catch (e) {} });
+            ro.observe(scr);
+        }
+    }
+})();
+</script>
 {% endblock %}
 
 

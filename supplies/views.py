@@ -35,7 +35,7 @@ from django.core.files.base import ContentFile
 from firebase_admin import storage
 from django.template.loader import render_to_string
 from django.db import transaction
-from .analytics import PreorderAnalytics
+from .analytics import PreorderAnalytics, build_orders_analytics, build_preorders_analytics, build_supply_statistics, build_clients_info_analytics
 from django.utils import timezone
 from googletrans import Translator
 import pandas as pd
@@ -796,6 +796,7 @@ def home(request):
                                                   'supplies': page_obj, 'suppFilter': suppFilter,
                                                   'isHome': True,
                                                   'isAll': True,
+                                                  'isSupplyStats': False,
                                                   'place': place,
                                                    'booked_list_exist': booked_list_exist})
 
@@ -1652,8 +1653,29 @@ def childSupply(request):
 
     return render(request, 'supplies/home/homeChild.html',
                   {'title': 'Дочерні товари', 'supplies': supplies, 'cartCountData': cartCountData,
-                   'suppFilter': suppFilter, 'isHome': True, 'isChild': True})
+                   'suppFilter': suppFilter, 'isHome': True, 'isChild': True, 'isSupplyStats': False})
 
+
+@login_required(login_url='login')
+def supply_statistics(request):
+    if request.user.isClient() and not request.user.is_staff:
+        return redirect('home')
+    track_event('page_viewed', {'page_name': 'supply_statistics'})
+    cartCountData = countCartItemsHelper(request)
+    supply_statistics = build_supply_statistics(request.user)
+    return render(
+        request,
+        'supplies/home/supply_statistics.html',
+        {
+            'title': 'Статистика товарів',
+            'cartCountData': cartCountData,
+            'isHome': True,
+            'isAll': False,
+            'isChild': False,
+            'isSupplyStats': True,
+            'supply_statistics': supply_statistics,
+        },
+    )
 
 
 @login_required(login_url='login')
@@ -1817,7 +1839,10 @@ def orders(request):
 
     orderFilter = OrderFilter(request.POST or None, queryset=ordersObj)
     orders = orderFilter.qs
-    
+    orders_analytics = build_orders_analytics(
+        orderFilter.qs, include_top_places=not isClient, for_user=request.user
+    )
+
     # Skip pagination if isComplete filter is set to '0' (В очікуванні)
     if request.POST and request.POST.get('isComplete') == '0':
         orders = orders  # Return all filtered orders without pagination
@@ -2005,7 +2030,8 @@ def orders(request):
                                'isOrdersTab': True,
                                'disable_order_confirmation_send_action': disable_order_confirmation_send_action,
                                'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place,
-                               'uncomplete_orders_exists': uncomplete_orders_exists})
+                               'uncomplete_orders_exists': uncomplete_orders_exists,
+                               'orders_analytics': orders_analytics})
 
 
     return render(request, 'supplies/orders/orders_new.html',
@@ -2019,7 +2045,8 @@ def orders(request):
                    'disable_order_confirmation_send_action': disable_order_confirmation_send_action,
                    'pinned_orders_exists': pinned_orders_exists, 
                    'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place,
-                   'uncomplete_orders_exists': uncomplete_orders_exists})
+                   'uncomplete_orders_exists': uncomplete_orders_exists,
+                   'orders_analytics': orders_analytics})
 
 
 
@@ -2161,6 +2188,11 @@ def preorders(request):
 
     isClient = request.user.groups.filter(name='client').exists()
     if isClient:
+        orders_analytics_base = PreOrder.objects.filter(place__user=request.user)
+    else:
+        orders_analytics_base = PreOrder.objects.all()
+
+    if isClient:
         if 'get_archive_preorders' in request.POST:
             isArchiveChoosed = True
             orders = PreOrder.objects.filter(place__user=request.user, isClosed=True).annotate(
@@ -2235,6 +2267,11 @@ def preorders(request):
     preorderFilter = PreorderFilter(request.POST, queryset=orders)
     orders = preorderFilter.qs
 
+    preorderAnalyticsFilter = PreorderFilter(request.POST, queryset=orders_analytics_base)
+    preorders_analytics = build_preorders_analytics(
+        preorderAnalyticsFilter.qs, include_top_places=not isClient, for_user=request.user
+    )
+
     if request.method == 'POST':
         selected_orders = request.POST.getlist('xls_preorder_print_buttons')
         if 'print_choosed' in request.POST:
@@ -2248,7 +2285,8 @@ def preorders(request):
 
     return render(request, 'supplies/orders/preorders.html',
                   {'title': title, 'isArchiveChoosed': isArchiveChoosed, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData, 'isOrders': False,
-                   'isPreordersTab': True})
+                   'isPreordersTab': True,
+                   'preorders_analytics': preorders_analytics})
 
 
 @login_required(login_url='login')
@@ -2478,7 +2516,16 @@ def ordersForClient(request, client_id):
     if not orders:
         title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
 
-    return render(request, 'supplies/orders/orders_new.html', {'title': title, 'orders': orders, 'orderFilter': orderFilter, 'isClients': True})
+    orders_analytics = build_orders_analytics(
+        orderFilter.qs, include_top_places=False, for_user=request.user
+    )
+    return render(request, 'supplies/orders/orders_new.html', {
+        'title': title,
+        'orders': orders,
+        'orderFilter': orderFilter,
+        'isClients': True,
+        'orders_analytics': orders_analytics,
+    })
 
 
 @login_required(login_url='login')
@@ -2487,6 +2534,7 @@ def agreementsForClient(request, client_id):
     cartCountData = countCartItemsHelper(request)
     title = f'Всі передзамовлення для клієнта: \n {place.name}, {place.city_ref.name}'
     isArchiveChoosed = False
+    orders_analytics_base = place.preorder_set.all()
     if 'get_archive_preorders' in request.POST:
         isArchiveChoosed = True
         orders = place.preorder_set.filter(isClosed=True).order_by('-state_of_delivery', '-id')
@@ -2507,6 +2555,11 @@ def agreementsForClient(request, client_id):
     preorderFilter = PreorderFilter(request.GET, queryset=orders)
     orders = preorderFilter.qs
 
+    preorderAnalyticsFilter = PreorderFilter(request.GET, queryset=orders_analytics_base)
+    preorders_analytics = build_preorders_analytics(
+        preorderAnalyticsFilter.qs, include_top_places=False, for_user=request.user
+    )
+
 
     if request.method == 'POST':
         selected_orders = request.POST.getlist('xls_preorder_print_buttons')
@@ -2521,7 +2574,8 @@ def agreementsForClient(request, client_id):
            {'title': title, 'orders': orders, 'preorderFilter': preorderFilter, 'cartCountData': cartCountData,
             'isOrders': True,
             'isArchiveChoosed': isArchiveChoosed,
-            'isPreordersTab': True, 'fromClientList': True})
+            'isPreordersTab': True, 'fromClientList': True,
+            'preorders_analytics': preorders_analytics})
 
 
 @login_required(login_url='login')
@@ -4026,14 +4080,15 @@ def preorderDetail_generateOrder(request, order_id):
 def clientsInfo(request):
     place = Place.objects.all().order_by('-id')
     placeFilter = PlaceFilter(request.GET, queryset=place)
-    place = placeFilter.qs
-    paginator = Paginator(place, 20)
+    place_filtered = placeFilter.qs
+    clients_analytics = build_clients_info_analytics(place_filtered)
+    paginator = Paginator(place_filtered, 20)
     page_number = request.GET.get('page')
     place = paginator.get_page(page_number)
     cartCountData = countCartItemsHelper(request)
     return render(request, 'supplies/clients/clientsList.html',
                   {'title': f'Клієнти', 'clients': place, 'placeFilter': placeFilter, 'cartCountData': cartCountData,
-                   'isClients': True})
+                   'isClients': True, 'clients_analytics': clients_analytics})
 
 
 @login_required(login_url='login')
@@ -4540,7 +4595,9 @@ def analytics_preorders_list_for_client(request):
         'cartCountData': cartCountData  ,
         'place_id': place_id,
         'booked_list_exist': booked_list_exist,
-        'isAnalytics': True
+        'isAnalytics': True,
+        'isAll': False,
+        'isBookedList': False,
     }
     return render(request, 'supplies/clients/analytics_preorders_list.html', context)
 

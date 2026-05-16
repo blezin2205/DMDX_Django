@@ -45,6 +45,7 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('app_settings', views.app_settings, name='app_settings'),
     path('childSupply', views.childSupply, name='childSupply'),
+    path('supply-statistics', views.supply_statistics, name='supply_statistics'),
     path('load_xms_data', views.load_xms_data, name='load_xms_data'),
     path('celery-test', view_upload.celery_test, name='celery_test'),
 

@@ -1,58 +1,168 @@
 {% extends 'supplies/base/base_for_home.html' %}
+{% load static %}
 {% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
 {% load bootstrap %}
 {% load mathfilters %}
 {% load myapp_extras %}
     {% block title %}
 {{ title }}
+    {% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/app-home.css'%}" type="text/css">
 {% endblock %}
 
 {% block content %}
 
+<div class="container py-1">
     {% if request.user.isClient %}
-            <div class="container py-1">
-  <div class="btn-group my-3">
-  <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
-   {% if request.user.get_user_place_id != "NO EXIST" %}
-      <a href="{% url 'booked_sups_list_for_client' request.user.get_user_place_id %}" class="btn btn-primary mx-2 {% if isBookedList %} active {% endif %}">Список заброньованих товарів</a>
-  {% endif %}
-  <a href="{% url 'analytics_preorders_list_for_client' %}" class="btn btn-primary {% if isAnalytics %} active {% endif %}">Аналітика передзамовлень</a>
-
-</div>
+        {% include 'partials/clients/client_portal_tabs.html' %}
     {% endif %}
 
-<div class="container py-1">
-    <form method="get" class="form-inline justify-content-center">
-         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
-             <div class="hstack gap-2">
-                 {{ suppFilter.form.category|as_crispy_field }}
-                 {{ suppFilter.form.ref|as_crispy_field }}
-                 {{ suppFilter.form.smn|as_crispy_field }}
-                 {{ suppFilter.form.name|as_crispy_field }}
-
-             </div>
-             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
-</div>
-        <div class="d-flex justify-content-between">
-         <button type="submit" class="btn btn-outline-primary" name="xls_button">
-        Export to Excel
-    </button>
-            <div>
-                <button type="submit" class="btn btn-outline-primary mx-3"  name="add_all_sups_to_cart">
-        Додати всі товари в корзину
-    </button>
-{% if request.user.is_staff %}
-            <button type="submit" class="btn btn-outline-danger"  name="delete_all_sups">
-        Видалити товари з броні
-    </button>
-                  {% endif %}
+    <form method="get" class="filter-toolbar-form mb-2">
+        <div class="filter-panel bg-light border shadow-sm rounded-3">
+            <div class="filter-grid">
+                <div class="filter-field">{{ suppFilter.form.category|as_crispy_field }}</div>
+                <div class="filter-field">{{ suppFilter.form.ref|as_crispy_field }}</div>
+                <div class="filter-field">{{ suppFilter.form.smn|as_crispy_field }}</div>
+                <div class="filter-field field-name">{{ suppFilter.form.name|as_crispy_field }}</div>
             </div>
+            <div class="filter-actions">
+                <button class="btn btn-primary btn-sm" type="submit">
+                    <i class="bi bi-search me-1"></i>Застосувати
+                </button>
+                <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
+                <button type="submit" class="btn btn-outline-success btn-sm" name="xls_button">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Export to Excel
+                </button>
+                <button type="submit" class="btn btn-outline-primary btn-sm" name="add_all_sups_to_cart">
+                    Додати всі товари в корзину
+                </button>
+                {% if request.user.is_staff %}
+                <button type="submit" class="btn btn-outline-danger btn-sm" name="delete_all_sups">
+                    Видалити товари з броні
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </form>
 
+{% if booked_analytics %}
+{{ booked_analytics|json_script:"booked-supplies-analytics-data" }}
+<style>
+.orders-analytics-wrap .oa-kpi-cell {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+}
+.orders-analytics-wrap .oa-kpi-label {
+    font-size: 0.75rem;
+    line-height: 1.25;
+    color: #6c757d;
+    white-space: normal;
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+.orders-analytics-wrap .oa-kpi-val {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2;
+    flex-shrink: 0;
+    text-align: right;
+    margin: 0;
+}
+.orders-analytics-wrap .oa-chart-scroll-y {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 320px;
+    min-height: 220px;
+    max-height: min(720px, 85vh);
+    resize: vertical;
+    -webkit-overflow-scrolling: touch;
+}
+.orders-analytics-wrap .oa-bar-chart-sizer {
+    min-height: 180px;
+    position: relative;
+}
+</style>
+<div class="orders-analytics-wrap mb-3 w-100">
+    <div class="card border shadow-sm rounded-3 overflow-hidden">
+        <button class="btn btn-light w-100 text-start d-flex align-items-center justify-content-between py-2 px-3 border-0 rounded-0"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#bookedSuppliesAnalyticsBody"
+                aria-expanded="false"
+                aria-controls="bookedSuppliesAnalyticsBody">
+            <span class="fw-semibold"><i class="bi bi-bar-chart-line text-primary me-2"></i>Статистика за поточними фільтрами</span>
+            <span class="text-muted small">ті ж позиції, що в таблиці нижче</span>
+            <i class="bi bi-chevron-down ms-2"></i>
+        </button>
+        <div id="bookedSuppliesAnalyticsBody" class="collapse">
+            <div class="card-body border-top bg-white pt-3">
+                <div class="oa-kpi-compact row g-1 row-cols-1 row-cols-sm-2 row-cols-lg-4 mb-3">
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                            <div class="oa-kpi-label">Рядків броні у вибірці</div>
+                            <div class="oa-kpi-val" id="bsa-lines">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                            <div class="oa-kpi-label">Унікальних номенклатур</div>
+                            <div class="oa-kpi-val" id="bsa-products">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                            <div class="oa-kpi-label">Одиниць загалом (count_in_order)</div>
+                            <div class="oa-kpi-val" id="bsa-units">—</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="У резерві по рядках броні">
+                            <div class="oa-kpi-label">У резерві / on hold (сума)</div>
+                            <div class="oa-kpi-val" id="bsa-hold">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-lg-5">
+                        <h6 class="text-muted small text-uppercase mb-2">Термін придатності</h6>
+                        <p class="text-muted small mb-2">Рядки броні: прострочено vs придатні або без дати.</p>
+                        <div class="border rounded-2 bg-white p-3 d-flex justify-content-center" style="max-height: 300px;">
+                            <canvas id="bsaChartExpiry" style="max-width: 100%;"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <h6 class="text-muted small text-uppercase mb-2">Категорії за одиницями</h6>
+                        <p class="text-muted small mb-2">До 20 категорій; сума count_in_order по рядках.</p>
+                        <div class="oa-chart-scroll-y border rounded-2 bg-white">
+                            <div id="bsaCategoriesSizer" class="oa-bar-chart-sizer">
+                                <canvas id="bsaChartCategories"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <h6 class="text-muted small text-uppercase mb-2">Топ номенклатур за одиницями</h6>
+                        <p class="text-muted small mb-2">До 25 позицій за поточними фільтрами.</p>
+                        <div class="oa-chart-scroll-y border rounded-2 bg-white">
+                            <div id="bsaProductsSizer" class="oa-bar-chart-sizer">
+                                <canvas id="bsaChartProducts"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-
-        </form>
-
 </div>
+{% endif %}
+
         <table class="table centred mt-3 w-auto mx-auto">
   <thead class="thead-dark">
     <tr>
@@ -79,4 +189,82 @@
   </tbody>
 </table>
 
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% if booked_analytics %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+    var el = document.getElementById('booked-supplies-analytics-data');
+    if (!el || typeof Chart === 'undefined') return;
+    var D;
+    try { D = JSON.parse(el.textContent); } catch (e) { return; }
+    if (!D || D.total_lines == null) return;
+
+    var pal = { red: '#dc3545', green: '#198754', blue: '#0d6efd', teal: '#0dcaf0' };
+
+    function setText(id, v) {
+        var n = document.getElementById(id);
+        if (n) n.textContent = v;
+    }
+    setText('bsa-lines', String(D.total_lines));
+    setText('bsa-products', String(D.distinct_products));
+    setText('bsa-units', String(D.total_units));
+    setText('bsa-hold', String(D.total_on_hold));
+
+    var exp = D.expiry;
+    if (exp && exp.counts && exp.counts.some(function (x) { return x > 0; })) {
+        new Chart(document.getElementById('bsaChartExpiry'), {
+            type: 'doughnut',
+            data: {
+                labels: exp.labels,
+                datasets: [{ data: exp.counts, backgroundColor: [pal.red, pal.green], borderWidth: 0 }]
+            },
+            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } }, cutout: '52%' }
+        });
+    }
+
+    function setupHBar(canvasId, sizerId, labels, values, color, datasetLabel) {
+        if (!labels || !labels.length) return;
+        var cs = document.getElementById(sizerId);
+        var scr = cs ? cs.closest('.oa-chart-scroll-y') : null;
+        var n = labels.length;
+        if (cs && scr) { cs.style.minHeight = Math.max(200, n * 22 + 48) + 'px'; }
+        var ch = new Chart(document.getElementById(canvasId), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{ label: datasetLabel, data: values, backgroundColor: color }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { precision: 0 } },
+                    y: { ticks: { font: { size: n > 18 ? 9 : 10 }, maxRotation: 0 } }
+                }
+            }
+        });
+        if (scr && typeof ResizeObserver !== 'undefined') {
+            var ro = new ResizeObserver(function () { try { ch.resize(); } catch (e) {} });
+            ro.observe(scr);
+        }
+    }
+
+    var cat = D.categories;
+    if (cat && cat.labels && cat.labels.length) {
+        setupHBar('bsaChartCategories', 'bsaCategoriesSizer', cat.labels, cat.units, pal.blue, 'Одиниць');
+    }
+    var tp = D.top_products;
+    if (tp && tp.labels && tp.labels.length) {
+        setupHBar('bsaChartProducts', 'bsaProductsSizer', tp.labels, tp.units, pal.teal, 'Одиниць');
+    }
+})();
+</script>
+{% endif %}
 {% endblock %}

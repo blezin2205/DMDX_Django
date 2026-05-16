@@ -597,11 +597,15 @@ form .custom-btn:hover {
     max-width: 400px;
     width: 100%;
     margin: 1rem;
+    /* Flex item (.login-page is flex): без цього min-width:auto = ширина великого img і картка «роздувається» */
+    min-width: 0;
+    overflow-x: hidden;
 }
 
 .login-logo {
     text-align: center;
     margin-bottom: 2rem;
+    min-width: 0;
 }
 
 .login-logo .logo-icon {
@@ -611,13 +615,17 @@ form .custom-btn:hover {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.login-title {
-    color: #003165;
-    font-family: "Public Sans", sans-serif;
-    font-weight: 700;
-    font-size: 1.8rem;
-    margin-bottom: 0.5rem;
-    text-align: center;
+/* Розмір лого задає .login-logo-frame (див. також <style> у auth/login.html) */
+.login-logo-img {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 0;
+    box-shadow: none;
+    object-fit: contain;
 }
 
 .login-subtitle {
@@ -696,55 +704,11 @@ form .custom-btn:hover {
     font-weight: 600;
 }
 
-/* Floating animation for decorative elements */
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-}
-
-.login-decorative {
-    position: absolute;
-    opacity: 0.1;
-    animation: float 3s ease-in-out infinite;
-}
-
-.login-decorative:nth-child(1) {
-    top: 10%;
-    left: 10%;
-    font-size: 2rem;
-    animation-delay: 0s;
-}
-
-.login-decorative:nth-child(2) {
-    top: 20%;
-    right: 15%;
-    font-size: 1.5rem;
-    animation-delay: 1s;
-}
-
-.login-decorative:nth-child(3) {
-    bottom: 20%;
-    left: 20%;
-    font-size: 1.8rem;
-    animation-delay: 2s;
-}
-
-.login-decorative:nth-child(4) {
-    bottom: 10%;
-    right: 10%;
-    font-size: 2.2rem;
-    animation-delay: 0.5s;
-}
-
 /* Responsive design */
 @media (max-width: 768px) {
     .login-container {
         padding: 2rem 1.5rem;
         margin: 0.5rem;
-    }
-    
-    .login-title {
-        font-size: 1.5rem;
     }
     
     .login-logo .logo-icon {
@@ -764,10 +728,6 @@ form .custom-btn:hover {
 @media (max-width: 480px) {
     .login-container {
         padding: 1.5rem 1rem;
-    }
-    
-    .login-title {
-        font-size: 1.3rem;
     }
     
     .login-logo .logo-icon {

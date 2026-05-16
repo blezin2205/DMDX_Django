@@ -1,0 +1,10 @@
+{# Таби клієнтського порталу (без статистики товарів). Потрібні в контексті: booked_list_exist; прапорці активної сторінки: isAll, isBooked або isBookedList, isAnalytics. #}
+<div class="btn-group my-3 home-view-switch" role="group" aria-label="Розділи для клієнта">
+    <a href="{% url 'home' %}" class="btn home-view-btn {% if isAll %} active {% endif %}" {% if isAll %}aria-current="page"{% endif %}>Всі</a>
+    {% if request.user.get_user_place_id != "NO EXIST" %}
+        {% if booked_list_exist or isBookedList or isBooked %}
+        <a href="{% url 'booked_sups_list_for_client' request.user.get_user_place_id %}" class="btn home-view-btn {% if isBooked or isBookedList %} active {% endif %}">Список заброньованих товарів</a>
+        {% endif %}
+    {% endif %}
+    <a href="{% url 'analytics_preorders_list_for_client' %}" class="btn home-view-btn {% if isAnalytics %} active {% endif %}">Аналітика передзамовлень</a>
+</div>

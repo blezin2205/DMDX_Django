@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.decorators import login_required
 from django_htmx.http import trigger_client_event
 from xlsxwriter.workbook import Workbook
+from ..analytics import build_booked_supplies_analytics
 from ..models import *
 from ..serializers import *
 from ..filters import *
@@ -172,8 +173,18 @@ def booked_supplies_list(request, client_id):
         return response
 
 
+    booked_list_exist_for_nav = False
+    if isClient:
+        pid = request.user.get_user_place_id()
+        if pid != "NO EXIST":
+            booked_list_exist_for_nav = SupplyInBookedOrder.objects.filter(supply_for_place_id=pid).exists()
+
+    can_view_booked_page = not (isClient and place.id != request.user.get_user_place_id())
+    booked_analytics = build_booked_supplies_analytics(suppFilter.qs) if can_view_booked_page else None
+
     return render(request, 'booked_flow/booked_supplies_list.html',
-                  {'title': title, 'isBookedList': True, 'isHome': True, 'suppFilter': suppFilter, 'supplies': supplies_list, 'general_supply_list': general_supply_list, 'for_place': place, 'cartCountData': cartCountData},
+                  {'title': title, 'isBookedList': True, 'isHome': True, 'suppFilter': suppFilter, 'supplies': supplies_list, 'general_supply_list': general_supply_list, 'for_place': place, 'cartCountData': cartCountData,
+                   'booked_list_exist': booked_list_exist_for_nav, 'isAll': False, 'isAnalytics': False, 'booked_analytics': booked_analytics},
                   )
 
 @login_required(login_url='login')

@@ -1,40 +1,42 @@
-{% extends 'supplies/base/base.html' %}
+{% extends 'supplies/base/base_for_home.html' %}
+{% load static %}
 {% load crispy_forms_filters %}
 {% load crispy_forms_tags %}
 {% load bootstrap %}
 {% load mathfilters %}
 {% load myapp_extras %}
 
-    {% block title %}
+{% block title %}
 {{ title }}
 {% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/app-home.css'%}" type="text/css">
+{% endblock %}
+
 {% block content %}
-
-    <div class="container py-1">
-        <div class="btn-group my-3">
-            <a href="/" class="btn btn-primary {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
-            {% if request.user.get_user_place_id != "NO EXIST" and booked_list_exist %}
-                <a href="{% url 'booked_sups_list_for_client' request.user.get_user_place_id %}" class="btn btn-primary mx-2 {% if isBooked %} active {% endif %}">Список заброньованих товарів</a>
-            {% endif %}
-            <a href="{% url 'analytics_preorders_list_for_client' %}" class="btn btn-primary {% if isAnalytics %} active {% endif %}">Аналітика передзамовлень</a>
-        </div>
-
 <div class="container py-1">
-     <form method="get" class="form-inline justify-content-center">
-         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
-             <div class="hstack gap-2">
-                 {{ suppFilter.form.category|as_crispy_field }}
-                 {{ suppFilter.form.ref|as_crispy_field }}
-                 {{ suppFilter.form.SMN_code|as_crispy_field }}
-                 {{ suppFilter.form.name|as_crispy_field }}
-             </div>
-             <button class="btn btn-primary" type="submit">Застосувати</button>
+    {% include 'partials/clients/client_portal_tabs.html' %}
 
+    <form method="get" class="filter-toolbar-form mb-2">
+        <div class="filter-panel bg-light border shadow-sm rounded-3">
+            <div class="filter-grid">
+                <div class="filter-field">{{ suppFilter.form.category|as_crispy_field }}</div>
+                <div class="filter-field">{{ suppFilter.form.ref|as_crispy_field }}</div>
+                <div class="filter-field">{{ suppFilter.form.SMN_code|as_crispy_field }}</div>
+                <div class="filter-field field-name">{{ suppFilter.form.name|as_crispy_field }}</div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-primary btn-sm" type="submit">
+                    <i class="bi bi-search me-1"></i>Застосувати
+                </button>
+                <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
+            </div>
+        </div>
+    </form>
 </div>
 
-        </form>
-     </div>
-    <table class="table centred mt-3 w-auto mx-auto">
+<table class="table centred mt-3 w-auto mx-auto">
   <thead class="thead-dark">
     <tr>
       <th scope="col" class="textAlignLeft">({{supplies|length}}) Назва товару</th>
@@ -48,7 +50,6 @@
   </thead>
   <tbody id="cart-badge">
     {% for el in supplies %}
-
      <tr>
       <th scope="row" style="text-align: left; max-width: 350px">
       {% if el.image %}
@@ -103,9 +104,8 @@
         <td>
             {% include 'partials/cart/add_precart_button_general.html' with el=el place_id=place.id %}
             </td>
-
-     {% endfor %}
     </tr>
+     {% endfor %}
 
   </tbody>
 </table>
@@ -134,4 +134,3 @@
 </nav>
 {% endif %}
 {% endblock %}
-

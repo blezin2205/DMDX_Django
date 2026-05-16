@@ -72,6 +72,59 @@
         flex: 1 1 auto;
     }
 }
+
+.orders-analytics-wrap .oa-kpi-cell {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+}
+.orders-analytics-wrap .oa-kpi-label {
+    font-size: 0.75rem;
+    line-height: 1.25;
+    color: #6c757d;
+    white-space: normal;
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+.orders-analytics-wrap .oa-kpi-val {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2;
+    flex-shrink: 0;
+    text-align: right;
+    margin: 0;
+}
+.orders-analytics-wrap .oa-chart-scroll-y {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 320px;
+    min-height: 220px;
+    max-height: min(720px, 85vh);
+    resize: vertical;
+    -webkit-overflow-scrolling: touch;
+}
+.orders-analytics-wrap .oa-bar-chart-sizer {
+    min-height: 180px;
+    position: relative;
+}
+.orders-analytics-wrap .oa-chart-scroll-x {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+.orders-analytics-wrap .oa-monthly-sizer {
+    height: 320px;
+    min-height: 220px;
+    max-height: min(720px, 85vh);
+    min-width: 100%;
+    position: relative;
+    resize: vertical;
+    overflow: hidden;
+}
 </style>
      <form method="post" class="form-inline justify-content-center">
       {% csrf_token %}
@@ -93,6 +146,160 @@
                  <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
              </div>
          </div>
+
+         {% if preorders_analytics %}
+         {{ preorders_analytics|json_script:"preorders-analytics-data" }}
+         <div class="orders-analytics-wrap mb-2 w-100">
+             <div class="card border shadow-sm rounded-3 overflow-hidden">
+                 <button class="btn btn-light w-100 text-start d-flex align-items-center justify-content-between py-2 px-3 border-0 rounded-0"
+                         type="button"
+                         data-bs-toggle="collapse"
+                         data-bs-target="#preordersAnalyticsBody"
+                         aria-expanded="false"
+                         aria-controls="preordersAnalyticsBody">
+                     <span class="fw-semibold"><i class="bi bi-bar-chart-line text-primary me-2"></i>Аналітика та графіки</span>
+                     <span class="text-muted small">Повний набір у межах доступу після фільтрів; дані не залежать від перемикача «Показати архів» (лише список нижче).</span>
+                     <i class="bi bi-chevron-down ms-2"></i>
+                 </button>
+                 <div id="preordersAnalyticsBody" class="collapse">
+                     <div class="card-body border-top bg-white pt-3">
+                         <div class="oa-kpi-compact row g-1 row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-3 mb-2">
+                             <div class="col">
+                                 <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Усього передзамовлень у вибірці">
+                                     <div class="oa-kpi-label">Всього передзамовлень</div>
+                                     <div class="oa-kpi-val" id="po-total">—</div>
+                                 </div>
+                             </div>
+                             <div class="col">
+                                 <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="isClosed=False">
+                                     <div class="oa-kpi-label">Не в архіві</div>
+                                     <div class="oa-kpi-val" id="po-not-archived">—</div>
+                                 </div>
+                             </div>
+                             <div class="col">
+                                 <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="isClosed=True">
+                                     <div class="oa-kpi-label">У архіві</div>
+                                     <div class="oa-kpi-val text-secondary" id="po-in-archive">—</div>
+                                 </div>
+                             </div>
+                             <div class="col">
+                                 <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Сума за статусами «Повністю поставлено» та «Повністю поставлено (Закрито вручну)»">
+                                     <div class="oa-kpi-label">Завершені</div>
+                                     <div class="oa-kpi-val text-success" id="po-completed">—</div>
+                                 </div>
+                             </div>
+                             <div class="col">
+                                 <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Усі передзамовлення з іншими статусами поставки">
+                                     <div class="oa-kpi-label">В очікуванні</div>
+                                     <div class="oa-kpi-val text-primary" id="po-pending">—</div>
+                                 </div>
+                             </div>
+                             <div class="col">
+                                 <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="userCreated у групі «client»">
+                                     <div class="oa-kpi-label">Створено клієнтами</div>
+                                     <div class="oa-kpi-val" id="po-created-by-clients">—</div>
+                                 </div>
+                             </div>
+                             <div class="col">
+                                 <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Скільки різних облікових записів клієнтів створили записи у вибірці">
+                                     <div class="oa-kpi-label">Клієнти-автори</div>
+                                     <div class="oa-kpi-val" id="po-unique-client-creators">—</div>
+                                 </div>
+                             </div>
+                             <div class="col">
+                                 <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Є хоча б одне пов'язане замовлення (for_preorder або M2M)">
+                                     <div class="oa-kpi-label">З пов'язаними замовленнями</div>
+                                     <div class="oa-kpi-val text-info" id="po-with-orders">—</div>
+                                 </div>
+                             </div>
+                             <div class="col">
+                                 <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
+                                     <div class="oa-kpi-label">Позицій у передзамовленні (сер.)</div>
+                                     <div class="oa-kpi-val" id="po-avg-lines">—</div>
+                                 </div>
+                             </div>
+                             <div class="col">
+                                 <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Створено мною / з моєї ролі з заповненою dateSent">
+                                     <div class="oa-kpi-label">Створено / Дата відпр. (мною)</div>
+                                     <div class="oa-kpi-val" id="po-created-datesent-me">—</div>
+                                 </div>
+                             </div>
+                             <div class="col">
+                                 <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Поле dateSent заповнене">
+                                     <div class="oa-kpi-label">З датою відправлення</div>
+                                     <div class="oa-kpi-val" id="po-with-date-sent">—</div>
+                                 </div>
+                             </div>
+                         </div>
+                         <div class="row g-3 mb-1">
+                             <div class="col-12">
+                                 <h6 class="text-muted small text-uppercase mb-2">Статистика за статусом поставки</h6>
+                                 <p class="text-muted small mb-2">Кількість передзамовлень у вибірці по кожному статусу. Кольори та іконки відповідають карткам у списку.</p>
+                                 <div class="row g-3 align-items-start">
+                                     <div class="col-lg-5">
+                                         <div class="border rounded-2 bg-white p-3 d-flex align-items-center justify-content-center" style="min-height: 260px; max-height: 340px;">
+                                             <canvas id="poChartStatuses" style="max-width: 100%; max-height: 300px;"></canvas>
+                                         </div>
+                                     </div>
+                                     <div class="col-lg-7">
+                                         <div id="poStatusLegend" class="d-flex flex-column gap-2"></div>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                         <div class="row g-3">
+                             <div class="col-12">
+                                 <h6 class="text-muted small text-uppercase mb-2">Динаміка за місяцями <span class="fw-normal">(дата відправлення або створення)</span></h6>
+                                 <p class="text-muted small mb-2 mb-lg-1">Усі місяці з вибірки; прокрутка по горизонталі, висота змінюється перетягуванням.</p>
+                                 <div class="oa-chart-scroll-x border rounded-2 bg-white">
+                                     <div id="poMonthlyChartSizer" class="oa-monthly-sizer">
+                                         <canvas id="poChartMonthly"></canvas>
+                                     </div>
+                                 </div>
+                             </div>
+                             <div class="col-12" id="poTopPlacesWrap" hidden>
+                                 <h6 class="text-muted small text-uppercase mb-2">Топ організацій за кількістю передзамовлень</h6>
+                                 <p class="text-muted small mb-2">До 50 записів за вибіркою.</p>
+                                 <div class="oa-chart-scroll-y border rounded-2 bg-white">
+                                     <div id="poPlacesChartSizer" class="oa-bar-chart-sizer">
+                                         <canvas id="poChartPlaces"></canvas>
+                                     </div>
+                                 </div>
+                             </div>
+                             <div class="col-12" id="poTopProductsWrap" hidden>
+                                 <h6 class="text-muted small text-uppercase mb-2">Топ товарів за загальною кількістю одиниць</h6>
+                                 <p class="text-muted small mb-2">
+                                     Сума <code>count_in_order</code> у рядках передзамовлення для поточної вибірки. До 50 на сервері; фільтр по категорії та кількості рядків.
+                                 </p>
+                                 <div class="d-flex flex-wrap gap-3 align-items-end mb-2">
+                                     <div>
+                                         <label for="poProdCat" class="form-label small text-muted mb-0">Категорія</label>
+                                         <select id="poProdCat" class="form-select form-select-sm" style="min-width: 200px;">
+                                             <option value="">Усі категорії</option>
+                                         </select>
+                                     </div>
+                                     <div>
+                                         <label for="poProdLimit" class="form-label small text-muted mb-0">Показати рядків</label>
+                                         <select id="poProdLimit" class="form-select form-select-sm" style="min-width: 110px;">
+                                             <option value="10">10</option>
+                                             <option value="25">25</option>
+                                             <option value="50" selected>50</option>
+                                         </select>
+                                     </div>
+                                 </div>
+                                 <div class="oa-chart-scroll-y border rounded-2 bg-white">
+                                     <div id="poProductsChartSizer" class="oa-bar-chart-sizer">
+                                         <canvas id="poChartProducts"></canvas>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                         <p class="text-muted small mt-3 mb-0" id="po-extra-note"></p>
+                     </div>
+                 </div>
+             </div>
+         </div>
+         {% endif %}
          
          {% if request.user_agent.is_mobile %}
          <div class="container w-100 d-flex align-items-center justify-content-between">
@@ -169,4 +376,294 @@
     }
     </script>
     <script type="text/javascript">window.mytest = function() { var isValid = confirm('Ви хочете видалити запис ?');if (!isValid) { event.preventDefault();  alert("It wont delete. Yay!");}}</script>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+    var el = document.getElementById('preorders-analytics-data');
+    if (!el || typeof Chart === 'undefined') return;
+    var data;
+    try {
+        data = JSON.parse(el.textContent);
+    } catch (e) {
+        return;
+    }
+    if (!data) return;
+
+    var setText = function (id, v) {
+        var n = document.getElementById(id);
+        if (n) n.textContent = v;
+    };
+    setText('po-total', String(data.total));
+    setText('po-not-archived', String(data.not_archived != null ? data.not_archived : 0));
+    setText('po-in-archive', String(data.in_archive != null ? data.in_archive : 0));
+    setText('po-completed', String(data.completed));
+    setText('po-pending', String(data.pending));
+    setText('po-created-by-clients', String(data.created_by_clients != null ? data.created_by_clients : 0));
+    setText('po-unique-client-creators', String(data.unique_client_creators != null ? data.unique_client_creators : 0));
+    setText('po-with-orders', String(data.with_orders != null ? data.with_orders : 0));
+    setText('po-avg-lines', String(data.avg_line_positions));
+    var cBM = data.created_by_me != null ? data.created_by_me : 0;
+    var dSM = data.date_sent_by_me != null ? data.date_sent_by_me : 0;
+    setText('po-created-datesent-me', String(cBM) + '/' + String(dSM));
+    setText('po-with-date-sent', String(data.with_date_sent != null ? data.with_date_sent : 0));
+
+    var note = document.getElementById('po-extra-note');
+    if (note && data.pinned > 0) {
+        note.textContent = 'Закріплених у вибірці: ' + data.pinned + '.';
+    }
+
+    var pal = { green: '#198754', blue: '#0d6efd', slate: '#6c757d', teal: '#0dcaf0', orange: '#fd7e14', purple: '#6f42c1' };
+
+    function poBadgeTextColor(hex) {
+        if (!hex) return '#fff';
+        var h = String(hex).toLowerCase();
+        if (h === '#ffc107' || h === '#fd7e14') return '#212529';
+        return '#fff';
+    }
+
+    if (data.status_breakdown && data.status_breakdown.length) {
+        var leg = document.getElementById('poStatusLegend');
+        var pieLabels = [];
+        var pieCounts = [];
+        var pieColors = [];
+        data.status_breakdown.forEach(function (row) {
+            if (leg) {
+                var rowWrap = document.createElement('div');
+                rowWrap.className = 'd-flex align-items-center gap-2 border rounded px-2 py-2 bg-white shadow-sm';
+                var ic = document.createElement('i');
+                ic.className = 'bi ' + row.icon + ' flex-shrink-0';
+                ic.style.color = row.color;
+                ic.style.fontSize = '1.15rem';
+                ic.setAttribute('aria-hidden', 'true');
+                var labEl = document.createElement('span');
+                labEl.className = 'small flex-grow-1';
+                labEl.textContent = row.label;
+                var badge = document.createElement('span');
+                badge.className = 'badge rounded-pill fw-semibold flex-shrink-0';
+                badge.style.backgroundColor = row.color;
+                badge.style.color = poBadgeTextColor(row.color);
+                badge.textContent = String(row.count);
+                rowWrap.appendChild(ic);
+                rowWrap.appendChild(labEl);
+                rowWrap.appendChild(badge);
+                leg.appendChild(rowWrap);
+            }
+            if (row.count > 0) {
+                pieLabels.push(row.label);
+                pieCounts.push(row.count);
+                pieColors.push(row.color);
+            }
+        });
+        if (pieLabels.length) {
+            var ctxSt = document.getElementById('poChartStatuses');
+            if (ctxSt) {
+                new Chart(ctxSt, {
+                    type: 'doughnut',
+                    data: {
+                        labels: pieLabels,
+                        datasets: [{
+                            data: pieCounts,
+                            backgroundColor: pieColors,
+                            borderWidth: 1,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        cutout: '52%'
+                    }
+                });
+            }
+        }
+    }
+
+    if (data.monthly && data.monthly.labels.length) {
+        var monthlySizer = document.getElementById('poMonthlyChartSizer');
+        var scrollWrap = monthlySizer ? monthlySizer.closest('.oa-chart-scroll-x') : null;
+        var nM = data.monthly.labels.length;
+        var pxPerPoint = nM > 48 ? 28 : (nM > 24 ? 32 : 40);
+        if (monthlySizer && scrollWrap) {
+            var viewW = scrollWrap.getBoundingClientRect().width || scrollWrap.clientWidth || 320;
+            monthlySizer.style.minWidth = Math.max(viewW, nM * pxPerPoint) + 'px';
+        }
+        var ctxMo = document.getElementById('poChartMonthly');
+        var chartMo = new Chart(ctxMo, {
+            type: 'line',
+            data: {
+                labels: data.monthly.labels,
+                datasets: [{
+                    label: 'Передзамовлень',
+                    data: data.monthly.counts,
+                    borderColor: pal.blue,
+                    backgroundColor: 'rgba(13, 110, 253, 0.12)',
+                    fill: true,
+                    tension: 0.25,
+                    pointRadius: nM > 60 ? 2 : 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 0,
+                            autoSkip: false,
+                            font: { size: nM > 36 ? 9 : 10 }
+                        }
+                    },
+                    y: { ticks: { precision: 0 }, beginAtZero: true }
+                }
+            }
+        });
+        if (monthlySizer && typeof ResizeObserver !== 'undefined') {
+            var roM = new ResizeObserver(function () {
+                try { chartMo.resize(); } catch (e) {}
+            });
+            roM.observe(monthlySizer);
+        }
+    }
+
+    if (data.meta && data.meta.show_top_places && data.top_places && data.top_places.labels.length) {
+        var wrap = document.getElementById('poTopPlacesWrap');
+        if (wrap) wrap.removeAttribute('hidden');
+        var nPl = data.top_places.labels.length;
+        var plSizer = document.getElementById('poPlacesChartSizer');
+        if (plSizer) {
+            plSizer.style.minHeight = Math.max(200, nPl * 24 + 56) + 'px';
+        }
+        var plScroll = plSizer ? plSizer.closest('.oa-chart-scroll-y') : null;
+        var chartPl = new Chart(document.getElementById('poChartPlaces'), {
+            type: 'bar',
+            data: {
+                labels: data.top_places.labels,
+                datasets: [{
+                    label: 'Передзамовлень',
+                    data: data.top_places.counts,
+                    backgroundColor: pal.blue
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { precision: 0 } },
+                    y: { ticks: { font: { size: nPl > 35 ? 8 : 9 }, maxRotation: 0 } }
+                }
+            }
+        });
+        if (plScroll && typeof ResizeObserver !== 'undefined') {
+            var roPl = new ResizeObserver(function () {
+                try { chartPl.resize(); } catch (e) {}
+            });
+            roPl.observe(plScroll);
+        }
+    }
+
+    var tp = data.top_products;
+    if (tp && tp.labels && tp.labels.length) {
+        var wrapP = document.getElementById('poTopProductsWrap');
+        if (wrapP) wrapP.removeAttribute('hidden');
+
+        var catsRaw = tp.categories || [];
+        var categories = tp.labels.map(function (_, i) {
+            return (catsRaw[i] != null && String(catsRaw[i]).length) ? String(catsRaw[i]) : '—';
+        });
+        var selCat = document.getElementById('poProdCat');
+        var selLim = document.getElementById('poProdLimit');
+        if (selCat) {
+            var uniq = {};
+            categories.forEach(function (c) { uniq[c] = true; });
+            var sorted = Object.keys(uniq).sort(function (a, b) {
+                return a.localeCompare(b, 'uk');
+            });
+            sorted.forEach(function (c) {
+                var opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                selCat.appendChild(opt);
+            });
+        }
+
+        var canvasProd = document.getElementById('poChartProducts');
+        var chartProd = null;
+        var prodSizer = document.getElementById('poProductsChartSizer');
+        var prodScroll = prodSizer ? prodSizer.closest('.oa-chart-scroll-y') : null;
+        var roProd = null;
+
+        function rebuildProductsChart() {
+            if (!canvasProd) return;
+            var catVal = selCat ? selCat.value : '';
+            var lim = selLim ? parseInt(selLim.value, 10) : 50;
+            if (!lim || lim < 1) lim = 50;
+
+            var labelsOut = [];
+            var valuesOut = [];
+            for (var i = 0; i < tp.labels.length; i++) {
+                if (catVal && categories[i] !== catVal) continue;
+                labelsOut.push(tp.labels[i]);
+                valuesOut.push(tp.quantities[i]);
+                if (labelsOut.length >= lim) break;
+            }
+
+            var existing = typeof Chart !== 'undefined' ? Chart.getChart(canvasProd) : null;
+            if (existing) existing.destroy();
+
+            if (!labelsOut.length) {
+                if (prodSizer) prodSizer.style.minHeight = '120px';
+                return;
+            }
+
+            var nPr = labelsOut.length;
+            if (prodSizer) {
+                prodSizer.style.minHeight = Math.max(200, nPr * 24 + 56) + 'px';
+            }
+            chartProd = new Chart(canvasProd, {
+                type: 'bar',
+                data: {
+                    labels: labelsOut,
+                    datasets: [{
+                        label: 'Одиниць у передзамовленнях',
+                        data: valuesOut,
+                        backgroundColor: pal.teal
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { precision: 0 } },
+                        y: { ticks: { font: { size: nPr > 35 ? 8 : 9 }, maxRotation: 0 } }
+                    }
+                }
+            });
+            if (prodScroll && typeof ResizeObserver !== 'undefined' && !roProd) {
+                roProd = new ResizeObserver(function () {
+                    try { if (chartProd) chartProd.resize(); } catch (e) {}
+                });
+                roProd.observe(prodScroll);
+            }
+        }
+
+        rebuildProductsChart();
+        if (selCat) selCat.addEventListener('change', rebuildProductsChart);
+        if (selLim) selLim.addEventListener('change', rebuildProductsChart);
+    }
+
+})();
+</script>
 {% endblock %}

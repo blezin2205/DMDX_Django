@@ -11,8 +11,9 @@
 {% block content %}
 <div class="container py-1">
     <div class="btn-group my-3 home-view-switch" role="group" aria-label="Перемикання виду списку">
-        <a href="/" class="btn home-view-btn {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
-        <a href="/childSupply" class="btn home-view-btn {% if isChild %} active {% endif %}">Список товарів</a>
+        <a href="{% url 'home' %}" class="btn home-view-btn {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+        <a href="{% url 'childSupply' %}" class="btn home-view-btn {% if isChild %} active {% endif %}">Список товарів</a>
+        <a href="{% url 'supply_statistics' %}" class="btn home-view-btn {% if isSupplyStats %} active {% endif %}">Статистика товарів</a>
     </div>
 
     <form method="get" class="filter-toolbar-form mb-2">
