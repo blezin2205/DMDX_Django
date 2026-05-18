@@ -223,19 +223,25 @@ class SupplyFilter(django_filters.FilterSet):
 
 
     def filter_by_order(self, queryset, name, value):
+        lots_qs = Supply.objects.order_by('expiredDate', 'id')
+        gen_prefetch = Prefetch('general', queryset=lots_qs)
 
         if value == 'onlyExistChild':
             # distinct() after filtering on reverse FK can drop prefetch hints from the
             # incoming queryset; re-apply category + lots prefetch for home table N+1s.
-            lots_qs = Supply.objects.order_by('expiredDate', 'id')
             return (
                 queryset.select_related('category')
                 .filter(general__isnull=False)
                 .distinct()
-                .prefetch_related(Prefetch('general', queryset=lots_qs))
+                .prefetch_related(gen_prefetch)
             )
-        elif value =='onlyNotExistChild':
-            return queryset.select_related('category').filter(general__isnull=True).distinct()
+        elif value == 'onlyNotExistChild':
+            return (
+                queryset.select_related('category')
+                .filter(general__isnull=True)
+                .distinct()
+                .prefetch_related(gen_prefetch)
+            )
         elif value == 'onlyGood':
             sups = Supply.objects.filter(expiredDate__gte=timezone.now().date())
             prefetch = Prefetch('general', queryset=sups)
@@ -258,6 +264,12 @@ class SupplyFilter(django_filters.FilterSet):
                 .order_by('name')
             )
             return supplies
+        # A-Z / порожнє ordering — ті самі лоти, що в "В наявності", без додаткового filter
+        return (
+            queryset.select_related('category')
+            .prefetch_related(gen_prefetch)
+            .order_by('name')
+        )
 
 
 

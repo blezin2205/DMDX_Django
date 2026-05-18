@@ -1,0 +1,11 @@
+{% extends 'supplies/home/home_child_base.html' %}
+
+{% block child_list_wrapper_extra %} home-supply-list-mobile px-0{% endblock %}
+
+{% block child_supply_list %}
+<div class="d-flex flex-column">
+    {% for el in supplies %}
+        {% include 'partials/supplies/child_supply_row_mobile.html' with el=el %}
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'supplies/home/home_staff_base.html' %}
+
+{% block supply_list_wrapper_extra %} px-2{% endblock %}
+
+{% block supply_list %}
+        <table class="table centred mt-3 w-auto mx-auto table-sm align-middle compact-supply-table">
+            <thead class="thead-dark">
+                <tr>
+                    <th scope="col" class="textAlignLeft col-name">({{supplies|length}}) Назва товару</th>
+                    <th scope="col" class="col-pack">Пакування / Тести</th>
+                    <th scope="col" class="col-category">Категорія</th>
+                    <th scope="col" class="col-ref">REF</th>
+                    <th scope="col" class="col-smn">SMN</th>
+                    <th scope="col">
+                        <div class="d-flex {% if not request.user.is_staff %} justify-content-start {% endif %}">
+                            <div class="supply-lot-head">LOT</div>
+                            <div class="supply-qty-head">Кількість</div>
+                            <div class="supply-exp-head">Термін</div>
+                        </div>
+                    </th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="cart-badge">
+                {% for el in supplies %}
+                    {% include 'partials/supplies/supply_row.html' with el=el %}
+                {% endfor %}
+            </tbody>
+        </table>
+{% endblock %}

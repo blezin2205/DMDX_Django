@@ -111,26 +111,27 @@
 </table>
 
     {% if supplies.paginator.num_pages > 1 %}
-<nav aria-label="Page navigation">
-    <ul class="pagination justify-content-center">
-        {% if supplies.has_previous %}
-            <li class="page-item"><a class="page-link" href="{% my_url supplies.previous_page_number 'page' request.GET.urlencode %}">&laquo;</a></li>
-        {% else %}
-            <li class="page-item disabled"><a class="page-link" href="#">&laquo;</a></li>
-        {% endif %}
-        {% for i in supplies.paginator.page_range %}
-            {% if supplies.number == i %}
-                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+    <nav class="d-flex justify-content-center my-3" aria-label="Навігація по сторінках">
+        <div class="btn-group home-view-switch home-pagination" role="group">
+            {% if supplies.has_previous %}
+                <a class="btn home-view-btn" href="{% my_url supplies.previous_page_number 'page' request.GET.urlencode %}" title="Попередня сторінка">&laquo;</a>
             {% else %}
-                <li class="page-item"><a class="page-link" href="{% my_url i 'page' request.GET.urlencode %}">{{ i }}</a></li>
+                <span class="btn home-view-btn disabled" title="Попередня сторінка" aria-disabled="true">&laquo;</span>
             {% endif %}
-        {% endfor %}
-        {% if supplies.has_next %}
-            <li class="page-item"><a class="page-link" href="{% my_url supplies.next_page_number 'page' request.GET.urlencode %}">&raquo;</a></li>
-        {% else %}
-            <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
+            {% pagination_page_numbers supplies 5 as home_page_nums %}
+            {% for i in home_page_nums %}
+                {% if supplies.number == i %}
+                    <span class="btn home-view-btn active" aria-current="page">{{ i }}</span>
+                {% else %}
+                    <a class="btn home-view-btn" href="{% my_url i 'page' request.GET.urlencode %}">{{ i }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if supplies.has_next %}
+                <a class="btn home-view-btn" href="{% my_url supplies.next_page_number 'page' request.GET.urlencode %}" title="Наступна сторінка">&raquo;</a>
+            {% else %}
+                <span class="btn home-view-btn disabled" title="Наступна сторінка" aria-disabled="true">&raquo;</span>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
 {% endblock %}

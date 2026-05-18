@@ -43,7 +43,6 @@ def booked_supplies_list(request, client_id):
         .select_related('generalSupply')
 
     title = f'Всі бронювання для: \n{place.name}, {place.city_ref.name}'
-    cartCountData = countCartItemsHelper(request)
     suppFilter = BookedSuppliesFilter(request.GET, queryset=supplies_list)
     supplies_list = suppFilter.qs
     # Group SupplyInBookedOrder objects by GeneralSupply name
@@ -74,7 +73,6 @@ def booked_supplies_list(request, client_id):
         supplies_list = ""
         general_supply_list = ''
         place = ""
-        cartCountData = ""
 
     if 'delete_all_sups' in request.GET:
         for booked_sup in supplies_list:
@@ -183,7 +181,7 @@ def booked_supplies_list(request, client_id):
     booked_analytics = build_booked_supplies_analytics(suppFilter.qs) if can_view_booked_page else None
 
     return render(request, 'booked_flow/booked_supplies_list.html',
-                  {'title': title, 'isBookedList': True, 'isHome': True, 'suppFilter': suppFilter, 'supplies': supplies_list, 'general_supply_list': general_supply_list, 'for_place': place, 'cartCountData': cartCountData,
+                  {'title': title, 'isBookedList': True, 'isHome': True, 'suppFilter': suppFilter, 'supplies': supplies_list, 'general_supply_list': general_supply_list, 'for_place': place,
                    'booked_list_exist': booked_list_exist_for_nav, 'isAll': False, 'isAnalytics': False, 'booked_analytics': booked_analytics},
                   )
 
@@ -219,14 +217,6 @@ def add_sup_to_booked_cart(request, sup_id):
 
 @login_required(login_url='login')
 def booked_cart_badge_count_refresh(request):
-    booked_carts = BookedOrderInCart.objects.all()
-    carts_count = booked_carts.count()
-    if 2 > carts_count > 0:
-        is_one_cart = "IS_ONE"
-    else:
-        is_one_cart = "IS_MANY"
-    booked_cart_first = booked_carts.first()
-    cartCountData = {'is_one_cart': is_one_cart, 'booked_cart_first': booked_cart_first}
     hx_current_url = request.headers.get('HX-Current-URL', '')
     parsed_url = urlparse(hx_current_url) if hx_current_url else None
     next_url = '/'
@@ -239,7 +229,7 @@ def booked_cart_badge_count_refresh(request):
     return render(
         request,
         'booked_flow/booked-cart-badge.html',
-        {'cartCountData': cartCountData, 'booked_next_url': next_url},
+        {'booked_next_url': next_url},
     )
 
 
@@ -261,7 +251,6 @@ def booked_cart_details(request, booked_cart_id):
     if booked_cart is None:
         return redirect(fallback_redirect_url)
     sups_in_booked_cart = booked_cart.bookedsupplyinorderincart_set.all()
-    cartCountData = countCartItemsHelper(request)
     orderForm = OrderInCartForm(request.POST or None)
 
     uncompleted_orders = booked_cart.place.order_set.filter(isComplete=False)
@@ -367,18 +356,15 @@ def booked_cart_details(request, booked_cart_id):
             'booked_cart': booked_cart,
             'orderForm': orderForm,
             'sups_in_booked_cart': sups_in_booked_cart,
-            'cartCountData': cartCountData,
             'uncompleted_orders': uncompleted_orders,
-            'initial_next_url': initial_next_url,
-        },
+            'initial_next_url': initial_next_url},
     )
 
 
 def booked_carts_list(request):
     booked_carts = BookedOrderInCart.objects.all()
-    cartCountData = countCartItemsHelper(request)
     return render(request, 'booked_flow/all_booked_carts_list.html',
-                  {'booked_carts': booked_carts, 'cartCountData': cartCountData})
+                  {'booked_carts': booked_carts})
 
 
 def delete_sup_from_booked_cart_delete_action(request):

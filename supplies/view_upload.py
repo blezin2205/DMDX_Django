@@ -38,7 +38,6 @@ def get_progress(request, task_id, for_delivery_order_id):
     progress = Progress(result)
     percent_complete = int(progress.get_info()['progress']['percent'])
     if percent_complete == 100:
-        cartCountData = countCartItemsHelper(request)
         delivery_order = DeliveryOrder.objects.get(id=for_delivery_order_id)
         supplies = delivery_order.deliverysupplyincart_set.all().order_by('general_supply__name')
         total_count = supplies.aggregate(total_count=Sum('count'))['total_count']
@@ -51,7 +50,7 @@ def get_progress(request, task_id, for_delivery_order_id):
             t.append(d)
         supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
         status_of_task = result.status
-        return render(request, 'supplies/cart/delivery_cart.html', {'cartCountData': cartCountData, 'status_of_task': status_of_task, 'supDict': supDict, 'delivery_order': delivery_order, 'total_count': total_count, 'form': form})
+        return render(request, 'supplies/cart/delivery_cart.html', {'status_of_task': status_of_task, 'supDict': supDict, 'delivery_order': delivery_order, 'total_count': total_count, 'form': form})
 
     print(task_id)
     print(percent_complete)
@@ -61,7 +60,6 @@ def get_progress(request, task_id, for_delivery_order_id):
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def upload_supplies_for_new_delivery(request, delivery_order_id=None):
-    cartCountData = countCartItemsHelper(request)
     form = NewDeliveryForm()
     if delivery_order_id != None:
         title = f'Додати штрих-коди до поставки № {delivery_order_id}'
@@ -83,8 +81,7 @@ def upload_supplies_for_new_delivery(request, delivery_order_id=None):
             context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': for_delivery_order.id}
             return render(request, 'supplies/delivery/upload_supplies_new_delivery_progress.html', context)
 
-    return render(request, 'supplies/delivery/upload_supplies_for_new_delivery.html', {'form': form, 'title': title,
-                                                                                                            'cartCountData': cartCountData})
+    return render(request, 'supplies/delivery/upload_supplies_for_new_delivery.html', {'form': form, 'title': title})
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -111,7 +108,6 @@ def upload_supplies_for_new_delivery_from_js_script(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
 
 def upload_supplies_for_new_delivery_noncelery(request, delivery_order_id=None):
-    cartCountData = countCartItemsHelper(request)
     form = NewDeliveryForm()
     if delivery_order_id is not None:
         title = f'Додати штрих-коди до поставки № {delivery_order_id}'
@@ -134,7 +130,7 @@ def upload_supplies_for_new_delivery_noncelery(request, delivery_order_id=None):
             t.start()
             return JsonResponse({'success': False, 'message': 'Форма не дійсна.'})
             # return redirect('/all_deliveries')
-    return render(request, 'supplies/delivery/upload_supplies_for_new_delivery.html', {'form': form, 'cartCountData': cartCountData, 'title': title, 'delivery_order_id': delivery_order_id})
+    return render(request, 'supplies/delivery/upload_supplies_for_new_delivery.html', {'form': form, 'title': title, 'delivery_order_id': delivery_order_id})
 
 def threading_create_delivery_async(request, string_data, for_delivery_order, barcode_type, isUpdate = False):
     total_sups_delivered, total_requests = makeDataUpload_nonCelery(string_data, for_delivery_order, barcode_type)
@@ -149,8 +145,7 @@ def threading_create_delivery_async(request, string_data, for_delivery_order, ba
     response_data = {
             'status': 'success',
             'message': message,
-            'delivery_order_id': for_delivery_order.id,
-        }
+            'delivery_order_id': for_delivery_order.id}
     return JsonResponse(response_data)
 
 
@@ -223,7 +218,6 @@ def save_delivery(request, delivery_order_id):
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def all_deliveries(request):
-    cartCountData = countCartItemsHelper(request)
     deliveries = DeliveryOrder.objects.all().order_by('-id')
     
     paginator = Paginator(deliveries, 20)
@@ -234,7 +228,6 @@ def all_deliveries(request):
     title = f'Всі поставки. ({totalCount} шт.)'
 
     return render(request, 'supplies/delivery/all_deliveries_list.html', {
-        'cartCountData': cartCountData, 
         'deliveries': deliveries,
         'title': title,
         'totalCount': totalCount
@@ -266,7 +259,6 @@ def delete_delivery_action(request, delivery_order_id):
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def delivery_detail(request, delivery_id):
-    cartCountData = countCartItemsHelper(request)
     delivery_order = DeliveryOrder.objects.get(id=delivery_id)
     supplies = delivery_order.deliverysupplyincart_set.all().order_by('general_supply__name')
     total_count = supplies.aggregate(total_count=Sum('count'))['total_count']
@@ -279,7 +271,7 @@ def delivery_detail(request, delivery_id):
         t = supDict.setdefault(d.isRecognized, [])
         t.append(d)
     supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
-    return render(request, 'supplies/delivery/delivery_detail.html', {'cartCountData': cartCountData, 'total_count': total_count, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
+    return render(request, 'supplies/delivery/delivery_detail.html', {'total_count': total_count, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])

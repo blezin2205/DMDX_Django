@@ -1,0 +1,67 @@
+{% load myapp_extras %}
+<div class="card supply-card-mobile supply-card-mobile--flush rounded-0 shadow-none border-0 border-bottom mb-0">
+    <div class="card-header bg-secondary-subtle text-dark py-1 px-3 border-0 supply-card-mobile-head rounded-0">
+        <div class="d-flex justify-content-between align-items-center gap-1">
+            <h6 class="mb-0 supply-card-mobile-title fw-semibold flex-grow-1 min-w-0">{{ el.general_supply.name }}</h6>
+            <div class="d-flex align-items-center gap-1 flex-shrink-0 supply-card-mobile-head-tools">
+                {% if request.user.is_staff or request.user|has_group:"empl" %}
+                    <div class="d-flex align-items-center">{% include 'partials/cart/add_cart_button.html' with supp=el %}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% if el.general_supply.package_and_tests %}
+            <div class="mt-1">
+                <small class="text-muted supply-card-mobile-meta"><i class="bi bi-box-seam"></i> {{ el.general_supply.package_and_tests }}</small>
+            </div>
+        {% endif %}
+    </div>
+    <div class="card-body py-1 px-3">
+        <div class="d-flex flex-wrap gap-1 mb-1 supply-card-mobile-meta-row">
+            {% if el.general_supply.category %}
+            <small class="text-muted supply-card-mobile-meta"><i class="bi bi-tag"></i> {{ el.general_supply.category.name }}</small>
+            {% endif %}
+            {% if el.general_supply.ref is not none %}
+                <small class="text-muted supply-card-mobile-meta"><i class="bi bi-hash"></i> {{ el.general_supply.ref }}</small>
+            {% endif %}
+            {% if el.general_supply.SMN_code is not none %}
+                <small class="text-muted supply-card-mobile-meta"><i class="bi bi-upc"></i> {{ el.general_supply.SMN_code }}</small>
+            {% endif %}
+        </div>
+        <div class="table-responsive supply-mobile-lot-scroll">
+            <table class="table table-sm table-bordered mb-0 align-middle supply-card-mobile-table rounded-0">
+                <tbody>
+                    <tr>
+                        <th class="small py-1 text-muted fw-normal" scope="row">LOT</th>
+                        <td class="small py-1">{% if el.supplyLot is not none %}{{ el.supplyLot }}{% endif %}</td>
+                        <th class="small py-1 text-muted fw-normal" scope="row">К-сть</th>
+                        <td class="small py-1">
+                            <span class="fw-bold">{{ el.count }}</span>
+                            {% if el.countOnHold %}
+                                <span
+                                    style="background-color: orange; font-weight: 600; cursor: pointer;"
+                                    class="px-2 rounded-2 on-hold-trigger small"
+                                    data-bs-toggle="popover"
+                                    data-bs-trigger="click"
+                                    data-bs-placement="left"
+                                    data-bs-html="true"
+                                    data-bs-content="<div class='popover-data' style='min-width: 200px;'><div class='spinner-border spinner-border-sm' role='status'><span class='visually-hidden'>Loading...</span></div></div>"
+                                    data-supply-id="{{ el.id }}">{{ el.countOnHold }}</span>
+                            {% endif %}
+                            {% if el.preCountOnHold %}
+                                <span style="background-color: #5bc0de; font-weight: 600" class="px-1 rounded-1 small">{{ el.preCountOnHold }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="small py-1 text-muted fw-normal" scope="row">Термін</th>
+                        <td class="small py-1" style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">
+                            {{ el.expiredDate|date:"d.m.Y" }}
+                        </td>
+                        <th class="small py-1 text-muted fw-normal" scope="row">Оновл.</th>
+                        <td class="small py-1">{{ el.dateCreated|date:"d.m.Y" }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

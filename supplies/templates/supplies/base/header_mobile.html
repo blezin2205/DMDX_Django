@@ -1,15 +1,17 @@
 {% load myapp_extras %}
+{% load static %}
 
-<nav class="app-mobile-shell navbar navbar-expand-md shadow-sm bg-white bg-general-navbar d-md-none">
-    <div class="container-fluid px-3 py-2">
+<nav class="app-mobile-shell app-mobile-topbar navbar navbar-expand-md shadow-sm d-md-none">
+    <div class="container-fluid px-3 py-1 app-topbar-inner">
         <!-- Mobile Menu Toggle -->
-        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mobileNavbar" aria-controls="mobileNavbar" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler border-0 text-white shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mobileNavbar" aria-controls="mobileNavbar" aria-expanded="false" aria-label="Toggle navigation">
             <i class="bi bi-list fs-4 menu-icon"></i>
         </button>
 
-        <!-- Mobile Navigation -->
+        <!-- Mobile Navigation (візуально як filter-panel / home-view-switch на home.html) -->
         <div class="collapse navbar-collapse" id="mobileNavbar">
-            <ul class="navbar-nav flex-column w-100 gap-2 mt-3">
+            <div class="app-mobile-menu-panel">
+            <ul class="navbar-nav flex-column w-100 gap-2 mt-0">
                 <li class="nav-item w-100">
                     <a href="/" class="btn btn-soft w-100 text-start{% if isHome %} active fw-medium{% endif %}" aria-current="page">
                         <i class="bi bi-box-seam me-2"></i>Склад
@@ -17,30 +19,14 @@
                 </li>
 
                 <li class="nav-item w-100">
-                    <a href="/orders" class="btn btn-soft w-100 text-start position-relative{% if isOrders %} active fw-medium{% endif %}" aria-current="page">
-                        <i class="bi bi-clipboard-check me-2"></i>Замовлення 
-                        <div class="position-absolute top-50 end-0 translate-middle-y d-flex gap-1 me-2">
-                            {% if cartCountData.orders_pinned > 0 %}
-                                <span class="badge rounded-pill bg-danger">{{ cartCountData.orders_pinned }}</span>
-                            {% endif %}
-                            {% if cartCountData.orders_incomplete > 0 %}
-                                <span class="badge rounded-pill bg-warning">{{ cartCountData.orders_incomplete }}</span>
-                            {% endif %}
-                        </div>
+                    <a href="/orders" class="btn btn-soft w-100 text-start{% if isOrders %} active fw-medium{% endif %}" aria-current="page">
+                        <i class="bi bi-clipboard-check me-2"></i>Замовлення{% if cartCountData.orders_pinned > 0 %} <span class="badge bg-danger">{{ cartCountData.orders_pinned }}</span>{% endif %}{% if cartCountData.orders_incomplete > 0 %} <span class="badge bg-warning text-dark">{{ cartCountData.orders_incomplete }}</span>{% endif %}
                     </a>
                 </li>
 
                 <li class="nav-item w-100">
-                    <a href="/preorders" class="btn btn-soft w-100 text-start position-relative{% if isPreordersTab %} active fw-medium{% endif %}" aria-current="page">
-                        <i class="bi bi-clipboard me-2"></i>Передзамовлення 
-                        <div class="position-absolute top-50 end-0 translate-middle-y d-flex gap-1 me-2">
-                            {% if cartCountData.preorders_pinned > 0 %}
-                                <span class="badge rounded-pill bg-danger">{{ cartCountData.preorders_pinned }}</span>
-                            {% endif %}
-                            {% if cartCountData.preorders_incomplete > 0 %}
-                                <span class="badge rounded-pill bg-info">{{ cartCountData.preorders_incomplete }}</span>
-                            {% endif %}
-                        </div>
+                    <a href="/preorders" class="btn btn-soft w-100 text-start{% if isPreordersTab %} active fw-medium{% endif %}" aria-current="page">
+                        <i class="bi bi-clipboard me-2"></i>Передзамовлення{% if cartCountData.preorders_pinned > 0 %} <span class="badge bg-danger">{{ cartCountData.preorders_pinned }}</span>{% endif %}{% if cartCountData.preorders_incomplete > 0 %} <span class="badge bg-info">{{ cartCountData.preorders_incomplete }}</span>{% endif %}
                     </a>
                 </li>
 
@@ -53,19 +39,25 @@
                 {% endif %}
 
                 {% if request.user|has_group:"empl" or request.user.is_staff %}
-                    {% if cartCountData.order_to_send_today > 0 or cartCountData.expired_orders > 0 %}
+                    {% if cartCountData.order_to_send_today > 0 or cartCountData.expired_orders > 0 or cartCountData.orders_with_uncompleted_np > 0 %}
                         <li class="nav-item w-100">
-                            <div class="d-flex gap-2">
+                            <div class="d-flex flex-wrap gap-2 app-mobile-alert-row">
                                 {% if cartCountData.order_to_send_today > 0 %}
-                                    <div class="btn btn-soft-danger flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2">
+                                    <div class="btn btn-soft-danger flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Відправити замовлень сьогодні">
                                         <i class="bi bi-exclamation-circle"></i>
                                         <span>{{ cartCountData.order_to_send_today }}</span>
                                     </div>
                                 {% endif %}
                                 {% if cartCountData.expired_orders > 0 %}
-                                    <div class="btn btn-soft-danger flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2">
+                                    <div class="btn btn-soft-danger flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Прострочені замовлення">
                                         <i class="bi bi-exclamation-triangle"></i>
                                         <span>{{ cartCountData.expired_orders }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if cartCountData.orders_with_uncompleted_np > 0 %}
+                                    <div class="btn btn-soft-danger flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2 px-2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Накладні НП з незавершеним статусом">
+                                        <img src="{% static 'images/np_icon.png' %}" width="30" height="29" alt="" style="border-radius: 4px">
+                                        <span>{{ cartCountData.orders_with_uncompleted_np }}</span>
                                     </div>
                                 {% endif %}
                             </div>
@@ -75,7 +67,7 @@
 
                 <!-- Cart Badges -->
                 <li class="nav-item w-100">
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 w-100 app-mobile-cart-track">
                         <div id="booked-cart-badge" class="flex-grow-1" hx-get="{% url 'booked-cart-badge-count' %}" hx-trigger="subscribe-booked-cart-badge-count from:body">
                             {% include 'booked_flow/booked-cart-badge.html' %}
                         </div>
@@ -90,10 +82,10 @@
 
                 <!-- User Info and Logout -->
                 <li class="nav-item w-100">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <span class="text-muted">
-                            <i class="bi bi-person-circle me-2"></i>
-                            {{ request.user.first_name }} {{ request.user.last_name }}
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                        <span class="topbar-user d-flex align-items-center text-truncate">
+                            <i class="bi bi-person-circle me-2 flex-shrink-0"></i>
+                            <span class="text-truncate">{{ request.user.first_name }} {{ request.user.last_name }}</span>
                         </span>
                         <a class="btn btn-soft-danger" href="{% url 'logout' %}" role="button">
                             <i class="bi bi-box-arrow-right"></i>
@@ -103,13 +95,12 @@
 
                 {% if request.user.is_staff or request.user|has_group:"empl" %}
                     <li class="nav-item w-100">
-                        <div class="custom-dropdown w-100">
-                            <button class="btn btn-soft w-100 text-start dropdown-toggle" type="button" id="mobileDropdownMenu">
-                                <i class="bi bi-gear me-2"></i>Меню
-                                <i class="bi bi-chevron-down float-end"></i>
+                        <div class="app-mobile-app-menu-wrap">
+                            <button class="btn btn-soft dropdown-toggle" type="button" id="mobileGridMenuButton" aria-expanded="false" aria-haspopup="true" aria-controls="mobileAppMenuDropdown">
+                                <i class="bi bi-grid-1x2-fill"></i>
                             </button>
-                            <div class="custom-dropdown-menu w-100 shadow-sm" id="mobileDropdownContent">
-                                <h6 class="dropdown-header">Основне</h6>
+                            <div class="dropdown-menu app-menu-dropdown app-mobile-app-menu-dropdown" id="mobileAppMenuDropdown" aria-labelledby="mobileGridMenuButton">
+                                <div class="dropdown-section-title">Робоче</div>
                                 <a class="dropdown-item" href="{% url 'nova_poshta_registers' %}">
                                     <i class="bi bi-truck me-2"></i>Реєстри НП
                                 </a>
@@ -122,41 +113,55 @@
                                 <a class="dropdown-item" href="/allDevices">
                                     <i class="bi bi-cpu me-2"></i>Прилади
                                 </a>
-
-                                <div class="dropdown-divider"></div>
-                                
-                                <h6 class="dropdown-header">Додати</h6>
-                                <a class="dropdown-item" href="{% url 'create_note' %}">
-                                    <i class="bi bi-journal-plus me-2"></i>Сервісну замітку
-                                </a>
-                                <a class="dropdown-item" href="{% url 'addClient' %}">
-                                    <i class="bi bi-person-plus me-2"></i>Клієнта (нова організація)
-                                </a>
-                                <a class="dropdown-item" href="{% url 'auth' %}">
-                                    <i class="bi bi-person-plus me-2"></i>Створити клієнта (аккаунт)
-                                </a>
-                                <a class="dropdown-item" href="{% url 'add-new-city' %}">
-                                    <i class="bi bi-building me-2"></i>Місто
-                                </a>
-                                <a class="dropdown-item" href="{% url 'add-new-supply-category' %}">
-                                    <i class="bi bi-tags me-2"></i>Категорію товара
-                                </a>
-                                <a class="dropdown-item" href="{% url 'add-general-supply' %}">
-                                    <i class="bi bi-box-seam me-2"></i>Назву товара
-                                </a>
-                                <div class="dropdown-divider"></div>
-                                
-                                <a class="dropdown-item" href="{% url 'app_settings' %}">
-                                    <i class="bi bi-gear me-2"></i>Налаштування
-                                </a>
                                 <a class="dropdown-item" href="{% url 'list_files' '' %}">
                                     <i class="bi bi-folder me-2"></i>Storage
+                                </a>
+
+                                <div class="dropdown-divider"></div>
+                                <button class="dropdown-section-toggle" type="button" id="mobileCreateSectionToggle" aria-expanded="false" aria-controls="mobileCreateSectionBody">
+                                    <span class="dropdown-section-title mb-0">Додати</span>
+                                    <i class="bi bi-chevron-down section-arrow"></i>
+                                </button>
+                                <div class="dropdown-section-body" id="mobileCreateSectionBody">
+                                    <a class="dropdown-item" href="{% url 'upload_supplies_for_new_delivery' %}">
+                                        <i class="bi bi-box me-2"></i>Нову поставку
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'create_note' %}">
+                                        <i class="bi bi-journal-plus me-2"></i>Сервісну замітку
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'addClient' %}">
+                                        <i class="bi bi-person-plus me-2"></i>Клієнта (нова організація)
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'auth' %}">
+                                        <i class="bi bi-person-plus me-2"></i>Створити клієнта (аккаунт)
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'add-new-city' %}">
+                                        <i class="bi bi-building me-2"></i>Місто
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'add-new-supply-category' %}">
+                                        <i class="bi bi-tags me-2"></i>Категорію товара
+                                    </a>
+                                    <a class="dropdown-item" href="{% url 'add-general-supply' %}">
+                                        <i class="bi bi-box-seam me-2"></i>Назву товара
+                                    </a>
+                                </div>
+
+                                <div class="dropdown-divider"></div>
+                                <div class="dropdown-section-title">Акаунт</div>
+                                {% if request.user.is_staff or request.user|has_group:"empl" %}
+                                    <a class="dropdown-item" href="{% url 'app_settings' %}">
+                                        <i class="bi bi-gear me-2"></i>Налаштування
+                                    </a>
+                                {% endif %}
+                                <a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Вийти
                                 </a>
                             </div>
                         </div>
                     </li>
                 {% endif %}
             </ul>
+            </div>
         </div>
     </div>
 </nav>
@@ -191,6 +196,19 @@
                 }
             }
             
+            function closeMobileAppMenu() {
+                const menu = document.getElementById('mobileAppMenuDropdown');
+                const btn = document.getElementById('mobileGridMenuButton');
+                const ct = document.getElementById('mobileCreateSectionToggle');
+                const cb = document.getElementById('mobileCreateSectionBody');
+                if (menu) menu.classList.remove('show');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+                if (ct && cb) {
+                    ct.setAttribute('aria-expanded', 'false');
+                    cb.classList.remove('show');
+                }
+            }
+
             // Function to toggle menu visibility
             function toggleMenu() {
                 const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
@@ -200,6 +218,7 @@
                     mobileNavbar.classList.remove('show');
                     toggleButton.setAttribute('aria-expanded', 'false');
                     toggleMenuIcon(false);
+                    closeMobileAppMenu();
                 } else {
                     // Open menu
                     mobileNavbar.classList.add('show');
@@ -220,6 +239,12 @@
                 if (!mobileNavbar.contains(e.target) && !toggleButton.contains(e.target) && mobileNavbar.classList.contains('show')) {
                     toggleMenu();
                 }
+                const menu = document.getElementById('mobileAppMenuDropdown');
+                const gridBtn = document.getElementById('mobileGridMenuButton');
+                if (menu && gridBtn && menu.classList.contains('show')
+                        && !menu.contains(e.target) && !gridBtn.contains(e.target)) {
+                    closeMobileAppMenu();
+                }
             });
             
             // Prevent clicks inside the menu from closing it
@@ -231,36 +256,32 @@
             const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
             toggleMenuIcon(isExpanded);
             
-            // Custom dropdown functionality
-            const dropdownToggle = document.getElementById('mobileDropdownMenu');
-            const dropdownContent = document.getElementById('mobileDropdownContent');
-            
-            if (dropdownToggle && dropdownContent) {
-                // Remove Bootstrap data attributes
-                dropdownToggle.removeAttribute('data-bs-toggle');
-                dropdownToggle.removeAttribute('aria-expanded');
-                
-                // Toggle dropdown on click
-                dropdownToggle.addEventListener('click', function(e) {
+            const mobileAppMenu = document.getElementById('mobileAppMenuDropdown');
+            const mobileGridBtn = document.getElementById('mobileGridMenuButton');
+            const mobileCreateToggle = document.getElementById('mobileCreateSectionToggle');
+            const mobileCreateBody = document.getElementById('mobileCreateSectionBody');
+
+            if (mobileAppMenu && mobileGridBtn) {
+                mobileGridBtn.removeAttribute('data-bs-toggle');
+                mobileGridBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    
-                    // Toggle dropdown visibility
-                    dropdownContent.classList.toggle('show');
-                    dropdownToggle.classList.toggle('active');
+                    const isShown = mobileAppMenu.classList.contains('show');
+                    mobileAppMenu.classList.toggle('show', !isShown);
+                    mobileGridBtn.setAttribute('aria-expanded', isShown ? 'false' : 'true');
                 });
-                
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!dropdownToggle.contains(e.target) && !dropdownContent.contains(e.target) && dropdownContent.classList.contains('show')) {
-                        dropdownContent.classList.remove('show');
-                        dropdownToggle.classList.remove('active');
-                    }
-                });
-                
-                // Prevent clicks inside the dropdown from closing it
-                dropdownContent.addEventListener('click', function(e) {
+                mobileAppMenu.addEventListener('click', function(e) {
                     e.stopPropagation();
+                });
+            }
+
+            if (mobileCreateToggle && mobileCreateBody) {
+                mobileCreateToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const isOpen = mobileCreateBody.classList.contains('show');
+                    mobileCreateBody.classList.toggle('show', !isOpen);
+                    mobileCreateToggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
                 });
             }
         }

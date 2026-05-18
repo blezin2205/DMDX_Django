@@ -1,0 +1,293 @@
+{% extends 'supplies/base/base.html' %}
+{% load static %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+{% load bootstrap %}
+{% load mathfilters %}
+{% load myapp_extras %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/app-home.css'%}" type="text/css">
+{% endblock %}
+
+{% block content %}
+<div class="container py-1">
+    <div class="btn-group my-3 home-view-switch" role="group" aria-label="Перемикання виду списку">
+        <a href="{% url 'home' %}" class="btn home-view-btn {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
+        <a href="{% url 'childSupply' %}" class="btn home-view-btn {% if isChild %} active {% endif %}">Список товарів</a>
+        <a href="{% url 'supply_statistics' %}" class="btn home-view-btn {% if isSupplyStats %} active {% endif %}">Статистика товарів</a>
+    </div>
+
+    <form method="get" class="filter-toolbar-form mb-2">
+        <div class="filter-panel bg-light border shadow-sm rounded-3">
+            <div class="filter-grid">
+                <div class="filter-field">{{ suppFilter.form.ordering|as_crispy_field }}</div>
+                <div class="filter-field">{{ suppFilter.form.category|as_crispy_field }}</div>
+                <div class="filter-field">{{ suppFilter.form.ref|as_crispy_field }}</div>
+                <div class="filter-field">{{ suppFilter.form.SMN_code|as_crispy_field }}</div>
+                <div class="filter-field field-name">{{ suppFilter.form.name|as_crispy_field }}</div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-primary btn-sm" type="submit">
+                    <i class="bi bi-search me-1"></i>Застосувати
+                </button>
+                <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="table-responsive{% block supply_list_wrapper_extra %}{% endblock %}">
+    {% block supply_list %}{% endblock %}
+</div>
+
+{% if supplies.paginator.num_pages > 1 %}
+    <nav class="d-flex justify-content-center my-3" aria-label="Навігація по сторінках">
+        <div class="btn-group home-view-switch home-pagination" role="group">
+            {% if supplies.has_previous %}
+                <a class="btn home-view-btn" href="{% my_url supplies.previous_page_number 'page' request.GET.urlencode %}" title="Попередня сторінка">&laquo;</a>
+            {% else %}
+                <span class="btn home-view-btn disabled" title="Попередня сторінка" aria-disabled="true">&laquo;</span>
+            {% endif %}
+            {% pagination_page_numbers supplies 5 as home_page_nums %}
+            {% for i in home_page_nums %}
+                {% if supplies.number == i %}
+                    <span class="btn home-view-btn active" aria-current="page">{{ i }}</span>
+                {% else %}
+                    <a class="btn home-view-btn" href="{% my_url i 'page' request.GET.urlencode %}">{{ i }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if supplies.has_next %}
+                <a class="btn home-view-btn" href="{% my_url supplies.next_page_number 'page' request.GET.urlencode %}" title="Наступна сторінка">&raquo;</a>
+            {% else %}
+                <span class="btn home-view-btn disabled" title="Наступна сторінка" aria-disabled="true">&raquo;</span>
+            {% endif %}
+        </div>
+    </nav>
+{% endif %}
+
+<!-- Supply History Modal -->
+<div class="modal fade" id="supplyHistoryModal" tabindex="-1" aria-labelledby="supplyHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered {% block supply_history_modal_dialog_class %}modal-xl{% endblock %}">
+        <div class="modal-content">
+            <div class="modal-header justify-content-center position-relative py-2">
+                <h5 class="modal-title d-flex flex-column gap-0 text-center pe-5" id="supplyHistoryModalLabel" style="font-size: 1rem;">
+                    <div class="d-flex align-items-center gap-1 justify-content-center">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Історія товару</span>
+                    </div>
+                    <div class="text-muted small" style="font-size: 0.85rem;"></div>
+                </h5>
+                <button type="button" class="btn-close position-absolute end-0 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" id="supplyHistoryContent" style="height: calc(100vh - 100px);">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    // Main initialization
+    $(function() {
+
+        function positionSupplyRowPanel($btn, $panel) {
+            var el = $btn[0];
+            if (!el) return;
+            var rect = el.getBoundingClientRect();
+            $panel.css({
+                position: 'fixed',
+                right: (window.innerWidth - rect.right) + 'px',
+                top: (rect.bottom + 4) + 'px',
+                left: 'auto',
+                bottom: 'auto',
+                margin: 0
+            });
+        }
+
+        function resetSupplyRowPanel($panel) {
+            $panel.css({ position: '', right: '', top: '', left: '', bottom: '', margin: '' });
+        }
+
+        function closeAllSupplyRowMenus() {
+            $('.supply-row-actions-panel.is-open').each(function() {
+                resetSupplyRowPanel($(this));
+                $(this).removeClass('is-open').attr('hidden', true);
+            });
+            $('.supply-row-menu-btn').attr('aria-expanded', 'false');
+        }
+
+        $(document).on('click.supplyRowMenu', '.supply-row-menu-btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var $btn = $(this);
+            var $dd = $btn.closest('.supply-row-dropdown');
+            var $panel = $dd.find('.supply-row-actions-panel');
+            var willOpen = !$panel.hasClass('is-open');
+            $('.supply-row-actions-panel.is-open').not($panel).each(function() {
+                resetSupplyRowPanel($(this));
+                $(this).removeClass('is-open').attr('hidden', true);
+            });
+            $('.supply-row-menu-btn').not($btn).attr('aria-expanded', 'false');
+            if (willOpen) {
+                $panel.removeAttr('hidden').addClass('is-open');
+                positionSupplyRowPanel($btn, $panel);
+                $btn.attr('aria-expanded', 'true');
+            } else {
+                resetSupplyRowPanel($panel);
+                $panel.removeClass('is-open').attr('hidden', true);
+                $btn.attr('aria-expanded', 'false');
+            }
+        });
+
+        $(document).on('click.supplyRowMenuClose', function(e) {
+            if ($(e.target).closest('.supply-row-dropdown').length) {
+                return;
+            }
+            closeAllSupplyRowMenus();
+        });
+
+        $(document).on('click', '.supply-row-actions-panel .add-lot-btn, .supply-row-actions-panel .edit-gen-sup-btn', function() {
+            closeAllSupplyRowMenus();
+        });
+
+        $(window).on('scroll resize', function() {
+            closeAllSupplyRowMenus();
+        });
+
+        $(document).on('scroll', '.table-responsive', function() {
+            closeAllSupplyRowMenus();
+        });
+
+        // Supply history button handler
+        $('.supply-history-btn').on('click', function(e) {
+            e.preventDefault();
+            const { supplyId, supplyName } = getSupplyNamAndId(this);
+            showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`, 'Завантаження історії...');
+        });
+
+        // Add lot button handler
+        $('.edit-lot-btn').on('click', function(e) {
+            e.preventDefault();
+            const { supplyId, supplyName } = getSupplyNamAndId(this);
+            $('#supplyName').text(supplyName);
+            showEditGenSupModal(`/update/${supplyId}`, supplyId);
+        });
+
+        $('.add-lot-btn').on('click', function(e) {
+            e.preventDefault();
+            const { supplyId, supplyName } = getSupplyNamAndId(this);
+            $('#supplyName').text(supplyName);
+            showEditGenSupModal(`/newLot/${supplyId}`, supplyId);
+
+        });
+
+        $('.edit-gen-sup-btn').on('click', function(e) {
+            e.preventDefault();
+            const { supplyId, supplyName } = getSupplyNamAndId(this);
+            $('#supplyName').text(supplyName);
+            showEditGenSupModal(`/update_general/${supplyId}`, supplyId);
+
+        });
+
+        function getSupplyNamAndId(element) {
+            const supplyId = $(element).data('supply-id');
+            const $card = $(element).closest('.supply-card-mobile');
+            if ($card.length) {
+                const supplyName = $card.find('h6').first().text().trim();
+                return { supplyId, supplyName };
+            }
+            const $hostRow = $(element).closest('tr[id^="supply-row-"]');
+            const supplyName = $hostRow.find('th[scope="row"]').first().text().trim();
+            return { supplyId, supplyName };
+        }
+
+        function showEditGenSupModal(url, supplyId) {
+            showModal('#addNewLotModal', '#addNewLotContent', url, 'Завантаження форми...', (data) => {
+                // Remove any existing form submission handlers
+                $('#addNewLotForm').off('submit');
+
+                $('#addNewLotForm').on('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    let submitter = e.originalEvent.submitter
+                    if (submitter) {
+                        formData.append(submitter.name, submitter.value);
+                    }
+                    console.log(submitter.name);
+
+                    fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': csrftoken,
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Помилка збереження');
+                        return response.json();
+                    })
+                    .then(data => {
+                        $('#addNewLotModal').modal('hide');
+                        if (data.generalSuppId) {
+                            supplyId = data.generalSuppId;
+                        }
+                        const supplyRow = $('#supply-row-'+supplyId);
+                        const newRow = $(data.html);
+                        supplyRow.replaceWith(newRow);
+                        initializeRowHandlers(newRow);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert(error.message);
+                    });
+                });
+            });
+        }
+
+        function initializeRowHandlers(row) {
+            htmx.process(row);
+
+            // Reinitialize add-lot-btn handler
+            row.find('.edit-gen-sup-btn').on('click', function(e) {
+                e.preventDefault();
+                const { supplyId, supplyName } = getSupplyNamAndId(this);
+                $('#supplyName').text(supplyName);
+                showEditGenSupModal(`/update_general/${supplyId}`, supplyId);
+            });
+
+            row.find('.add-lot-btn').on('click', function(e) {
+                e.preventDefault();
+                const { supplyId, supplyName } = getSupplyNamAndId(this);
+                $('#supplyName').text(supplyName);
+                showEditGenSupModal(`/newLot/${supplyId}`, supplyId);
+            });
+
+            row.find('.edit-lot-btn').on('click', function(e) {
+                e.preventDefault();
+                const { supplyId, supplyName } = getSupplyNamAndId(this);
+                $('#supplyName').text(supplyName);
+                showEditGenSupModal(`/update/${supplyId}`, supplyId);
+            });
+
+            // Reinitialize supply-history-btn handler
+            row.find('.supply-history-btn').on('click', function(e) {
+                e.preventDefault();
+                 const { supplyId, supplyName } = getSupplyNamAndId(this);
+                 $('#supplyName').text(supplyName);
+                 showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`, 'Завантаження історії...');
+            });
+        }
+
+    });
+
+    // The custom popover implementation has been replaced with Bootstrap's popover component
+    // See static/js/supply-popover.js for the new implementation
+</script>
+
+{% endblock %}

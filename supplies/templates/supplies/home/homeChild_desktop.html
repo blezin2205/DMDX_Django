@@ -1,0 +1,69 @@
+{% extends 'supplies/home/home_child_base.html' %}
+{% load myapp_extras %}
+
+{% block child_list_wrapper_extra %} px-2{% endblock %}
+
+{% block child_supply_list %}
+    <table class="table centred mt-3 w-auto mx-auto table-sm align-middle compact-supply-table">
+      <thead class="thead-dark">
+        <tr>
+          <th scope="col" class="textAlignLeft col-name">{{ supplies|length }} Назва товару</th>
+          <th scope="col" class="col-pack">Пакування / Тести</th>
+          <th scope="col" class="col-category">Категорія</th>
+          <th scope="col" class="col-ref">REF</th>
+          <th scope="col" class="col-smn">SMN</th>
+          <th scope="col" class="col-lot">LOT</th>
+          <th scope="col" class="col-qty">Кількість</th>
+          <th scope="col" class="col-exp">Термін</th>
+          <th scope="col" class="col-updated">Оновлено</th>
+          <th scope="col" class="col-cart text-end" style="white-space: nowrap;">Кошик</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for el in supplies %}
+        <tr>
+          <th scope="row" class="text-start col-name">{{ el.general_supply.name }}</th>
+          <td class="truncate-cell col-pack" title="{{ el.general_supply.package_and_tests|default_if_none:'' }}">{{ el.general_supply.package_and_tests|default_if_none:'' }}</td>
+          <td class="truncate-cell col-category" title="{{ el.general_supply.category.name }}">{{ el.general_supply.category.name }}</td>
+          <td class="truncate-cell col-ref" title="{{ el.general_supply.ref|default_if_none:'' }}">
+              {% if el.general_supply.ref is not none %}{{ el.general_supply.ref }}{% endif %}
+          </td>
+          <td class="truncate-cell col-smn" title="{{ el.general_supply.SMN_code|default_if_none:'' }}">
+              {% if el.general_supply.SMN_code is not none %}{{ el.general_supply.SMN_code }}{% endif %}
+          </td>
+          <td class="col-lot">
+              {% if el.supplyLot is not none %}{{ el.supplyLot }}{% endif %}
+          </td>
+          <td class="col-qty">
+              <span style="font-weight: 600">{{ el.count }}</span>
+              {% if el.countOnHold %}
+              <span
+                  style="background-color: orange; font-weight: 600; cursor: pointer;"
+                  class="px-2 rounded-2 on-hold-trigger"
+                  data-bs-toggle="popover"
+                  data-bs-trigger="click"
+                  data-bs-placement="left"
+                  data-bs-html="true"
+                  data-bs-content="<div class='popover-data' style='min-width: 200px;'><div class='spinner-border spinner-border-sm' role='status'><span class='visually-hidden'>Loading...</span></div></div>"
+                  data-supply-id="{{ el.id }}">{{ el.countOnHold }}</span>
+              {% endif %}
+              {% if el.preCountOnHold %}<span style="background-color: #5bc0de; font-weight: 600" class="px-2 rounded-2">{{ el.preCountOnHold }}</span>{% endif %}
+          </td>
+          <td class="col-exp">
+              <div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">
+                {{ el.expiredDate|date:"d.m.Y" }}
+              </div>
+          </td>
+          <td class="col-updated">{{ el.dateCreated|date:"d.m.Y" }}</td>
+          <td class="col-cart text-end align-middle">
+            {% if request.user.is_staff or request.user|has_group:"empl" %}
+            <div class="hstack gap-1 justify-content-end">
+              {% include 'partials/cart/add_cart_button.html' with supp=el %}
+            </div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+{% endblock %}

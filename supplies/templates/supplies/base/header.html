@@ -17,34 +17,14 @@
                 </li>
 
                 <li class="nav-item">
-                    <a href="/orders" class="btn btn-soft topbar-button-with-badges{% if cartCountData.orders_pinned > 0 or cartCountData.orders_incomplete > 0 %} has-badges{% endif %}{% if isOrders %} active fw-medium{% endif %}" aria-current="page">
-                        <span><i class="bi bi-clipboard-check me-1"></i>Замовлення</span>
-                        {% if cartCountData.orders_pinned > 0 or cartCountData.orders_incomplete > 0 %}
-                            <span class="topbar-inline-badges">
-                                {% if cartCountData.orders_pinned > 0 %}
-                                    <span class="badge rounded-pill bg-danger" style="font-size: 0.7rem;">{{ cartCountData.orders_pinned }}</span>
-                                {% endif %}
-                                {% if cartCountData.orders_incomplete > 0 %}
-                                    <span class="badge rounded-pill bg-warning" style="font-size: 0.7rem;">{{ cartCountData.orders_incomplete }}</span>
-                                {% endif %}
-                            </span>
-                        {% endif %}
+                    <a href="/orders" class="btn btn-soft{% if isOrders %} active fw-medium{% endif %}" aria-current="page">
+                        <i class="bi bi-clipboard-check me-1"></i>Замовлення{% if cartCountData.orders_pinned > 0 %} <span class="badge bg-danger">{{ cartCountData.orders_pinned }}</span>{% endif %}{% if cartCountData.orders_incomplete > 0 %} <span class="badge bg-warning text-dark">{{ cartCountData.orders_incomplete }}</span>{% endif %}
                     </a>
                 </li>
 
                 <li class="nav-item">
-                    <a href="/preorders" class="btn btn-soft topbar-button-with-badges{% if cartCountData.preorders_pinned > 0 or cartCountData.preorders_incomplete > 0 %} has-badges{% endif %}{% if isPreordersTab %} active fw-medium {% endif %}" aria-current="page">
-                        <span><i class="bi bi-clipboard me-1"></i>Передзамовлення</span>
-                        {% if cartCountData.preorders_pinned > 0 or cartCountData.preorders_incomplete > 0 %}
-                            <span class="topbar-inline-badges">
-                                {% if cartCountData.preorders_pinned > 0 %}
-                                    <span class="badge rounded-pill bg-danger" style="font-size: 0.7rem;">{{ cartCountData.preorders_pinned }}</span>
-                                {% endif %}
-                                {% if cartCountData.preorders_incomplete > 0 %}
-                                    <span class="badge rounded-pill bg-info" style="font-size: 0.7rem;">{{ cartCountData.preorders_incomplete }}</span>
-                                {% endif %}
-                            </span>
-                        {% endif %}
+                    <a href="/preorders" class="btn btn-soft{% if isPreordersTab %} active fw-medium{% endif %}" aria-current="page">
+                        <i class="bi bi-clipboard me-1"></i>Передзамовлення{% if cartCountData.preorders_pinned > 0 %} <span class="badge bg-danger">{{ cartCountData.preorders_pinned }}</span>{% endif %}{% if cartCountData.preorders_incomplete > 0 %} <span class="badge bg-info">{{ cartCountData.preorders_incomplete }}</span>{% endif %}
                     </a>
                 </li>
 
@@ -197,7 +177,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const dropdownMenu = document.querySelector('.app-menu-dropdown');
+        const dropdownMenu = document.querySelector('.app-topbar .app-menu-dropdown');
         const dropdownButton = document.getElementById('dropdownMenuButton');
         const createSectionToggle = document.getElementById('createSectionToggle');
         const createSectionBody = document.getElementById('createSectionBody');

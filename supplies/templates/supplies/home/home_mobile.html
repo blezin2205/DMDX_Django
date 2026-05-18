@@ -1,0 +1,13 @@
+{% extends 'supplies/home/home_staff_base.html' %}
+
+{% block supply_history_modal_dialog_class %}modal-fullscreen-sm-down{% endblock %}
+
+{% block supply_list_wrapper_extra %} home-supply-list-mobile px-0{% endblock %}
+
+{% block supply_list %}
+        <div class="d-flex flex-column">
+            {% for el in supplies %}
+            {% include 'partials/supplies/supply_row_mobile.html' with el=el %}
+            {% endfor %}
+        </div>
+{% endblock %}

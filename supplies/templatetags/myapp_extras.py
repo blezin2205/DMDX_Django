@@ -28,6 +28,35 @@ def my_url(value, field_name, urlencode=None):
     return url
 
 
+@register.simple_tag
+def pagination_page_numbers(page_obj, max_visible=3):
+    """
+    Список номерів сторінок для компактної пагінації: не більше `max_visible`
+    послідовних сторінок навколо поточної (краї обрізаються діапазоном 1..num_pages).
+    """
+    paginator = page_obj.paginator
+    num_pages = paginator.num_pages
+    current = page_obj.number
+    try:
+        max_visible = int(max_visible)
+    except (TypeError, ValueError):
+        max_visible = 3
+    if max_visible < 1:
+        max_visible = 1
+    if num_pages <= max_visible:
+        return list(range(1, num_pages + 1))
+    half = max_visible // 2
+    start = current - half
+    end = start + max_visible - 1
+    if start < 1:
+        start = 1
+        end = max_visible
+    if end > num_pages:
+        end = num_pages
+        start = num_pages - max_visible + 1
+    return list(range(start, end + 1))
+
+
 @register.filter(name='total_values_count')
 def total_values_count(dictionary):
     if isinstance(dictionary, dict):
