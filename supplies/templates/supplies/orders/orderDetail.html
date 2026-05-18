@@ -37,8 +37,8 @@
                                 <span>№{{order.id}}</span>
                             </div>
                             {% if not request.user.isClient %}
-                            {% if order.isUncompletedPreorderForPlaceExist %}
-                            {% if not order.for_preorder and order.related_preorders.count == 0 %}
+                            {% if order.has_uncompleted_preorder_for_place %}
+                            {% if not order.for_preorder and order.card_related_preorders_count == 0 %}
                             <button class="badge bg-info d-flex align-items-center gap-1 add-to-preorder-btn py-1" data-order-id="{{ order.id }}" type="button" data-bs-toggle="tooltip"
                             title="Додати до передзамовлення">
                                </i> <i class="bi bi-clipboard-plus fs-5"></i>
@@ -62,7 +62,7 @@
                                     {% endif %}
                                 <!-- </div> -->
                             {% endif %}
-                            {% if order.related_preorders.count > 0 %}
+                            {% if order.card_related_preorders_count > 0 %}
                             {% for preorder in order.related_preorders.all %}
                             {% if preorder.isPreorder %}
                                         <a href="{% url 'preorderDetail' preorder.id %}?next={{ request.get_full_path }}" class="badge bg-info d-flex align-items-center gap-2 p-2">
@@ -165,7 +165,7 @@
         </div>
 
         <!-- Nova Poshta Info -->
-        {% if order.statusnpparselfromdoucmentid_set.exists %}
+        {% if order.has_status_np %}
         <div class="card-footer py-2 px-3 border-bottom bg-light">
             <div class="d-flex align-items-center gap-2 mb-2">
                 <i class="bi bi-truck text-muted"></i>
@@ -273,7 +273,7 @@
                                 <th scope="col">Оновлено**</th>
                             {% endif %}
                             {% if request.user|has_group:"empl" or request.user.is_staff %}
-                                {% if order.isForPreorderOrItemHasPreorder %}
+                                {% if order.detail_has_preorder_lines %}
                                     <th scope="col">preorder</th>
                                 {% endif %}
                             {% endif %}

@@ -64,19 +64,21 @@
                                         </div>
                                     {% endif %}
                                 {% endif %}
-                                {% if order.related_preorders.count > 0 %}
-                                   {% if order.related_preorders.count == 1 %}
-                                   {% if order.related_preorders.first.isPreorder %}
+                                {% if order.card_related_preorders_count > 0 %}
+                                   {% if order.card_related_preorders_count == 1 %}
+                                   {% for preorder in order.related_preorders.all %}
+                                   {% if preorder.isPreorder %}
                                     <div class="badge bg-info p-2">
                                             <i class="bi bi-clock-history"> </i>
-                                            {{order.related_preorders.first.id}}
+                                            {{ preorder.id }}
                                         </div>
                                     {% else %}
                                         <div class="badge bg-secondary bg-opacity-10 text-secondary p-2">
-                                            <i class="bi bi-clipboard2"> </i> {{order.related_preorders.first.id}}
-                                            {% if order.related_preorders.first.comment %} | {{ order.related_preorders.first.comment }}{% endif %}
+                                            <i class="bi bi-clipboard2"> </i> {{ preorder.id }}
+                                            {% if preorder.comment %} | {{ preorder.comment }}{% endif %}
                                         </div>
                                     {% endif %}
+                                   {% endfor %}
                                    {% else %}
                                    <div class="badge bg-info p-2">
                                     <i class="bi bi-clock-history"> </i>
@@ -142,10 +144,10 @@
                         </div>
                     </div>
 
-                    {% if order.comment or order.npdeliverycreateddetailinfo_set.exists %}
+                    {% if order.comment or order.has_np_delivery_detail %}
                         <div class="card-footer bg-light p-0 border-top-light">
                             {% if order.comment %}
-                                <div class="px-3 py-2 {% if order.npdeliverycreateddetailinfo_set.exists %}border-bottom-light{% endif %}">
+                                <div class="px-3 py-2 {% if order.has_np_delivery_detail %}border-bottom-light{% endif %}">
                                     <div class="d-flex align-items-start gap-2">
                                         <i class="bi bi-chat-left-text text-muted"></i>
                                         <span class="small fw-medium text-break comment-pre-wrap">{{ order.comment }}</span>
@@ -153,7 +155,7 @@
                                 </div>
                             {% endif %}
 
-                            {% if order.npdeliverycreateddetailinfo_set.exists %}
+                            {% if order.has_np_delivery_detail %}
                                 <div class="px-3 py-2">
                                     <div class="hstack gap-2 align-items-center">
                                         <img src="{% static 'images/np_icon.png' %}" class="np-icon" alt="NP">

@@ -617,7 +617,8 @@ def update_order_count(request):
            for_order.delete()
            return HttpResponse(status=200)
 
-    return render(request, 'partials/orders/orderDetail_cell_item.html', {'el': supply, 'counter': counter})
+    order_for_row = _order_detail_single(for_order.pk).first() or for_order
+    return render(request, 'partials/orders/orderDetail_cell_item.html', {'el': supply, 'counter': counter, 'order': order_for_row})
 
 
 @login_required(login_url='login')
@@ -729,6 +730,11 @@ def home(request):
     isClient = request.user.isClient() and not request.user.is_staff
     place = None
     booked_list_exist = False
+    # Staff home lists nested LOTs per row; avoid N+1 on category and general (reverse FK).
+    home_general_prefetch = Prefetch(
+        'general',
+        queryset=Supply.objects.order_by('expiredDate', 'id'),
+    )
     if isClient:
         user_places = request.user.place_set.all()
         user_allowed_categories = set()
@@ -740,13 +746,21 @@ def home(request):
                 user_allowed_categories.add(quer)
         place = user_places.first()
         html_page = 'supplies/home/home_for_client.html'
-        supplies = GeneralSupply.objects.filter(category_id__in=user_allowed_categories).order_by('name')
+        supplies = (
+            GeneralSupply.objects.filter(category_id__in=user_allowed_categories)
+            .select_related('category')
+            .order_by('name')
+        )
         suppFilter = SupplyFilter(request.GET, queryset=supplies)
         category = Category.objects.filter(id__in=user_allowed_categories)
         suppFilter.form.fields['category'].queryset = category
 
     else:
-        supplies = GeneralSupply.objects.all().order_by('name')
+        supplies = (
+            GeneralSupply.objects.select_related('category')
+            .prefetch_related(home_general_prefetch)
+            .order_by('name')
+        )
         suppFilter = SupplyFilter(request.GET, queryset=supplies)
         html_page = 'supplies/home/home.html'
         if not suppFilter.data:
@@ -1491,10 +1505,12 @@ def cartDetail(request):
 
 @login_required(login_url='login')
 def childSupply(request):
-    supplies = Supply.objects.all().order_by('name')
+    supplies = (
+        Supply.objects.select_related('general_supply', 'general_supply__category')
+        .order_by('name')
+    )
     suppFilter = ChildSupplyFilter(request.GET, queryset=supplies)
-    supplies = suppFilter.qs
-    print("HOME CHILD")
+    supplies = suppFilter.qs.select_related('general_supply', 'general_supply__category')
 
     if 'xls_button' in request.GET:
         supplies = supplies.annotate(available_count=ExpressionWrapper(
@@ -1791,6 +1807,64 @@ def render_to_xls_selected_order(table_header, place, supplies_in_order, wb):
             ws.write(row_num, 0, row_num - row_num_to_table)
             ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
 
+
+def _orders_list_queryset(qs):
+    """
+    Картки замовлень (order_preview_cel / order_cell): без цього N+1 на place, userCreated,
+    related_preorders (count/first/all), npdelivery detail exists, статуси НП.
+    """
+    status_np_qs = StatusNPParselFromDoucmentID.objects.order_by('id')
+    return (
+        qs.select_related(
+            'userCreated',
+            'userSent',
+            'place',
+            'place__city_ref',
+            'place__address_NP',
+            'place__worker_NP',
+            'for_preorder',
+        )
+        .annotate(
+            card_related_preorders_count=Count('related_preorders', distinct=True),
+            has_np_delivery_detail=Exists(
+                NPDeliveryCreatedDetailInfo.objects.filter(for_order_id=OuterRef('pk'))
+            ),
+            has_status_np=Exists(
+                StatusNPParselFromDoucmentID.objects.filter(for_order_id=OuterRef('pk'))
+            ),
+        )
+        .prefetch_related(
+            'related_preorders',
+            Prefetch('statusnpparselfromdoucmentid_set', queryset=status_np_qs),
+        )
+    )
+
+
+def _order_singleton_for_card(order_id):
+    return _orders_list_queryset(Order.objects.filter(pk=order_id)).first()
+
+
+def _order_detail_single(order_id):
+    """
+    Одне замовлення для orderDetail: методи шаблону isUncompletedPreorderForPlaceExist /
+    isForPreorderOrItemHasPreorder та related_preorders.count давали зайві запити.
+    """
+    uncompleted_pre_qs = PreOrder.objects.filter(place_id=OuterRef('place_id')).filter(
+        Q(state_of_delivery='Awaiting')
+        | Q(state_of_delivery='Partial')
+        | Q(state_of_delivery='accepted_by_customer')
+    )
+    return _orders_list_queryset(Order.objects.filter(pk=order_id)).annotate(
+        has_uncompleted_preorder_for_place=Exists(uncompleted_pre_qs),
+        detail_has_preorder_lines=Exists(
+            SupplyInOrder.objects.filter(
+                supply_for_order_id=OuterRef('pk'),
+                supply_in_preorder__isnull=False,
+            )
+        ),
+    )
+
+
 @login_required(login_url='login')
 def orders(request):
     cartCountData = countCartItemsHelper(request)
@@ -1838,7 +1912,7 @@ def orders(request):
         title = f'Всі замовлення. ({totalCount} шт.)'
 
     orderFilter = OrderFilter(request.POST or None, queryset=ordersObj)
-    orders = orderFilter.qs
+    orders = _orders_list_queryset(orderFilter.qs)
     orders_analytics = build_orders_analytics(
         orderFilter.qs, include_top_places=not isClient, for_user=request.user
     )
@@ -1855,7 +1929,7 @@ def orders(request):
     is_more_then_one_order_exists_for_the_same_place = False
     uncomplete_orders_exists = False
     if not isClient:
-        filtered_orders = ordersObj.filter(isComplete=False)
+        filtered_orders = _orders_list_queryset(ordersObj.filter(isComplete=False))
         uncomplete_orders_exists = filtered_orders.count() > 0
         orders_by_place = defaultdict(list)
         for order in filtered_orders:
@@ -2181,6 +2255,11 @@ def preorder_render_to_xls_by_preorder(response, order: PreOrder, wb: Workbook, 
             ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
 
 
+def _preorders_list_select_related(qs):
+    """Картки списку звертаються до userCreated, place та place.city_ref — без цього сотні N+1."""
+    return qs.select_related('userCreated', 'place', 'place__city_ref')
+
+
 @login_required(login_url='login')
 def preorders(request):
     cartCountData = countCartItemsHelper(request)
@@ -2265,7 +2344,7 @@ def preorders(request):
         title = 'Всі передзамовлення'
 
     preorderFilter = PreorderFilter(request.POST, queryset=orders)
-    orders = preorderFilter.qs
+    orders = _preorders_list_select_related(preorderFilter.qs)
 
     preorderAnalyticsFilter = PreorderFilter(request.POST, queryset=orders_analytics_base)
     preorders_analytics = build_preorders_analytics(
@@ -2315,9 +2394,11 @@ def deletePreorder(request, order_id):
     objTodelete.delete()
     isClient = request.user.groups.filter(name='client').exists()
     if isClient:
-        orders = PreOrder.objects.filter(place__user=request.user).order_by('-id')
+        orders = _preorders_list_select_related(
+            PreOrder.objects.filter(place__user=request.user).order_by('-id')
+        )
     else:
-        orders = PreOrder.objects.all().order_by('-id')
+        orders = _preorders_list_select_related(PreOrder.objects.all().order_by('-id'))
 
     return render(request, 'partials/preorders/preorders-list.html',
                   {'orders': orders})
@@ -2325,7 +2406,7 @@ def deletePreorder(request, order_id):
 
 @login_required(login_url='login')
 def updatePreorderStatus(request, order_id):
-    order = PreOrder.objects.get(id=order_id)
+    order = _preorders_list_select_related(PreOrder.objects.filter(pk=order_id)).get()
 
     order.isComplete = True
     order.state_of_delivery = 'accepted_by_customer'
@@ -2342,7 +2423,7 @@ def updatePreorderStatusPinned(request, order_id):
     if not (request.user.groups.filter(name='empl').exists() or request.user.is_staff):
         return HttpResponseForbidden("You don't have permission to perform this action")
         
-    order = PreOrder.objects.get(id=order_id)
+    order = _preorders_list_select_related(PreOrder.objects.filter(pk=order_id)).get()
     is_pinned = request.POST.get('is_pinned')
     is_pinned_bool = is_pinned.lower() == 'true'
     order.isPinned = is_pinned_bool
@@ -2360,7 +2441,9 @@ def updateOrderPinnedStatus(request, order_id):
     is_pinned = request.POST.get('is_pinned')
     is_pinned_bool = is_pinned.lower() == 'true'
     
-    order = Order.objects.get(id=order_id)
+    order = _order_singleton_for_card(order_id)
+    if order is None:
+        return HttpResponseForbidden('Order not found')
     order.isPinned = is_pinned_bool
     order.save(update_fields=['isPinned'])
     # Check if user agent is mobile
@@ -2489,7 +2572,10 @@ def orderUpdateStatus(request, order_id):
         if order.isComplete:
             raise ValueError('Це замовлення вже завершено і не може бути закрито.\nОновіть сторінку браузера.')
             
-        order = update_order_status_core(order_id, request.user)
+        update_order_status_core(order_id, request.user)
+        order = _order_singleton_for_card(order_id)
+        if order is None:
+            raise ValueError('Замовлення не знайдено після оновлення')
         
         user_agent = get_user_agent(request)
         if user_agent.is_mobile:
@@ -2502,7 +2588,7 @@ def orderUpdateStatus(request, order_id):
         # Return error response with status code 400
         return JsonResponse({
             'error': True,
-            'message': f'№{order.id}: ' + str(e)
+            'message': f'№{order_id}: ' + str(e)
         }, status=400)
 
 
@@ -2511,7 +2597,7 @@ def ordersForClient(request, client_id):
     place = get_object_or_404(Place, pk=client_id)
     orders = place.order_set.all().order_by('-id')
     orderFilter = OrderFilter(request.GET, queryset=orders)
-    orders = orderFilter.qs
+    orders = _orders_list_queryset(orderFilter.qs)
     title = f'Всі замовлення для клієнта: \n {place.name}, {place.city_ref.name}'
     if not orders:
         title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
@@ -3253,8 +3339,9 @@ def editWorkerInfo(request, worker_id):
         if 'delete' in request.POST:
             wrkr.delete()
         
+        place_for_card = _place_singleton_for_client_card(place.id) or place
         html = render_to_string('partials/clients/client_card.html', {
-            'client': place,
+            'client': place_for_card,
             'request': request
         })
         return JsonResponse({
@@ -3438,9 +3525,10 @@ def addNewWorkerForClient(request, place_id):
             obj.ref_counterparty_NP = refNP
             obj.for_place = place
             obj.save()
+            place_for_card = _place_singleton_for_client_card(place.id) or place
             html = render_to_string('partials/clients/client_card.html', {
-            'client': place,
-            'request': request
+                'client': place_for_card,
+                'request': request,
             })
             return JsonResponse({
                 'html': html,
@@ -3745,8 +3833,15 @@ def orderDetail_save_comment(request):
 
 @login_required(login_url='login')
 def orderDetail(request, order_id, sup_id):
-    order = get_object_or_404(Order, pk=order_id)
-    supplies_in_order = order.supplyinorder_set.all().order_by('generalSupply__category', 'generalSupply__name')
+    order = get_object_or_404(_order_detail_single(order_id), pk=order_id)
+    supplies_qs = SupplyInOrder.objects.filter(supply_for_order_id=order_id).select_related(
+        'generalSupply',
+        'generalSupply__category',
+        'supply',
+        'supply_in_preorder',
+        'supply_in_preorder__supply_for_order',
+    )
+    supplies_in_order = supplies_qs.order_by('generalSupply__category_id', 'generalSupply__name')
     cartCountData = countCartItemsHelper(request)
     next = request.POST.get('next')
 
@@ -3754,7 +3849,7 @@ def orderDetail(request, order_id, sup_id):
         if 'delete' in request.POST:
             next = request.POST.get('next')
             if not order.isComplete:
-                supps = order.supplyinorder_set.all()
+                supps = supplies_qs
                 for suppInOrder in supps:
                     if suppInOrder.supply_in_booked_order:
                         suppInOrder.supply_in_booked_order.countOnHold -= suppInOrder.count_in_order
@@ -3863,9 +3958,11 @@ def preorderDetail(request, order_id, sup_id=None):
     cartCountData = countCartItemsHelper(request)
     
     # Optimize the related orders query
-    all_related_orders = Order.objects.filter(
-        Q(for_preorder=order) | Q(related_preorders=order)
-    ).select_related('place').order_by('-id')
+    all_related_orders = _orders_list_queryset(
+        Order.objects.filter(
+            Q(for_preorder=order) | Q(related_preorders=order)
+        ).distinct()
+    ).order_by('-id')
     
     if order.isPreorder:
         title = f'Передзамовлення № {order_id}'
@@ -4075,6 +4172,28 @@ def preorderDetail_generateOrder(request, order_id):
                    'cartCountData': cartCountData, 'isOrders': True, 'uncompleted_orders': uncompleted_orders})
 
 
+def _place_list_for_client_cards(place_qs):
+    """Список організацій для карток /clientsInfo: анотації замість N+1 .count() у шаблоні."""
+    return (
+        place_qs.select_related('city_ref', 'worker_NP')
+        .prefetch_related('workers')
+        .annotate(
+            card_preorder_count=Count('preorder'),
+            card_order_count=Count('order'),
+            card_workers_count=Count('workers'),
+            card_booked_count=Count('supplyinbookedorder'),
+            card_servicenote_count=Count('servicenote'),
+            card_device_count=Count('device'),
+        )
+        .order_by('-id')
+    )
+
+
+def _place_singleton_for_client_card(place_id):
+    """Один Place з тими ж анотаціями — для render_to_string після збереження працівника."""
+    return _place_list_for_client_cards(Place.objects.filter(pk=place_id)).first()
+
+
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin', 'empl'])
 def clientsInfo(request):
@@ -4082,7 +4201,8 @@ def clientsInfo(request):
     placeFilter = PlaceFilter(request.GET, queryset=place)
     place_filtered = placeFilter.qs
     clients_analytics = build_clients_info_analytics(place_filtered)
-    paginator = Paginator(place_filtered, 20)
+    place_page_qs = _place_list_for_client_cards(place_filtered)
+    paginator = Paginator(place_page_qs, 20)
     page_number = request.GET.get('page')
     place = paginator.get_page(page_number)
     cartCountData = countCartItemsHelper(request)

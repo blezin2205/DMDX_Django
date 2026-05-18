@@ -1,0 +1,3 @@
+# Локальні залежності (django-debug-toolbar тощо). Heroku: pip install -r requirements.txt
+-r requirements.txt
+django-debug-toolbar>=4.4.0,<7

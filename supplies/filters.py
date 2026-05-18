@@ -33,13 +33,14 @@ class ChildSupplyFilter(django_filters.FilterSet):
           return queryset.filter(general_supply__category__name__exact=value)
 
     def filter_by_order(self, queryset, name, value):
+        related = queryset.select_related('general_supply', 'general_supply__category')
 
         if value == 'onlyGood':
-            return queryset.filter(expiredDate__gte=timezone.now().date()).order_by('expiredDate').distinct()
-        elif value =='onlyExpired':
-            return queryset.filter(expiredDate__lt=timezone.now().date()).order_by('-expiredDate').distinct()
-        elif value =='dateCreated':
-            return queryset.order_by('-dateCreated').distinct()
+            return related.filter(expiredDate__gte=timezone.now().date()).order_by('expiredDate').distinct()
+        elif value == 'onlyExpired':
+            return related.filter(expiredDate__lt=timezone.now().date()).order_by('-expiredDate').distinct()
+        elif value == 'dateCreated':
+            return related.order_by('-dateCreated').distinct()
 
 
 class BookedSuppliesFilter(django_filters.FilterSet):
@@ -224,20 +225,38 @@ class SupplyFilter(django_filters.FilterSet):
     def filter_by_order(self, queryset, name, value):
 
         if value == 'onlyExistChild':
-            return  queryset.filter(general__isnull=False).distinct()
+            # distinct() after filtering on reverse FK can drop prefetch hints from the
+            # incoming queryset; re-apply category + lots prefetch for home table N+1s.
+            lots_qs = Supply.objects.order_by('expiredDate', 'id')
+            return (
+                queryset.select_related('category')
+                .filter(general__isnull=False)
+                .distinct()
+                .prefetch_related(Prefetch('general', queryset=lots_qs))
+            )
         elif value =='onlyNotExistChild':
-            return queryset.filter(general__isnull=True).distinct()
+            return queryset.select_related('category').filter(general__isnull=True).distinct()
         elif value == 'onlyGood':
             sups = Supply.objects.filter(expiredDate__gte=timezone.now().date())
             prefetch = Prefetch('general', queryset=sups)
-            supplies = queryset.prefetch_related(prefetch).filter(general__in=sups).distinct().order_by(
-                'name')
+            supplies = (
+                queryset.select_related('category')
+                .prefetch_related(prefetch)
+                .filter(general__in=sups)
+                .distinct()
+                .order_by('name')
+            )
             return supplies
         elif value == 'onlyExpired':
             sups = Supply.objects.filter(expiredDate__lt=timezone.now().date())
             prefetch = Prefetch('general', queryset=sups)
-            supplies = queryset.prefetch_related(prefetch).filter(general__in=sups).distinct().order_by(
-                'name')
+            supplies = (
+                queryset.select_related('category')
+                .prefetch_related(prefetch)
+                .filter(general__in=sups)
+                .distinct()
+                .order_by('name')
+            )
             return supplies
 
 

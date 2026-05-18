@@ -3,8 +3,8 @@
 {% load myapp_extras %}
 
 <div id="cart-badge">
-    {% with count_in_cart=supp.id|in_cart %}
-        {% with deltaCountOnHold=supp.count|sub:supp.countOnHold|sub:count_in_cart %}
+    {% supply_in_cart_count supp as count_in_cart %}
+    {% with deltaCountOnHold=supp.count|sub:supp.countOnHold|sub:count_in_cart %}
             <button hx-post="{% url 'update_item' supp.id %}"
                     hx-target="closest div #cart-badge" 
                     hx-swap="outerHTML"
@@ -14,5 +14,4 @@
                 {% if count_in_cart %}{{ count_in_cart }}{% else %}<i class="bi bi-cart-plus"></i>{% endif %} 
             </button>
         {% endwith %}
-    {% endwith %}
 </div>

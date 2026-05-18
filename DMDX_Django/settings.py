@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.postgres',
     'rest_framework',
     'rest_framework.authtoken',
     'supplies',
@@ -371,3 +372,20 @@ REST_FRAMEWORK = {
 
 # Mixpanel Configuration
 MIXPANEL_TOKEN = os.environ.get('MIXPANEL_TOKEN', 'YOUR_PROJECT_TOKEN')
+
+# django-debug-toolbar — лише локальна розробка (pip install -r requirements-dev.txt).
+# На Heroku: змінна середовища DYNO завжди задана, DEBUG нижче виставляється в False — панель не вмикається.
+_LOCAL_DEV_FOR_TOOLBAR = DEBUG and 'DYNO' not in os.environ
+if _LOCAL_DEV_FOR_TOOLBAR:
+    try:
+        import debug_toolbar  # noqa: F401
+
+        INSTALLED_APPS = list(INSTALLED_APPS) + ['debug_toolbar']
+        MIDDLEWARE = list(MIDDLEWARE) + ['debug_toolbar.middleware.DebugToolbarMiddleware']
+        INTERNAL_IPS = ['127.0.0.1', '::1']
+        DEBUG_TOOLBAR_CONFIG = {
+            'SHOW_TOOLBAR_CALLBACK': lambda _request: True,
+        }
+    except ImportError:
+        # Пакет не встановлений (наприклад, лише requirements.txt без -dev) — тихо без попереджень у консолі.
+        pass

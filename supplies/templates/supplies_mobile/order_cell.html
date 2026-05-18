@@ -98,7 +98,7 @@
                             </div>
                         {% endif %}
 
-                        {% if order.npdeliverycreateddetailinfo_set.exists %}
+                        {% if order.has_np_delivery_detail %}
                             <div class="bg-light rounded p-2">
                                 <div class="hstack gap-2 align-items-center">
                                     <img src="{% static 'images/np_icon.png' %}" class="np-icon" alt="NP">

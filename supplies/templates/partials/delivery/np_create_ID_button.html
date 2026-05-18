@@ -16,7 +16,7 @@
             </div>
         {% endif %}
 
-        {% if order.place.address_NP and order.place.worker_NP and order.get_parsel_delivery_status == 1 or order.get_parsel_delivery_status == 2 or order.place.address_NP and order.place.worker_NP and not order.statusnpparselfromdoucmentid_set.exists %}
+        {% if order.place.address_NP and order.place.worker_NP and order.get_parsel_delivery_status == 1 or order.get_parsel_delivery_status == 2 or order.place.address_NP and order.place.worker_NP and not order.has_status_np %}
             <div class="d-flex align-items-center justify-content-center" style="width: 50px; height: 49px; margin: 0;">
                 <button type="button" 
                         class="btn p-0 border-0 np-modal-button"

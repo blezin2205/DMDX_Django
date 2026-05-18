@@ -152,7 +152,13 @@ if (!csrftoken) {
 
 {# jQuery + Bootstrap 5 are in <head>; see bootstrap-jquery-modal-shim.js for $(...).modal() #}
         <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.9.0/feather.min.js"></script>
-        <script src="https://getbootstrap.com/docs/4.2/examples/dashboard/dashboard.js"></script>
+        <script>
+            try {
+                if (typeof feather !== 'undefined') {
+                    feather.replace();
+                }
+            } catch (e) {}
+        </script>
 <script type="text/javascript" src="{% static 'js/cart.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/modal.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/validation.js' %}"></script>

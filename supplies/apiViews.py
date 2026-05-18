@@ -44,7 +44,12 @@ class GeneralSuppliesApiView(APIView):
     pagination_class = StandardResultsSetPagination
 
     def get(self, request):
-        supplies = GeneralSupply.objects.all()
+        supplies = GeneralSupply.objects.select_related('category').prefetch_related(
+            Prefetch(
+                'general',
+                queryset=Supply.objects.select_related('category', 'general_supply'),
+            )
+        ).all()
         paginator = self.pagination_class()
         paginated_supplies = paginator.paginate_queryset(supplies, request)
         if paginated_supplies is None:
@@ -57,7 +62,7 @@ class SuppliesApiView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        supplies = Supply.objects.all()
+        supplies = Supply.objects.select_related('category', 'general_supply').all()
         suppliesSerializer = SupplySerializer(instance=supplies, many=True)
         return Response(suppliesSerializer.data)
 
@@ -711,7 +716,22 @@ class SuppliesFromScanSaveApiView(APIView):
     def get(self, request):
         searchtext = str(request.data['searchText'])
         try:
-            genSup = GeneralSupply.objects.filter(general__isnull=False).filter(Q(name__icontains=searchtext) | Q(ref__icontains=searchtext) | Q(SMN_code__icontains=searchtext)).distinct()
+            genSup = (
+                GeneralSupply.objects.filter(general__isnull=False)
+                .filter(
+                    Q(name__icontains=searchtext)
+                    | Q(ref__icontains=searchtext)
+                    | Q(SMN_code__icontains=searchtext)
+                )
+                .select_related('category')
+                .prefetch_related(
+                    Prefetch(
+                        'general',
+                        queryset=Supply.objects.select_related('category', 'general_supply'),
+                    )
+                )
+                .distinct()
+            )
             gensupSerializer = GeneralSupplySerializer(instance=genSup, many=True)
             return Response(gensupSerializer.data, status=status.HTTP_200_OK)
         except:

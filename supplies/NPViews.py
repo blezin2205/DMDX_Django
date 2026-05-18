@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse, JsonResponse
 from .NPModels import *
-from .views import update_order_status_core
+from .views import update_order_status_core, _order_singleton_for_card
 from .forms import *
 import json
 from django.contrib import messages
@@ -686,12 +686,16 @@ def np_delivery_detail_info_for_order(request, order_id):
 
 def np_create_ID_button_subscribe(request, order_id):
     print("np_create_ID_button_subscribe")
-    order = Order.objects.get(id=order_id)
+    order = _order_singleton_for_card(order_id)
+    if order is None:
+        return HttpResponse(status=404)
     return render(request, 'partials/delivery/np_create_ID_button.html', {'order': order})
 
 
 def orderCellUpdateNPStatus(request, order_id):
-    order = Order.objects.get(id=order_id)
+    order = _order_singleton_for_card(order_id)
+    if order is None:
+        return HttpResponse(status=404)
     # Check if user agent is mobile
     if request.user_agent.is_mobile:
         template = 'supplies_mobile/order_cell.html'

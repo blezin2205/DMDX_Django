@@ -391,3 +391,8 @@
         font-size: 1.45rem;
     }
 }
+
+/* django-debug-toolbar: above sticky topbar (1030), menus (1100+). No #djDebug in production. */
+#djDebug {
+    z-index: 2147483646 !important;
+}
