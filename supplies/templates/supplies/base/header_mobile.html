@@ -55,10 +55,10 @@
                                     </div>
                                 {% endif %}
                                 {% if cartCountData.orders_with_uncompleted_np > 0 %}
-                                    <div class="btn btn-soft-danger flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2 px-2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Накладні НП з незавершеним статусом">
+                                    <button type="button" class="btn btn-soft-danger flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2 px-2 border-0" data-bs-toggle="modal" data-bs-target="#npUncompletedOrdersModal" title="Накладні НП з незавершеним статусом — натисніть для списку">
                                         <img src="{% static 'images/np_icon.png' %}" width="30" height="29" alt="" style="border-radius: 4px">
                                         <span>{{ cartCountData.orders_with_uncompleted_np }}</span>
-                                    </div>
+                                    </button>
                                 {% endif %}
                             </div>
                         </li>

@@ -1,0 +1,62 @@
+{% if refresh_pending %}
+<div id="np-uncompleted-refresh-strip" class="d-flex align-items-center gap-2 py-2 px-3 mb-3 rounded border bg-light border-secondary-subtle">
+    <div class="spinner-border spinner-border-sm text-primary flex-shrink-0" role="status" aria-hidden="true"></div>
+    <span class="small text-muted mb-0">Оновлення статусів з API Нової Пошти… Нижче — поточні дані з бази.</span>
+</div>
+{% endif %}
+
+{% if not rows %}
+    <div class="alert alert-light border mb-0 small">
+        <i class="bi bi-check2-circle text-success me-1"></i>
+        Немає замовлень з незавершеними накладними за поточними даними{% if not refresh_pending %} (після оновлення з НП){% endif %}.
+    </div>
+{% else %}
+    <div class="table-responsive np-uncompleted-modal-table">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-nowrap">Замовлення / організація</th>
+                    <th>Накладні</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td class="align-top">
+                            <a href="{% url 'orders' %}#order_preview_cell{{ row.order.id }}" class="fw-semibold link-primary text-decoration-none">№{{ row.order.id }}</a>
+                            {% if row.order.place %}
+                                <div class="np-modal-org-name text-muted mt-1" style="font-size: 0.8125rem; line-height: 1.4; max-width: 22rem;">
+                                    {{ row.order.place.name }}
+                                    {% if row.order.place.city_ref %}
+                                        <span class="text-secondary"> · {{ row.order.place.city_ref.name }}</span>
+                                    {% elif row.order.place.city %}
+                                        <span class="text-secondary"> · {{ row.order.place.city }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="small align-top">
+                            {% for p in row.parsels %}
+                                <span class="font-monospace">{{ p.docNumber }}</span>{% if not forloop.last %}<span class="text-muted"> · </span>{% endif %}
+                            {% empty %}
+                                <span class="text-muted">—</span>
+                            {% endfor %}
+                        </td>
+                        <td class="small align-top">
+                            {% if row.parsels %}
+                                {% include 'partials/delivery/np_delivery_info_in_list_of_orders.html' with parsels_status_data=row.parsels %}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-muted small mt-2 mb-0">
+        <i class="bi bi-info-circle me-1"></i>
+        Якщо накладна вже доставлена, після оновлення з НП вона зникне зі списку; лічильник у топбарі оновиться на наступному завантаженні сторінки.
+    </p>
+{% endif %}

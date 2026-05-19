@@ -1,81 +1,201 @@
 {% extends 'supplies/base/base.html' %}
 {% load crispy_forms_filters %}
 {% load static %}
-{% load bootstrap %}
 {% load crispy_forms_tags %}
-    {% block title %}
+
+{% block title %}
 {{ title }}
 {% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/edit-client-detail.css' %}" type="text/css">
+{% endblock %}
+
 {% block content %}
-<form method="POST" action="">
+<form method="POST" action="" class="client-edit-page">
   {% csrf_token %}
 
-<section class="card shadow-sm p-4">
-    <h5 class="pb-4"><u>Основна інформація</u></h5>
-    {{ form.name|as_crispy_field }}
-    {{ form.city_ref|as_crispy_field }}
-    {{ form.address|as_crispy_field }}
-    {{ form.link|as_crispy_field }}
-
-    {% if not place.isAddedToNP %}{{ form.organization_code|as_crispy_field }}{% else %} <h5 class="pb-4">ЄДРПОУ: <u>{{ place.organization_code }}</u></h5>{% endif %}
-
-{{ form.isPrivatePlace|as_crispy_field }}
-</section>
-
-
-
-
-<section class="card shadow-sm my-5 p-4" style="background-color: #eee;">
-    <h5 class="pb-4">Дані для формування накладної для НП <u>{{ place.name_in_NP }}</u></h5>
-    {% if adressSetExist %} {{ form.address_NP|as_crispy_field }} {% else %} <li style="color: red; margin-top: 2px"> Aдреси доставки відсутні, додайте адреси в секції нижче</li>  {% endif %}
-    {% if workersSetExist %} {{ form.worker_NP|as_crispy_field }} {% else %} <li style="color: red; margin-top: 2px">Контактні особи відсутні, <a href="{% url 'newWorkerForPlace' clientId %}?next={{request.get_full_path|urlencode}}" class="btn-default">
-          додайте нового працівника</a></li>
-        {% endif %}
-        </section>
-
-<section class="card shadow-sm my-5 p-4" style="background-color: #eee;">
-    <h5 class="pb-4"><u>Дадати нову адресу відправки</u></h5>
-
-    <div class="btn-group pt-3" role="group" aria-label="Basic radio toggle button group" style="width: fit-content">
-  <input type="radio" class="btn-check" name="recipientType" value="Warehouse" id="btnradio1" autocomplete="off" checked>
-  <label class="btn btn-outline-primary" for="btnradio1">На відділення</label>
-
-  <input type="radio" class="btn-check" name="recipientType" value="Doors" id="btnradio2" autocomplete="off">
-  <label class="btn btn-outline-primary" for="btnradio2">Адресна доставка</label>
-</div>
-  <div class="container h-100 py-3">
-      {% include 'partials/search/search-city.html' %}
-      </div>
-        </section>
-
-
-{% if messages %}
-<ul class="messages my-4" style="color: red">
+  {% if messages %}
     {% for message in messages %}
-    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+      <div class="alert {% if message.level_tag == 'success' %}alert-success{% elif message.level_tag == 'error' %}alert-danger{% elif message.level_tag == 'warning' %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show rounded-3 mb-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрити"></button>
+      </div>
     {% endfor %}
-</ul>
-{% endif %}
-{#{% if place.workers.all %}#}
-{#    <section class="h-100 shadow p-3 mb-5 rounded" style="background-color: #f5f5f5;">#}
-{#  <div class="container h-100 py-3">#}
-{#    <div class="row d-flex justify-content-center align-items-center h-100">#}
-{#      <div class="col-10">#}
-{#          {% for worker in place.workers.all %}#}
-{#               <div class="sup_in_delivery_order_recg_card card rounded mt-3">#}
-{#              {% include 'supplies/editClientDetail_worker_cell.html' %}#}
-{#              </div>#}
-{#          {% endfor %}#}
-{##}
-{#    </div>#}
-{#  </div>#}
-{#</div>#}
-{#</section>#}
-{#{% endif %}#}
+  {% endif %}
 
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10 col-xl-8">
+      <div class="client-edit-stack">
 
-<input type="hidden" name="next" value="{{ request.GET.next }}">
-<button class="btn btn-outline-primary my-5" type="submit" name="generalSave">Зберегти</button>
+        <section class="client-edit-section" aria-labelledby="client-edit-main-heading">
+          <h2 id="client-edit-main-heading" class="client-edit-section-header mb-0 h6">
+            <i class="bi bi-building" aria-hidden="true"></i>
+            Основна інформація
+          </h2>
+          <div class="client-edit-section-body">
+            {{ form.name|as_crispy_field }}
+            {{ form.city_ref|as_crispy_field }}
+            {{ form.address|as_crispy_field }}
+            {{ form.link|as_crispy_field }}
+
+            {% if not place.isAddedToNP %}
+              {{ form.organization_code|as_crispy_field }}
+            {% else %}
+              <div class="client-edit-readonly-badge mb-3">
+                <span class="text-secondary small text-uppercase fw-semibold d-block mb-1" style="letter-spacing: 0.03em;">ЄДРПОУ</span>
+                <span class="fw-semibold text-break">{{ place.organization_code }}</span>
+              </div>
+            {% endif %}
+
+            {{ form.isPrivatePlace|as_crispy_field }}
+          </div>
+        </section>
+
+        <section class="client-edit-section client-edit-section--muted" aria-labelledby="client-edit-np-heading">
+          <h2 id="client-edit-np-heading" class="client-edit-section-header mb-0 h6">
+            <i class="bi bi-truck" aria-hidden="true"></i>
+            <span>Дані для формування накладної НП</span>
+            {% if place.name_in_NP %}
+              <span class="client-edit-section-sub text-break">{{ place.name_in_NP }}</span>
+            {% endif %}
+          </h2>
+          <div class="client-edit-section-body">
+            {% if adressSetExist %}
+              {{ form.address_NP|as_crispy_field }}
+            {% else %}
+              <div class="alert alert-warning py-2 px-3 small mb-3 d-flex align-items-start gap-2" role="alert">
+                <i class="bi bi-exclamation-triangle flex-shrink-0 mt-1" aria-hidden="true"></i>
+                <span>Адреси доставки відсутні; додайте адресу в секції нижче.</span>
+              </div>
+            {% endif %}
+
+            {% if workersSetExist %}
+              {{ form.worker_NP|as_crispy_field }}
+            {% else %}
+              <div class="alert alert-warning py-2 px-3 small mb-0 d-flex align-items-start gap-2 flex-wrap" role="alert">
+                <i class="bi bi-person-x flex-shrink-0 mt-1" aria-hidden="true"></i>
+                <span>Контактні особи відсутні.</span>
+                <button type="button"
+                        class="btn btn-sm btn-outline-primary ms-auto"
+                        id="edit-client-open-add-worker-modal"
+                        data-add-worker-url="{% url 'newWorkerForPlace' clientId %}">
+                  <i class="bi bi-person-plus me-1" aria-hidden="true"></i>Додати працівника
+                </button>
+              </div>
+            {% endif %}
+          </div>
+        </section>
+
+        <section class="client-edit-section client-edit-section--muted" aria-labelledby="client-edit-address-heading">
+          <h2 id="client-edit-address-heading" class="client-edit-section-header mb-0 h6">
+            <i class="bi bi-geo-alt" aria-hidden="true"></i>
+            Додати нову адресу відправки
+          </h2>
+          <div class="client-edit-section-body">
+            <div class="btn-group home-view-switch mb-3" role="group" aria-label="Тип доставки Нової Пошти">
+              <input type="radio" class="btn-check" name="recipientType" value="Warehouse" id="btnradio1" autocomplete="off" checked>
+              <label class="btn home-view-btn" for="btnradio1">На відділення</label>
+
+              <input type="radio" class="btn-check" name="recipientType" value="Doors" id="btnradio2" autocomplete="off">
+              <label class="btn home-view-btn" for="btnradio2">Адресна доставка</label>
+            </div>
+
+            <div class="client-edit-search-panel py-2">
+              {% include 'partials/search/search-city.html' %}
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <input type="hidden" name="next" value="{{ request.GET.next }}">
+      <div class="client-edit-actions mt-4 mb-4">
+        <button class="btn btn-primary" type="submit" name="generalSave">
+          <i class="bi bi-check2 me-1" aria-hidden="true"></i>Зберегти
+        </button>
+      </div>
+    </div>
+  </div>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    function bindEditClientWorkerModalSubmit(addWorkerUrl) {
+        $('#addNewLotForm').off('submit.editClientWorker').on('submit.editClientWorker', function (e) {
+            e.preventDefault();
+            var formEl = this;
+            var formData = new FormData(formEl);
+            var ev = e.originalEvent;
+            if (ev && ev.submitter) {
+                formData.append(ev.submitter.name, ev.submitter.value);
+            }
+            fetch(addWorkerUrl, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': typeof csrftoken !== 'undefined' ? csrftoken : '' },
+                credentials: 'same-origin'
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('Помилка збереження');
+                    }
+                    var ct = response.headers.get('Content-Type') || '';
+                    if (ct.indexOf('application/json') !== -1) {
+                        return response.json().then(function (data) {
+                            return { kind: 'json', data: data };
+                        });
+                    }
+                    return response.text().then(function (html) {
+                        return { kind: 'html', html: html };
+                    });
+                })
+                .then(function (result) {
+                    if (result.kind === 'json' && result.data && (result.data.success || result.data.clientId)) {
+                        $('#addNewLotModal').modal('hide');
+                        window.location.reload();
+                        return;
+                    }
+                    if (result.kind === 'html') {
+                        $('#addNewLotContent').html(result.html);
+                        if (typeof htmx !== 'undefined') {
+                            var el = document.getElementById('addNewLotContent');
+                            if (el) {
+                                htmx.process(el);
+                            }
+                        }
+                        bindEditClientWorkerModalSubmit(addWorkerUrl);
+                    }
+                })
+                .catch(function (err) {
+                    console.error(err);
+                    alert(err.message || 'Помилка');
+                });
+        });
+    }
+
+    $(function () {
+        var $btn = $('#edit-client-open-add-worker-modal');
+        if (!$btn.length) {
+            return;
+        }
+        var addWorkerUrl = $btn.data('add-worker-url');
+        if (!addWorkerUrl) {
+            return;
+        }
+        $btn.on('click', function (e) {
+            e.preventDefault();
+            if (typeof showModal !== 'function') {
+                alert('Модальне вікно недоступне. Оновіть сторінку.');
+                return;
+            }
+            showModal('#addNewLotModal', '#addNewLotContent', addWorkerUrl, 'Завантаження форми…', function () {
+                bindEditClientWorkerModalSubmit(addWorkerUrl);
+            });
+        });
+    });
+})();
+</script>
 {% endblock %}

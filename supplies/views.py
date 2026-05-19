@@ -1,5 +1,6 @@
 import datetime
 from django.shortcuts import render, get_object_or_404, redirect
+from django.views.decorators.http import require_POST
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseForbidden
 from django.urls import reverse
 from .decorators import unauthenticated_user, allowed_users
@@ -53,20 +54,40 @@ def celery_test(request):
 
 
 
+_APP_SETTINGS_TOGGLE_FIELDS = frozenset(AppSettingsForm.Meta.fields)
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+@require_POST
+def app_settings_toggle(request):
+    field = request.POST.get('field')
+    if field not in _APP_SETTINGS_TOGGLE_FIELDS:
+        return HttpResponse(status=400)
+    raw = str(request.POST.get('value', '')).lower()
+    value = raw in ('true', '1', 'on', 'yes')
+    obj = request.user.get_app_settings()
+    setattr(obj, field, value)
+    obj.save(update_fields=[field])
+    return HttpResponse(status=204)
+
+
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def app_settings(request):
-    app_settings = request.user.get_app_settings()
+    app_settings_obj = request.user.get_app_settings()
+    form = AppSettingsForm(instance=app_settings_obj)
 
-    if request.method == 'POST':
-        form = AppSettingsForm(request.POST, instance=app_settings)
-        if form.is_valid():
-            form.save()
-            return redirect('/')
-    else:
-        form = AppSettingsForm(instance=app_settings)
-
-    return render(request, 'supplies/settings/app_settings.html', {'form': form, 'title': 'Налаштування'})
+    return render(
+        request,
+        'supplies/settings/app_settings.html',
+        {
+            'form': form,
+            'title': 'Налаштування застосунку',
+            'title_icon': 'bi-sliders',
+            'subtitle': 'Тумблери зберігаються автоматично при зміні. Сповіщення Teams, корзини інших користувачів і параметри роботи з замовленнями та передзамовленнями.',
+        },
+    )
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -85,24 +106,34 @@ def np_info_table_sync_for_user(request):
         np_ref = request.POST.get('np_ref')
         user.np_contact_sender_ref = np_ref
         user.save(update_fields=['np_contact_sender_ref'])
+        messages.success(request, 'REF контактної особи збережено.')
 
     current_ref = user.np_contact_sender_ref
     param = {'apiKey': settings.NOVA_POSHTA_API_KEY,
              'modelName': 'Counterparty',
              'calledMethod': 'getCounterpartyContactPersons',
              'methodProperties': {'Ref': settings.NOVA_POSHTA_SENDER_DMDX_REF}}
-    getListOfCitiesParams = {
-        "apiKey": settings.NOVA_POSHTA_API_KEY,
-        "modelName": "Address",
-        "calledMethod": "getCities",
-        "methodProperties": {
-            "Page": "0"
-        }
-    }
 
-    data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(param)).json()
+    try:
+        response = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(param), timeout=30)
+        payload = response.json()
+    except (requests.RequestException, ValueError):
+        payload = {}
 
-    return render(request, "supplies/nova_poshta/np_info_table_sync_for_user.html", {'data': data["data"], 'current_ref': current_ref})
+    rows = payload.get('data') if isinstance(payload, dict) else None
+    counterparty_rows = rows if isinstance(rows, list) else []
+
+    return render(
+        request,
+        'supplies/nova_poshta/np_info_table_sync_for_user.html',
+        {
+            'data': counterparty_rows,
+            'current_ref': current_ref,
+            'title': 'Контакти відправника (Нова Пошта)',
+            'title_icon': 'bi-person-badge',
+            'subtitle': 'Оберіть REF контактної особи; він синхронізується з вашим профілем для відправлень.',
+        },
+    )
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -974,9 +1005,19 @@ def add_np_sender_place(request):
         deliveryPlace = SenderNPPlaceInfo(cityName=cityName, addressName=addressName, city_ref_NP=cityRef,
                                           address_ref_NP=addressRef, deliveryType=recipientType, for_user=user)
         deliveryPlace.save()
-        return redirect('/add_np_sender_place')
+        messages.success(request, 'Адресу відправлення збережено.')
+        return redirect('add_np_sender_place')
 
-    return render(request, 'supplies/nova_poshta/add_new_sender_np_place.html', {'places': places})
+    return render(
+        request,
+        'supplies/nova_poshta/add_new_sender_np_place.html',
+        {
+            'places': places,
+            'title': 'Відділення та адреси відправлення',
+            'title_icon': 'bi-geo-alt',
+            'subtitle': 'Керуйте збереженими точками відправника та додавайте нові через довідник Нової Пошти.',
+        },
+    )
 
 
 
@@ -1739,6 +1780,7 @@ def _orders_list_queryset(qs):
             ),
         )
         .prefetch_related(
+            'userCreated__groups',
             'related_preorders',
             Prefetch('statusnpparselfromdoucmentid_set', queryset=status_np_qs),
         )
@@ -3342,7 +3384,9 @@ def editClientInfo(request, client_id):
                 return redirect('/clientsInfo')
 
     return render(request, 'supplies/clients/editClientDetail.html',
-                  {'title': f'Редагувати клієнта: {client.name}, {client.city_ref.name}', 'place': client, 'form': form, 'workersSetExist': workersSetExist, 'adressSetExist': adressSetExist,
+                  {'title': f'Редагувати клієнта: {client.name}, {client.city_ref.name}',
+                   'title_icon': 'bi-pencil-square',
+                   'place': client, 'form': form, 'workersSetExist': workersSetExist, 'adressSetExist': adressSetExist,
                    'clientId': client_id})
 
 

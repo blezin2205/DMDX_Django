@@ -44,6 +44,7 @@ urlpatterns = [
 
     path('', views.home, name='home'),
     path('app_settings', views.app_settings, name='app_settings'),
+    path('app_settings/toggle', views.app_settings_toggle, name='app_settings_toggle'),
     path('childSupply', views.childSupply, name='childSupply'),
     path('supply-statistics', views.supply_statistics, name='supply_statistics'),
     path('load_xms_data', views.load_xms_data, name='load_xms_data'),
@@ -208,6 +209,7 @@ urlpatterns = [
     path('radioAddClientTONP', NPViews.radioAddClientTONP, name='radioAddClientTONP'),
     path('create-np_document-for-order/<int:order_id>', NPViews.create_np_document_for_order, name='create_np_document_for_order'),
     path('np-delivery-detail-info-for-order/<int:order_id>', NPViews.np_delivery_detail_info_for_order, name='np_delivery_detail_info_for_order'),
+    path('orders-np-uncompleted-modal-body', NPViews.orders_np_uncompleted_modal_body, name='orders_np_uncompleted_modal_body'),
     path('np_create_ID_button_subscribe/<int:order_id>', NPViews.np_create_ID_button_subscribe, name='np_create_ID_button_subscribe'),
     path('get_register_for_orders', NPViews.get_register_for_orders, name='get_register_for_orders'),
     path('register_exls_selected_buttons', views.register_exls_selected_buttons, name='register_exls_selected_buttons'),

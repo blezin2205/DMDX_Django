@@ -21,6 +21,25 @@ _NP_UNCOMPLETED_CODES = (
     '101', '102', '103', '104', '105', '106', '111', '112',
 )
 
+# Публічний алиас для інших модулів (синхрон з логікою бейджа в топбарі).
+NP_UNCOMPLETED_STATUS_CODES = _NP_UNCOMPLETED_CODES
+
+
+def queryset_orders_with_uncompleted_np_tracking():
+    """
+    Унікальні замовлення, де є хоча б одна накладна НП з «незавершеним» status_code
+    (той самий набір кодів, що й для лічильника orders_with_uncompleted_np).
+    """
+    order_ids = (
+        StatusNPParselFromDoucmentID.objects.filter(
+            status_code__in=_NP_UNCOMPLETED_CODES,
+            for_order_id__isnull=False,
+        )
+        .values_list('for_order_id', flat=True)
+        .distinct()
+    )
+    return Order.objects.filter(id__in=order_ids).order_by('-id')
+
 
 def empty_topbar_cart_count_data():
     return {

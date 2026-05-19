@@ -418,3 +418,11 @@
 #djDebug {
     z-index: 2147483646 !important;
 }
+
+/*
+ * Модалка «НП незавершені накладні»: типово BS modal ~1055; dropdown топбару .app-menu-dropdown — 1100.
+ * Якщо діалог малюється під шаром затемнення / меню — піднімаємо лише цей #npUncompletedOrdersModal.
+ */
+#npUncompletedOrdersModal {
+    z-index: 12200 !important;
+}

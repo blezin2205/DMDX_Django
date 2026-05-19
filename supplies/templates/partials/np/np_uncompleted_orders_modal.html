@@ -1,0 +1,72 @@
+{% load static %}
+{% load myapp_extras %}
+{% if request.user.is_staff or request.user|has_group:"empl" %}
+<div id="npUncompletedOrdersModal" class="modal fade" tabindex="-1" aria-labelledby="npUncompletedOrdersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+        <div class="modal-content border border-secondary-subtle shadow">
+            <div class="modal-header py-2">
+                <div>
+                    <h5 class="modal-title fs-6" id="npUncompletedOrdersModalLabel">
+                        <img src="{% static 'images/np_icon.png' %}" width="26" height="25" alt="" class="me-2 align-text-bottom" style="border-radius: 4px">
+                        Накладні НП з незавершеним статусом
+                    </h5>
+                    <p class="text-muted small mb-0">Спочатку показуються статуси з бази; згори йде оновлення з API Нової Пошти, після якого таблиця замінюється на актуальну.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрити"></button>
+            </div>
+            <div class="modal-body">
+                <div id="np-uncompleted-modal-body">
+                    <p class="text-muted small mb-0">Відкрийте модал — список з’явиться одразу з бази.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var modalEl = document.getElementById('npUncompletedOrdersModal');
+    if (!modalEl || modalEl.dataset.npModalBound === '1') return;
+    modalEl.dataset.npModalBound = '1';
+    var urlBase = '{% url "orders_np_uncompleted_modal_body" %}';
+    var bodyEl = document.getElementById('np-uncompleted-modal-body');
+    if (!bodyEl) return;
+
+    function fetchHtml(url) {
+        return fetch(url, {
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'text/html'
+            }
+        }).then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.text();
+        });
+    }
+
+    modalEl.addEventListener('shown.bs.modal', function () {
+        bodyEl.innerHTML = '<p class="text-muted small mb-0"><span class="spinner-border spinner-border-sm text-primary me-2" role="status"></span>Завантаження списку…</p>';
+
+        fetchHtml(urlBase)
+            .then(function (html) {
+                bodyEl.innerHTML = html;
+                var sep = urlBase.indexOf('?') >= 0 ? '&' : '?';
+                return fetchHtml(urlBase + sep + 'refresh=1').then(function (htmlFresh) {
+                    bodyEl.innerHTML = htmlFresh;
+                }).catch(function () {
+                    var strip = document.getElementById('np-uncompleted-refresh-strip');
+                    if (strip) {
+                        strip.className = 'alert alert-warning py-2 px-3 mb-3 small mb-0 d-flex align-items-center gap-2';
+                        strip.innerHTML = '<i class="bi bi-exclamation-triangle flex-shrink-0"></i><span>Не вдалося оновити з API Нової Пошти. Нижче залишились дані з бази.</span>';
+                    } else {
+                        bodyEl.insertAdjacentHTML('afterbegin', '<div class="alert alert-warning py-2 small mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Не вдалося оновити з НП. Показані дані з бази.</div>');
+                    }
+                });
+            })
+            .catch(function () {
+                bodyEl.innerHTML = '<p class="text-danger small mb-0">Не вдалося завантажити список. Спробуйте закрити й відкрити знову.</p>';
+            });
+    });
+})();
+</script>
+{% endif %}

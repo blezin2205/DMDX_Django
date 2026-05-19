@@ -1,62 +1,99 @@
 {% extends 'supplies/base/base.html' %}
-{% load crispy_forms_filters %}
 {% load static %}
-{% load bootstrap %}
-{% load crispy_forms_tags %}
-    {% block title %}
-{{ title }}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/np-staff-pages.css' %}" type="text/css">
 {% endblock %}
 
 {% block content %}
-    <div class="d-flex justify-content-between">
-     <div>
-    <h4 style="">Ваші адреси відправки:</h4>
-    {% for place in places %}
-<div class="d-flex justify-content-between py-2">
- <li style="font-weight: 700; padding-bottom: 4px">{{ place.cityName }}, {{ place.addressName }}</li>
-        <button hx-post="{% url 'delete_my_np_sender_place' %}"
-         hx-target="closest div"
-         hx-vals='{"del_sender_place_id": {{ place.id }}}'
-         hx-swap="outerHTML"
-         class="btn btn-sm btn-outline-danger ms-2"><i class="bi bi-trash"></i></button>
+<div class="py-3 pb-4 np-staff-page">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.level_tag == 'success' %}alert-success{% elif message.level_tag == 'error' %}alert-danger{% elif message.level_tag == 'warning' %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show rounded-3 mb-3" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрити"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="d-flex flex-wrap gap-2 mb-3 np-quick-nav">
+        <a href="{% url 'app_settings' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-sliders me-1"></i>Налаштування
+        </a>
+        <a href="{% url 'np-info' %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-person-badge me-1"></i>REF контактів НП
+        </a>
+    </div>
+
+    <section class="np-panel mb-4" aria-labelledby="np-saved-places-heading">
+        <h2 id="np-saved-places-heading" class="np-panel-header mb-0 h6 d-flex align-items-center gap-2">
+            <i class="bi bi-list-ul text-secondary" aria-hidden="true"></i>
+            Збережені адреси відправлення
+        </h2>
+        <div class="np-panel-body padded">
+            {% if places %}
+                <ul class="list-group list-group-flush np-sender-place-list rounded border">
+                    {% for place in places %}
+                        <li class="list-group-item d-flex justify-content-between align-items-start gap-3 flex-wrap flex-sm-nowrap">
+                            <span class="fw-medium text-break">{{ place.cityName }}, {{ place.addressName }}</span>
+                            <button type="button"
+                                    hx-post="{% url 'delete_my_np_sender_place' %}"
+                                    hx-target="closest li"
+                                    hx-vals='{"del_sender_place_id": {{ place.id }}}'
+                                    hx-swap="outerHTML"
+                                    class="btn btn-sm btn-outline-danger flex-shrink-0"
+                                    title="Видалити">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="alert alert-light border rounded-3 mb-0">
+                    <span class="text-muted small">Поки немає жодної збереженої адреси — додайте першу у формі нижче.</span>
+                </div>
+            {% endif %}
+            <div class="mt-3">
+                <a class="btn btn-outline-primary btn-sm rounded-pill" href="{% url 'address_getCities' %}">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Оновити довідник міст Нової Пошти
+                </a>
+            </div>
         </div>
-    {% endfor %}
-    </div>
+    </section>
 
-    <div>
-        <a class="btn btn-primary" href="{% url 'address_getCities' %}" role="button">Оновити міста Нової Пошти</a>
-    </div>
+    <form method="post" action="">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
 
-    </div>
+        <section class="np-panel np-place-add-section" aria-labelledby="np-add-place-heading">
+            <h2 id="np-add-place-heading" class="np-panel-header mb-0 h6 d-flex align-items-center gap-2">
+                <i class="bi bi-plus-circle text-secondary" aria-hidden="true"></i>
+                Додати адресу відправлення
+            </h2>
+            <div class="np-panel-body padded">
+                <p class="small text-muted mb-3">Оберіть тип відправлення, знайдіть місто та відділення / адресу через пошук Нової Пошти.</p>
 
-<form method="POST" action="">
-  {% csrf_token %}
+                <div class="btn-group flex-wrap mb-3" role="group" aria-label="Тип відправлення">
+                    <input type="radio" class="btn-check" name="recipientType" value="Warehouse" id="btnradio-np-wh" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="btnradio-np-wh">На відділення</label>
 
+                    <input type="radio" class="btn-check" name="recipientType" value="Doors" id="btnradio-np-door" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="btnradio-np-door">Адресна доставка</label>
+                </div>
 
-<section class="card shadow-sm mt-4 p-4" style="background-color: #eee;">
-    <h5 class="pb-4"><u style="font-style: italic">Дoдати нову адресу відправки</u></h5>
-
-    <div class="btn-group pt-3" role="group" aria-label="Basic radio toggle button group" style="width: fit-content">
-  <input type="radio" class="btn-check" name="recipientType" value="Warehouse" id="btnradio1" autocomplete="off" checked>
-  <label class="btn btn-outline-primary" for="btnradio1">На відділення</label>
-
-  <input type="radio" class="btn-check" name="recipientType" value="Doors" id="btnradio2" autocomplete="off">
-  <label class="btn btn-outline-primary" for="btnradio2">Адресна доставка</label>
-</div>
-  <div class="container h-100 py-3">
-      {% include 'partials/search/search-city.html' %}
-      </div>
+                <div class="py-1">
+                    {% include 'partials/search/search-city.html' %}
+                </div>
+            </div>
         </section>
 
-{% if messages %}
-<ul class="messages my-4" style="color: red">
-    {% for message in messages %}
-    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
-
-<input type="hidden" name="next" value="{{ request.GET.next }}">
-<button class="btn btn-outline-primary my-5" type="submit" name="generalSave">Зберегти</button>
-</form>
+        <div class="np-submit-actions mt-4">
+            <button class="btn btn-primary px-4" type="submit" name="generalSave">
+                <i class="bi bi-check2-circle me-1"></i>Зберегти адресу
+            </button>
+        </div>
+    </form>
+</div>
 {% endblock %}

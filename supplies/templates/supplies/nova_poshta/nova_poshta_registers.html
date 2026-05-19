@@ -1,81 +1,130 @@
 {% extends 'supplies/base/base.html' %}
-{% load crispy_forms_filters %}
-{% load crispy_forms_tags %}
-{% load bootstrap %}
-{% load mathfilters %}
+{% load static %}
 {% load myapp_extras %}
 
-    {% block title %}
+{% block title %}
 {{ title }}
 {% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/nova-poshta-registers.css' %}" type="text/css">
+{% endblock %}
+
 {% block content %}
-    <div class="container">
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
-    {% for register in registers %}
-    <div class="col">
-    <div class="card text-center mx-auto border shadow-sm" style="min-height: 550px; min-width: 300px; border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; overflow: hidden;">
-  <div class="card-header px-0 py-2" style="background-color:white">
-    <img src="{{ register.barcode_url }}" style="width: 300px; height: 100px; object-fill: contain; border-radius: 8px" class="card-img-top" alt="...">
-  </div>
-  <div class="card-body">
-    {% for ordr in register.for_orders %}
-    <h6 class="card-title"><li>{{ ordr }}</li></h6>
-    {% endfor %}
-    <a href="{{ register.register_url }}" class="btn btn-primary my-2">Реєстр PDF</a>
-  </div>
-  <div class="card-footer text-muted">
-    {{ register.date }}
-  </div>
-</div>
-    </div>
-{% endfor %}
-    </div>
-    </div>
+<div class="container py-3 pb-4">
+    {% if not registers.object_list %}
+        <div class="alert alert-light border shadow-sm rounded-3 mb-0">
+            <div class="d-flex align-items-start gap-2">
+                <i class="bi bi-inbox fs-4 text-muted flex-shrink-0"></i>
+                <div>
+                    <div class="fw-semibold">Реєстрів поки немає</div>
+                    <p class="small text-muted mb-0 mt-1">Після формування реєстрів НП вони з’являться на цій сторінці.</p>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+            {% for register in registers %}
+                <div class="col d-flex">
+                    <article class="card np-register-card w-100">
+                        <div class="np-register-barcode-wrap">
+                            {% if register.barcode_url %}
+                                <img src="{{ register.barcode_url }}" class="img-fluid" alt="Штрихкод реєстру {{ register.barcode_string }}">
+                            {% elif register.barcode %}
+                                <img src="{{ register.barcode.url }}" class="img-fluid" alt="Штрихкод реєстру {{ register.barcode_string }}">
+                            {% else %}
+                                <div class="text-muted small text-center py-3">Немає зображення штрихкоду</div>
+                            {% endif %}
+                        </div>
 
-    <!-- Pagination -->
-    {% if registers.paginator.num_pages > 1 %}
-    <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if registers.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page=1" aria-label="First">
-                        <span aria-hidden="true">&laquo;&laquo;</span>
-                    </a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ registers.previous_page_number }}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-            {% endif %}
+                        <div class="card-body d-flex flex-column flex-grow-1 p-0">
+                            <div class="px-3 pt-3 pb-2">
+                                <span class="small text-uppercase fw-semibold text-secondary" style="letter-spacing: 0.03em;">Замовлення в реєстрі</span>
+                                {% if register.for_orders %}
+                                    <span class="small text-muted ms-1">— всього {{ register.for_orders|length }}</span>
+                                {% endif %}
+                            </div>
 
-            {% for num in registers.paginator.page_range %}
-                {% if registers.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ num }}</span>
-                    </li>
-                {% elif num > registers.number|add:'-3' and num < registers.number|add:'3' %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                    </li>
-                {% endif %}
+                            {% if register.for_orders %}
+                                <div class="np-register-orders px-3 pb-3 flex-grow-1">
+                                    <ul class="small mb-0 np-register-orders-list">
+                                        {% for ordr in register.for_orders %}
+                                            <li class="text-break">{{ ordr }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% else %}
+                                <div class="px-3 pb-2 flex-grow-1">
+                                    <p class="small text-muted mb-0">Немає прив’язаних номерів замовлень у записі.</p>
+                                </div>
+                            {% endif %}
+
+                            <div class="np-register-actions p-3 border-top mt-auto">
+                                {% if register.register_url %}
+                                    <a href="{{ register.register_url }}" class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-2" target="_blank" rel="noopener noreferrer">
+                                        <i class="bi bi-file-earmark-pdf"></i>
+                                        Реєстр PDF
+                                    </a>
+                                {% else %}
+                                    <button type="button" class="btn btn-outline-secondary w-100" disabled title="Посилання на PDF відсутнє">
+                                        <i class="bi bi-file-earmark-x me-1"></i>
+                                        PDF недоступний
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="card-footer text-muted py-2 px-3">
+                            <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+                                <i class="bi bi-calendar3"></i>
+                                <span>{{ register.date }}</span>
+                                {% if register.barcode_string %}
+                                    <span class="text-secondary">·</span>
+                                    <span class="font-monospace small">{{ register.barcode_string }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                </div>
             {% endfor %}
+        </div>
 
-            {% if registers.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ registers.next_page_number }}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ registers.paginator.num_pages }}" aria-label="Last">
-                        <span aria-hidden="true">&raquo;&raquo;</span>
-                    </a>
-                </li>
-            {% endif %}
-        </ul>
-    </nav>
+        {% if registers.paginator.num_pages > 1 %}
+            <nav class="mt-4 pt-2" aria-label="Навігація по сторінках реєстрів">
+                <ul class="pagination justify-content-center flex-wrap mb-0">
+                    {% if registers.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="{% my_url 1 'page' request.GET.urlencode %}" aria-label="Перша">&laquo;&laquo;</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{% my_url registers.previous_page_number 'page' request.GET.urlencode %}" aria-label="Попередня">&laquo;</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in registers.paginator.page_range %}
+                        {% if registers.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > registers.number|add:'-3' and num < registers.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="{% my_url num 'page' request.GET.urlencode %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if registers.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{% my_url registers.next_page_number 'page' request.GET.urlencode %}" aria-label="Наступна">&raquo;</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="{% my_url registers.paginator.num_pages 'page' request.GET.urlencode %}" aria-label="Остання">&raquo;&raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+                <p class="text-center text-muted small mt-2 mb-0">
+                    Сторінка {{ registers.number }} з {{ registers.paginator.num_pages }}
+                </p>
+            </nav>
+        {% endif %}
     {% endif %}
-
+</div>
 {% endblock %}

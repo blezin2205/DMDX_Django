@@ -41,21 +41,28 @@ class CustomUser(AbstractUser):
             place_id = "NO EXIST"
         return place_id
 
+    def _in_auth_group(self, name):
+        """Membership check; uses prefetch_related('…__groups') when present (lists / cards)."""
+        cache = getattr(self, '_prefetched_objects_cache', None)
+        if cache is not None and 'groups' in cache:
+            return any(g.name == name for g in cache['groups'])
+        return self.groups.filter(name=name).exists()
+
     def isClient(self):
-        return self.groups.filter(name='client').exists()
+        return self._in_auth_group('client')
 
     # Backward-compatible alias (some code calls snake_case)
     def is_client(self):
         return self.isClient()
 
     def is_employee(self):
-        return self.groups.filter(name='empl').exists()
+        return self._in_auth_group('empl')
 
     def is_admin(self):
-        return self.groups.filter(name='admin').exists()
+        return self._in_auth_group('admin')
 
     def is_engineer(self):
-        return self.groups.filter(name='engineer').exists()
+        return self._in_auth_group('engineer')
 
     def get_role(self):
         if self.is_admin():

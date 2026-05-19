@@ -1,0 +1,168 @@
+/**
+ * Редагування клієнта (/clientsInfo/…/editInfo) — секції та поля як у налаштуваннях / реєстрах НП.
+ */
+
+.client-edit-page .client-edit-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.client-edit-page .client-edit-section {
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.07);
+}
+
+.client-edit-page .client-edit-section--muted {
+    background: linear-gradient(to bottom, #f8fafc 0%, #fff 55%);
+}
+
+.client-edit-page .client-edit-section-header {
+    padding: 0.85rem 1.15rem;
+    background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.client-edit-page .client-edit-section-header i {
+    color: #475569;
+    font-size: 1.15rem;
+}
+
+.client-edit-page .client-edit-section-header .client-edit-section-sub {
+    font-weight: 400;
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin-left: auto;
+    text-align: right;
+    max-width: 55%;
+    line-height: 1.35;
+}
+
+@media (max-width: 575.98px) {
+    .client-edit-page .client-edit-section-header {
+        flex-wrap: wrap;
+    }
+
+    .client-edit-page .client-edit-section-header .client-edit-section-sub {
+        margin-left: 0;
+        max-width: 100%;
+        width: 100%;
+        text-align: left;
+        padding-left: 1.65rem;
+    }
+}
+
+.client-edit-page .client-edit-section-body {
+    padding: 1rem 1.15rem 1.15rem;
+}
+
+.client-edit-page .client-edit-section-body .mb-3:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Поля Crispy / Bootstrap */
+.client-edit-page .form-label {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: #475569;
+    margin-bottom: 0.35rem;
+}
+
+.client-edit-page .form-control,
+.client-edit-page .form-select {
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.55);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9375rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.client-edit-page .form-control:focus,
+.client-edit-page .form-select:focus {
+    border-color: rgba(59, 130, 246, 0.55);
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.15);
+}
+
+.client-edit-page .form-check-label {
+    font-size: 0.9375rem;
+}
+
+.client-edit-page .client-edit-readonly-badge {
+    padding: 0.65rem 0.85rem;
+    border-radius: 10px;
+    background: #f1f5f9;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+/* Тип доставки НП — той самий пікер, що «Всі / Список товарів / …» на головній складі */
+.client-edit-page .home-view-switch {
+    background-color: rgba(248, 250, 252, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 10px;
+    padding: 0.2rem;
+    gap: 0.2rem;
+    width: fit-content;
+    max-width: 100%;
+}
+
+.client-edit-page .home-view-switch .home-view-btn {
+    border: none;
+    border-radius: 8px !important;
+    color: #334155;
+    font-weight: 600;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.9rem;
+    background-color: transparent;
+}
+
+.client-edit-page .home-view-switch .home-view-btn:hover {
+    color: #0f172a;
+    background-color: rgba(226, 232, 240, 0.8);
+}
+
+.client-edit-page .home-view-switch .btn-check:checked + .home-view-btn {
+    color: #0f172a;
+    background-color: #e2e8f0;
+    box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.25);
+}
+
+.client-edit-page .home-view-switch .btn-check:focus-visible + .home-view-btn {
+    outline: 2px solid rgba(59, 130, 246, 0.45);
+    outline-offset: 2px;
+}
+
+.client-edit-page .client-edit-search-panel {
+    margin-top: 0.25rem;
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    border: 1px dashed rgba(148, 163, 184, 0.55);
+    background: rgba(248, 250, 252, 0.85);
+}
+
+.client-edit-page #search-city-section .card.my-link {
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.client-edit-page .client-edit-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    padding-top: 0.5rem;
+}
+
+.client-edit-page .client-edit-actions .btn-primary {
+    border-radius: 10px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 600;
+}

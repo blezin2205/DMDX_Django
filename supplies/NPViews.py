@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse, JsonResponse
 from .NPModels import *
 from .views import update_order_status_core, _order_singleton_for_card
@@ -16,7 +17,7 @@ import logging
 import asyncio
 import aiohttp
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Dict, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 import time
 from django.db.models import QuerySet
 from django.utils import timezone
@@ -24,6 +25,8 @@ import ssl
 from django.core.paginator import Paginator
 
 logger = logging.getLogger(__name__)
+
+from .topbar_cart_counts import queryset_orders_with_uncompleted_np_tracking
 
 
 def sendTurboSMSRequest(text, recipients):
@@ -77,7 +80,16 @@ def nova_poshta_registers(request):
     paginator = Paginator(registers, 6)
     page_number = request.GET.get('page')
     registers = paginator.get_page(page_number)
-    return render(request, 'supplies/nova_poshta/nova_poshta_registers.html', {'registers': registers})
+    return render(
+        request,
+        'supplies/nova_poshta/nova_poshta_registers.html',
+        {
+            'title': 'Реєстри Нової Пошти',
+            'title_icon': 'bi-truck',
+            'subtitle': 'Штрихкоди та PDF реєстрів відправлень; номери замовлень у кожному реєстрі.',
+            'registers': registers,
+        },
+    )
 
 
 
@@ -447,7 +459,12 @@ def delete_my_np_sender_place(request):
     return HttpResponse(status=200)
 
 def fetch_np_status(documents: List[Dict]) -> Dict:
-    """Make request to Nova Poshta API"""
+    """
+    Запит до API Нової Пошти TrackingDocument.getStatusDocuments.
+
+    `documents` — список елементів виду ``{'DocumentNumber': '…', 'Phone': '…'}``
+    (одне замовлення або багато накладних за один HTTP-запит).
+    """
     params = {
         "apiKey": settings.NOVA_POSHTA_API_KEY,
         "modelName": "TrackingDocument",
@@ -456,13 +473,71 @@ def fetch_np_status(documents: List[Dict]) -> Dict:
             "Documents": documents
         }
     }
-    
+
     try:
         response = requests.post(settings.NOVA_POSHTA_API_URL, json=params)
         return response.json()
     except Exception as e:
         logger.error(f"Error fetching NP status: {str(e)}")
         return {"data": []}
+
+
+def _apply_np_tracking_row(obj: Dict, order: Order, user_who_created_document) -> None:
+    """Один рядок відповіді getStatusDocuments → оновлення StatusNPParselFromDoucmentID."""
+    number = obj["Number"]
+
+    scheduledDeliveryDate = obj.get("ScheduledDeliveryDate", "")
+    if scheduledDeliveryDate:
+        scheduledDeliveryDate = datetime.datetime.strptime(scheduledDeliveryDate, '%d-%m-%Y %H:%M:%S').strftime('%d.%m.%Y %H:%M')
+
+    dateCreated = datetime.datetime.strptime(obj["DateCreated"], '%d-%m-%Y %H:%M:%S').strftime('%d.%m.%Y %H:%M')
+
+    dateScan = obj.get("DateScan", "")
+    if dateScan:
+        dateScan = datetime.datetime.strptime(dateScan, '%H:%M %d.%m.%Y').strftime('%d.%m.%Y %H:%M')
+
+    actualDeliveryDate = obj.get("ActualDeliveryDate", "")
+    if actualDeliveryDate:
+        actualDeliveryDate = datetime.datetime.strptime(actualDeliveryDate, '%Y-%m-%d %H:%M:%S').strftime('%d.%m.%Y %H:%M')
+
+    recipientDateTime = obj.get("RecipientDateTime", "")
+    if recipientDateTime:
+        recipientDateTime = datetime.datetime.strptime(recipientDateTime, '%d.%m.%Y %H:%M:%S').strftime('%d.%m.%Y %H:%M')
+
+    status_data = {
+        "status_code": obj["StatusCode"],
+        "status_desc": obj["Status"],
+        "docNumber": number,
+        "for_order_id": order.id,
+        "counterpartyRecipientDescription": obj["CounterpartyRecipientDescription"],
+        "documentWeight": obj["DocumentWeight"],
+        "factualWeight": obj["FactualWeight"],
+        "payerType": obj["PayerType"],
+        "seatsAmount": obj["SeatsAmount"],
+        "phoneRecipient": obj["PhoneRecipient"],
+        "scheduledDeliveryDate": scheduledDeliveryDate,
+        "documentCost": obj["DocumentCost"],
+        "paymentMethod": obj["PaymentMethod"],
+        "warehouseSender": f'{user_who_created_document.first_name}, {user_who_created_document.last_name}, {obj["WarehouseSender"]}',
+        "dateCreated": dateCreated,
+        "dateScan": dateScan,
+        "actualDeliveryDate": actualDeliveryDate,
+        "recipientDateTime": recipientDateTime,
+        "recipientAddress": obj["RecipientAddress"],
+        "recipientFullNameEW": obj["RecipientFullNameEW"],
+        "cargoDescriptionString": obj["CargoDescriptionString"],
+        "announcedPrice": obj["AnnouncedPrice"]
+    }
+
+    try:
+        StatusNPParselFromDoucmentID.objects.update_or_create(
+            docNumber=number,
+            for_order_id=order.id,
+            defaults=status_data
+        )
+    except Exception as e:
+        logger.error(f"Error updating status parcel model for order {order.id}, doc {number}: {str(e)}")
+
 
 def process_status_data(data: Dict, order: Order, userCreatedList: Dict) -> None:
     """Process status data and update database"""
@@ -472,61 +547,96 @@ def process_status_data(data: Dict, order: Order, userCreatedList: Dict) -> None
     for obj in data["data"]:
         number = obj["Number"]
         user_who_created_document = userCreatedList[number]
+        _apply_np_tracking_row(obj, order, user_who_created_document)
 
-        # Format dates
-        scheduledDeliveryDate = obj.get("ScheduledDeliveryDate", "")
-        if scheduledDeliveryDate:
-            scheduledDeliveryDate = datetime.datetime.strptime(scheduledDeliveryDate, '%d-%m-%Y %H:%M:%S').strftime('%d.%m.%Y %H:%M')
 
-        dateCreated = datetime.datetime.strptime(obj["DateCreated"], '%d-%m-%Y %H:%M:%S').strftime('%d.%m.%Y %H:%M')
-        
-        dateScan = obj.get("DateScan", "")
-        if dateScan:
-            dateScan = datetime.datetime.strptime(dateScan, '%H:%M %d.%m.%Y').strftime('%d.%m.%Y %H:%M')
+def process_status_data_multi(
+    data: Dict,
+    order_by_document_key: Dict[str, Order],
+    user_created_by_document_key: Dict[str, Any],
+) -> None:
+    """
+    Те саме, що process_status_data, але для відповіді, де накладні з різних замовлень.
+    Ключі мап — ``str(DocumentNumber)``.
+    """
+    if not data.get("data"):
+        return
 
-        actualDeliveryDate = obj.get("ActualDeliveryDate", "")
-        if actualDeliveryDate:
-            actualDeliveryDate = datetime.datetime.strptime(actualDeliveryDate, '%Y-%m-%d %H:%M:%S').strftime('%d.%m.%Y %H:%M')
+    for obj in data["data"]:
+        number = obj["Number"]
+        sk = str(number)
+        order = order_by_document_key.get(sk) or order_by_document_key.get(number)
+        if order is None:
+            logger.warning("NP batch: немає прив’язки замовлення для накладної %s", number)
+            continue
+        user_who = user_created_by_document_key.get(sk) or user_created_by_document_key.get(number)
+        if user_who is None:
+            logger.warning("NP batch: немає userCreated для накладної %s", number)
+            continue
+        _apply_np_tracking_row(obj, order, user_who)
 
-        recipientDateTime = obj.get("RecipientDateTime", "")
-        if recipientDateTime:
-            recipientDateTime = datetime.datetime.strptime(recipientDateTime, '%d.%m.%Y %H:%M:%S').strftime('%d.%m.%Y %H:%M')
 
-        # Prepare status data
-        status_data = {
-            "status_code": obj["StatusCode"],
-            "status_desc": obj["Status"],
-            "docNumber": number,
-            "for_order_id": order.id,
-            "counterpartyRecipientDescription": obj["CounterpartyRecipientDescription"],
-            "documentWeight": obj["DocumentWeight"],
-            "factualWeight": obj["FactualWeight"],
-            "payerType": obj["PayerType"],
-            "seatsAmount": obj["SeatsAmount"],
-            "phoneRecipient": obj["PhoneRecipient"],
-            "scheduledDeliveryDate": scheduledDeliveryDate,
-            "documentCost": obj["DocumentCost"],
-            "paymentMethod": obj["PaymentMethod"],
-            "warehouseSender": f'{user_who_created_document.first_name}, {user_who_created_document.last_name}, {obj["WarehouseSender"]}',
-            "dateCreated": dateCreated,
-            "dateScan": dateScan,
-            "actualDeliveryDate": actualDeliveryDate,
-            "recipientDateTime": recipientDateTime,
-            "recipientAddress": obj["RecipientAddress"],
-            "recipientFullNameEW": obj["RecipientFullNameEW"],
-            "cargoDescriptionString": obj["CargoDescriptionString"],
-            "announcedPrice": obj["AnnouncedPrice"]
-        }
+NP_GET_STATUS_DOCUMENTS_CHUNK_SIZE = 100
 
-        # Update or create status model
-        try:
-            status_parsel_model, created = StatusNPParselFromDoucmentID.objects.update_or_create(
-                docNumber=number,
-                for_order_id=order.id,
-                defaults=status_data
-            )
-        except Exception as e:
-            logger.error(f"Error updating status parcel model for order {order.id}, doc {number}: {str(e)}")
+
+def order_needs_np_tracking_api_refresh(order: Order) -> bool:
+    """False, якщо вже «фінальний» статус — повторний запит до API не робимо."""
+    has_status, status_code = get_order_status(order)
+    if has_status and status_code in (2, 9):
+        return False
+    return True
+
+
+def _collect_documents_for_orders_batch(
+    orders: List[Order],
+) -> Tuple[List[Dict], Dict[str, Order], Dict[str, Any]]:
+    """
+    Зібрати унікальні DocumentNumber + мапи для батч-оновлення.
+    Дубль номера накладної (різні замовлення) — береться перше входження.
+    """
+    documents_out: List[Dict] = []
+    order_by_doc: Dict[str, Order] = {}
+    user_by_doc: Dict[str, Any] = {}
+    seen: set[str] = set()
+
+    for order in orders:
+        if not order_needs_np_tracking_api_refresh(order):
+            continue
+        documents, user_created_list = get_order_documents(order)
+        if not documents:
+            continue
+        for doc in documents:
+            raw_num = doc.get('DocumentNumber')
+            if raw_num is None:
+                continue
+            sk = str(raw_num)
+            if sk in seen:
+                continue
+            seen.add(sk)
+            documents_out.append(doc)
+            order_by_doc[sk] = order
+            user_who = user_created_list.get(raw_num)
+            if user_who is None:
+                user_who = user_created_list.get(sk)
+            user_by_doc[sk] = user_who
+
+    return documents_out, order_by_doc, user_by_doc
+
+
+def refresh_np_tracking_for_orders_batch(orders: Iterable[Order]) -> None:
+    """
+    Один або кілька викликів ``fetch_np_status`` для набору замовлень (чанки по
+    ``NP_GET_STATUS_DOCUMENTS_CHUNK_SIZE``), потім оновлення записів у БД.
+    """
+    orders_list = list(orders)
+    documents, order_by_doc, user_by_doc = _collect_documents_for_orders_batch(orders_list)
+    if not documents:
+        return
+
+    for start in range(0, len(documents), NP_GET_STATUS_DOCUMENTS_CHUNK_SIZE):
+        chunk = documents[start:start + NP_GET_STATUS_DOCUMENTS_CHUNK_SIZE]
+        payload = fetch_np_status(chunk)
+        process_status_data_multi(payload, order_by_doc, user_by_doc)
 
 def get_order_status(order: Order) -> Tuple[bool, int]:
     """Get order status"""
@@ -682,6 +792,69 @@ def np_delivery_detail_info_for_order(request, order_id):
     trigger_client_event(response, f'np_create_ID_button_subscribe{order_id}', {})
     
     return response
+
+
+def _user_can_np_uncompleted_modal(request):
+    return request.user.is_authenticated and (
+        getattr(request.user, 'is_staff', False)
+        or request.user.groups.filter(name='empl').exists()
+    )
+
+
+@login_required(login_url='login')
+def orders_np_uncompleted_modal_body(request):
+    """
+    Тіло модалки «незавершені НП».
+
+    Без ``?refresh=1``: лише дані з БД + прапорець ``refresh_pending`` (клієнт показує
+    лоадінг згори й одразу таблицю).
+
+    З ``?refresh=1``: батч ``refresh_np_tracking_for_orders_batch``, потім та сама таблиця
+    з оновленими статусами (без смуги очікування).
+    """
+    if not _user_can_np_uncompleted_modal(request):
+        return HttpResponse(
+            '<p class="text-danger small mb-0">Немає доступу.</p>',
+            status=403,
+        )
+
+    orders_list = list(
+        queryset_orders_with_uncompleted_np_tracking().select_related(
+            'place',
+            'place__city_ref',
+        )
+    )
+
+    do_refresh = request.GET.get('refresh') in ('1', 'true', 'yes')
+    if do_refresh:
+        try:
+            refresh_np_tracking_for_orders_batch(orders_list)
+        except Exception:
+            logger.exception('orders_np_uncompleted_modal_body: batch NP refresh failed')
+
+    rows = []
+    for order in orders_list:
+        parsels_status_data = get_parsels_status_data(order)
+        has_status, status_code = get_order_status(order)
+        no_more_update = bool(has_status and status_code in (2, 9))
+        rows.append(
+            {
+                'order': order,
+                'parsels': parsels_status_data,
+                'no_more_update': no_more_update,
+            }
+        )
+
+    refresh_pending = not do_refresh
+
+    return render(
+        request,
+        'partials/np/np_uncompleted_orders_modal_body.html',
+        {
+            'rows': rows,
+            'refresh_pending': refresh_pending,
+        },
+    )
 
 
 def np_create_ID_button_subscribe(request, order_id):

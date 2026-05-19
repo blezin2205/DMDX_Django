@@ -1,0 +1,71 @@
+/**
+ * Сторінки НП для персоналу: np-info, відділення відправника — узгоджено з app-settings / реєстрами.
+ */
+
+.np-staff-page .np-panel {
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.07);
+}
+
+.np-staff-page .np-panel-header {
+    padding: 0.85rem 1.15rem;
+    background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.np-staff-page .np-panel-body {
+    padding: 0;
+}
+
+.np-staff-page .np-panel-body.padded {
+    padding: 1rem 1.15rem 1.15rem;
+}
+
+.np-staff-page .np-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.np-staff-page .np-table-wrap .table {
+    margin-bottom: 0;
+}
+
+.np-staff-page .np-table-wrap .table thead th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    border-bottom-color: rgba(148, 163, 184, 0.35);
+    white-space: nowrap;
+}
+
+.np-staff-page .np-table-wrap .table td {
+    vertical-align: middle;
+}
+
+.np-staff-page .np-quick-nav .btn {
+    border-radius: 999px;
+}
+
+.np-staff-page .np-sender-place-list .list-group-item {
+    border-left: 0;
+    border-right: 0;
+}
+
+.np-staff-page .np-sender-place-list .list-group-item:first-child {
+    border-top: 0;
+}
+
+.np-staff-page .np-sender-place-list .list-group-item:last-child {
+    border-bottom: 0;
+}
+
+.np-staff-page .np-submit-actions .btn {
+    border-radius: 10px;
+}

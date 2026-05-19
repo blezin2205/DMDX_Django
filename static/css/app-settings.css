@@ -1,0 +1,79 @@
+/**
+ * Сторінка налаштувань застосунку — узгоджено з картками реєстрів НП (slate border, без hover-lift).
+ */
+
+.app-settings-page .app-settings-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.app-settings-page .app-settings-section {
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.07);
+}
+
+.app-settings-page .app-settings-section-header {
+    padding: 0.85rem 1.15rem;
+    background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.app-settings-page .app-settings-section-header i {
+    color: #475569;
+    font-size: 1.15rem;
+}
+
+.app-settings-page .app-settings-section-body {
+    padding: 0.35rem 1.15rem 0.85rem;
+}
+
+.app-settings-page .app-settings-row {
+    padding: 0.85rem 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.app-settings-page .app-settings-row:last-child {
+    border-bottom: none;
+}
+
+.app-settings-page .app-settings-row-label {
+    min-width: 0;
+}
+
+.app-settings-page .app-settings-icon-badge {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.app-settings-page .form-check.form-switch {
+    padding-left: 0;
+    margin-bottom: 0;
+    min-height: auto;
+}
+
+.app-settings-page .form-switch .form-check-input {
+    width: 2.5em;
+    height: 1.25em;
+    margin-left: 0;
+    cursor: pointer;
+}
+
+.app-settings-page .form-switch .form-check-input.htmx-request {
+    opacity: 0.55;
+    cursor: wait;
+}

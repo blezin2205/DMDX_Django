@@ -1,47 +1,95 @@
 {% extends 'supplies/base/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/np-staff-pages.css' %}" type="text/css">
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">Your current REF: <span class="badge bg-primary">{{ current_ref }}</span></h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="py-3">Name</th>
-                            <th class="py-3">Phone</th>
-                            <th class="py-3">REF</th>
-                            <th class="py-3 text-center">Sync</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for postalUser in data %}
-                        <tr>
-                            <td class="py-2">{{ postalUser.LastName }} {{ postalUser.FirstName }}</td>
-                            <td class="py-2">{{ postalUser.Phones }}</td>
-                            <td class="py-2"><span class="badge bg-secondary">{{ postalUser.Ref }}</span></td>
-                            <td class="py-2 text-center">
-                                {% if postalUser.Ref != current_ref %}
-                                    <form method="POST" action="" class="d-inline">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="np_ref" value="{{ postalUser.Ref }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-arrow-repeat"></i>
-                                        </button>
-                                    </form>
-                                {% else %}
-                                    <span class="badge bg-success">Current</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+<div class="py-3 pb-4 np-staff-page">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.level_tag == 'success' %}alert-success{% elif message.level_tag == 'error' %}alert-danger{% elif message.level_tag == 'warning' %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show rounded-3 mb-3" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрити"></button>
             </div>
-        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="d-flex flex-wrap gap-2 mb-3 np-quick-nav">
+        <a href="{% url 'app_settings' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-sliders me-1"></i>Налаштування
+        </a>
+        <a href="{% url 'add_np_sender_place' %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-geo-alt me-1"></i>Відділення відправника
+        </a>
     </div>
+
+    <section class="np-panel" aria-labelledby="np-ref-panel-heading">
+        <div id="np-ref-panel-heading" class="np-panel-header d-flex flex-column flex-md-row gap-2 gap-md-3 justify-content-md-between align-items-md-center">
+            <span><i class="bi bi-person-badge me-2 text-secondary"></i>Контактні особи відправника</span>
+            {% if current_ref %}
+                <span class="small text-md-end">
+                    <span class="text-muted fw-normal">Поточний REF:</span>
+                    <span class="badge bg-primary ms-1 font-monospace">{{ current_ref }}</span>
+                </span>
+            {% else %}
+                <span class="small text-muted">REF ще не обрано — оберіть рядок нижче та натисніть синхронізацію.</span>
+            {% endif %}
+        </div>
+        <div class="np-panel-body">
+            {% if not data %}
+                <div class="p-4">
+                    <div class="alert alert-light border mb-0 rounded-3">
+                        <div class="d-flex gap-2 align-items-start">
+                            <i class="bi bi-info-circle text-secondary fs-5 flex-shrink-0"></i>
+                            <div>
+                                <div class="fw-semibold">Немає даних від API Нової Пошти</div>
+                                <p class="small text-muted mb-0 mt-1">Перевірте ключ API та REF відправника в налаштуваннях проєкту або спробуйте пізніше.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="np-table-wrap">
+                    <table class="table table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3 py-3">ПІБ</th>
+                                <th class="py-3">Телефон</th>
+                                <th class="py-3">REF</th>
+                                <th class="py-3 text-center pe-3">Дія</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for postalUser in data %}
+                                <tr>
+                                    <td class="ps-3 py-2">{{ postalUser.LastName }} {{ postalUser.FirstName }}</td>
+                                    <td class="py-2">{{ postalUser.Phones }}</td>
+                                    <td class="py-2"><span class="badge bg-secondary font-monospace">{{ postalUser.Ref }}</span></td>
+                                    <td class="py-2 text-center pe-3">
+                                        {% if postalUser.Ref != current_ref %}
+                                            <form method="post" action="" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="np_ref" value="{{ postalUser.Ref }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill" title="Зробити поточним REF">
+                                                    <i class="bi bi-arrow-repeat"></i>
+                                                    <span class="d-none d-sm-inline ms-1">Обрати</span>
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <span class="badge bg-success rounded-pill">Активний</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </section>
 </div>
 {% endblock %}

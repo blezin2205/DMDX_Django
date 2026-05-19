@@ -2,7 +2,7 @@ import datetime
 import pytz
 
 import requests
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from .models import *
 from django.forms import ModelForm, Form
 from django import forms
@@ -27,12 +27,27 @@ class AppSettingsForm(ModelForm):
                   'disable_order_confirmation_send_action',
                   'enable_preorder_editing_awaiting_state']
         widgets = {
-            'send_teams_msg': forms.CheckboxInput(attrs={'class': 'form-check-input', 'style': "transform: scale(1.6);"}),
-            'send_teams_msg_preorders': forms.CheckboxInput(attrs={'class': 'form-check-input', 'style': "transform: scale(1.6);"}),
-            'enable_show_other_booked_cart': forms.CheckboxInput(attrs={'class': 'form-check-input', 'style': "transform: scale(1.6);"}),
-            'disable_order_confirmation_send_action': forms.CheckboxInput(attrs={'class': 'form-check-input', 'style': "transform: scale(1.6);"}),
-            'enable_preorder_editing_awaiting_state': forms.CheckboxInput(attrs={'class': 'form-check-input', 'style': "transform: scale(1.6);"}),
+            'send_teams_msg': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'send_teams_msg_preorders': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'enable_show_other_booked_cart': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'disable_order_confirmation_send_action': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'enable_preorder_editing_awaiting_state': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        toggle_url = reverse('app_settings_toggle')
+        for name in self.Meta.fields:
+            vals = f"js:{{field: '{name}', value: event.target.checked}}"
+            self.fields[name].widget.attrs.update(
+                {
+                    'hx-post': toggle_url,
+                    'hx-trigger': 'change',
+                    'hx-params': 'field,value',
+                    'hx-swap': 'none',
+                    'hx-vals': vals,
+                }
+            )
 
 
 class CreateNPParselForm(ModelForm):
@@ -124,6 +139,9 @@ class ClientForm(ModelForm):
         self.fields['isPrivatePlace'].label = "Приватна організація"
         self.fields['worker_NP'].label = "Контакта особа отримання відправки"
         self.fields['organization_code'].label = "ЄДРПОУ (Якщо поле заповнене, організація буде додана в НП)"
+        self.fields['city_ref'].widget.attrs.update({'class': 'form-select'})
+        self.fields['address_NP'].widget.attrs.update({'class': 'form-select'})
+        self.fields['worker_NP'].widget.attrs.update({'class': 'form-select'})
         if self.instance.isAddedToNP:
             self.fields.pop('organization_code')
 
