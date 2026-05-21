@@ -262,6 +262,14 @@
     border-radius: 10px;
 }
 
+/* Корзини в шапці: бейдж під 3 цифри — без стрибків при зміні лічильника */
+.app-topbar .topbar-cart-slot .btn-cart .badge {
+    display: inline-block;
+    min-width: calc(3ch + 0.5em);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
 /* --- Mobile menu layout (panel + cart row; chrome matches .app-topbar via .app-mobile-topbar) --- */
 .app-mobile-topbar .topbar-user {
     color: #f8fafc;

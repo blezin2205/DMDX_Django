@@ -15,6 +15,25 @@
 {% endblock %}
 
 {% block content %}
+{% if home_table_display %}
+{{ home_table_display|json_script:"home-table-display-data" }}
+<script>
+(function () {
+    var el = document.getElementById('home-table-display-data');
+    if (!el) return;
+    try {
+        var s = JSON.parse(el.textContent);
+        var features = { edit: true, cart: true, precart: true, smn: true };
+        [document.documentElement, document.body].forEach(function (root) {
+            root.classList.toggle('home-hide-edit', features.edit && s.edit === false);
+            root.classList.toggle('home-hide-cart', features.cart && s.cart === false);
+            root.classList.toggle('home-hide-precart', features.precart && s.precart === false);
+            root.classList.toggle('home-hide-smn', features.smn && s.smn === false);
+        });
+    } catch (e) { /* ignore */ }
+})();
+</script>
+{% endif %}
 <div class="container py-1">
     <div class="btn-group my-3 home-view-switch" role="group" aria-label="Перемикання виду списку">
         <a href="{% url 'home' %}" class="btn home-view-btn {% if isAll %} active {% endif %}" aria-current="page">Всі</a>
@@ -32,18 +51,28 @@
                 <div class="filter-field field-name">{{ suppFilter.form.name|as_crispy_field }}</div>
             </div>
             <div class="filter-actions">
-                <button class="btn btn-primary btn-sm" type="submit">
-                    <i class="bi bi-search me-1"></i>Застосувати
-                </button>
-                <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
+                <div class="filter-actions-group">
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="bi bi-search me-1"></i>Застосувати
+                    </button>
+                    <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
+                    {% include 'partials/home/home_table_display_menu.html' %}
+                </div>
             </div>
+            {% block filter_actions_extra %}{% endblock %}
         </div>
     </form>
 </div>
 
-<div class="table-responsive{% block supply_list_wrapper_extra %}{% endblock %}">
+<div class="table-responsive home-supply-list-scope{% block supply_list_wrapper_extra %}{% endblock %}"
+     data-home-feature-edit="1"
+     data-home-feature-cart="1"
+     data-home-feature-precart="1"
+     data-home-feature-smn="1"
+     {% if home_table_display %}data-home-table-display-toggle-url="{% url 'home_table_display_toggle' %}"{% endif %}>
     {% block supply_list %}{% endblock %}
 </div>
+<script src="{% static 'js/home-table-display.js' %}"></script>
 
 {% if supplies.paginator.num_pages > 1 %}
     <nav class="d-flex justify-content-center my-3" aria-label="Навігація по сторінках">
@@ -97,14 +126,18 @@
     $(function() {
 
         function positionSupplyRowPanel($btn, $panel) {
+            if (window.DmdxPositionContextPanel) {
+                window.DmdxPositionContextPanel($btn[0], $panel[0]);
+                return;
+            }
             var el = $btn[0];
             if (!el) return;
             var rect = el.getBoundingClientRect();
             $panel.css({
                 position: 'fixed',
-                right: (window.innerWidth - rect.right) + 'px',
+                left: rect.left + 'px',
                 top: (rect.bottom + 4) + 'px',
-                left: 'auto',
+                right: 'auto',
                 bottom: 'auto',
                 margin: 0
             });
@@ -115,6 +148,10 @@
         }
 
         function closeAllSupplyRowMenus() {
+            if (window.DmdxHomeTableDisplay && window.DmdxHomeTableDisplay.closeMenus) {
+                window.DmdxHomeTableDisplay.closeMenus();
+                return;
+            }
             $('.supply-row-actions-panel.is-open').each(function() {
                 resetSupplyRowPanel($(this));
                 $(this).removeClass('is-open').attr('hidden', true);
@@ -146,7 +183,7 @@
         });
 
         $(document).on('click.supplyRowMenuClose', function(e) {
-            if ($(e.target).closest('.supply-row-dropdown').length) {
+            if ($(e.target).closest('.supply-row-dropdown, .home-table-display-panel').length) {
                 return;
             }
             closeAllSupplyRowMenus();
@@ -252,6 +289,9 @@
 
         function initializeRowHandlers(row) {
             htmx.process(row);
+            if (window.DmdxHomeTableDisplay) {
+                window.DmdxHomeTableDisplay.apply();
+            }
 
             // Reinitialize add-lot-btn handler
             row.find('.edit-gen-sup-btn').on('click', function(e) {

@@ -218,7 +218,7 @@ def save_delivery(request, delivery_order_id):
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def all_deliveries(request):
-    deliveries = DeliveryOrder.objects.all().order_by('-id')
+    deliveries = DeliveryOrder.objects.select_related('from_user').order_by('-id')
     
     paginator = Paginator(deliveries, 20)
     page_number = request.GET.get('page')

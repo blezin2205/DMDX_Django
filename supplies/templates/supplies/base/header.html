@@ -85,16 +85,16 @@
                 </ul>
             {% endif %}
 
-            <ul class="navbar-nav align-items-center ms-3 gap-2 flex-row">
-                <li class="nav-item">
+            <ul class="navbar-nav align-items-center ms-3 gap-2 flex-row app-topbar-carts">
+                <li class="nav-item topbar-cart-slot">
                     <div id="booked-cart-badge" hx-get="{% url 'booked-cart-badge-count' %}" hx-trigger="subscribe-booked-cart-badge-count from:body">
                         {% include 'booked_flow/booked-cart-badge.html' %}
                     </div>
                 </li>
-                <li class="nav-item" id="precart-badge" hx-get="{% url 'precart-count' %}" hx-trigger="subscribe_precart from:body">
+                <li class="nav-item topbar-cart-slot" id="precart-badge" hx-get="{% url 'precart-count' %}" hx-trigger="subscribe_precart from:body">
                     {% include 'partials/cart/precart-badge.html' %}
                 </li>
-                <li class="nav-item" id="cart-badge" hx-get="{% url 'cart-count' %}" hx-trigger="subscribe from:body">
+                <li class="nav-item topbar-cart-slot" id="cart-badge" hx-get="{% url 'cart-count' %}" hx-trigger="subscribe from:body">
                     {% include 'partials/cart/cart-badge.html' %}
                 </li>
                 <li class="nav-item">

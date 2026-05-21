@@ -114,6 +114,10 @@ class AppSettings(models.Model):
     enable_show_other_booked_cart = models.BooleanField(default=False)
     disable_order_confirmation_send_action = models.BooleanField(default=False)
     enable_preorder_editing_awaiting_state = models.BooleanField(default=False)
+    home_show_edit_mode = models.BooleanField(default=True, verbose_name='Режим редагування (головна)')
+    home_show_order_cart = models.BooleanField(default=True, verbose_name='Кошик замовлення (головна)')
+    home_show_precart = models.BooleanField(default=True, verbose_name='Кошик передзамовлення (головна)')
+    home_show_smn = models.BooleanField(default=True, verbose_name='Показати SMN (головна)')
 
     def __str__(self):
         return self.userCreated

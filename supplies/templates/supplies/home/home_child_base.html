@@ -26,22 +26,27 @@
                 <div class="filter-field field-name">{{ suppFilter.form.name|as_crispy_field }}</div>
             </div>
             <div class="filter-actions">
-                <button class="btn btn-primary btn-sm" type="submit">
-                    <i class="bi bi-search me-1"></i>Застосувати
-                </button>
-                <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
-                <button type="submit" class="btn btn-outline-success btn-sm" name="xls_button">
-                    <i class="bi bi-file-earmark-excel me-1"></i>Excel (Без броні)
-                </button>
-                <button type="submit" class="btn btn-outline-success btn-sm" name="all_xls_button">
-                    <i class="bi bi-file-earmark-excel me-1"></i>Excel (Всі)
-                </button>
+                <div class="filter-actions-group">
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="bi bi-search me-1"></i>Застосувати
+                    </button>
+                    <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
+                    <div class="filter-actions-excel">
+                        <button type="submit" class="btn btn-outline-success btn-sm" name="xls_button">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Excel (Без броні)
+                        </button>
+                        <button type="submit" class="btn btn-outline-success btn-sm" name="all_xls_button">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Excel (Всі)
+                        </button>
+                    </div>
+                </div>
             </div>
+            {% block filter_actions_extra %}{% endblock %}
         </div>
     </form>
 </div>
 
-<div class="table-responsive{% block child_list_wrapper_extra %}{% endblock %}">
+<div class="table-responsive home-supply-list-scope home-supply-list-scope--child{% block child_list_wrapper_extra %}{% endblock %}">
     {% block child_supply_list %}{% endblock %}
 </div>
 

@@ -37,6 +37,7 @@ from firebase_admin import storage
 from django.template.loader import render_to_string
 from django.db import transaction
 from .analytics import PreorderAnalytics, build_orders_analytics, build_preorders_analytics, build_supply_statistics, build_clients_info_analytics
+from .home_table_display import HOME_TABLE_DISPLAY_JS_TO_MODEL, home_table_display_settings_for_user
 from django.utils import timezone
 from googletrans import Translator
 import pandas as pd
@@ -55,6 +56,21 @@ def celery_test(request):
 
 
 _APP_SETTINGS_TOGGLE_FIELDS = frozenset(AppSettingsForm.Meta.fields)
+
+
+@login_required(login_url='login')
+@require_POST
+def home_table_display_toggle(request):
+    field_key = request.POST.get('field')
+    model_field = HOME_TABLE_DISPLAY_JS_TO_MODEL.get(field_key)
+    if not model_field:
+        return HttpResponse(status=400)
+    raw = str(request.POST.get('value', '')).lower()
+    value = raw in ('true', '1', 'on', 'yes')
+    obj = request.user.get_app_settings()
+    setattr(obj, model_field, value)
+    obj.save(update_fields=[model_field])
+    return HttpResponse(status=204)
 
 
 @login_required(login_url='login')
@@ -745,13 +761,19 @@ def home(request):
     # recipient_list = ['oleksandr.stepanov@diamedix.ro']
     # send_mail(subject, message, email_from, recipient_list)
 
-    return render(request, html_page, {'title': 'Всі товари',
-                                                  'supplies': page_obj, 'suppFilter': suppFilter,
-                                                  'isHome': True,
-                                                  'isAll': True,
-                                                  'isSupplyStats': False,
-                                                  'place': place,
-                                                   'booked_list_exist': booked_list_exist})
+    context = {
+        'title': 'Всі товари',
+        'supplies': page_obj,
+        'suppFilter': suppFilter,
+        'isHome': True,
+        'isAll': True,
+        'isSupplyStats': False,
+        'place': place,
+        'booked_list_exist': booked_list_exist,
+    }
+    if not isClient:
+        context['home_table_display'] = home_table_display_settings_for_user(request.user)
+    return render(request, html_page, context)
 
 
 

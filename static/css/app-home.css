@@ -62,6 +62,7 @@
     max-width: 1080px;
     margin: 0 auto;
     padding: 0.55rem 0.65rem;
+    overflow: visible;
 }
 
 .home-view-switch {
@@ -139,8 +140,174 @@
     margin-top: 0.45rem;
     display: flex;
     justify-content: flex-end;
-    gap: 0.4rem;
+    align-items: center;
+    overflow: visible;
+}
+
+.filter-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: nowrap;
+}
+
+.filter-actions-group .home-table-display-dropdown,
+.filter-actions-group .filter-actions-excel {
+    margin-left: 0.35rem;
+    padding-left: 0.65rem;
+    border-left: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.filter-actions-excel {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
     flex-wrap: wrap;
+}
+
+.home-table-display-dropdown {
+    flex-shrink: 0;
+}
+
+.home-table-display-menu-btn {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    color: #64748b;
+    padding: 0.2rem 0.4rem;
+    line-height: 1;
+}
+
+.home-table-display-menu-btn:hover,
+.home-table-display-menu-btn:focus,
+.home-table-display-menu-btn[aria-expanded="true"] {
+    color: #334155;
+    background: rgba(226, 232, 240, 0.75) !important;
+}
+
+.home-table-display-menu-btn i {
+    font-size: 1.05rem;
+}
+
+.home-table-display-panel {
+    width: 15.75rem;
+    min-width: 15.75rem;
+    max-width: 15.75rem;
+    padding: 0.4rem 0 0.35rem;
+    box-sizing: border-box;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.home-table-display-panel.is-open {
+    display: block;
+}
+
+.home-table-display-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    padding: 0.48rem 0.8rem;
+    box-sizing: border-box;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.home-table-display-option:last-of-type {
+    border-bottom: none;
+}
+
+.home-table-display-option:hover {
+    background: rgba(241, 245, 249, 0.85);
+}
+
+.home-table-display-option.is-unavailable {
+    visibility: hidden;
+    pointer-events: none;
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border: none;
+}
+
+.home-table-display-option-label {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #334155;
+    cursor: pointer;
+    line-height: 1.25;
+    flex: 1;
+    min-width: 0;
+}
+
+.home-table-display-option .form-check {
+    min-height: 0;
+    padding-left: 0;
+    display: flex;
+    align-items: center;
+}
+
+.home-table-display-option .form-check-input {
+    width: 2.1em;
+    height: 1.05em;
+    cursor: pointer;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+html.home-hide-edit .home-supply-list-scope .home-table-edit,
+body.home-hide-edit .home-supply-list-scope .home-table-edit,
+.home-supply-list-scope.home-hide-edit .home-table-edit,
+html.home-hide-edit .home-supply-list-scope .lot-inline-edit-btn,
+body.home-hide-edit .home-supply-list-scope .lot-inline-edit-btn,
+.home-supply-list-scope.home-hide-edit .lot-inline-edit-btn,
+html.home-hide-edit .home-supply-list-scope .edit-lot-btn,
+body.home-hide-edit .home-supply-list-scope .edit-lot-btn,
+.home-supply-list-scope.home-hide-edit .edit-lot-btn {
+    display: none !important;
+}
+
+html.home-hide-cart .home-supply-list-scope .home-table-cart,
+body.home-hide-cart .home-supply-list-scope .home-table-cart,
+.home-supply-list-scope.home-hide-cart .home-table-cart,
+html.home-hide-cart .home-supply-list-scope .home-table-cart-col,
+body.home-hide-cart .home-supply-list-scope .home-table-cart-col,
+.home-supply-list-scope.home-hide-cart .home-table-cart-col,
+html.home-hide-cart .home-supply-list-scope .home-table-cart .add-btn,
+body.home-hide-cart .home-supply-list-scope .home-table-cart .add-btn,
+.home-supply-list-scope.home-hide-cart .home-table-cart .add-btn {
+    display: none !important;
+}
+
+html.home-hide-precart .home-supply-list-scope .home-table-precart,
+body.home-hide-precart .home-supply-list-scope .home-table-precart,
+.home-supply-list-scope.home-hide-precart .home-table-precart,
+html.home-hide-precart .home-supply-list-scope .home-table-precart .add-btn,
+body.home-hide-precart .home-supply-list-scope .home-table-precart .add-btn,
+.home-supply-list-scope.home-hide-precart .home-table-precart .add-btn {
+    display: none !important;
+}
+
+html.home-hide-smn .home-supply-list-scope .home-table-smn,
+body.home-hide-smn .home-supply-list-scope .home-table-smn,
+.home-supply-list-scope.home-hide-smn .home-table-smn {
+    display: none !important;
+}
+
+html.home-hide-edit.home-hide-cart .home-supply-list-scope .home-table-actions-col,
+body.home-hide-edit.home-hide-cart .home-supply-list-scope .home-table-actions-col,
+.home-supply-list-scope.home-hide-edit.home-hide-cart .home-table-actions-col,
+html.home-hide-edit.home-hide-cart .home-supply-list-scope .home-table-actions-cell,
+body.home-hide-edit.home-hide-cart .home-supply-list-scope .home-table-actions-cell,
+.home-supply-list-scope.home-hide-edit.home-hide-cart .home-table-actions-cell {
+    display: none !important;
+}
+
+/* Список товарів: без меню налаштувань, кошик завжди видимий */
+.home-supply-list-scope--child .home-table-cart,
+.home-supply-list-scope--child .home-table-cart-col {
+    display: revert !important;
 }
 
 .compact-menu-trigger,
@@ -313,11 +480,18 @@
     .filter-field.field-name {
         grid-column: span 1;
     }
-    .filter-actions {
-        justify-content: stretch;
+    .filter-actions-group {
+        flex-wrap: wrap;
+        justify-content: flex-end;
     }
-    .filter-actions .btn {
+    .filter-actions-group .btn:not(.home-table-display-menu-btn) {
         flex: 1 1 auto;
+    }
+    .filter-actions-group .home-table-display-dropdown,
+    .filter-actions-group .filter-actions-excel {
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
     }
     .supply-card-mobile .table-sm td,
     .supply-card-mobile .table-sm th {
