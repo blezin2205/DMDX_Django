@@ -73,6 +73,129 @@
     justify-content: flex-end;
 }
 
+.orders-filter-hint {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: #6c757d;
+    padding: 0.4rem 0.55rem;
+    margin-bottom: 0.55rem;
+    background: rgba(13, 110, 253, 0.05);
+    border-radius: 0.375rem;
+    border-left: 3px solid rgba(13, 110, 253, 0.28);
+}
+
+.orders-actions-panel {
+    padding: 0.65rem 0.75rem;
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+}
+
+.orders-actions-groups {
+    display: grid;
+    gap: 0 1.25rem;
+    align-items: start;
+}
+
+@media (min-width: 768px) {
+    .orders-actions-groups--cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .orders-actions-groups--cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .orders-actions-groups--cols-1 {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.orders-action-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 0 0.15rem;
+}
+
+.orders-action-group--hidden {
+    display: none !important;
+}
+
+.orders-action-group:not(.orders-action-group--hidden):not(.orders-action-group--first-visible) {
+    border-left: 1px solid rgba(0, 0, 0, 0.08);
+    padding-left: 1.25rem;
+}
+
+.orders-action-group-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+}
+
+.orders-action-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 1.5rem;
+}
+
+.orders-action-group-header-slot {
+    flex: 0 0 auto;
+    min-width: 4.6rem;
+    min-height: 1.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.orders-select-all-btn {
+    font-size: 0.72rem;
+    line-height: 1.2;
+    padding: 0.12rem 0.4rem;
+    white-space: nowrap;
+}
+
+.orders-action-group--with-selection .orders-action-group-body {
+    min-height: 2.4rem;
+}
+
+.orders-action-group-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.25rem;
+}
+
+.orders-action-group-body .btn-sm {
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+    .orders-actions-groups--cols-3,
+    .orders-actions-groups--cols-1 {
+        grid-template-columns: 1fr;
+        gap: 0.75rem 0;
+    }
+
+    .orders-action-group:not(.orders-action-group--hidden):not(.orders-action-group--first-visible) {
+        border-left: none;
+        padding-left: 0.15rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        padding-top: 0.75rem;
+    }
+
+    .orders-action-group-body .btn-sm {
+        flex: 1 1 auto;
+    }
+}
+
 @media (max-width: 991.98px) {
     .orders-filter-grid {
         grid-template-columns: repeat(2, minmax(140px, 1fr));
@@ -106,6 +229,11 @@
 
         <div class="d-flex flex-column gap-3">
             <div class="orders-filter-panel bg-light border shadow-sm rounded-3">
+                <p class="orders-filter-hint">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Щоб отримати всі замовлення в очікуванні для їх подальшої обробки та виділення, виберіть у фільтрі «Готовність» опцію «В очікуванні».<br>
+                    Виводяться всі замовлення на одній сторінці.
+                </p>
                 <div class="orders-filter-grid">
                     <div>{{ orderFilter.form.isComplete|as_crispy_field }}</div>
                     {% if request.user|has_group:"empl" or request.user.is_staff %}
@@ -142,6 +270,12 @@
                                     <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Усього замовлень у поточній вибірці після фільтрів">
                                         <div class="oa-kpi-label">Всього замовлень</div>
                                         <div class="oa-kpi-val" id="oa-total">—</div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" id="oa-current-month-cell" title="Замовлення поточного календарного місяця у вибірці (дата відправлення або створення)">
+                                        <div class="oa-kpi-label" id="oa-current-month-label">У поточному місяці</div>
+                                        <div class="oa-kpi-val text-secondary" id="oa-current-month">—</div>
                                     </div>
                                 </div>
                                 <div class="col">
@@ -235,57 +369,89 @@
             </div>
             {% endif %}
             
-            <div class="container w-100">
-                <div class="row align-items-center">
-                    {% if request.user|has_group:"empl" or request.user.is_staff %}
-                        <div class="col d-flex gap-2">
+            {% if request.user|has_group:"empl" or request.user.is_staff %}
+            <div class="orders-actions-panel bg-light border shadow-sm rounded-3" id="orders-actions-panel" hidden>
+                <div class="orders-actions-groups" id="orders-actions-groups">
+                    {% if pinned_orders_exists or is_more_then_one_order_exists_for_the_same_place %}
+                    <div class="orders-action-group" id="orders-action-group-bulk">
+                        <div class="orders-action-group-header">
+                            <span class="orders-action-group-label">Масові дії</span>
+                        </div>
+                        <div class="orders-action-group-body">
                             {% if pinned_orders_exists %}
-                            <button type="submit" 
-                            name="remove_all_pinned_orders_action" 
-                            class="btn btn-outline-primary py-0 px-2" 
-                            onclick="return confirm('Ви впевнені, що хочете відкріпити всі закріплені замовлення?');"
-                            data-tooltip-content="Відкріпити всі закріплені замовлення"
-                            onmouseover="showTooltip(event, this)"
-                            onmouseout="hideTooltip()">
+                            <button type="submit"
+                                    name="remove_all_pinned_orders_action"
+                                    class="btn btn-outline-primary py-0 px-2"
+                                    onclick="return confirm('Ви впевнені, що хочете відкріпити всі закріплені замовлення?');"
+                                    data-tooltip-content="Відкріпити всі закріплені замовлення"
+                                    onmouseover="showTooltip(event, this)"
+                                    onmouseout="hideTooltip()">
                                 <i class="bi bi-pin-angle-fill text-danger fs-4"></i>
                             </button>
                             {% endif %}
                             {% if is_more_then_one_order_exists_for_the_same_place %}
-                            <button type="submit" 
-                            name="merge_all_orders_for_the_same_place" 
-                            class="btn btn-outline-primary py-0 px-2" 
-                            onclick="return confirm('Ви впевнені, що хочете об\'єднати всі замовлення?');" 
-                            data-tooltip-content="Об'єднати всі замовлення.
-                            Всі замовлення будуть об'єднані в одне замовлення для кожної організації."
-                            onmouseover="showTooltip(event, this)"
-                            onmouseout="hideTooltip()">
+                            <button type="submit"
+                                    name="merge_all_orders_for_the_same_place"
+                                    class="btn btn-outline-primary py-0 px-2"
+                                    onclick="return confirm('Ви впевнені, що хочете об\'єднати всі замовлення?');"
+                                    data-tooltip-content="Об'єднати всі замовлення. Всі замовлення будуть об'єднані в одне замовлення для кожної організації."
+                                    onmouseover="showTooltip(event, this)"
+                                    onmouseout="hideTooltip()">
                                 <i class="bi bi-intersect fs-4"></i>
                             </button>
                             {% endif %}
-                            <!-- {% if uncomplete_orders_exists %}
-                            <button type="submit" 
-                            name="uncomplete_orders_complete_all_action" 
-                            class="btn btn-outline-primary py-0 px-2" 
-                            onclick="return confirm('Ви впевнені, що хочете завершити всі замовлення?');"
-                            data-tooltip-content="Завершити всі замовлення"
-                            onmouseover="showTooltip(event, this)"
-                            onmouseout="hideTooltip()">
-                            <i class="bi bi-send fs-4"></i>
-                            </button>
-                            {% endif %} -->
+                        </div>
+                    </div>
                     {% endif %}
-                    <div class="col d-flex gap-2 justify-content-center" id="register_print_buttons">
-                       
-                            {% include 'partials/register_print_orders_chekbox_buttons.html' %}
-                    
+
+                    {% if request.user.is_staff %}
+                    <div class="orders-action-group orders-action-group--with-selection orders-action-group--hidden" id="orders-action-group-np">
+                        <div class="orders-action-group-header">
+                            <span class="orders-action-group-label">Нова Пошта</span>
+                            <div class="orders-action-group-header-slot">
+                            <button type="button"
+                                    class="btn btn-outline-secondary btn-sm orders-select-all-btn"
+                                    id="select-all-np-orders-btn"
+                                    hidden
+                                    data-tooltip-content="Виділити всі замовлення Нова Пошта на цій сторінці"
+                                    onmouseover="showTooltip(event, this)"
+                                    onmouseout="hideTooltip()">
+                                Виділити всі
+                            </button>
+                            </div>
+                        </div>
+                        <div class="orders-action-group-body">
+                            <div class="d-flex gap-2 flex-wrap" id="register_print_buttons">
+                                {% include 'partials/register_print_orders_chekbox_buttons.html' %}
+                            </div>
+                        </div>
                     </div>
-                    <div class="col d-flex gap-2 justify-content-end" id="register_exls_selected_buttons">
-                       
-                            {% include 'partials/register_print_orders_chekbox_buttons.html' %}
-                      
+
+                    <div class="orders-action-group orders-action-group--with-selection orders-action-group--hidden" id="orders-action-group-selected">
+                        <div class="orders-action-group-header">
+                            <span class="orders-action-group-label">Виділені замовлення</span>
+                            <div class="orders-action-group-header-slot">
+                            <button type="button"
+                                    class="btn btn-outline-secondary btn-sm orders-select-all-btn"
+                                    id="select-all-orders-btn"
+                                    hidden
+                                    data-tooltip-content="Виділити всі замовлення на цій сторінці"
+                                    onmouseover="showTooltip(event, this)"
+                                    onmouseout="hideTooltip()">
+                                Виділити всі
+                            </button>
+                            </div>
+                        </div>
+                        <div class="orders-action-group-body">
+                            <div class="d-flex gap-2 flex-wrap" id="register_exls_selected_buttons">
+                                {% include 'partials/register_butons_for_seelcted_orders.html' %}
+                            </div>
+                        </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
+            {% endif %}
         </div>
     </div>
     <div class="container" id="order_delete_cell">
@@ -338,6 +504,143 @@
             }
         });
     }
+
+    function getOrderSelectionCheckboxes() {
+        return document.querySelectorAll('input.order-selection-checkbox[name="register_exls_selected_buttons"]');
+    }
+
+    function getNpSelectionCheckboxes() {
+        return document.querySelectorAll('input.np-selection-checkbox[name="register_print_buttons"]');
+    }
+
+    function updateSelectAllOrdersButtonVisibility() {
+        const selectAllBtn = document.getElementById('select-all-orders-btn');
+        if (!selectAllBtn) {
+            return;
+        }
+        const checkboxes = getOrderSelectionCheckboxes();
+        selectAllBtn.hidden = checkboxes.length === 0;
+        selectAllBtn.disabled = checkboxes.length > 0 && Array.from(checkboxes).every(function (checkbox) {
+            return checkbox.checked;
+        });
+    }
+
+    function updateSelectAllNpOrdersButtonVisibility() {
+        const selectAllBtn = document.getElementById('select-all-np-orders-btn');
+        if (!selectAllBtn) {
+            return;
+        }
+        const checkboxes = getNpSelectionCheckboxes();
+        selectAllBtn.hidden = checkboxes.length === 0;
+        selectAllBtn.disabled = checkboxes.length > 0 && Array.from(checkboxes).every(function (checkbox) {
+            return checkbox.checked;
+        });
+    }
+
+    function updateSelectAllButtonsVisibility() {
+        updateSelectAllOrdersButtonVisibility();
+        updateSelectAllNpOrdersButtonVisibility();
+    }
+
+    function updateOrdersActionGroupsVisibility() {
+        const panel = document.getElementById('orders-actions-panel');
+        const groupsContainer = document.getElementById('orders-actions-groups');
+        if (!panel || !groupsContainer) {
+            return;
+        }
+
+        updateSelectAllButtonsVisibility();
+
+        const npGroup = document.getElementById('orders-action-group-np');
+        if (npGroup) {
+            npGroup.classList.toggle('orders-action-group--hidden', getNpSelectionCheckboxes().length === 0);
+        }
+
+        const selectedGroup = document.getElementById('orders-action-group-selected');
+        if (selectedGroup) {
+            selectedGroup.classList.toggle('orders-action-group--hidden', getOrderSelectionCheckboxes().length === 0);
+        }
+
+        const visibleGroups = groupsContainer.querySelectorAll('.orders-action-group:not(.orders-action-group--hidden)');
+        visibleGroups.forEach(function (group, index) {
+            group.classList.toggle('orders-action-group--first-visible', index === 0);
+        });
+
+        groupsContainer.className = 'orders-actions-groups';
+        if (visibleGroups.length > 0) {
+            groupsContainer.classList.add('orders-actions-groups--cols-' + visibleGroups.length);
+        }
+
+        panel.hidden = visibleGroups.length === 0;
+    }
+
+    async function selectAllOrdersOnPage() {
+        const checkboxes = getOrderSelectionCheckboxes();
+        if (!checkboxes.length) {
+            return;
+        }
+
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = true;
+        });
+
+        const body = new FormData();
+        checkboxes.forEach(function (checkbox) {
+            body.append('register_exls_selected_buttons', checkbox.value);
+        });
+
+        const response = await fetch('{% url "register_exls_selected_buttons" %}', {
+            method: 'POST',
+            body: body,
+            headers: {
+                'X-CSRFToken': csrftoken,
+            },
+        });
+
+        document.getElementById('register_exls_selected_buttons').innerHTML = await response.text();
+        updateOrdersActionGroupsVisibility();
+    }
+
+    async function selectAllNpOrdersOnPage() {
+        const checkboxes = getNpSelectionCheckboxes();
+        if (!checkboxes.length) {
+            return;
+        }
+
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = true;
+        });
+
+        const body = new FormData();
+        checkboxes.forEach(function (checkbox) {
+            body.append('register_print_buttons', checkbox.value);
+        });
+
+        const response = await fetch('{% url "get_register_for_orders" %}', {
+            method: 'POST',
+            body: body,
+            headers: {
+                'X-CSRFToken': csrftoken,
+            },
+        });
+
+        document.getElementById('register_print_buttons').innerHTML = await response.text();
+        updateOrdersActionGroupsVisibility();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        updateOrdersActionGroupsVisibility();
+        const selectAllBtn = document.getElementById('select-all-orders-btn');
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', selectAllOrdersOnPage);
+        }
+        const selectAllNpBtn = document.getElementById('select-all-np-orders-btn');
+        if (selectAllNpBtn) {
+            selectAllNpBtn.addEventListener('click', selectAllNpOrdersOnPage);
+        }
+    });
+
+    document.body.addEventListener('htmx:afterSwap', updateOrdersActionGroupsVisibility);
 
     // Handle form submission for print_choosed
     document.querySelector('form').addEventListener('submit', function(e) {
@@ -468,6 +771,15 @@
         if (n) n.textContent = v;
     };
     setText('oa-total', String(data.total));
+    setText('oa-current-month', String(data.current_month_count != null ? data.current_month_count : 0));
+    var cmLabel = document.getElementById('oa-current-month-label');
+    if (cmLabel && data.current_month_label) {
+        cmLabel.textContent = 'У поточному місяці (' + data.current_month_label + ')';
+    }
+    var cmCell = document.getElementById('oa-current-month-cell');
+    if (cmCell && data.current_month_label) {
+        cmCell.title = 'Замовлення за ' + data.current_month_label + ' у поточній вибірці (дата відправлення або створення)';
+    }
     setText('oa-completed', String(data.completed));
     setText('oa-pending', String(data.pending));
     setText('oa-with-preorders', String(data.with_preorders != null ? data.with_preorders : 0));

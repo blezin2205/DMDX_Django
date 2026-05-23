@@ -1,0 +1,92 @@
+{% load myapp_extras %}
+{% load mathfilters %}
+<tr id="order-detail-supply-row-{{ el.id }}" class="{% if el.id == highlighted_sup_id %}order-detail-supply-target{% endif %}{% if not el.show_group_name %} order-detail-supply-line{% endif %}">
+    <th scope="row" class="text-start col-name">
+        {% if el.show_group_name %}
+        <span class="col-idx">{{ el.group_counter }}.</span>
+        {% if el.generalSupply %}
+            {% if request.user|has_group:"empl" or request.user.is_staff %}
+                <a href="#" class="text-decoration-none link-dark order-detail-gen-sup-link" data-general-supply-id="{{ el.generalSupply.id }}">
+                    {{ el.generalSupply.name }}
+                </a>
+            {% else %}
+                {{ el.generalSupply.name }}
+            {% endif %}
+        {% else %}
+            <span class="order-detail-internal-name">{{ el.internalName|default:"—" }}</span>
+            {% if el.internalRef %}
+                <small class="text-muted d-block mt-1">REF: {{ el.internalRef }}</small>
+            {% endif %}
+        {% endif %}
+        {% endif %}
+    </th>
+    <td class="truncate-cell col-pack" title="{% if el.generalSupply %}{{ el.generalSupply.package_and_tests|default_if_none:'' }}{% endif %}">
+        {% if el.show_group_name and el.generalSupply %}{{ el.generalSupply.package_and_tests }}{% endif %}
+    </td>
+    <td class="col-category">
+        {% if el.show_group_name and el.generalSupply and el.generalSupply.category %}{{ el.generalSupply.category.name }}{% endif %}
+    </td>
+    <td class="truncate-cell col-ref" title="{% if el.generalSupply %}{{ el.generalSupply.ref|default_if_none:'' }}{% else %}{{ el.internalRef|default_if_none:'' }}{% endif %}">
+        {% if el.show_group_name %}
+            {% if el.generalSupply %}
+                {% if el.generalSupply.ref is not none %}{{ el.generalSupply.ref }}{% endif %}
+            {% elif el.internalRef %}
+                {{ el.internalRef }}
+            {% endif %}
+        {% endif %}
+    </td>
+    <td class="truncate-cell col-smn home-table-smn" title="{% if el.generalSupply %}{{ el.generalSupply.SMN_code|default_if_none:'' }}{% endif %}">
+        {% if el.show_group_name and el.generalSupply and el.generalSupply.SMN_code is not none %}{{ el.generalSupply.SMN_code }}{% endif %}
+    </td>
+    <td class="supplyRow">
+        <table class="rounded-3 overflow-hidden table table-light table-borderless table-sm mb-0 nested-supply-table">
+            <tbody>
+                <tr>
+                    <td class="supply-lot-col">
+                        <span class="lot-value">{% if el.lot is not none %}{{ el.lot }}{% endif %}</span>
+                    </td>
+                    <td class="supply-qty-col">
+                        <div class="order-detail-qty-stepper">
+                            {% if not order.isComplete and request.user.is_staff %}
+                                {% include 'order_detail_buttons/sup_minus_button.html' %}
+                            {% endif %}
+                            <span class="qty-value">{{ el.count_in_order }}</span>
+                            {% if not order.isComplete and request.user.is_staff %}
+                                {% include 'order_detail_buttons/sup_plus_button.html' %}
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="supply-exp-col">
+                        <span class="order-detail-date--{% if el.date_is_good %}good{% elif el.date_is_today %}today{% else %}bad{% endif %}">
+                            {{ el.date_expired|date:"d.m.Y" }}
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </td>
+    {% if request.user|has_group:"empl" or request.user.is_staff %}
+        <td class="col-updated">
+            {% if el.date_created %}
+                {{ el.date_created|date:"d.m.Y" }}
+            {% elif el.supply %}
+                {{ el.supply.dateCreated|date:"d.m.Y" }}
+            {% endif %}
+        </td>
+    {% endif %}
+    {% if request.user|has_group:"empl" or request.user.is_staff %}
+        {% if order.detail_has_preorder_lines %}
+            <td class="col-preorder truncate-cell">
+                {% if el.supply_in_preorder %}
+                    <a href="{% url 'preorderDetail' el.supply_in_preorder.supply_for_order.id el.supply_in_preorder.id %}?next={{ request.get_full_path }}"
+                       title="№ {{ el.supply_in_preorder.supply_for_order.id }} від {{ el.supply_in_preorder.supply_for_order.dateCreated|date:'d.m.Y' }}">
+                        №{{ el.supply_in_preorder.supply_for_order.id }}
+                    </a>
+                {% endif %}
+            </td>
+        {% endif %}
+    {% endif %}
+    {% if not order.isComplete and request.user.is_staff %}
+        <td class="col-action text-center">{% include 'order_detail_buttons/sup_delete_button.html' %}</td>
+    {% endif %}
+</tr>

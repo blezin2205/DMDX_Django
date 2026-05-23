@@ -202,14 +202,15 @@
                 </button>
 
                 <div class="form-check d-flex align-items-center justify-content-center" style="width: 50px; height: 49px; margin: 0;">
-                    <input class="form-check-input custom-checkbox" 
+                    <input class="form-check-input custom-checkbox order-selection-checkbox" 
                            type="checkbox" 
                            value="{{ order.id }}" 
-                           id="register_exls_selected_buttons" 
+                           id="register_exls_selected_buttons_{{ order.id }}" 
                            name="register_exls_selected_buttons" 
                            hx-target="#register_exls_selected_buttons" 
                            hx-post="{% url 'register_exls_selected_buttons' %}" 
                            hx-trigger="click"
+                           hx-include="closest form"
                            style="width: 28px; height: 28px; margin: 0; cursor: pointer;">
                 </div>
             </div>

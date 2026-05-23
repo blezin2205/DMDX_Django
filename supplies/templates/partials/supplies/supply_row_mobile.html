@@ -4,7 +4,7 @@
 {% load bootstrap %}
 {% load mathfilters %}
 
-<div class="card supply-card-mobile supply-card-mobile--flush rounded-0 shadow-none border-0 border-bottom mb-0 overflow-hidden" id="supply-row-{{ el.id }}">
+<div class="card supply-card-mobile supply-card-mobile--flush rounded-0 shadow-none border-0 border-bottom mb-0 overflow-hidden{% if el.image %}{% if request.user|has_group:"empl" or request.user.is_staff %} home-supply-row-open{% endif %}{% endif %}" id="supply-row-{{ el.id }}"{% if el.image %}{% if request.user|has_group:"empl" or request.user.is_staff %} data-general-supply-id="{{ el.id }}"{% endif %}{% endif %}>
     <div class="card-header bg-secondary-subtle text-dark py-1 px-3 border-0 supply-card-mobile-head rounded-0">
         <div class="d-flex justify-content-between align-items-center gap-1">
             <a href="#" class="text-decoration-none link-dark supply-history-btn flex-grow-1 text-start min-w-0" data-supply-id="{{ el.id }}">
@@ -19,11 +19,6 @@
             <div class="d-flex align-items-center gap-1 flex-shrink-0 supply-card-mobile-head-tools">
                 {% if el.package_and_tests is not none %}
                     <small class="text-muted supply-card-mobile-meta d-none d-sm-inline"><i class="bi bi-box-seam"></i> {{ el.package_and_tests }}</small>
-                {% endif %}
-                {% if el.image %}
-                    <a href="#" class="pop">
-                        <div datasrc="{{ el.image.url }}"><i class="bi bi-card-image text-dark"></i></div>
-                    </a>
                 {% endif %}
                 {% if request.user|has_group:"admin" %}
                     <div class="supply-row-dropdown home-table-edit">

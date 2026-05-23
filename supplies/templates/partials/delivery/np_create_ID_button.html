@@ -4,7 +4,7 @@
  
         {% if order.get_parsel_delivery_status == 1 %}
             <div class="form-check d-flex align-items-center justify-content-center">
-                <input class="form-check-input custom-checkbox" 
+                <input class="form-check-input custom-checkbox np-selection-checkbox" 
                        type="checkbox" 
                        value="{{ order.id }}" 
                        id="register_print_buttons_{{ order.id }}" 
@@ -12,6 +12,7 @@
                        hx-target="#register_print_buttons"
                        hx-post="{% url 'get_register_for_orders' %}" 
                        hx-trigger="click"
+                       hx-include="closest form"
                        style="width: 28px; height: 28px; cursor: pointer;">
             </div>
         {% endif %}

@@ -7,16 +7,17 @@
 {% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/app-home.css' %}" type="text/css">
+<link rel="stylesheet" href="{% static 'css/order-detail.css' %}" type="text/css">
+
 <div class="container-fluid py-3">
-    <div class="card shadow-sm mb-4">
-        <!-- Card Header -->
+    <div class="card shadow-sm mb-3">
         <div class="card-header bg-opacity-10 {% if not order.isComplete %} bg-warning {% else %} bg-primary {% endif %} py-2">
-            <!-- Order Info -->
             <div class="row g-2">
                 <div class="col-md-2">
                     <div class="badge bg-secondary d-flex-inline align-items-center gap-2 p-2 mb-1">
                         <i class="bi bi-calendar3"></i>
-                        <span>{{order.dateCreated|date:"d.m.Y"}}</span>
+                        <span>{{ order.dateCreated|date:"d.m.Y" }}</span>
                     </div>
                     <div class="badge {% if order.isClientCreated %} bg-warning-subtle text-warning-emphasis {% else %} bg-secondary badge {% endif %} d-flex-inline align-items-center gap-2" style="max-width: 200px; white-space: normal; text-align: left;">
                         <i class="bi bi-person flex-shrink-0"></i>
@@ -26,7 +27,7 @@
 
                 <div class="col-md-8">
                     <div class="text-center d-flex flex-column justify-content-center h-100">
-                        <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                        <div class="d-flex align-items-center justify-content-center gap-2 mb-2 flex-wrap">
                             {% if order.isMerged %}
                             <div class="d-flex align-items-center gap-2" style="display: inline-flex; padding: 4px 8px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 20px; background-color: rgba(0, 0, 0, 0.1); height: 32px;">
                                 <i class="bi bi-intersect text-primary"></i>
@@ -34,45 +35,43 @@
                             {% endif %}
                             <div class="badge bg-secondary d-flex align-items-center gap-2 p-2 me-2">
                                 <i class="bi bi-box-seam"></i>
-                                <span>№{{order.id}}</span>
+                                <span>№{{ order.id }}</span>
                             </div>
                             {% if not request.user.isClient %}
                             {% if order.has_uncompleted_preorder_for_place %}
                             {% if not order.for_preorder and order.card_related_preorders_count == 0 %}
-                            <button class="badge bg-info d-flex align-items-center gap-1 add-to-preorder-btn py-1" data-order-id="{{ order.id }}" type="button" data-bs-toggle="tooltip"
+                            <button class="badge bg-info d-flex align-items-center gap-1 add-to-preorder-btn py-1 border-0" data-order-id="{{ order.id }}" type="button" data-bs-toggle="tooltip"
                             title="Додати до передзамовлення">
-                               </i> <i class="bi bi-clipboard-plus fs-5"></i>
+                                <i class="bi bi-clipboard-plus fs-5"></i>
                             </button>
                             {% endif %}
                             {% endif %}
                             {% endif %}
                             {% if order.for_preorder %}
-                                <!-- <div class="badge bg-info d-flex align-items-center gap-2 p-2"> -->
-                                    {% if order.for_preorder.isPreorder %}
-                                        <a href="{% url 'preorderDetail' order.for_preorder.id %}?next={{ request.get_full_path }}" class="badge bg-info d-flex align-items-center gap-2 p-2">
-                                            <i class="bi bi-clipboard"></i>
-                                            {{order.for_preorder.id}}
-                                        </a>
-                                    {% else %}
-                                        <a href="{% url 'preorderDetail' order.for_preorder.id %}?next={{ request.get_full_path }}" class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-2 text-decoration-none">
-                                            <i class="bi bi-file-text"></i>
-                                            {{order.for_preorder.id}}
-                                            {% if order.for_preorder.comment %}<span class="ms-1">| {{ order.for_preorder.comment }}</span>{% endif %}
-                                        </a>
-                                    {% endif %}
-                                <!-- </div> -->
+                                {% if order.for_preorder.isPreorder %}
+                                    <a href="{% url 'preorderDetail' order.for_preorder.id %}?next={{ request.get_full_path }}" class="badge bg-info d-flex align-items-center gap-2 p-2">
+                                        <i class="bi bi-clipboard"></i>
+                                        {{ order.for_preorder.id }}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'preorderDetail' order.for_preorder.id %}?next={{ request.get_full_path }}" class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-2 text-decoration-none">
+                                        <i class="bi bi-file-text"></i>
+                                        {{ order.for_preorder.id }}
+                                        {% if order.for_preorder.comment %}<span class="ms-1">| {{ order.for_preorder.comment }}</span>{% endif %}
+                                    </a>
+                                {% endif %}
                             {% endif %}
                             {% if order.card_related_preorders_count > 0 %}
                             {% for preorder in order.related_preorders.all %}
                             {% if preorder.isPreorder %}
                                         <a href="{% url 'preorderDetail' preorder.id %}?next={{ request.get_full_path }}" class="badge bg-info d-flex align-items-center gap-2 p-2">
                                             <i class="bi bi-clipboard"></i>
-                                            {{preorder.id}}
+                                            {{ preorder.id }}
                                         </a>
                                     {% else %}
                                         <a href="{% url 'preorderDetail' preorder.id %}?next={{ request.get_full_path }}" class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-2 text-decoration-none">
                                             <i class="bi bi-file-text"></i>
-                                            {{preorder.id}}
+                                            {{ preorder.id }}
                                             {% if preorder.comment %}<span class="ms-1">| {{ preorder.comment }}</span>{% endif %}
                                         </a>
                                     {% endif %}
@@ -81,7 +80,7 @@
                         </div>
                         <div class="d-flex align-items-center justify-content-center gap-2">
                             <i class="bi bi-geo-alt text-muted fs-5"></i>
-                            <span class="h5 mb-0">{{order.place.name}}, {{order.place.city_ref.name}}</span>
+                            <span class="h5 mb-0">{{ order.place.name }}, {{ order.place.city_ref.name }}</span>
                         </div>
                     </div>
                 </div>
@@ -99,7 +98,7 @@
                                 {% else %}
                                     <div class="badge bg-warning d-flex align-items-center gap-2 p-2">
                                         <i class="bi bi-truck"></i>
-                                        <span>{{order.dateToSend|date:"d.m.Y"}}</span>
+                                        <span>{{ order.dateToSend|date:"d.m.Y" }}</span>
                                     </div>
                                 {% endif %}
                             {% endif %}
@@ -108,7 +107,7 @@
                         {% if order.isComplete %}
                             <div class="badge bg-primary d-flex align-items-center gap-2 p-2">
                                 <i class="bi bi-check-circle"></i>
-                                <span>{{order.dateSent|date:"d.m.Y"}}</span>
+                                <span>{{ order.dateSent|date:"d.m.Y" }}</span>
                             </div>
                             {% if order.userSent %}
                                 <div class="badge bg-secondary d-flex align-items-center gap-2 p-2">
@@ -126,9 +125,7 @@
                 </div>
             </div>
 
-            <!-- Action Buttons -->
             <div class="d-flex justify-content-between align-items-center mt-3">
-                <!-- Left side - Convert button -->
                 <div>
                     {% if not order.isComplete and not request.user.isClient %}
                         <a href="#" onclick="confirmConversion('{{ order.id }}')" class="btn btn-warning btn-sm" data-toggle="tooltip" title="Конвертувати замовлення в бронювання">
@@ -136,8 +133,6 @@
                         </a>
                     {% endif %}
                 </div>
-
-                <!-- Right side - Export & Delete buttons -->
                 <div class="d-flex align-items-center gap-2">
                     <a href="{% url 'orderDetailCsv' order.id %}" class="btn btn-outline-secondary btn-sm" data-toggle="tooltip" title="Export to Excel">
                         <i class="bi bi-file-earmark-excel"></i>
@@ -155,16 +150,15 @@
             </div>
         </div>
 
-        <!-- Comments Section -->
-        <div class="card-footer py-2 px-3 border-top border-bottom bg-light">
-            <form method="POST" action="">
-                <div class="d-flex justify-content-between" id="comment_input_textfield_area">
+        <div class="card-footer order-detail-comment-bar border-top border-bottom bg-light">
+            <form method="POST" action="" onsubmit="return false;">
+                {% csrf_token %}
+                <div id="comment_input_textfield_area">
                     {% include 'partials/common/comment_textfield_area.html' %}
                 </div>
             </form>
         </div>
 
-        <!-- Nova Poshta Info -->
         {% if order.has_status_np %}
         <div class="card-footer py-2 px-3 border-bottom bg-light">
             <div class="d-flex align-items-center gap-2 mb-2">
@@ -254,50 +248,59 @@
             </div>
         </div>
         {% endif %}
+    </div>
 
-        <!-- Items Table -->
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table centred mt-3 w-auto mx-auto">
+    <div class="card shadow-sm mb-4 order-detail-table-card">
+        <div class="order-detail-table-responsive">
+            <table class="table table-sm align-middle compact-supply-table order-detail-table mb-0">
                     <thead>
                         <tr>
-                            <th scope="col" style="max-width: 300px">({{supplies|length}}) Назва товару</th>
-                            <th scope="col">Пакування / Тести</th>
-                            <th scope="col">Категорія</th>
-                            <th scope="col">REF</th>
-                            <th scope="col">SMN</th>
-                            <th scope="col">LOT</th>
-                            <th scope="col">Кількість</th>
-                            <th scope="col">Термін*</th>
-                            {% if request.user|has_group:"empl" or request.user.is_staff %}
-                                <th scope="col">Оновлено**</th>
-                            {% endif %}
-                            {% if request.user|has_group:"empl" or request.user.is_staff %}
-                                {% if order.detail_has_preorder_lines %}
-                                    <th scope="col">preorder</th>
-                                {% endif %}
-                            {% endif %}
-                            {% if not order.isComplete and request.user.is_staff %}
-                                <th scope="col">Action</th>
-                            {% endif %}
+                            <th scope="col" class="col-name text-start">Назва</th>
+                            <th scope="col" class="col-pack">Пакування / Тести</th>
+                            <th scope="col" class="col-category">Категорія</th>
+                            <th scope="col" class="col-ref">REF</th>
+                            <th scope="col" class="col-smn home-table-smn">SMN</th>
+                            <th scope="col" class="supplyRow">
+                                <table class="table table-sm table-borderless mb-0 nested-supply-table nested-supply-table--head">
+                                    {% include 'partials/orders/orderDetail_nested_colgroup.html' %}
+                                    <thead>
+                                        <tr>
+                                            <th class="supply-lot-head">LOT</th>
+                                            <th class="supply-qty-head">К-сть</th>
+                                            <th class="supply-exp-head">Термін*</th>
+                                            {% if request.user|has_group:"empl" or request.user.is_staff %}
+                                                <th class="order-detail-updated-head">Онов.**</th>
+                                            {% endif %}
+                                            {% if request.user|has_group:"empl" or request.user.is_staff %}
+                                                {% if order.detail_has_preorder_lines %}
+                                                    <th class="order-detail-preorder-head">П-замов.***</th>
+                                                {% endif %}
+                                            {% endif %}
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for el in supplies %}
-                            {% include 'partials/orders/orderDetail_cell_item.html' %}
+                        {% for group in supply_groups %}
+                            {% include 'partials/orders/orderDetail_group_row.html' %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Товарів у замовленні немає</td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-            </div>
-
-            <div class="d-flex justify-content-end mt-3">
-                <div class="d-flex gap-4">
-                    <div class="text-muted small">* - термін зазначено відносно дати відправки цього замовлення</div>
-                    {% if request.user|has_group:"empl" or request.user.is_staff %}
-                        <div class="text-muted small">** - дата додавання цього товару в базу</div>
-                    {% endif %}
-                </div>
-            </div>
+        </div>
+        <div class="order-detail-footnotes">
+            <span>* колір терміну придатності, відносно дати відправки замовлення (чи товар був протермінований на момент відправки замовлення)</span>
+            {% if request.user|has_group:"empl" or request.user.is_staff %}
+                <span>** дата додавання товару в базу</span>
+                {% if order.detail_has_preorder_lines %}
+                    <span>*** товар, що був доданий з передзамовлення</span>
+                {% endif %}
+            {% endif %}
         </div>
     </div>
 </div>
@@ -317,9 +320,112 @@
         }
     }
 
+    function flashOrderSupplyRow(row) {
+        var cells = row.querySelectorAll('th, td');
+        if (!cells.length) return;
+
+        var duration = 400;
+        var maxFlashes = 4;
+        var flashIndex = 0;
+
+        row.classList.add('order-detail-supply-flash');
+
+        function setBg(on) {
+            for (var i = 0; i < cells.length; i++) {
+                cells[i].style.backgroundColor = on ? '#d1e7dd' : 'transparent';
+            }
+        }
+
+        function pulse() {
+            if (flashIndex >= maxFlashes) {
+                row.classList.remove('order-detail-supply-flash');
+                for (var j = 0; j < cells.length; j++) {
+                    cells[j].style.backgroundColor = '';
+                }
+                return;
+            }
+
+            setBg(true);
+            window.setTimeout(function() {
+                setBg(false);
+                window.setTimeout(function() {
+                    flashIndex += 1;
+                    pulse();
+                }, duration);
+            }, duration);
+        }
+
+        pulse();
+    }
+
     $(function() {
-        
-        // Supply history button handler
+        var highlightedSupplyId = {{ highlighted_sup_id|default:0 }};
+        if (highlightedSupplyId) {
+            var targetRow = document.getElementById('order-detail-supply-row-' + highlightedSupplyId);
+            if (targetRow) {
+                window.setTimeout(function() {
+                    targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    window.setTimeout(function() {
+                        flashOrderSupplyRow(targetRow);
+                    }, 650);
+                }, 150);
+            }
+        }
+
+        $(document).on('click', '.order-detail-gen-sup-link', function(e) {
+            e.preventDefault();
+            var generalSupplyId = $(this).data('general-supply-id');
+            var dialog = $('#addNewLotModal .modal-dialog');
+            dialog.addClass('modal-dialog-centered modal-xl gen-sup-info-modal-dialog');
+            showModal(
+                '#addNewLotModal',
+                '#addNewLotContent',
+                '{% url "orderDetailGeneralSupplyInfo" order.id 0 %}'.replace('/0', '/' + generalSupplyId),
+                'Завантаження...'
+            );
+        });
+
+        $('#addNewLotModal').on('hidden.bs.modal.genSupInfo', function() {
+            $(this).find('.modal-dialog').removeClass('modal-dialog-centered modal-xl gen-sup-info-modal-dialog');
+        });
+
+        document.body.addEventListener('htmx:beforeSwap', function(evt) {
+            var xhr = evt.detail.xhr;
+            if (!xhr || xhr.status !== 200) return;
+            if (xhr.responseText && xhr.responseText.trim()) return;
+
+            var target = evt.detail.target;
+            if (!target || !target.id || target.id.indexOf('order-detail-supply-row-') !== 0) return;
+
+            var tbody = target.parentElement;
+            if (!tbody || tbody.tagName !== 'TBODY') return;
+
+            var groupRow = tbody.closest('tr.order-detail-group-row');
+            if (!groupRow) return;
+
+            var rows = tbody.querySelectorAll('tr');
+            if (rows.length === 1 && rows[0] === target) {
+                evt.detail.shouldSwap = false;
+                groupRow.remove();
+            }
+        });
+
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            var xhr = evt.detail.xhr;
+            if (!xhr || xhr.status !== 200) return;
+            if (xhr.responseText && xhr.responseText.trim()) return;
+
+            var target = evt.detail.target;
+            if (!target || !target.id || target.id.indexOf('order-detail-supply-row-') !== 0) return;
+
+            var nestedTbody = target.parentElement;
+            if (!nestedTbody || nestedTbody.tagName !== 'TBODY') return;
+            if (nestedTbody.querySelector('tr')) return;
+
+            var groupRow = nestedTbody.closest('tr.order-detail-group-row');
+            if (groupRow) groupRow.remove();
+        });
+
         $('.add-to-preorder-btn').on('click', function(e) {
             e.preventDefault();
             const orderId = $(this).data('order-id');
@@ -333,8 +439,7 @@
                     if (submitter) {
                         formData.append(submitter.name, submitter.value);
                     }
-                    console.log(submitter.name);
-                    
+
                     fetch(url, {
                         method: 'POST',
                         body: formData,
@@ -355,14 +460,9 @@
                         alert(error.message);
                     });
                 });
-
             });
         });
-
     });
-
 </script>
 
 {% endblock %}
-
-

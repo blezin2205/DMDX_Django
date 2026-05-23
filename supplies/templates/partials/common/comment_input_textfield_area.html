@@ -1,10 +1,20 @@
-
-<div class="input-group p-2">
-  <span class="input-group-text" id="inputGroup-sizing-default">коментар</span>
-  <input type="text" name="comment_textfield" class="form-control" aria-label="Коментар до замовлення" aria-describedby="inputGroup-sizing-default" value="{{ comment }}">
-</div>
-
-<div class="p-3">
-    <button class="btn btn-sm btn-success" role="button" hx-post="{% url 'orderDetail_save_comment' %}" hx-vals='{"order_id": {{ order_id }}}' hx-target="#comment_input_textfield_area"><i class="bi bi-check"></i></button>
-
+<div class="order-detail-comment order-detail-comment-edit">
+    <div class="input-group input-group-sm">
+        <span class="input-group-text"><i class="bi bi-chat-left-text"></i></span>
+        <input type="text" name="comment_textfield" class="form-control"
+               aria-label="Коментар до замовлення"
+               placeholder="Коментар до замовлення"
+               value="{{ comment }}"
+               hx-post="{% url 'orderDetail_save_comment' %}"
+               hx-trigger="keydown[key=='Enter']"
+               hx-vals='{"order_id": {{ order_id }}}'
+               hx-target="#comment_input_textfield_area">
+        <button type="button" id="order-comment-save-btn" class="btn btn-success" role="button"
+                hx-post="{% url 'orderDetail_save_comment' %}"
+                hx-vals='{"order_id": {{ order_id }}}'
+                hx-target="#comment_input_textfield_area"
+                title="Зберегти">
+            <i class="bi bi-check-lg"></i>
+        </button>
+    </div>
 </div>

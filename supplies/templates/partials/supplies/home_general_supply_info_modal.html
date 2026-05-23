@@ -1,0 +1,70 @@
+<div class="modal-header lot-modal-header">
+    <div>
+        <h6 class="modal-title mb-1" id="addNewLotModalLabel">Інформація про товар</h6>
+        <small class="text-muted"><i class="bi bi-box-seam me-1"></i>{{ generalSupp.name|default:"—" }}</small>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<div class="modal-body lot-modal-body gen-sup-info-modal-body">
+    <div class="lot-modal-container">
+        <div class="gen-sup-info-layout gen-sup-info-layout--home-preview">
+            <div class="gen-sup-info-col gen-sup-info-col--info">
+                <div class="lot-modal-section gen-sup-info-product-section">
+                    <p class="lot-modal-section-title">Дані позиції</p>
+                    <div class="gen-sup-info-fields">
+                        <div class="gen-sup-info-field">
+                            <label class="form-label">Назва</label>
+                            <div class="gen-sup-info-value">{{ generalSupp.name|default:"—" }}</div>
+                        </div>
+                        <div class="gen-sup-info-field">
+                            <label class="form-label">Категорія</label>
+                            <div class="gen-sup-info-value">
+                                {% if generalSupp.category %}{{ generalSupp.category.name }}{% else %}—{% endif %}
+                            </div>
+                        </div>
+                        <div class="gen-sup-info-field">
+                            <label class="form-label">Пакування та кількість тестів</label>
+                            <div class="gen-sup-info-value">{{ generalSupp.package_and_tests|default:"—" }}</div>
+                        </div>
+                        <div class="gen-sup-info-field">
+                            <label class="form-label">REF</label>
+                            <div class="gen-sup-info-value">
+                                {% if generalSupp.ref is not none and generalSupp.ref != "" %}{{ generalSupp.ref }}{% else %}—{% endif %}
+                            </div>
+                        </div>
+                        <div class="gen-sup-info-field">
+                            <label class="form-label">SMN код</label>
+                            <div class="gen-sup-info-value">
+                                {% if generalSupp.SMN_code is not none and generalSupp.SMN_code != "" %}{{ generalSupp.SMN_code }}{% else %}—{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gen-sup-info-col gen-sup-info-col--image">
+                <div class="lot-modal-section gen-sup-info-image-section">
+                    <p class="lot-modal-section-title">Зображення</p>
+                    <div class="gen-sup-info-image-wrap">
+                        <div class="gen-sup-info-image-placeholder" aria-hidden="true">
+                            <i class="bi bi-image"></i>
+                            <div class="gen-sup-info-image-spinner">
+                                <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                    <span class="visually-hidden">Завантаження...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <img src="{{ generalSupp.image.url }}"
+                             alt="{{ generalSupp.name|default:'Товар' }}"
+                             class="gen-sup-info-image gen-sup-info-image--loading"
+                             onload="this.classList.remove('gen-sup-info-image--loading'); this.closest('.gen-sup-info-image-wrap').classList.add('gen-sup-info-image-wrap--loaded');"
+                             onerror="this.closest('.gen-sup-info-image-wrap').classList.add('gen-sup-info-image-wrap--error');">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'partials/supplies/general_supply_info_modal_assets.html' %}

@@ -212,6 +212,8 @@ def build_orders_analytics(order_qs, *, include_top_places=True, for_user=None):
     order_qs — вже відфільтрований набір (наприклад orderFilter.qs).
     for_user — поточний користувач для метрик «створено / відправлено мною».
     """
+    now = timezone.now()
+    current_month_label = now.strftime('%m.%Y')
     empty = {
         'total': 0,
         'completed': 0,
@@ -222,6 +224,8 @@ def build_orders_analytics(order_qs, *, include_top_places=True, for_user=None):
         'sent_by_me': 0,
         'with_documents_id': 0,
         'avg_line_positions': 0.0,
+        'current_month_count': 0,
+        'current_month_label': current_month_label,
         'top_places': {'labels': [], 'counts': []},
         'top_products': {'labels': [], 'quantities': [], 'categories': []},
         'monthly': {'labels': [], 'counts': []},
@@ -230,6 +234,18 @@ def build_orders_analytics(order_qs, *, include_top_places=True, for_user=None):
     total = order_qs.count()
     if total == 0:
         return empty
+
+    if now.month == 12:
+        month_end = now.replace(year=now.year + 1, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        month_end = now.replace(month=now.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    current_month_count = order_qs.annotate(
+        order_date=Coalesce('dateSent', 'dateCreated')
+    ).filter(
+        order_date__gte=month_start,
+        order_date__lt=month_end,
+    ).count()
 
     agg = order_qs.aggregate(
         completed=Count('id', filter=Q(isComplete=True)),
@@ -318,6 +334,8 @@ def build_orders_analytics(order_qs, *, include_top_places=True, for_user=None):
         'sent_by_me': sent_by_me,
         'with_documents_id': with_documents_id,
         'avg_line_positions': avg_line_positions,
+        'current_month_count': current_month_count,
+        'current_month_label': current_month_label,
         'top_places': top_places,
         'top_products': top_products,
         'monthly': monthly,

@@ -555,10 +555,13 @@ def update_order_count(request):
             supply.supply_in_booked_order.countOnHold += 1
             supply.supply_in_booked_order.save(update_fields=['countOnHold'])
             supply.save(update_fields=['count_in_order'])
-        else:
+        elif supply.supply_id:
             supply.count_in_order += 1
             supply.supply.countOnHold += 1
             supply.supply.save(update_fields=['countOnHold'])
+            supply.save(update_fields=['count_in_order'])
+        else:
+            supply.count_in_order += 1
             supply.save(update_fields=['count_in_order'])
 
     elif action == 'minus':
@@ -567,10 +570,13 @@ def update_order_count(request):
             supply.supply_in_booked_order.countOnHold -= 1
             supply.supply_in_booked_order.save(update_fields=['countOnHold'])
             supply.save(update_fields=['count_in_order'])
-        else:
+        elif supply.supply_id:
             supply.count_in_order -= 1
             supply.supply.countOnHold -= 1
             supply.supply.save(update_fields=['countOnHold'])
+            supply.save(update_fields=['count_in_order'])
+        else:
+            supply.count_in_order -= 1
             supply.save(update_fields=['count_in_order'])
         if supply.count_in_order <= 0:
             supply.delete()
@@ -580,7 +586,12 @@ def update_order_count(request):
            return HttpResponse(status=200)
 
     order_for_row = _order_detail_single(for_order.pk).first() or for_order
-    return render(request, 'partials/orders/orderDetail_cell_item.html', {'el': supply, 'counter': counter, 'order': order_for_row})
+    return render(request, 'partials/orders/orderDetail_cell_item_nested_row.html', {
+        'el': supply,
+        'counter': counter,
+        'order': order_for_row,
+        'highlighted_sup_id': 0,
+    })
 
 
 @login_required(login_url='login')
@@ -1708,72 +1719,58 @@ def get_selected_xls_orders_sups(supply_in_order_list: defaultdict):
 
 
 def render_to_xls_selected_order(table_header, place, supplies_in_order, wb):
+    counts_by_id = {supply.id: supply.count for supply in supplies_in_order}
+    supplies_in_order = list(
+        Supply.objects.filter(id__in=counts_by_id).select_related(
+            'general_supply',
+            'general_supply__category',
+        )
+    )
+    for supply in supplies_in_order:
+        supply.count = counts_by_id[supply.id]
 
-    row_num = 3
-    row_num_to_table = 3
+    supply_groups = _group_selected_supplies_for_display(supplies_in_order)
+    total_rows = len(supplies_in_order)
 
     ws = wb.add_worksheet(f'№{place.id}')
-    format = wb.add_format({'bold': True})
-    format.set_font_size(16)
+    for col_num, width in enumerate(ORDER_DETAIL_XLS_COLUMN_WIDTHS):
+        ws.set_column(col_num, col_num, width)
 
-    columns_table = [{'header': '№'},
-                     {'header': 'Назва товару'},
-                     {'header': 'Пакування / Тести'},
-                     {'header': 'Категорія'},
-                     {'header': 'REF'},
-                     {'header': 'SMN Code'},
-                     {'header': 'LOT'},
-                     {'header': 'К-ть'},
-                     {'header': 'Тер.прид.'},
-                     ]
-    ws.set_column(0, 0, 5)
-    ws.set_column(1, 1, 35)
-    ws.set_column(2, 3, 15)
-    ws.set_column(4, 5, 20)
-    ws.set_column(6, 6, 15)
-    ws.set_column(7, 7, 5)
-    ws.set_column(8, 8, 12)
+    city = _order_detail_xls_place_city(place)
+    row_num = _write_xls_meta_header_block(ws, wb, [
+        ('title', f'{place.name}, {city}. Замовлення №: {table_header}'),
+        ('info', f'Всього: {total_rows} шт.'),
+    ])
 
-    ws.write(0, 0,
-             f'{place.name}, {place.city_ref.name}. Замовлення №: {table_header}',
-             format)
-    ws.write(2, 0, f'Всього: {len(supplies_in_order)} шт.', format)
+    columns_table = [
+        '№', 'Назва товару', 'Пакування / Тести', 'Категорія', 'REF', 'SMN Code', 'LOT', 'К-ть', 'Тер.прид.',
+    ]
+    header_format = wb.add_format({
+        'bold': True,
+        'font_size': 11,
+        'font_color': '#FFFFFF',
+        'bg_color': '#4F6D9A',
+        'valign': 'vcenter',
+        'text_wrap': True,
+        'border': 1,
+        'border_color': '#3D5678',
+    })
+    for col_num, header in enumerate(columns_table):
+        ws.write(row_num, col_num, header, header_format)
 
-    format = wb.add_format()
-    format.set_font_size(14)
-    ws.add_table(row_num, 0, len(supplies_in_order) + row_num, len(columns_table) - 1, {'columns': columns_table})
-
-    for row in supplies_in_order:
-        row_num += 1
-        name = ''
-        name = ''
-        ref = ''
-        smn = ''
-        category = ''
-        packtests = ''
-        if row.general_supply:
-            if row.general_supply.name:
-                name = row.general_supply.name
-            if row.general_supply.ref:
-                ref = row.general_supply.ref
-            if row.general_supply.SMN_code:
-                smn = row.general_supply.SMN_code
-            if row.general_supply.category:
-                category = row.general_supply.category
-            if row.general_supply.package_and_tests:
-                packtests = row.general_supply.package_and_tests
-        lot = ''
-        if row.supplyLot:
-            lot = row.supplyLot
-        count = row.count
-
-        date_expired = row.expiredDate.strftime("%d-%m-%Y")
-
-        val_row = [name, packtests, category, ref, smn, lot, count, date_expired]
-
-        for col_num in range(len(val_row)):
-            ws.write(row_num, 0, row_num - row_num_to_table)
-            ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
+    ws.outline_settings(True, False, False, True)
+    table_header_row = row_num
+    group_formats = _order_detail_xls_data_formats(wb)
+    row_num = _write_grouped_supply_rows_to_xls(
+        ws,
+        supply_groups,
+        row_num,
+        group_formats,
+        _selected_supply_xls_product_fields,
+        _selected_supply_xls_lot_fields,
+    )
+    ws.autofilter(table_header_row, 0, row_num, ORDER_DETAIL_XLS_LAST_COL)
+    ws.freeze_panes(table_header_row + 1, 0)
 
 
 def _orders_list_queryset(qs):
@@ -3529,102 +3526,62 @@ def render_to_csv(request, order_id):
 
 
 def render_to_xls(request, order_id):
-    order = get_object_or_404(Order, pk=order_id)
-    supplies_in_order = order.supplyinorder_set.all()
+    order = get_object_or_404(
+        Order.objects.select_related(
+            'place',
+            'place__city_ref',
+            'userCreated',
+            'userSent',
+            'for_preorder',
+        ).prefetch_related(
+            'related_preorders',
+            'npdeliverycreateddetailinfo_set',
+            'statusnpparselfromdoucmentid_set',
+        ),
+        pk=order_id,
+    )
+    supplies_qs = order.supplyinorder_set.select_related(
+        'generalSupply',
+        'generalSupply__category',
+    )
+    supply_groups = _group_order_supplies_for_display(supplies_qs)
+    total_supply_rows = sum(len(g['items']) for g in supply_groups)
+    place_city = _order_detail_xls_place_city(order.place)
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f"attachment; filename=Order-{order_id}-{order.place.name}-{order.place.city}.xlsx"
-
-    row_num = 3
-    row_num_to_table = 3
+    response['Content-Disposition'] = (
+        f"attachment; filename=Order-{order_id}-{order.place.name}-{place_city}.xlsx"
+    )
 
     wb = Workbook(response, {'in_memory': True})
     ws = wb.add_worksheet(f'№{order_id}')
-    format = wb.add_format({'bold': True})
-    format.set_font_size(16)
 
-    columns_table = [{'header': '№'},
-                     {'header': 'Назва товару'},
-                     {'header': 'Пакування / Тести'},
-                     {'header': 'Категорія'},
-                     {'header': 'REF'},
-                     {'header': 'SMN Code'},
-                     {'header': 'LOT'},
-                     {'header': 'К-ть'},
-                     {'header': 'Тер.прид.'},
-                     ]
+    columns_table = ['№', 'Назва товару', 'Пакування / Тести', 'Категорія', 'REF', 'SMN Code', 'LOT', 'К-ть', 'Тер.прид.']
 
-    ws.write(0, 0,
-             f'Замов. №{order_id} для {order.place.name}, {order.place.city} від {order.dateCreated.strftime("%d-%m-%Y")}',
-             format)
-    if order.comment:
-        format = wb.add_format()
-        format.set_font_size(14)
-        ws.write(1, 0, f'Коммент.: {order.comment}', format)
-    ws.write(2, 0, f'Всього: {supplies_in_order.count()} шт.', format)
+    row_num = _write_order_detail_xls_header_block(ws, wb, order, total_supply_rows)
 
-    if order.npdeliverycreateddetailinfo_set.exists():
-        format = wb.add_format()
-        format.set_font_size(15)
-        for deliveryInfo in order.npdeliverycreateddetailinfo_set.all():
-            row_num += 1
-            ws.write(row_num, 0, f'Номер накладної НП: {deliveryInfo.document_id}', format)
-            row_num += 1
-            ws.write(row_num, 0, f'Aдреса отримувача: {deliveryInfo.recipient_address}', format)
-            row_num += 1
-            ws.write(row_num, 0, f'Контактна особа-отримувач: {deliveryInfo.recipient_worker}', format)
-            row_num += 1
-            ws.write(row_num, 0, f'Розрахункова дата доставки: {deliveryInfo.estimated_time_delivery}', format)
-            row_num += 1
-            ws.write(row_num, 0, f'Вартість доставки: {deliveryInfo.cost_on_site} грн.', format)
-            row_num += 1
-            ws.write(row_num, 0, '', format)
-            row_num += 1
-            row_num_to_table = row_num
+    header_format = wb.add_format({
+        'bold': True,
+        'font_size': 11,
+        'font_color': '#FFFFFF',
+        'bg_color': '#4F6D9A',
+        'valign': 'vcenter',
+        'text_wrap': True,
+        'border': 1,
+        'border_color': '#3D5678',
+    })
+    for col_num, header in enumerate(columns_table):
+        ws.write(row_num, col_num, header, header_format)
 
-    format = wb.add_format()
-    format.set_font_size(14)
-    ws.add_table(row_num, 0, supplies_in_order.count() + row_num, len(columns_table) - 1, {'columns': columns_table})
+    ws.outline_settings(True, False, False, True)
+    table_header_row = row_num
+    group_formats = _order_detail_xls_data_formats(wb)
+    row_num = _write_grouped_order_supplies_to_xls(ws, supply_groups, row_num, group_formats)
+    ws.autofilter(table_header_row, 0, row_num, ORDER_DETAIL_XLS_LAST_COL)
+    ws.freeze_panes(table_header_row + 1, 0)
 
-    for row in supplies_in_order:
-        row_num += 1
-        name = ''
-        name = ''
-        ref = ''
-        smn = ''
-        category = ''
-        packtests = ''
-        if row.generalSupply:
-            if row.generalSupply.name:
-                name = row.generalSupply.name
-            if row.generalSupply.ref:
-                ref = row.generalSupply.ref
-            if row.generalSupply.SMN_code:
-                smn = row.generalSupply.SMN_code
-            if row.generalSupply.category:
-                category = row.generalSupply.category
-            if row.generalSupply.package_and_tests:
-                packtests = row.generalSupply.package_and_tests
-        lot = ''
-        if row.lot:
-            lot = row.lot
-        count = row.count_in_order
-
-        date_expired = row.date_expired.strftime("%d-%m-%Y")
-
-        val_row = [name, packtests, category, ref, smn, lot, count, date_expired]
-
-        for col_num in range(len(val_row)):
-            ws.write(row_num, 0, row_num - row_num_to_table)
-            ws.write(row_num, col_num + 1, str(val_row[col_num]), format)
-
-    ws.set_column(0, 0, 5)
-    ws.set_column(1, 1, 35)
-    ws.set_column(2, 3, 15)
-    ws.set_column(4, 5, 20)
-    ws.set_column(6, 6, 15)
-    ws.set_column(7, 7, 5)
-    ws.set_column(8, 8, 12)
+    for col_num, width in enumerate(ORDER_DETAIL_XLS_COLUMN_WIDTHS):
+        ws.set_column(col_num, col_num, width)
     wb.close()
 
     return response
@@ -3762,6 +3719,381 @@ def orderDetail_save_comment(request):
     print("comment_textfield = ", comment_textfield)
     return render(request, 'partials/common/comment_textfield_area.html', {'order': order})
 
+def _group_order_supplies_for_display(supplies_qs):
+    """Групує SupplyInOrder за generalSupply для вкладеної таблиці (як home)."""
+    from collections import OrderedDict
+
+    buckets = OrderedDict()
+    for item in supplies_qs.order_by('generalSupply__category_id', 'generalSupply__name'):
+        key = item.generalSupply_id if item.generalSupply_id else -item.pk
+        buckets.setdefault(key, []).append(item)
+
+    return [{'counter': idx, 'items': items} for idx, items in enumerate(buckets.values(), start=1)]
+
+
+def _supply_in_order_xls_product_fields(row):
+    name = ref = smn = category = packtests = ''
+    if row.generalSupply:
+        name = row.generalSupply.name or ''
+        ref = row.generalSupply.ref or ''
+        smn = row.generalSupply.SMN_code or ''
+        if row.generalSupply.category:
+            category = row.generalSupply.category.name
+        packtests = row.generalSupply.package_and_tests or ''
+    else:
+        name = row.internalName or '—'
+        ref = row.internalRef or ''
+    return name, packtests, category, ref, smn
+
+
+def _supply_in_order_xls_lot_fields(row):
+    lot = row.lot or ''
+    count = row.count_in_order
+    date_expired = row.date_expired.strftime("%d-%m-%Y") if row.date_expired else ''
+    return lot, count, date_expired
+
+
+def _selected_supply_xls_product_fields(supply):
+    name = ref = smn = category = packtests = ''
+    if supply.general_supply:
+        general_supply = supply.general_supply
+        name = general_supply.name or ''
+        ref = general_supply.ref or ''
+        smn = general_supply.SMN_code or ''
+        if general_supply.category:
+            category = general_supply.category.name
+        packtests = general_supply.package_and_tests or ''
+    else:
+        name = supply.name or '—'
+        ref = supply.ref or ''
+    return name, packtests, category, ref, smn
+
+
+def _selected_supply_xls_lot_fields(supply):
+    lot = supply.supplyLot or ''
+    count = supply.count
+    date_expired = supply.expiredDate.strftime("%d-%m-%Y") if supply.expiredDate else ''
+    return lot, count, date_expired
+
+
+def _group_selected_supplies_for_display(supplies_list):
+    """Групує агреговані Supply за general_supply для вкладеного відображення LOT."""
+    from collections import OrderedDict
+
+    buckets = OrderedDict()
+    for item in sorted(
+        supplies_list,
+        key=lambda supply: (
+            supply.general_supply.category_id if supply.general_supply and supply.general_supply.category_id else 0,
+            (supply.general_supply.name if supply.general_supply else None) or supply.name or '',
+        ),
+    ):
+        key = item.general_supply_id if item.general_supply_id else -item.pk
+        buckets.setdefault(key, []).append(item)
+
+    return [{'counter': idx, 'items': items} for idx, items in enumerate(buckets.values(), start=1)]
+
+
+ORDER_DETAIL_XLS_COLUMN_WIDTHS = (5, 35, 15, 15, 20, 20, 15, 5, 12)
+ORDER_DETAIL_XLS_LAST_COL = len(ORDER_DETAIL_XLS_COLUMN_WIDTHS) - 1
+
+
+def _order_detail_xls_table_width_chars():
+    return sum(ORDER_DETAIL_XLS_COLUMN_WIDTHS)
+
+
+def _order_detail_xls_user_name(user):
+    if not user:
+        return ''
+    return ' '.join(part for part in (user.first_name or '', user.last_name or '') if part).strip()
+
+
+def _order_detail_xls_place_city(place):
+    if not place:
+        return ''
+    if place.city_ref_id and place.city_ref:
+        return place.city_ref.name
+    return place.city or ''
+
+
+def _write_order_detail_xls_merged_line(ws, row_num, text, cell_format, last_col=ORDER_DETAIL_XLS_LAST_COL):
+    ws.merge_range(row_num, 0, row_num, last_col, text, cell_format)
+    ws.set_row(row_num, _order_detail_xls_row_height((text, _order_detail_xls_table_width_chars())))
+    return row_num + 1
+
+
+def _order_detail_xls_header_lines(order, total_supply_rows):
+    lines = []
+    place = order.place
+    city = _order_detail_xls_place_city(place)
+    place_name = place.name if place else ''
+    created = order.dateCreated.strftime('%d.%m.%Y') if order.dateCreated else ''
+    lines.append(('title', f'Замов. №{order.id} — {place_name}, {city} від {created}'))
+
+    creator = _order_detail_xls_user_name(order.userCreated)
+    if creator:
+        lines.append(('info', f'Створив: {creator}'))
+
+    if order.isMerged:
+        lines.append(('info', "Об'єднане замовлення"))
+
+    if order.for_preorder_id:
+        preorder = order.for_preorder
+        preorder_text = f'Передзамовлення: №{preorder.id}'
+        if preorder.comment:
+            preorder_text += f' ({preorder.comment})'
+        lines.append(('info', preorder_text))
+
+    related_preorders = list(order.related_preorders.all())
+    if related_preorders:
+        related_ids = ', '.join(f'№{preorder.id}' for preorder in related_preorders)
+        lines.append(('info', f"Пов'язані передзамовлення: {related_ids}"))
+
+    if order.isComplete:
+        status = 'Статус: виконано'
+        if order.dateSent:
+            status += f' ({order.dateSent.strftime("%d.%m.%Y")})'
+        lines.append(('info', status))
+        sender = _order_detail_xls_user_name(order.userSent)
+        if sender:
+            lines.append(('info', f'Відправив: {sender}'))
+    else:
+        lines.append(('info', 'Статус: в очікуванні'))
+        if order.dateToSend:
+            lines.append(('info', f'Дата відправки: {order.dateToSend.strftime("%d.%m.%Y")}'))
+
+    if order.comment:
+        lines.append(('info', f'Коментар: {order.comment}'))
+
+    lines.append(('info', f'Всього позицій: {total_supply_rows} шт.'))
+
+    np_created = list(order.npdeliverycreateddetailinfo_set.all())
+    np_status = list(order.statusnpparselfromdoucmentid_set.all())
+    if np_created or np_status:
+        lines.append(('blank', ''))
+
+    for delivery in np_created:
+        lines.append(('np', f'Номер накладної НП: {delivery.document_id}'))
+        if delivery.recipient_address:
+            lines.append(('np', f'Адреса отримувача: {delivery.recipient_address}'))
+        if delivery.recipient_worker:
+            lines.append(('np', f'Контактна особа-отримувач: {delivery.recipient_worker}'))
+        if delivery.estimated_time_delivery:
+            lines.append(('np', f'Розрахункова дата доставки: {delivery.estimated_time_delivery}'))
+        if delivery.cost_on_site is not None:
+            lines.append(('np', f'Вартість доставки: {delivery.cost_on_site} грн.'))
+
+    for index, document in enumerate(np_status):
+        if index > 0:
+            lines.append(('blank', ''))
+        lines.append(('np', f'Накладна НП №{document.docNumber} — {document.status_desc}'))
+        recipient = ', '.join(filter(None, [
+            document.counterpartyRecipientDescription,
+            document.recipientAddress,
+            document.recipientFullNameEW,
+        ]))
+        if recipient:
+            lines.append(('np', f'Отримувач: {recipient}'))
+        if document.phoneRecipient:
+            lines.append(('np', f'Тел.: {document.phoneRecipient}'))
+        if document.warehouseSender:
+            lines.append(('np', f'Відправник: {document.warehouseSender}'))
+        delivery_dates = ', '.join(filter(None, [
+            f'план: {document.scheduledDeliveryDate}' if document.scheduledDeliveryDate else None,
+            f'факт: {document.actualDeliveryDate}' if document.actualDeliveryDate else None,
+            f'отримано: {document.recipientDateTime}' if document.recipientDateTime else None,
+        ]))
+        if delivery_dates:
+            lines.append(('np', f'Дати доставки: {delivery_dates}'))
+        weight = ', '.join(filter(None, [
+            f"об'ємна {document.documentWeight}" if document.documentWeight else None,
+            f'фактична {document.factualWeight}' if document.factualWeight else None,
+        ]))
+        if weight:
+            lines.append(('np', f'Вага: {weight}'))
+        cost_parts = []
+        if document.documentCost:
+            cost_parts.append(f'{document.documentCost} грн.')
+        if document.paymentMethod:
+            cost_parts.append(f'оплата: {document.paymentMethod}')
+        if document.payerType:
+            cost_parts.append(f'платник: {document.payerType}')
+        if cost_parts:
+            lines.append(('np', 'Вартість доставки: ' + ', '.join(cost_parts)))
+        if document.seatsAmount:
+            lines.append(('np', f'Кількість місць: {document.seatsAmount}'))
+        if document.announcedPrice:
+            lines.append(('np', f'Оціночна вартість: {document.announcedPrice} грн.'))
+        if document.cargoDescriptionString:
+            lines.append(('np', f'Опис: {document.cargoDescriptionString}'))
+
+    return lines
+
+
+def _write_xls_meta_header_block(ws, wb, lines, start_row=0):
+    title_format = wb.add_format({'bold': True, 'font_size': 16, 'text_wrap': True, 'valign': 'top'})
+    info_format = wb.add_format({'font_size': 14, 'text_wrap': True, 'valign': 'top'})
+    np_format = wb.add_format({'font_size': 13, 'text_wrap': True, 'valign': 'top'})
+    blank_format = wb.add_format({'font_size': 13, 'text_wrap': True})
+    format_by_kind = {'title': title_format, 'info': info_format, 'np': np_format, 'blank': blank_format}
+
+    row_num = start_row
+    for kind, text in lines:
+        if kind == 'blank':
+            ws.merge_range(row_num, 0, row_num, ORDER_DETAIL_XLS_LAST_COL, '', blank_format)
+            ws.set_row(row_num, 8)
+            row_num += 1
+            continue
+        row_num = _write_order_detail_xls_merged_line(ws, row_num, text, format_by_kind[kind])
+    return row_num
+
+
+def _write_order_detail_xls_header_block(ws, wb, order, total_supply_rows):
+    return _write_xls_meta_header_block(ws, wb, _order_detail_xls_header_lines(order, total_supply_rows))
+
+
+def _order_detail_xls_data_formats(wb):
+    base = {
+        'font_size': 14,
+        'valign': 'vcenter',
+        'text_wrap': True,
+        'border': 1,
+        'border_color': '#D4DCE8',
+    }
+    return (
+        wb.add_format({**base, 'bg_color': '#FFFFFF'}),
+        wb.add_format({**base, 'bg_color': '#E9EEF5'}),
+    )
+
+
+def _order_detail_xls_row_height(*text_width_pairs, min_height=15, line_height=15):
+    """Оцінка висоти рядка для переносу тексту в комірці (text, width_chars)."""
+    lines = 1
+    for text, width in text_width_pairs:
+        if not text:
+            continue
+        width = max(width, 1)
+        for part in str(text).splitlines():
+            lines = max(lines, max(1, (len(part) + width - 1) // width))
+    return min(max(lines * line_height, min_height), 150)
+
+
+def _order_detail_xls_set_group_row_heights(ws, group_start, group_end, name, packtests, category, ref, smn):
+    wrap_height = _order_detail_xls_row_height(
+        (name, 35),
+        (packtests, 15),
+        (category, 15),
+        (ref, 20),
+        (smn, 20),
+    )
+    row_count = group_end - group_start + 1
+    per_row = max(wrap_height / row_count, 15)
+    for row in range(group_start, group_end + 1):
+        ws.set_row(row, per_row)
+
+
+def _write_grouped_supply_rows_to_xls(ws, supply_groups, row_num, group_formats, product_fields_fn, lot_fields_fn):
+    """Один товар — один №/назва; кожен LOT — окремий рядок з однаковим фоном групи."""
+    fmt_a, fmt_b = group_formats
+
+    for group_idx, group in enumerate(supply_groups):
+        cell_format = fmt_a if group_idx % 2 == 0 else fmt_b
+        name, packtests, category, ref, smn = product_fields_fn(group['items'][0])
+        items = group['items']
+        multi_lot = len(items) > 1
+        group_start = row_num + 1
+        group_end = row_num + len(items)
+
+        if multi_lot:
+            ws.merge_range(group_start, 0, group_end, 0, group['counter'], cell_format)
+            ws.merge_range(group_start, 1, group_end, 1, name, cell_format)
+            ws.merge_range(group_start, 2, group_end, 2, packtests, cell_format)
+            ws.merge_range(group_start, 3, group_end, 3, category, cell_format)
+            ws.merge_range(group_start, 4, group_end, 4, ref, cell_format)
+            ws.merge_range(group_start, 5, group_end, 5, smn, cell_format)
+
+        for idx, row in enumerate(items):
+            row_num += 1
+            lot, count, date_expired = lot_fields_fn(row)
+
+            if not multi_lot:
+                ws.write(row_num, 0, group['counter'], cell_format)
+                ws.write(row_num, 1, name, cell_format)
+                ws.write(row_num, 2, packtests, cell_format)
+                ws.write(row_num, 3, category, cell_format)
+                ws.write(row_num, 4, ref, cell_format)
+                ws.write(row_num, 5, smn, cell_format)
+
+            ws.write(row_num, 6, str(lot), cell_format)
+            ws.write(row_num, 7, count, cell_format)
+            ws.write(row_num, 8, str(date_expired), cell_format)
+
+            if multi_lot and idx > 0:
+                ws.set_row(row_num, None, None, {'level': 1})
+
+        _order_detail_xls_set_group_row_heights(ws, group_start, group_end, name, packtests, category, ref, smn)
+
+    return row_num
+
+
+def _write_grouped_order_supplies_to_xls(ws, supply_groups, row_num, group_formats):
+    return _write_grouped_supply_rows_to_xls(
+        ws,
+        supply_groups,
+        row_num,
+        group_formats,
+        _supply_in_order_xls_product_fields,
+        _supply_in_order_xls_lot_fields,
+    )
+
+
+@login_required(login_url='login')
+def home_general_supply_info(request, supp_id):
+    if not (request.user.groups.filter(name='empl').exists() or request.user.is_staff):
+        return HttpResponseForbidden('Немає доступу')
+    general_supp = get_object_or_404(
+        GeneralSupply.objects.select_related('category'),
+        pk=supp_id,
+    )
+    return render(
+        request,
+        'partials/supplies/home_general_supply_info_modal.html',
+        {'generalSupp': general_supp},
+    )
+
+
+@login_required(login_url='login')
+def order_detail_general_supply_info(request, order_id, supp_id):
+    if not (request.user.groups.filter(name='empl').exists() or request.user.is_staff):
+        return HttpResponseForbidden('Немає доступу')
+    order = get_object_or_404(_order_detail_single(order_id), pk=order_id)
+    general_supp = get_object_or_404(
+        GeneralSupply.objects.select_related('category'),
+        pk=supp_id,
+    )
+    order_lines = (
+        SupplyInOrder.objects.filter(
+            supply_for_order_id=order_id,
+            generalSupply_id=supp_id,
+        )
+        .select_related(
+            'supply',
+            'supply_in_preorder',
+            'supply_in_preorder__supply_for_order',
+        )
+        .order_by('lot', 'id')
+    )
+    return render(
+        request,
+        'partials/orders/orderDetail_general_supply_info_modal.html',
+        {
+            'generalSupp': general_supp,
+            'order': order,
+            'order_lines': order_lines,
+        },
+    )
+
+
 @login_required(login_url='login')
 def orderDetail(request, order_id, sup_id):
     order = get_object_or_404(_order_detail_single(order_id), pk=order_id)
@@ -3772,7 +4104,7 @@ def orderDetail(request, order_id, sup_id):
         'supply_in_preorder',
         'supply_in_preorder__supply_for_order',
     )
-    supplies_in_order = supplies_qs.order_by('generalSupply__category_id', 'generalSupply__name')
+    supply_groups = _group_order_supplies_for_display(supplies_qs)
     next = request.POST.get('next')
 
     if request.method == 'POST':
@@ -3820,7 +4152,8 @@ def orderDetail(request, order_id, sup_id):
             return HttpResponseRedirect(next)
 
     return render(request, 'supplies/orders/orderDetail.html',
-                  {'title': f'Замовлення № {order_id}', 'order': order, 'supplies': supplies_in_order, 'isOrders': True, 'highlighted_sup_id': sup_id})
+                  {'title': f'Замовлення № {order_id}', 'order': order, 'supply_groups': supply_groups,
+                   'isOrders': True, 'highlighted_sup_id': sup_id})
 
 @login_required(login_url='login')
 @transaction.atomic
@@ -4102,12 +4435,12 @@ def _place_list_for_client_cards(place_qs):
         place_qs.select_related('city_ref', 'worker_NP')
         .prefetch_related('workers')
         .annotate(
-            card_preorder_count=Count('preorder'),
-            card_order_count=Count('order'),
-            card_workers_count=Count('workers'),
-            card_booked_count=Count('supplyinbookedorder'),
-            card_servicenote_count=Count('servicenote'),
-            card_device_count=Count('device'),
+            card_preorder_count=Count('preorder', distinct=True),
+            card_order_count=Count('order', distinct=True),
+            card_workers_count=Count('workers', distinct=True),
+            card_booked_count=Count('supplyinbookedorder', distinct=True),
+            card_servicenote_count=Count('servicenote', distinct=True),
+            card_device_count=Count('device', distinct=True),
         )
         .order_by('-id')
     )

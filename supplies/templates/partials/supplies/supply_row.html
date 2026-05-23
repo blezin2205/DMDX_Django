@@ -5,15 +5,8 @@
 {% load mathfilters %}
 
 {% csrf_token %}
-<tr id="supply-row-{{ el.id }}">
+<tr id="supply-row-{{ el.id }}"{% if el.image %}{% if request.user|has_group:"empl" or request.user.is_staff %} class="home-supply-row-open" data-general-supply-id="{{ el.id }}"{% endif %}{% endif %}>
     <th scope="row" class="text-start col-name">
-        {% if el.image %}
-            <div style="display:flex; flex-direction: row;">
-                <a href="#" class="pop">
-                    <div datasrc="{{ el.image.url }}"><i class="bi bi-card-image"></i></div>
-                </a>
-            </div>
-        {% endif %}
         {% if request.user|has_group:"empl" or request.user.is_staff %}
             <a href="#" class="text-decoration-none link-dark supply-history-btn" data-supply-id="{{ el.id }}">
                 {{ el.name }}

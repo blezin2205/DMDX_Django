@@ -1,383 +1,340 @@
-{% load crispy_forms_filters %}
-{% load bootstrap %}
 {% load myapp_extras %}
 {% load mathfilters %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-<style>
-.modal-form {
-    max-height: calc(100vh - 100px);
-    overflow-y: auto;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
-    width: 100%;
-}
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-.modal-form::-webkit-scrollbar {
-    display: none;
-}
+<div class="supply-history-modal">
+    <div class="supply-history-meta">
+        {% if generalSupp.ref %}
+            <span class="supply-history-chip" title="REF"><i class="bi bi-upc"></i>{{ generalSupp.ref }}</span>
+        {% endif %}
+        {% if generalSupp.SMN_code %}
+            <span class="supply-history-chip" title="SMN"><i class="bi bi-hash"></i>{{ generalSupp.SMN_code }}</span>
+        {% endif %}
+        {% if generalSupp.package_and_tests %}
+            <span class="supply-history-chip" title="Пакування"><i class="bi bi-box-seam"></i>{{ generalSupp.package_and_tests }}</span>
+        {% endif %}
+        {% if generalSupp.category %}
+            <span class="supply-history-chip" title="Категорія"><i class="bi bi-tag"></i>{{ generalSupp.category }}</span>
+        {% endif %}
+    </div>
 
-.modal-body-content {
-    padding: 1rem;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-}
+    {% if supplies or in_booked_sup or in_preorders or in_deliveries %}
+        <div class="supply-history-search">
+            <label class="supply-history-search-label" for="supplyHistoryPlaceFilter">
+                <i class="bi bi-search"></i>
+                <input type="search"
+                       id="supplyHistoryPlaceFilter"
+                       class="supply-history-search-input"
+                       placeholder="Пошук за організацією або містом..."
+                       autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       spellcheck="false">
+            </label>
+        </div>
+        <div class="supply-history-no-results d-none" id="supplyHistoryNoResults">
+            <i class="bi bi-filter-circle"></i>
+            <p>За цим запитом нічого не знайдено.</p>
+        </div>
 
-.alert {
-    margin-bottom: 1rem;
-    word-wrap: break-word;
-}
-
-/* Mobile-specific styles */
-@media (max-width: 768px) {
-    .modal-form {
-        max-height: calc(100vh - 100px);
-    }
-    
-    .modal-body-content {
-        padding: 0.5rem;
-    }
-    
-    /* Ensure buttons have enough space at the bottom */
-    .d-flex.gap-2.justify-content-center {
-        margin-bottom: 1rem;
-        flex-wrap: wrap;
-    }
-    
-    /* Adjust alert spacing on mobile */
-    .alert {
-        margin-bottom: 0.75rem;
-    }
-
-    /* Fix hstack overflow on mobile */
-    .hstack {
-        flex-wrap: wrap;
-        gap: 0.5rem !important;
-    }
-
-    .hstack .col-sm {
-        flex: 1 1 calc(50% - 0.5rem);
-        min-width: 0;
-    }
-
-    /* Ensure form inputs don't overflow */
-    .form-control, .form-select {
-        max-width: 100%;
-    }
-
-    /* Adjust button sizes for better mobile fit */
-    .btn {
-        padding: 0.375rem 0.75rem;
-        font-size: 0.875rem;
-    }
-
-    /* Adjust table for mobile */
-    .table-responsive {
-        margin: 0 -0.5rem;
-    }
-
-    .table {
-        font-size: 0.875rem;
-    }
-
-    /* Adjust card spacing on mobile */
-    .card {
-        margin-bottom: 1rem;
-    }
-
-    .card-header {
-        padding: 0.75rem;
-    }
-
-    .card-body {
-        padding: 0.75rem;
-    }
-}
-</style>
-
-<div class="container modal-form py-1">
-   <div class="w-auto">
-      <div style="font-size: x-large; font-weight: bolder; text-align: center">{{ generalSupp.name }}</div>
-      <div class="mt-2" style="text-align: center">
-         <div style="display: inline-flex; gap: 2rem; text-align: left">
-            <div>
-               {% if generalSupp.ref %}
-                  <div class="text-muted" style="font-size: large"><i class="fas fa-barcode"></i> {{ generalSupp.ref }}</div>
-               {% endif %}
-               {% if generalSupp.SMN_code %}
-                  <div class="text-muted" style="font-size: large"><i class="fas fa-hashtag"></i> {{ generalSupp.SMN_code }}</div>
-               {% endif %}
+        {% if supplies %}
+        <section class="supply-history-section">
+            <div class="supply-history-section-head">
+                <span class="supply-history-section-title">В замовленнях</span>
+                <span class="supply-history-badge supply-history-row-count" data-total="{{ supplies|length }}">{{ supplies|length }} записів</span>
+                <span class="supply-history-badge supply-history-badge--muted">{{ total_count_in_orders|default:0 }} шт.</span>
             </div>
-            <div>
-               {% if generalSupp.package_and_tests %}
-                  <div class="text-muted" style="font-size: medium"><i class="fas fa-box"></i> {{ generalSupp.package_and_tests }}</div>
-               {% endif %}
-               {% if generalSupp.category %}
-                  <div class="text-muted" style="font-size: medium"><i class="fas fa-tag"></i> {{ generalSupp.category }}</div>
-               {% endif %}
+            <div class="table-responsive">
+                <table class="table table-sm supply-history-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Для</th>
+                            <th>LOT</th>
+                            <th class="text-end">К-ть</th>
+                            <th>Термін</th>
+                            <th>Замовлення</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for el in supplies %}
+                        <tr class="order-row supply-history-data-row{% if forloop.counter > 10 %} extra-order-row is-collapsed{% endif %}"
+                            data-place-text="{{ el.supply_for_order.place.name|lower }}, {{ el.supply_for_order.place.city_ref.name|lower }}">
+                            <td class="supply-history-place">
+                                <a href="{% url 'orderDetail' order_id=el.supply_for_order.id sup_id=el.id %}?next={{ request.get_full_path|urlencode }}"
+                                   class="supply-history-link{% if not el.supply_for_order.isComplete %} supply-history-link--open{% endif %}">
+                                    №{{ el.supply_for_order.id }}
+                                </a>
+                                <span class="supply-history-place-name">{{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span>
+                            </td>
+                            <td>{% if el.lot is not none %}{{ el.lot }}{% else %}—{% endif %}</td>
+                            <td class="text-end">{{ el.count_in_order }}</td>
+                            <td>
+                                <span class="supply-history-date supply-history-date--{% if el.date_is_good %}good{% elif el.date_is_today %}today{% else %}bad{% endif %}">
+                                    {{ el.date_expired|date:"d.m.Y" }}
+                                </span>
+                            </td>
+                            <td>{{ el.supply_for_order.dateCreated|date:"d.m.Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-         </div>
-      </div>
-   </div>
-
-   {% if supplies or in_booked_sup or in_preorders or in_deliveries %}
-   {% if supplies %}
-   <div class="card shadow-sm mb-4">
-      <div class="card-header bg-light">
-         <h5 class="mb-0">
-            В замовленнях
-            <small class="text-muted">(Всього: {{ total_count_in_orders }} шт.)</small>
-         </h5>
-      </div>
-      <div class="card-body">
-         <div class="table-responsive">
-            <table class="table">
-               <thead class="thead-light">
-                  <tr>
-                     <th scope="col">({{supplies|length}} шт.) Для: </th>
-                     <th scope="col">LOT</th>
-                     <th scope="col">Кількість</th>
-                     <th scope="col">Термін</th>
-                     <th scope="col">Замовлення від:</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  {% for el in supplies %}
-                  <tr class="order-row{% if forloop.counter > 10 %} d-none extra-order-row{% endif %}">
-                     <th scope="row" style="text-align: left" class="w-50">
-                        <a href="{% url 'orderDetail' order_id=el.supply_for_order.id sup_id=el.id %}?next={{ request.get_full_path|urlencode }}" 
-                           {% if not el.supply_for_order.isComplete %} class="link-warning" {% endif %}>
-                           №{{ el.supply_for_order.id }}
-                        </a>
-                        <span>{{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span>
-                     </th>
-                     <td class="supplyRow">
-                        {% if el.lot is not none %}
-                           {{ el.lot }}
-                        {% endif %}
-                     </td>
-                     <td>{{ el.count_in_order }}</td>
-                     <td>
-                        <div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">
-                           {{ el.date_expired|date:"d.m.Y" }}
-                        </div>
-                     </td>
-                     <td>{{ el.supply_for_order.dateCreated|date:"d.m.Y" }}</td>
-                  </tr>
-                  {% endfor %}
-               </tbody>
-            </table>
             {% if supplies|length > 10 %}
-            <div class="d-flex justify-content-center my-2">
-               <button id="toggle-orders-btn" class="btn btn-outline-primary btn-sm" type="button" onclick="toggleOrdersRows()">Показати всі</button>
+            <div class="supply-history-toggle-wrap">
+                <button class="btn btn-outline-secondary btn-sm supply-history-toggle-btn" type="button" data-target="extra-order-row">Показати всі</button>
             </div>
             {% endif %}
-         </div>
-      </div>
-   </div>
-   {% endif %}
+        </section>
+        {% endif %}
 
-   {% if in_booked_sup %}
-   <div class="card shadow-sm mb-4">
-      <div class="card-header bg-light">
-         <h5 class="mb-0">
-            В броньованих товарах
-            <small class="text-muted">(Всього: {{ total_count_in_booked_sup }} шт.)</small>
-         </h5>
-      </div>
-      <div class="card-body">
-         <div class="table-responsive">
-            <table class="table">
-               <thead class="thead-light">
-                  <tr>
-                     <th scope="col">({{in_booked_sup|length}} шт.) Для: </th>
-                     <th scope="col">LOT</th>
-                     <th scope="col">Кількість</th>
-                     <th scope="col">Термін</th>
-                     <th scope="col">Заброньовано: </th>
-                  </tr>
-               </thead>
-               <tbody>
-                  {% for el in in_booked_sup %}
-                  <tr class="booked-row{% if forloop.counter > 10 %} d-none extra-booked-row{% endif %}">
-                     <th scope="row" style="text-align: left" class="w-50">
-                        <span>{{ el.supply_for_place.name }}, {{ el.supply_for_place.city_ref.name }}</span>
-                     </th>
-                     <td class="supplyRow">
-                        {% if el.lot is not none %}
-                           {{ el.lot }}
-                        {% endif %}
-                     </td>
-                     <td>{{ el.count_in_order }}</td>
-                     <td>
-                        <div style="color:{% if el.supply.expiredDate %}blue{% elif el.supply.expiredDate %}orange{% else %}red{% endif %};">
-                           {{ el.supply.expiredDate|date:"d.m.Y" }}
-                        </div>
-                     </td>
-                     <td>{{ el.date_created|date:"d.m.Y" }}</td>
-                  </tr>
-                  {% endfor %}
-               </tbody>
-            </table>
+        {% if in_booked_sup %}
+        <section class="supply-history-section">
+            <div class="supply-history-section-head">
+                <span class="supply-history-section-title">В броньованих</span>
+                <span class="supply-history-badge supply-history-row-count" data-total="{{ in_booked_sup|length }}">{{ in_booked_sup|length }} записів</span>
+                <span class="supply-history-badge supply-history-badge--muted">{{ total_count_in_booked_sup|default:0 }} шт.</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm supply-history-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Для</th>
+                            <th>LOT</th>
+                            <th class="text-end">К-ть</th>
+                            <th>Термін</th>
+                            <th>Заброньовано</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for el in in_booked_sup %}
+                        <tr class="booked-row supply-history-data-row{% if forloop.counter > 10 %} extra-booked-row is-collapsed{% endif %}"
+                            data-place-text="{{ el.supply_for_place.name|lower }}, {{ el.supply_for_place.city_ref.name|lower }}">
+                            <td class="supply-history-place">
+                                <span class="supply-history-place-name">{{ el.supply_for_place.name }}, {{ el.supply_for_place.city_ref.name }}</span>
+                            </td>
+                            <td>{% if el.lot is not none %}{{ el.lot }}{% else %}—{% endif %}</td>
+                            <td class="text-end">{{ el.count_in_order }}</td>
+                            <td>
+                                {% if el.supply.expiredDate %}
+                                    <span class="supply-history-date supply-history-date--good">{{ el.supply.expiredDate|date:"d.m.Y" }}</span>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>{{ el.date_created|date:"d.m.Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% if in_booked_sup|length > 10 %}
-            <div class="d-flex justify-content-center my-2">
-               <button id="toggle-booked-btn" class="btn btn-outline-primary btn-sm" type="button" onclick="toggleBookedRows()">Показати всі</button>
+            <div class="supply-history-toggle-wrap">
+                <button class="btn btn-outline-secondary btn-sm supply-history-toggle-btn" type="button" data-target="extra-booked-row">Показати всі</button>
             </div>
             {% endif %}
-         </div>
-      </div>
-   </div>
-   {% endif %}
+        </section>
+        {% endif %}
 
-   {% if in_preorders %}
-   <div class="card shadow-sm mb-4">
-      <div class="card-header bg-light">
-         <h5 class="mb-0">
-            В передзамовленнях
-            <small class="text-muted">(Всього: {{ total_count_in_preorders }} шт.)</small>
-         </h5>
-      </div>
-      <div class="card-body">
-         <div class="table-responsive">
-            <table class="table">
-               <thead class="thead-light">
-                  <tr>
-                     <th scope="col">({{in_preorders|length}} шт.) Для: </th>
-                     <th scope="col">Замовлено</th>
-                     <th scope="col">Поставлено</th>
-                     <th scope="col">Борг</th>
-                     <th scope="col">Передзамовлення від:</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  {% for el in in_preorders %}
-                  <tr class="preorder-row{% if forloop.counter > 10 %} d-none extra-preorder-row{% endif %}">
-                     <th scope="row" style="text-align: left" class="w-50">
-                        <a href="{% url 'preorderDetail' el.supply_for_order.id %}?next={{ request.get_full_path }}">
-                           № {{el.supply_for_order.id}}
-                           <span>
-                              {% if el.supply_for_order.state_of_delivery == 'Complete' %}
-                                 <span class="complete">(Повністю поставлено)</span>
-                              {% elif el.supply_for_order.state_of_delivery == 'Complete_Handle' %}
-                                 <span class="complete">(Повністю поставлено(Закрито вручну))</span>
-                              {% elif el.supply_for_order.state_of_delivery == 'Partial' %}
-                                 <span style="color: #deb05b; font-weight: bold">(Частково поставлено)</span>
-                              {% elif el.supply_for_order.state_of_delivery == 'awaiting_from_customer' %}
-                                 <span style="color: rgba(222,126,91,0.59); font-weight: bold">(Формується замовником)</span>
-                              {% elif el.supply_for_order.state_of_delivery == 'accepted_by_customer' %}
-                                 <span style="color: #deb05b; font-weight: bold">(Підтверджено замовником)</span>
-                              {% elif el.supply_for_order.state_of_delivery == 'Awaiting' %}
-                                 <span style="color: #de925b; font-weight: bold">(Замовлено у виробника)</span>
-                              {% endif %}
-                           </span>
-                        </a>
-                        <span class="mx-2">
-                           {{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}
-                        </span>
-                     </th>
-                     <td>{{ el.count_in_order }}</td>
-                     <td>{{ el.count_in_order_current }}</td>
-                     <td>{{ el.count_in_order|sub:el.count_in_order_current }}</td>
-                     <td>{{ el.supply_for_order.dateCreated|date:"d.m.Y" }}</td>
-                  </tr>
-                  {% endfor %}
-               </tbody>
-            </table>
+        {% if in_preorders %}
+        <section class="supply-history-section">
+            <div class="supply-history-section-head">
+                <span class="supply-history-section-title">В передзамовленнях</span>
+                <span class="supply-history-badge supply-history-row-count" data-total="{{ in_preorders|length }}">{{ in_preorders|length }} записів</span>
+                <span class="supply-history-badge supply-history-badge--muted">{{ total_count_in_preorders|default:0 }} шт.</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm supply-history-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Для</th>
+                            <th class="text-end">Замовлено</th>
+                            <th class="text-end">Поставлено</th>
+                            <th class="text-end">Борг</th>
+                            <th>Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for el in in_preorders %}
+                        <tr class="preorder-row supply-history-data-row{% if forloop.counter > 10 %} extra-preorder-row is-collapsed{% endif %}"
+                            data-place-text="{{ el.supply_for_order.place.name|lower }}, {{ el.supply_for_order.place.city_ref.name|lower }}">
+                            <td class="supply-history-place">
+                                <a href="{% url 'preorderDetail' el.supply_for_order.id %}?next={{ request.get_full_path }}" class="supply-history-link">
+                                    №{{ el.supply_for_order.id }}
+                                </a>
+                                {% if el.supply_for_order.state_of_delivery == 'Complete' %}
+                                    <span class="supply-history-status supply-history-status--complete">(Повністю поставлено)</span>
+                                {% elif el.supply_for_order.state_of_delivery == 'Complete_Handle' %}
+                                    <span class="supply-history-status supply-history-status--complete">(Повністю поставлено(Закрито вручну))</span>
+                                {% elif el.supply_for_order.state_of_delivery == 'Partial' %}
+                                    <span class="supply-history-status supply-history-status--partial">(Частково поставлено)</span>
+                                {% elif el.supply_for_order.state_of_delivery == 'awaiting_from_customer' %}
+                                    <span class="supply-history-status supply-history-status--awaiting">(Формується замовником)</span>
+                                {% elif el.supply_for_order.state_of_delivery == 'accepted_by_customer' %}
+                                    <span class="supply-history-status supply-history-status--partial">(Підтверджено замовником)</span>
+                                {% elif el.supply_for_order.state_of_delivery == 'Awaiting' %}
+                                    <span class="supply-history-status supply-history-status--awaiting">(Замовлено у виробника)</span>
+                                {% endif %}
+                                <span class="supply-history-place-name">{{ el.supply_for_order.place.name }}, {{ el.supply_for_order.place.city_ref.name }}</span>
+                            </td>
+                            <td class="text-end">{{ el.count_in_order }}</td>
+                            <td class="text-end">{{ el.count_in_order_current }}</td>
+                            <td class="text-end">{{ el.count_in_order|sub:el.count_in_order_current }}</td>
+                            <td>{{ el.supply_for_order.dateCreated|date:"d.m.Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% if in_preorders|length > 10 %}
-            <div class="d-flex justify-content-center my-2">
-               <button id="toggle-preorders-btn" class="btn btn-outline-primary btn-sm" type="button" onclick="togglePreorderRows()">Показати всі</button>
+            <div class="supply-history-toggle-wrap">
+                <button class="btn btn-outline-secondary btn-sm supply-history-toggle-btn" type="button" data-target="extra-preorder-row">Показати всі</button>
             </div>
             {% endif %}
-         </div>
-      </div>
-   </div>
-   {% endif %}
+        </section>
+        {% endif %}
 
-   {% if in_deliveries %}
-   <div class="card shadow-sm mb-4">
-      <div class="card-header bg-light">
-         <h5 class="mb-0">
-            В поставках
-            <small class="text-muted">(Всього: {{ total_count_in_deliveries }} шт.)</small>
-         </h5>
-      </div>
-      <div class="card-body">
-         <div class="table-responsive">
-            <table class="table">
-               <thead class="thead-light">
-                  <tr>
-                     <th scope="col">({{in_deliveries|length}} шт.) З поставки: </th>
-                     <th scope="col">LOT</th>
-                     <th scope="col">Кількість</th>
-                     <th scope="col">Термін</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  {% for el in in_deliveries %}
-                  <tr class="delivery-row{% if forloop.counter > 10 %} d-none extra-delivery-row{% endif %}">
-                     <th scope="row" style="text-align: left">
-                        <a href="{% url 'delivery_detail' el.delivery_order.id %}?next={{ request.get_full_path }}">
-                           № {{el.delivery_order.id}} від {{ el.delivery_order.date_created|date:"d.m.Y" }}
-                        </a>
-                     </th>
-                     <td>{{ el.supplyLot }}</td>
-                     <td>{{ el.count }}</td>
-                     <td>
-                        <div style="color:{% if el.date_is_good %}blue{% elif el.date_is_today %}orange{% else %}red{% endif %};">
-                           {{ el.expiredDate|date:"d.m.Y" }}
-                        </div>
-                     </td>
-                  </tr>
-                  {% endfor %}
-               </tbody>
-            </table>
+        {% if in_deliveries %}
+        <section class="supply-history-section">
+            <div class="supply-history-section-head">
+                <span class="supply-history-section-title">В поставках</span>
+                <span class="supply-history-badge supply-history-row-count" data-total="{{ in_deliveries|length }}">{{ in_deliveries|length }} записів</span>
+                <span class="supply-history-badge supply-history-badge--muted">{{ total_count_in_deliveries|default:0 }} шт.</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm supply-history-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Поставка</th>
+                            <th>LOT</th>
+                            <th class="text-end">К-ть</th>
+                            <th>Термін</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for el in in_deliveries %}
+                        <tr class="delivery-row supply-history-data-row{% if forloop.counter > 10 %} extra-delivery-row is-collapsed{% endif %}"
+                            data-place-text="">
+                            <td>
+                                <a href="{% url 'delivery_detail' el.delivery_order.id %}?next={{ request.get_full_path }}" class="supply-history-link">
+                                    №{{ el.delivery_order.id }}
+                                </a>
+                                <span class="supply-history-place-name">{{ el.delivery_order.date_created|date:"d.m.Y" }}</span>
+                            </td>
+                            <td>{{ el.supplyLot|default:"—" }}</td>
+                            <td class="text-end">{{ el.count }}</td>
+                            <td>
+                                <span class="supply-history-date supply-history-date--{% if el.date_is_good %}good{% elif el.date_is_today %}today{% else %}bad{% endif %}">
+                                    {{ el.expiredDate|date:"d.m.Y" }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% if in_deliveries|length > 10 %}
-            <div class="d-flex justify-content-center my-2">
-               <button id="toggle-deliveries-btn" class="btn btn-outline-primary btn-sm" type="button" onclick="toggleDeliveryRows()">Показати всі</button>
+            <div class="supply-history-toggle-wrap">
+                <button class="btn btn-outline-secondary btn-sm supply-history-toggle-btn" type="button" data-target="extra-delivery-row">Показати всі</button>
             </div>
             {% endif %}
-         </div>
-      </div>
-   </div>
-   {% endif %}
-   {% else %}
-      <div class="d-flex justify-content-center align-items-center">
-         <div class="text-center">
-            <i class="fas fa-info-circle fa-2x m-3"></i>
-            <div class="fs-5">Історії товару ще немає.</div>
-         </div>
-      </div>
-   {% endif %}
+        </section>
+        {% endif %}
+    {% else %}
+        <div class="supply-history-empty">
+            <i class="bi bi-inbox"></i>
+            <p>Історії товару ще немає.</p>
+        </div>
+    {% endif %}
 </div>
 
 <script>
-function toggleOrdersRows() {
-   const rows = document.querySelectorAll('.extra-order-row');
-   const btn = document.getElementById('toggle-orders-btn');
-   const isHidden = rows[0] && rows[0].classList.contains('d-none');
-   rows.forEach(row => row.classList.toggle('d-none'));
-   btn.textContent = isHidden ? 'Сховати' : 'Показати всі';
-}
-function toggleBookedRows() {
-   const rows = document.querySelectorAll('.extra-booked-row');
-   const btn = document.getElementById('toggle-booked-btn');
-   const isHidden = rows[0] && rows[0].classList.contains('d-none');
-   rows.forEach(row => row.classList.toggle('d-none'));
-   btn.textContent = isHidden ? 'Сховати' : 'Показати всі';
-}
-function togglePreorderRows() {
-   const rows = document.querySelectorAll('.extra-preorder-row');
-   const btn = document.getElementById('toggle-preorders-btn');
-   const isHidden = rows[0] && rows[0].classList.contains('d-none');
-   rows.forEach(row => row.classList.toggle('d-none'));
-   btn.textContent = isHidden ? 'Сховати' : 'Показати всі';
-}
-function toggleDeliveryRows() {
-   const rows = document.querySelectorAll('.extra-delivery-row');
-   const btn = document.getElementById('toggle-deliveries-btn');
-   const isHidden = rows[0] && rows[0].classList.contains('d-none');
-   rows.forEach(row => row.classList.toggle('d-none'));
-   btn.textContent = isHidden ? 'Сховати' : 'Показати всі';
-}
+(function() {
+    var root = document.querySelector('.supply-history-modal');
+    if (!root) return;
+
+    var filterInput = document.getElementById('supplyHistoryPlaceFilter');
+    var noResults = document.getElementById('supplyHistoryNoResults');
+    var rows = root.querySelectorAll('.supply-history-data-row');
+    var sections = root.querySelectorAll('.supply-history-section');
+    var expandedTargets = {};
+
+    function rowMatches(row, query) {
+        if (!query) return true;
+        var placeText = (row.getAttribute('data-place-text') || '').toLowerCase();
+        return placeText.indexOf(query) !== -1;
+    }
+
+    function isCollapsedByToggle(row) {
+        return row.classList.contains('is-collapsed') && !expandedTargets[getExtraClass(row)];
+    }
+
+    function getExtraClass(row) {
+        if (row.classList.contains('extra-order-row')) return 'extra-order-row';
+        if (row.classList.contains('extra-booked-row')) return 'extra-booked-row';
+        if (row.classList.contains('extra-preorder-row')) return 'extra-preorder-row';
+        if (row.classList.contains('extra-delivery-row')) return 'extra-delivery-row';
+        return '';
+    }
+
+    function applyVisibility() {
+        var query = (filterInput && filterInput.value || '').trim().toLowerCase();
+        var visibleTotal = 0;
+
+        rows.forEach(function(row) {
+            var matches = rowMatches(row, query);
+            var shouldHide = query ? !matches : isCollapsedByToggle(row);
+            row.classList.toggle('d-none', shouldHide);
+            if (!shouldHide) visibleTotal += 1;
+        });
+
+        sections.forEach(function(section) {
+            var sectionRows = section.querySelectorAll('.supply-history-data-row');
+            var visibleInSection = 0;
+            sectionRows.forEach(function(row) {
+                if (!row.classList.contains('d-none')) visibleInSection += 1;
+            });
+            section.classList.toggle('supply-history-section--empty', visibleInSection === 0);
+
+            var countBadge = section.querySelector('.supply-history-row-count');
+            if (countBadge) {
+                var total = countBadge.getAttribute('data-total');
+                if (query) {
+                    countBadge.textContent = visibleInSection + ' з ' + total + ' записів';
+                } else {
+                    countBadge.textContent = total + ' записів';
+                }
+            }
+
+            var toggleWrap = section.querySelector('.supply-history-toggle-wrap');
+            if (toggleWrap) {
+                toggleWrap.classList.toggle('d-none', !!query);
+            }
+        });
+
+        if (noResults) {
+            noResults.classList.toggle('d-none', visibleTotal > 0 || !query);
+        }
+    }
+
+    if (filterInput) {
+        filterInput.addEventListener('input', applyVisibility);
+        filterInput.addEventListener('search', applyVisibility);
+    }
+
+    root.querySelectorAll('.supply-history-toggle-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var targetClass = btn.getAttribute('data-target');
+            var isExpanded = !!expandedTargets[targetClass];
+            expandedTargets[targetClass] = !isExpanded;
+            btn.textContent = expandedTargets[targetClass] ? 'Сховати' : 'Показати всі';
+            applyVisibility();
+        });
+    });
+
+    rows.forEach(function(row) {
+        if (row.classList.contains('is-collapsed')) {
+            row.classList.add('d-none');
+        }
+    });
+    applyVisibility();
+})();
 </script>

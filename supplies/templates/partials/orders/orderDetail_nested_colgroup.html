@@ -1,0 +1,14 @@
+{% load myapp_extras %}
+<colgroup>
+    <col class="od-col-lot">
+    <col class="od-col-qty">
+    <col class="od-col-exp">
+    {% if request.user|has_group:"empl" or request.user.is_staff %}
+        <col class="od-col-updated">
+    {% endif %}
+    {% if request.user|has_group:"empl" or request.user.is_staff %}
+        {% if order.detail_has_preorder_lines %}
+            <col class="od-col-preorder">
+        {% endif %}
+    {% endif %}
+</colgroup>

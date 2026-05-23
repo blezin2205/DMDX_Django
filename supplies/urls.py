@@ -90,6 +90,7 @@ urlpatterns = [
     path('add-client', views.addNewClient, name='addClient'),
     path('newLot/<int:supp_id>', views.addNewLotforSupply, name='addNewLot'),
     path('history_for_supply/<int:supp_id>', views.history_for_supply, name='history_for_supply'),
+    path('home-general-supply/<int:supp_id>', views.home_general_supply_info, name='homeGeneralSupplyInfo'),
 
     path('update/<int:supp_id>', views.updateSupply, name='updateSupply'),
     path('update_general/<int:supp_id>', views.updateGeneralSupply, name='updateGeneralSupply'),
@@ -145,6 +146,7 @@ urlpatterns = [
     path('serviceNotes/delete/<int:note_id>', views.deleteServiceNote, name='deleteNote'),
     path('serviceNotes/update/<int:note_id>', views.updateNote, name='updateNote'),
 
+    path('order-detail-general-supply/<int:order_id>/<int:supp_id>', views.order_detail_general_supply_info, name='orderDetailGeneralSupplyInfo'),
     path('orders/<int:order_id>/<int:sup_id>', views.orderDetail, name='orderDetail'),
     # path('orders/<int:order_id>/<int:sup_id>', views.orderDetail_with_highlighted, name='orderDetail_with_highlighted'),
 

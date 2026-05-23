@@ -101,20 +101,19 @@
 
 <!-- Supply History Modal -->
 <div class="modal fade" id="supplyHistoryModal" tabindex="-1" aria-labelledby="supplyHistoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered {% block supply_history_modal_dialog_class %}modal-xl{% endblock %}">
+    <div class="modal-dialog modal-dialog-centered {% block supply_history_modal_dialog_class %}modal-xl{% endblock %} supply-history-modal-dialog">
         <div class="modal-content">
-            <div class="modal-header justify-content-center position-relative py-2">
-                <h5 class="modal-title d-flex flex-column gap-0 text-center pe-5" id="supplyHistoryModalLabel" style="font-size: 1rem;">
-                    <div class="d-flex align-items-center gap-1 justify-content-center">
-                        <i class="bi bi-clock-history"></i>
-                        <span>Історія товару</span>
-                    </div>
-                    <div class="text-muted small" style="font-size: 0.85rem;"></div>
-                </h5>
-                <button type="button" class="btn-close position-absolute end-0 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header supply-history-modal-header">
+                <div class="supply-history-modal-heading">
+                    <h5 class="modal-title mb-0" id="supplyHistoryModalLabel">
+                        <i class="bi bi-clock-history me-1"></i>Історія товару
+                    </h5>
+                    <div class="supply-history-modal-subtitle" id="supplyHistoryProductName"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-0" id="supplyHistoryContent" style="height: calc(100vh - 100px);">
-                <!-- Content will be loaded here -->
+            <div class="modal-body p-0" id="supplyHistoryContent">
+                <!-- Content loaded via AJAX -->
             </div>
         </div>
     </div>
@@ -201,11 +200,49 @@
             closeAllSupplyRowMenus();
         });
 
+        function openHomeGenSupInfoModal(generalSupplyId) {
+            var dialog = $('#addNewLotModal .modal-dialog');
+            dialog.addClass('modal-dialog-centered gen-sup-info-modal-dialog gen-sup-info-modal-dialog--home-preview');
+            showModal(
+                '#addNewLotModal',
+                '#addNewLotContent',
+                `/home-general-supply/${generalSupplyId}`,
+                'Завантаження...'
+            );
+        }
+
+        $('#addNewLotModal').on('hidden.bs.modal.homeGenSupInfo', function() {
+            $(this).find('.modal-dialog').removeClass('modal-dialog-centered gen-sup-info-modal-dialog gen-sup-info-modal-dialog--home-preview');
+        });
+
+        var HOME_SUPPLY_ROW_IGNORE = 'a, button, input, select, textarea, label, .supply-history-btn, .edit-lot-btn, .add-lot-btn, .edit-gen-sup-btn, .supply-row-menu-btn, .supply-row-actions-panel, .supply-row-dropdown, .on-hold-trigger, .home-table-cart, .home-table-precart, [data-bs-toggle], .compact-menu-trigger, .lot-inline-edit-btn';
+
+        $(document).on('click', '.home-supply-row-open', function(e) {
+            if ($(e.target).closest(HOME_SUPPLY_ROW_IGNORE).length) return;
+            var generalSupplyId = $(this).data('general-supply-id');
+            if (!generalSupplyId) return;
+            openHomeGenSupInfoModal(generalSupplyId);
+        });
+
+        function openSupplyHistoryModal(supplyId, supplyName) {
+            $('#supplyHistoryProductName').text(supplyName || '');
+            showModal(
+                '#supplyHistoryModal',
+                '#supplyHistoryContent',
+                `/history_for_supply/${supplyId}`,
+                'Завантаження історії...'
+            );
+        }
+
+        $('#supplyHistoryModal').on('hidden.bs.modal', function() {
+            $('#supplyHistoryProductName').text('');
+        });
+
         // Supply history button handler
         $('.supply-history-btn').on('click', function(e) {
             e.preventDefault();
             const { supplyId, supplyName } = getSupplyNamAndId(this);
-            showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`, 'Завантаження історії...');
+            openSupplyHistoryModal(supplyId, supplyName);
         });
 
         // Add lot button handler
@@ -318,9 +355,8 @@
             // Reinitialize supply-history-btn handler
             row.find('.supply-history-btn').on('click', function(e) {
                 e.preventDefault();
-                 const { supplyId, supplyName } = getSupplyNamAndId(this);
-                 $('#supplyName').text(supplyName);
-                 showModal('#supplyHistoryModal', '#supplyHistoryContent', `/history_for_supply/${supplyId}`, 'Завантаження історії...');
+                const { supplyId, supplyName } = getSupplyNamAndId(this);
+                openSupplyHistoryModal(supplyId, supplyName);
             });
         }
 

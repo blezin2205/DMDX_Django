@@ -1,0 +1,49 @@
+{% load myapp_extras %}
+{% load mathfilters %}
+{% with el=group.items.0 %}
+<tr id="order-detail-group-row-{% if el.generalSupply %}gs-{{ el.generalSupply.id }}{% else %}orphan-{{ el.id }}{% endif %}" class="order-detail-group-row">
+    <th scope="row" class="text-start col-name">
+        <span class="col-idx">{{ group.counter }}.</span>
+        {% if el.generalSupply %}
+            {% if request.user|has_group:"empl" or request.user.is_staff %}
+                <a href="#" class="text-decoration-none link-dark order-detail-gen-sup-link" data-general-supply-id="{{ el.generalSupply.id }}">
+                    {{ el.generalSupply.name }}
+                </a>
+            {% else %}
+                {{ el.generalSupply.name }}
+            {% endif %}
+        {% else %}
+            <span class="order-detail-internal-name">{{ el.internalName|default:"—" }}</span>
+            {% if el.internalRef %}
+                <small class="text-muted d-block mt-1">REF: {{ el.internalRef }}</small>
+            {% endif %}
+        {% endif %}
+    </th>
+    <td class="truncate-cell col-pack" title="{% if el.generalSupply %}{{ el.generalSupply.package_and_tests|default_if_none:'' }}{% endif %}">
+        {% if el.generalSupply %}{{ el.generalSupply.package_and_tests }}{% endif %}
+    </td>
+    <td class="col-category">
+        {% if el.generalSupply and el.generalSupply.category %}{{ el.generalSupply.category.name }}{% endif %}
+    </td>
+    <td class="truncate-cell col-ref" title="{% if el.generalSupply %}{{ el.generalSupply.ref|default_if_none:'' }}{% else %}{{ el.internalRef|default_if_none:'' }}{% endif %}">
+        {% if el.generalSupply %}
+            {% if el.generalSupply.ref is not none %}{{ el.generalSupply.ref }}{% endif %}
+        {% elif el.internalRef %}
+            {{ el.internalRef }}
+        {% endif %}
+    </td>
+    <td class="truncate-cell col-smn home-table-smn" title="{% if el.generalSupply %}{{ el.generalSupply.SMN_code|default_if_none:'' }}{% endif %}">
+        {% if el.generalSupply and el.generalSupply.SMN_code is not none %}{{ el.generalSupply.SMN_code }}{% endif %}
+    </td>
+    <td class="supplyRow">
+        <table class="rounded-3 overflow-hidden table table-light table-borderless table-sm mb-0 nested-supply-table">
+            {% include 'partials/orders/orderDetail_nested_colgroup.html' %}
+            <tbody>
+                {% for line in group.items %}
+                    {% include 'partials/orders/orderDetail_cell_item_nested_row.html' with el=line counter=group.counter %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </td>
+</tr>
+{% endwith %}

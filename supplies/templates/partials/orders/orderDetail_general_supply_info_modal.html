@@ -1,0 +1,391 @@
+<div class="modal-header lot-modal-header">
+    <div>
+        <h6 class="modal-title mb-1" id="addNewLotModalLabel">Інформація про товар</h6>
+        <small class="text-muted"><i class="bi bi-box-seam me-1"></i>{{ generalSupp.name|default:"—" }}</small>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<div class="modal-body lot-modal-body gen-sup-info-modal-body">
+    <div class="lot-modal-container">
+        <div class="gen-sup-info-layout">
+            <div class="gen-sup-info-col gen-sup-info-col--product">
+                {% if generalSupp.image %}
+                <div class="gen-sup-info-image-wrap mb-3">
+                    <div class="gen-sup-info-image-placeholder" aria-hidden="true">
+                        <i class="bi bi-image"></i>
+                        <div class="gen-sup-info-image-spinner">
+                            <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                <span class="visually-hidden">Завантаження...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <img src="{{ generalSupp.image.url }}"
+                         alt="{{ generalSupp.name|default:'Товар' }}"
+                         class="gen-sup-info-image gen-sup-info-image--loading"
+                         onload="this.classList.remove('gen-sup-info-image--loading'); this.closest('.gen-sup-info-image-wrap').classList.add('gen-sup-info-image-wrap--loaded');"
+                         onerror="this.closest('.gen-sup-info-image-wrap').classList.add('gen-sup-info-image-wrap--error');">
+                </div>
+                {% endif %}
+
+                <div class="lot-modal-section gen-sup-info-product-section">
+                    <p class="lot-modal-section-title">Дані позиції</p>
+                    <div class="gen-sup-info-fields">
+                        <div class="gen-sup-info-field">
+                            <label class="form-label">Назва</label>
+                            <div class="gen-sup-info-value">{{ generalSupp.name|default:"—" }}</div>
+                        </div>
+                        <div class="gen-sup-info-field">
+                            <label class="form-label">Категорія</label>
+                            <div class="gen-sup-info-value">
+                                {% if generalSupp.category %}{{ generalSupp.category.name }}{% else %}—{% endif %}
+                            </div>
+                        </div>
+                        <div class="gen-sup-info-field">
+                            <label class="form-label">Пакування та кількість тестів</label>
+                            <div class="gen-sup-info-value">{{ generalSupp.package_and_tests|default:"—" }}</div>
+                        </div>
+                        <div class="gen-sup-info-field">
+                            <label class="form-label">REF</label>
+                            <div class="gen-sup-info-value">
+                                {% if generalSupp.ref is not none and generalSupp.ref != "" %}{{ generalSupp.ref }}{% else %}—{% endif %}
+                            </div>
+                        </div>
+                        <div class="gen-sup-info-field">
+                            <label class="form-label">SMN код</label>
+                            <div class="gen-sup-info-value">
+                                {% if generalSupp.SMN_code is not none and generalSupp.SMN_code != "" %}{{ generalSupp.SMN_code }}{% else %}—{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gen-sup-info-col gen-sup-info-col--lots">
+                <div class="lot-modal-section gen-sup-info-lots-section">
+                    <p class="lot-modal-section-title">
+                        Партії в замовленні
+                        <span class="gen-sup-lot-count">{{ order_lines|length }}</span>
+                    </p>
+                    <div class="gen-sup-lot-list">
+                        {% for line in order_lines %}
+                        <div class="gen-sup-lot-card">
+                            <div class="gen-sup-lot-card-head">
+                                <span class="gen-sup-lot-card-num">{{ forloop.counter }}</span>
+                                <span class="gen-sup-lot-card-title">
+                                    LOT: {% if line.lot is not none and line.lot != "" %}{{ line.lot }}{% else %}—{% endif %}
+                                </span>
+                            </div>
+                            <div class="gen-sup-lot-grid">
+                                <div class="gen-sup-info-field">
+                                    <label class="form-label">К-сть</label>
+                                    <div class="gen-sup-info-value">{{ line.count_in_order|default:"—" }}</div>
+                                </div>
+                                <div class="gen-sup-info-field">
+                                    <label class="form-label">Термін придатності</label>
+                                    <div class="gen-sup-info-value">
+                                        {% if line.date_expired %}
+                                            <span class="order-detail-date--{% if line.date_is_good %}good{% elif line.date_is_today %}today{% else %}bad{% endif %}">
+                                                {{ line.date_expired|date:"d.m.Y" }}
+                                            </span>
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="gen-sup-info-field">
+                                    <label class="form-label">Дата додавання</label>
+                                    <div class="gen-sup-info-value">
+                                        {% if line.date_created %}
+                                            {{ line.date_created|date:"d.m.Y" }}
+                                        {% elif line.supply %}
+                                            {{ line.supply.dateCreated|date:"d.m.Y" }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% if order.detail_has_preorder_lines %}
+                                <div class="gen-sup-info-field">
+                                    <label class="form-label">Передзамовлення</label>
+                                    <div class="gen-sup-info-value">
+                                        {% if line.supply_in_preorder %}
+                                            №{{ line.supply_in_preorder.supply_for_order.id }}
+                                            <span class="text-muted">від {{ line.supply_in_preorder.supply_for_order.dateCreated|date:"d.m.Y" }}</span>
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted small mb-0">Партій у цій позиції немає.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.lot-modal-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.lot-modal-body {
+    min-height: 360px;
+    padding: 0;
+}
+
+.lot-modal-container {
+    padding: 1.1rem 1.25rem;
+}
+
+.gen-sup-info-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 42%) minmax(0, 58%);
+    gap: 1.25rem;
+    align-items: start;
+    width: 100%;
+    max-width: 100%;
+}
+
+.gen-sup-info-col {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.gen-sup-info-col--lots {
+    border-left: 1px solid #e3e9f1;
+    padding-left: 0.85rem;
+}
+
+.lot-modal-section {
+    border: 1px solid #e3e9f1;
+    border-radius: 12px;
+    padding: 0.8rem;
+    background: #f8fafc;
+}
+
+.gen-sup-info-product-section {
+    width: 100%;
+}
+
+.gen-sup-info-lots-section {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 360px;
+}
+
+.lot-modal-section-title {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-shrink: 0;
+}
+
+.gen-sup-lot-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.72rem;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.gen-sup-info-image-wrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 180px;
+    padding: 0.65rem;
+    border: 1px solid #e3e9f1;
+    border-radius: 12px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.gen-sup-info-image-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    color: #adb5bd;
+    background: #f8fafc;
+    z-index: 1;
+}
+
+.gen-sup-info-image-placeholder .bi-image {
+    font-size: 2.2rem;
+    opacity: 0.45;
+}
+
+.gen-sup-info-image {
+    position: relative;
+    z-index: 2;
+    max-width: 100%;
+    max-height: 180px;
+    object-fit: contain;
+    border-radius: 8px;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+.gen-sup-info-image--loading {
+    opacity: 0;
+}
+
+.gen-sup-info-image-wrap--loaded .gen-sup-info-image-placeholder {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.gen-sup-info-image-wrap--error .gen-sup-info-image-spinner {
+    display: none;
+}
+
+.gen-sup-info-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.gen-sup-info-field .form-label {
+    font-size: 0.8rem;
+    color: #7c8698;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.gen-sup-info-value {
+    min-height: 40px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    background: #fff;
+    color: #212529;
+    font-size: 0.92rem;
+    line-height: 1.35;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.gen-sup-lot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    flex: 1;
+    overflow-y: auto;
+    max-height: 460px;
+    padding-right: 0.2rem;
+}
+
+.gen-sup-lot-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.gen-sup-lot-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+}
+
+.gen-sup-lot-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    padding: 0.65rem 0.75rem;
+}
+
+.gen-sup-lot-card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.55rem;
+    padding-bottom: 0.45rem;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+.gen-sup-lot-card-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.gen-sup-lot-card-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.gen-sup-lot-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+}
+
+.order-detail-date--good { color: #2563eb; }
+.order-detail-date--today { color: #ea580c; }
+.order-detail-date--bad { color: #dc2626; }
+
+@media (max-width: 767.98px) {
+    .gen-sup-info-layout {
+        grid-template-columns: 1fr;
+        min-height: 0;
+    }
+
+    .gen-sup-info-lots-section {
+        min-height: 0;
+    }
+
+    .gen-sup-lot-list {
+        max-height: none;
+    }
+
+    .gen-sup-lot-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+(function() {
+    var modal = document.getElementById('addNewLotModal');
+    if (!modal) return;
+    var dialog = modal.querySelector('.modal-dialog');
+    if (dialog) {
+        dialog.classList.add('modal-dialog-centered', 'modal-xl', 'gen-sup-info-modal-dialog');
+    }
+})();
+</script>
