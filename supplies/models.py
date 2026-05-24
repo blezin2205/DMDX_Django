@@ -25,7 +25,7 @@ from googletrans import Translator
 
 
 class CustomUser(AbstractUser):
-    pass
+    last_seen = models.DateTimeField(null=True, blank=True, db_index=True)
     np_contact_sender_ref = models.CharField(max_length=100, null=True)
     mobNumber = models.CharField(max_length=100, null=True)
     np_sender_ref = models.CharField(max_length=100, null=True)

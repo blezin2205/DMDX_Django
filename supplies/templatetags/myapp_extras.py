@@ -278,3 +278,20 @@ def is_mobile(request):
     mobile_keywords = ['android', 'iphone', 'ipad', 'ipod', 'windows phone', 'mobile']
 
     return any(keyword in user_agent for keyword in mobile_keywords)
+
+
+@register.filter
+def last_seen_ago(value):
+    if not value:
+        return 'ніколи'
+    seconds = int((timezone.now() - value).total_seconds())
+    if seconds < 60:
+        return 'щойно'
+    minutes = seconds // 60
+    if minutes < 60:
+        return f'{minutes} хв тому'
+    hours = minutes // 60
+    if hours < 24:
+        return f'{hours} год тому'
+    days = hours // 24
+    return f'{days} дн тому'

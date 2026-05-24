@@ -107,6 +107,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'supplies.middleware.CSRFErrorMiddleware',  # Custom CSRF error handling
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'supplies.middleware.LastSeenMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_htmx.middleware.HtmxMiddleware',

@@ -235,4 +235,5 @@ urlpatterns = [
     path('analytics/<int:place_id>/preorder-items/export/', views.preorder_items_table_to_xls, name='preorder_items_table_to_xls'),
     path('analytics/<int:place_id>/preorder-items/export-en/', views.preorder_items_table_to_xls_en, name='preorder_items_table_to_xls_en'),
     path('analytics_preorders_list_for_client/', views.analytics_preorders_list_for_client, name='analytics_preorders_list_for_client'),
+    path('staff/users-last-seen/', views.staff_users_last_seen, name='staff_users_last_seen'),
 ]

@@ -5351,3 +5351,17 @@ def _preorder_items_table_to_xls(request, place_id, language='uk'):
     wb.close()
     return response
 
+
+@login_required
+def staff_users_last_seen(request):
+    if not request.user.is_staff:
+        return HttpResponseForbidden('Доступ лише для staff.')
+    ordering = (F('last_seen').desc(nulls_last=True), 'username')
+    client_users = CustomUser.objects.filter(groups__name='client').distinct().order_by(*ordering)
+    staff_users = CustomUser.objects.exclude(groups__name='client').order_by(*ordering)
+    return render(request, 'supplies/staff/users_last_seen.html', {
+        'title': 'Остання активність користувачів',
+        'client_users': client_users,
+        'staff_users': staff_users,
+    })
+
