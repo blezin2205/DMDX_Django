@@ -97,9 +97,8 @@ def live_scan_delivery_probe(request, delivery_order_id=None):
             return redirect('delivery_detail', delivery_id=delivery_order.id)
         title = f'Live-скан · поставка №{delivery_order.id}'
     else:
-        delivery_order = DeliveryOrder(from_user=request.user)
-        delivery_order.save()
-        title = f'Live-скан · нова поставка №{delivery_order.id}'
+        delivery_order = None
+        title = 'Live-скан · нова поставка'
 
     return render(
         request,
@@ -114,20 +113,32 @@ def live_scan_delivery_probe(request, delivery_order_id=None):
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
-def live_scan_delivery_probe_save(request, delivery_order_id):
+def live_scan_delivery_probe_save(request, delivery_order_id=None):
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request'}, status=400)
-    delivery_order = get_object_or_404(DeliveryOrder, pk=delivery_order_id)
+    if delivery_order_id is None:
+        delivery_order = DeliveryOrder(from_user=request.user)
+        delivery_order.save()
+        created = True
+    else:
+        delivery_order = get_object_or_404(DeliveryOrder, pk=delivery_order_id)
+        created = False
     if delivery_order.isHasBeenSaved:
         return JsonResponse({'error': 'Поставка вже закрита'}, status=400)
     data = json.loads(request.body)
     barcode_type = data.get('barcode_type', 'Data Matrix')
     barcode_raw = (data.get('barcode') or '').strip()
     if not barcode_raw:
+        if created:
+            delivery_order.delete()
         return JsonResponse({'error': 'Порожній штрих-код'}, status=400)
     item = process_single_barcode_scan(barcode_raw, delivery_order, barcode_type)
     if item is None:
+        if created:
+            delivery_order.delete()
         return JsonResponse({'error': 'Не вдалося розпізнати формат'}, status=400)
+    if created:
+        _apply_barcode_type_comment(delivery_order, barcode_type)
     recognized = bool(item.general_supply_id)
     payload = {
         'recognized': recognized,
@@ -137,6 +148,7 @@ def live_scan_delivery_probe_save(request, delivery_order_id):
         'smn_code': item.SMN_code or '',
         'barcode': item.barcode or '',
         'expired_date': item.expiredDate.strftime('%Y-%m-%d') if item.expiredDate else (item.expiredDate_desc or ''),
+        'delivery_order_id': delivery_order.id,
     }
     if recognized:
         gs = item.general_supply
@@ -150,8 +162,46 @@ def live_scan_delivery_probe_save(request, delivery_order_id):
     return JsonResponse(payload)
 
 
+_BARCODE_TYPE_COMMENT_LABELS = {
+    'Data Matrix': 'Lifotronic',
+    'Siemens': 'Siemens',
+}
+
+
+def _barcode_type_comment_line(barcode_type):
+    barcode_type = (barcode_type or '').strip()
+    if not barcode_type:
+        return None
+    return _BARCODE_TYPE_COMMENT_LABELS.get(barcode_type, barcode_type)
+
+
+def _is_barcode_type_comment_line(line):
+    line = line.strip()
+    if not line:
+        return False
+    if line.startswith('Тип штрихкоду:'):
+        return True
+    return line in _BARCODE_TYPE_COMMENT_LABELS or line in _BARCODE_TYPE_COMMENT_LABELS.values()
+
+
+def _apply_barcode_type_comment(delivery_order, barcode_type):
+    type_line = _barcode_type_comment_line(barcode_type)
+    if not type_line:
+        return
+
+    existing = (delivery_order.comment or '').strip()
+    lines = [
+        line for line in existing.splitlines()
+        if line.strip() and not _is_barcode_type_comment_line(line)
+    ]
+    lines.insert(0, type_line)
+    delivery_order.comment = '\n'.join(lines)
+    delivery_order.save(update_fields=['comment'])
+
+
 def threading_create_delivery_async(request, string_data, for_delivery_order, barcode_type, isUpdate = False):
     total_sups_delivered, total_requests = makeDataUpload_nonCelery(string_data, for_delivery_order, barcode_type)
+    _apply_barcode_type_comment(for_delivery_order, barcode_type)
     delivered_sups_with_general_supply_count = len([x for x in total_sups_delivered if x.general_supply is not None])
     delivered_sups_without_general_supply_count = len([x for x in total_sups_delivered if x.general_supply is None])
     

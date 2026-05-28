@@ -128,7 +128,7 @@
     --delivery-nested-lot-width: 5.25rem;
     --delivery-nested-qty-width: 3.25rem;
     --delivery-nested-exp-width: 6.25rem;
-    --delivery-nested-actions-width: 4.25rem;
+    --delivery-nested-actions-width: 3.5rem;
     --delivery-nested-control-height: calc(1.5em + 0.35rem + 2px);
     --delivery-nested-btn-size: 1.65rem;
     --delivery-nested-row-padding-y: 0.25rem;
@@ -140,6 +140,14 @@
         + var(--delivery-nested-qty-width)
         + var(--delivery-nested-exp-width)
         + var(--delivery-nested-actions-width)
+    );
+}
+
+.delivery-detail-page--closed {
+    --delivery-nested-table-width: calc(
+        var(--delivery-nested-lot-width)
+        + var(--delivery-nested-qty-width)
+        + var(--delivery-nested-exp-width)
     );
 }
 
@@ -156,6 +164,24 @@
 
 .delivery-detail-page .delivery-comment-section__body {
     padding: 0.85rem 1rem;
+}
+
+.delivery-detail-page .order-detail-table .col-name {
+    width: 15%;
+    max-width: 25%;
+    min-width: 5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: normal;
+}
+
+@media (min-width: 992px) {
+    .delivery-detail-page .compact-supply-table .col-name {
+        width: 15%;
+        max-width: 25%;
+        min-width: 5rem;
+    }
 }
 
 .delivery-detail-page .order-detail-table .supplyRow {
@@ -275,13 +301,15 @@
     line-height: 1;
 }
 
-.delivery-detail-page .nested-supply-table .delivery-detail-nested-row .bi-keyboard {
-    font-size: 0.75rem;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
 .delivery-detail-page .nested-supply-table .delivery-detail-nested-row .qty-value,
 .delivery-detail-page .nested-supply-table .delivery-detail-nested-row .lot-value {
     display: inline-block;
+}
+
+.delivery-detail-page .nested-supply-table .delivery-detail-nested-row .qty-value--manual {
+    color: #1e3a8a;
+}
+
+.delivery-detail-page .delivery-detail-qty-legend .qty-value--manual {
+    color: #1e3a8a;
 }

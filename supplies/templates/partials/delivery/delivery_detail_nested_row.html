@@ -8,7 +8,7 @@
     </td>
     <td class="supply-qty-col">
       <div class="delivery-nested-cell delivery-nested-cell--view">
-        <span class="qty-value fw-semibold">{{ line.count }}</span>
+        <span class="qty-value fw-semibold{% if line.isHandleAdded %} qty-value--manual{% endif %}">{{ line.count }}</span>
       </div>
     </td>
     <td class="supply-exp-col">
@@ -20,9 +20,9 @@
         {% else %}—{% endif %}
       </div>
     </td>
+    {% if not delivery_order.isHasBeenSaved %}
     <td class="delivery-detail-actions-col text-nowrap">
       <div class="delivery-nested-cell delivery-nested-cell--actions">
-        {% if not delivery_order.isHasBeenSaved %}
           <button type="button" class="btn btn-sm btn-outline-warning"
             hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_edit_action' %}"
             hx-vals='{"item_id": {{ line.id }}{% if staging %}, "context": "staging"{% endif %}}'
@@ -39,12 +39,9 @@
             <i class="bi bi-trash3"></i>
           </button>
           {% endif %}
-        {% endif %}
-        {% if line.isHandleAdded %}
-          <i class="bi bi-keyboard text-muted" title="Додано вручну"></i>
-        {% endif %}
       </div>
     </td>
+    {% endif %}
   {% else %}
     <td class="supply-lot-col">
       <div class="delivery-nested-cell delivery-nested-cell--view">{{ line.supplyLot|default:"—" }}</div>
@@ -55,8 +52,8 @@
     <td class="supply-exp-col">
       <div class="delivery-nested-cell delivery-nested-cell--view small text-muted">{{ line.expiredDate_desc|default:"—" }}</div>
     </td>
+    {% if not delivery_order.isHasBeenSaved %}
     <td class="delivery-detail-actions-col text-nowrap">
-      {% if not delivery_order.isHasBeenSaved %}
         <button type="button" class="btn btn-sm btn-outline-danger"
           hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_delete_action' %}"
           hx-vals='{"del_sup_id": "{{ line.id }}"}'
@@ -64,7 +61,7 @@
           hx-swap="delete">
           <i class="bi bi-trash3"></i>
         </button>
-      {% endif %}
     </td>
+    {% endif %}
   {% endif %}
 </tr>

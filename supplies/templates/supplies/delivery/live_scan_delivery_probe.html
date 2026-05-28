@@ -106,7 +106,10 @@
       </p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-      <a href="{% url 'delivery_detail' delivery_order.id %}" class="btn btn-sm btn-outline-primary">
+      <a href="{% if delivery_order %}{% url 'delivery_detail' delivery_order.id %}{% else %}#{% endif %}"
+         id="live-scan-open-delivery-link"
+         class="btn btn-sm btn-outline-primary{% if not delivery_order %} disabled pe-none{% endif %}"
+         {% if not delivery_order %}aria-disabled="true" tabindex="-1"{% endif %}>
         <i class="bi bi-box-seam"></i> Відкрити поставку
       </a>
       <a href="{% url 'upload_supplies_for_new_delivery' %}" class="btn btn-sm btn-outline-secondary">
@@ -244,8 +247,11 @@
 <script src="{% static 'js/delivery-live-scan.js' %}"></script>
 <script>
 (function () {
-  const deliveryOrderId = {{ delivery_order.id }};
-  const saveUrl = "{% url 'live_scan_delivery_probe_save' delivery_order.id %}";
+  let deliveryOrderId = {% if delivery_order %}{{ delivery_order.id }}{% else %}null{% endif %};
+  const saveUrlNew = "{% url 'live_scan_delivery_probe_save_new' %}";
+  let saveUrl = deliveryOrderId
+    ? "{% if delivery_order %}{% url 'live_scan_delivery_probe_save' delivery_order.id %}{% else %}{% url 'live_scan_delivery_probe_save_new' %}{% endif %}"
+    : saveUrlNew;
   const generalSupplies = {{ general_supplies_json|safe }};
   const index = DeliveryLiveScan.buildGeneralSupplyIndex(generalSupplies);
 
@@ -514,7 +520,31 @@
     return line;
   }
 
-  function persistScan(raw, barcodeType, lineRow, existingFailEntry) {
+  let saveQueue = Promise.resolve();
+
+  function bindDeliveryOrder(id) {
+    if (deliveryOrderId === id) {
+      return;
+    }
+    deliveryOrderId = id;
+    saveUrl = '/live_scan_delivery_probe/' + id + '/save/';
+    const openLink = document.getElementById('live-scan-open-delivery-link');
+    if (openLink) {
+      openLink.href = '/all_deliveries/' + id;
+      openLink.classList.remove('disabled', 'pe-none');
+      openLink.removeAttribute('aria-disabled');
+      openLink.removeAttribute('tabindex');
+    }
+    const titleEl = document.querySelector('h4.title-text');
+    if (titleEl) {
+      titleEl.innerHTML = '<i class="bi bi-upc-scan title-icon me-2"></i>Live-скан · поставка №' + id;
+    }
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', '/live_scan_delivery_probe/' + id + '/');
+    }
+  }
+
+  function persistScanRequest(raw, barcodeType, lineRow, existingFailEntry) {
     if (typeof csrftoken === 'undefined' || !csrftoken) {
       finishDbSaveAttempt(lineRow, false, 'Немає CSRF-токена', existingFailEntry, raw, barcodeType);
       return Promise.resolve();
@@ -543,7 +573,10 @@
           return data;
         });
       })
-      .then(function () {
+      .then(function (data) {
+        if (data.delivery_order_id) {
+          bindDeliveryOrder(data.delivery_order_id);
+        }
         finishDbSaveAttempt(lineRow, true, null, existingFailEntry, raw, barcodeType);
       })
       .catch(function (err) {
@@ -557,6 +590,13 @@
           barcodeType
         );
       });
+  }
+
+  function persistScan(raw, barcodeType, lineRow, existingFailEntry) {
+    saveQueue = saveQueue.then(function () {
+      return persistScanRequest(raw, barcodeType, lineRow, existingFailEntry);
+    });
+    return saveQueue;
   }
 
   function retryAllFailedSaves() {

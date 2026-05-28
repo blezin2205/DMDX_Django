@@ -6,7 +6,7 @@
   <h2 class="{% if status_of_task == 'SUCCESS' %}text-success{% else %}text-danger{% endif %}"><u>{{ status_of_task }}</u></h2>
 {% endif %}
 
-<div class="container-fluid py-3 delivery-detail-page">
+<div class="container-fluid py-3 delivery-detail-page{% if delivery_order.isHasBeenSaved %} delivery-detail-page--closed{% endif %}">
   <div class="card shadow-sm mb-3">
     <div class="card-header py-2 {% if not delivery_order.isHasBeenSaved %}bg-warning bg-opacity-10{% else %}bg-primary bg-opacity-10{% endif %}">
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -30,6 +30,10 @@
       </div>
     </div>
   </div>
+
+  <p class="small text-muted mb-2 delivery-detail-qty-legend">
+    <span class="qty-value qty-value--manual fw-semibold">N</span> — темно-синя кількість: позицію додано вручну
+  </p>
 
   {% if recognized_groups or not delivery_order.isHasBeenSaved %}
   <div class="card shadow-sm mb-3 order-detail-table-card">
@@ -56,7 +60,9 @@
                     <th class="supply-lot-head">LOT</th>
                     <th class="supply-qty-head">К-сть</th>
                     <th class="supply-exp-head">Термін</th>
+                    {% if not delivery_order.isHasBeenSaved %}
                     <th class="delivery-detail-actions-head"></th>
+                    {% endif %}
                   </tr>
                 </thead>
               </table>
@@ -102,7 +108,9 @@
                     <th class="supply-lot-head">LOT</th>
                     <th class="supply-qty-head">К-сть</th>
                     <th class="supply-exp-head">Термін</th>
+                    {% if not delivery_order.isHasBeenSaved %}
                     <th class="delivery-detail-actions-head"></th>
+                    {% endif %}
                   </tr>
                 </thead>
               </table>

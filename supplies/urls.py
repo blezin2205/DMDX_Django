@@ -24,6 +24,7 @@ urlpatterns = [
      path('update-precart-item-count/', views.updatePreCartItemCount, name='precart-count'),
      path('upload_supplies_for_new_delivery/', view_upload.upload_supplies_for_new_delivery_noncelery, name='upload_supplies_for_new_delivery'),
      path('live_scan_delivery_probe/', view_upload.live_scan_delivery_probe, name='live_scan_delivery_probe'),
+     path('live_scan_delivery_probe/save/', view_upload.live_scan_delivery_probe_save, name='live_scan_delivery_probe_save_new'),
      path('live_scan_delivery_probe/<int:delivery_order_id>/', view_upload.live_scan_delivery_probe, name='live_scan_delivery_probe_existing'),
      path('live_scan_delivery_probe/<int:delivery_order_id>/save/', view_upload.live_scan_delivery_probe_save, name='live_scan_delivery_probe_save'),
      path('new_delivery_save_delivery/<int:delivery_order_id>', view_upload.save_delivery, name='save-delivery'),
