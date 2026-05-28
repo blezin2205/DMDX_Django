@@ -4,6 +4,7 @@ import pytz
 import requests
 from django.urls import reverse, reverse_lazy
 from .models import *
+from .query_utils import places_for_filter_queryset, place_choice_label
 from django.forms import ModelForm, Form
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
@@ -285,6 +286,9 @@ class ServiceNoteForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(ServiceNoteForm, self).__init__(*args, **kwargs)
+        place_qs = places_for_filter_queryset()
+        self.fields['for_place'].queryset = place_qs
+        self.fields['for_place'].label_from_instance = place_choice_label
         self.fields['description'].label = "Опис виконаних робіт"
         self.fields['for_place'].label = "Клієнт"
 

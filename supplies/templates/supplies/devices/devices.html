@@ -1,93 +1,105 @@
-{% extends 'supplies/base/base.html' %}
+{% extends 'supplies/base/app_list_base.html' %}
 {% load static %}
-{% load bootstrap %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
 {% load cloudinary %}
 
-
-    {% block title %}
+{% block title %}
 {{ title }}
 {% endblock %}
 
-{% block content %}
-
+{% block list_filter %}
     {% if isDevices %}
-     <form method="get" class="form-inline justify-content-center">
-         <div class="hstack gap-2 bg-light border shadow-sm p-3 mb-5 bg-body rounded justify-content-between">
-             <div class="hstack gap-2">
-                 {{ filter.form.in_city|bootstrap }} <h4>чи</h4>
-                 {{ filter.form.in_place|bootstrap }}
-                 {{ filter.form.general_device|bootstrap }}
-                 {{ filter.form.serial_number|bootstrap }}
-             </div>
-             <button class="btn btn-outline-primary my-2" type="submit">Застосувати</button>
-
-</div>
-        </form>
-
-        <div class="mb-3">
-            <a href="{% url 'devices_render_to_xls'%}" class="btn btn-outline-success me-2">Експорт в Excel (Українською)</a>
-            <a href="{% url 'devices_render_to_xls_en'%}" class="btn btn-outline-success">Export to Excel (English)</a>
+    <form method="get" class="filter-toolbar-form mb-2">
+        <div class="filter-panel bg-light border shadow-sm rounded-3">
+            <div class="filter-grid">
+                <div class="filter-field">{{ filter.form.in_city|as_crispy_field }}</div>
+                <div class="filter-field">{{ filter.form.in_place|as_crispy_field }}</div>
+                <div class="filter-field">{{ filter.form.general_device|as_crispy_field }}</div>
+                <div class="filter-field">{{ filter.form.serial_number|as_crispy_field }}</div>
+            </div>
+            <div class="filter-actions">
+                <div class="filter-actions-group">
+                    <button class="btn btn-primary btn-sm" type="submit">
+                        <i class="bi bi-search me-1"></i>Застосувати
+                    </button>
+                    <a href="{{ request.path }}" class="btn btn-outline-secondary btn-sm">Скинути</a>
+                    <div class="filter-actions-excel">
+                        <a href="{% url 'devices_render_to_xls' %}" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Експорт в Excel (Українською)
+                        </a>
+                        <a href="{% url 'devices_render_to_xls_en' %}" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Export to Excel (English)
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
+    </form>
     {% endif %}
+{% endblock %}
 
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th scope="col">ID ({{ devices|length }})</th>
-      <th scope="col">Прилад</th>
-      <th scope="col">Серійний номер</th>
-        {% if isDevices %}
-            <th scope="col">Клієнт</th>
-        {% endif %}
-      <th scope="col">Дата інсталяції</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for device in devices %}
-    <tr>
-      <th scope="row">{{ device.id }}</th>
-      <td>
-
-          {% if device.image %}
-              <a href="#" class="pop">
-              <div datasrc="{{ device.image.url }}">{{ device.general_device.name }}</div>
-</a>
-
-              <div class="modal fade" id="imagemodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content" style="background-color: rgba(255,246,16,0); border-color: rgba(255,246,16,0)">
-      <div class="modal-body">
-         <a class="full_image_view" href=""><img src="" class="imagepreview" style="width: 100%" ></a>
-      </div>
-    </div>
-  </div>
-</div>
-
-              <script>
-              $(function() {
-		$('.pop').on('click', function() {
-            let src = $(this).find('div').attr('datasrc')
-			$('.imagepreview').attr('src', src);
-            $('.full_image_view').attr('href', src);
-			$('#imagemodal').modal('show');
-		});
-});
-              </script>
-    {% else %}
-         {{ device.general_device.name }}
-
-    {% endif %}
-
-
-      </td>
-      <td>{% if device.serial_number  %}{{ device.serial_number }}{% endif %}</td>
-         {% if isDevices %}
-            <td>{{ device.in_place.name }}, {{ device.in_place.city_ref.name }}</td>
-        {% endif %}
-      <td>{{ device.date_installed|date:"d.m.Y" }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
+{% block list_table %}
+<table class="table centred mt-3 w-auto mx-auto table-sm align-middle compact-supply-table">
+    <thead class="thead-dark">
+        <tr>
+            <th scope="col">ID ({{ devices|length }})</th>
+            <th scope="col">Прилад</th>
+            <th scope="col">Серійний номер</th>
+            {% if isDevices %}
+                <th scope="col">Клієнт</th>
+            {% endif %}
+            <th scope="col">Дата інсталяції</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for device in devices %}
+        <tr>
+            <th scope="row">{{ device.id }}</th>
+            <td>
+                {% if device.image %}
+                    <a href="#" class="pop device-image-pop">
+                        <span data-src="{{ device.image.url }}">{{ device.general_device.name }}</span>
+                    </a>
+                {% else %}
+                    {{ device.general_device.name }}
+                {% endif %}
+            </td>
+            <td>{% if device.serial_number %}{{ device.serial_number }}{% endif %}</td>
+            {% if isDevices %}
+                <td>{{ device.in_place.name }}, {{ device.in_place.city_ref.name }}</td>
+            {% endif %}
+            <td>{{ device.date_installed|date:"d.m.Y" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
 
+{% if devices %}
+<div class="modal fade" id="imagemodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="background-color: rgba(255,246,16,0); border-color: rgba(255,246,16,0)">
+            <div class="modal-body">
+                <a class="full_image_view" href=""><img src="" class="imagepreview" style="width: 100%"></a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if devices %}
+<script>
+$(function() {
+    $('.device-image-pop').on('click', function(e) {
+        e.preventDefault();
+        var src = $(this).find('[data-src]').attr('data-src');
+        $('.imagepreview').attr('src', src);
+        $('.full_image_view').attr('href', src);
+        $('#imagemodal').modal('show');
+    });
+});
+</script>
+{% endif %}
 {% endblock %}

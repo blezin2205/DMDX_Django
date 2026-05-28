@@ -1,10 +1,7 @@
 {% extends 'supplies/base/base.html' %}
-{% load myapp_extras %}
-{% load crispy_forms_filters %}
 {% load static %}
-    {% block title %}
-{{ title }}
-{% endblock %}
+
+{% block title %}{{ title }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/app-home.css' %}" type="text/css">
@@ -13,7 +10,5 @@
 {% endblock %}
 
 {% block content %}
-
     {% include 'supplies/cart/delivery_cart.html' %}
-
 {% endblock %}

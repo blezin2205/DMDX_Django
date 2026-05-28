@@ -277,6 +277,16 @@ class SupplyFilter(django_filters.FilterSet):
 
 
 
+from .query_utils import places_for_filter_queryset, place_choice_label
+
+
+def _configure_place_choice_filter(filter_obj):
+    place_qs = places_for_filter_queryset()
+    filter_obj.queryset = place_qs
+    filter_obj.field.queryset = place_qs
+    filter_obj.field.label_from_instance = place_choice_label
+
+
 class ServiceNotesFilter(django_filters.FilterSet):
     from_user = ModelChoiceFilter(queryset=CustomUser.objects.filter(groups__name='engineer'))
     class Meta:
@@ -285,6 +295,7 @@ class ServiceNotesFilter(django_filters.FilterSet):
 
     def __init__(self, *args, **kwargs):
         super(ServiceNotesFilter, self).__init__(*args, **kwargs)
+        _configure_place_choice_filter(self.filters['for_place'])
         self.filters['from_user'].extra.update(
             {'empty_label': 'Всі'})
         self.filters['for_place'].extra.update(
@@ -302,6 +313,7 @@ class DeviceFilter(django_filters.FilterSet):
 
     def __init__(self, *args, **kwargs):
         super(DeviceFilter, self).__init__(*args, **kwargs)
+        _configure_place_choice_filter(self.filters['in_place'])
         self.filters['in_place'].extra.update(
             {'empty_label': 'Всі'})
         self.filters['general_device'].extra.update(
@@ -397,20 +409,18 @@ class PlaceFilter(django_filters.FilterSet):
             current_date = timezone.now()
             start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0).date()
             end_of_month = (current_date.replace(day=1) + timezone.timedelta(days=32)).replace(day=1).date() - timezone.timedelta(days=1)
-            
-            # First filter places that have at least one preorder
-            places_with_preorders = queryset.filter(preorder__isnull=False).distinct()
-            
-            # Then filter based on predicted next order date
-            from .analytics import PreorderAnalytics
-            places_needing_order = []
-            
-            for place in places_with_preorders:
-                analytics = PreorderAnalytics(place)
-                next_order_date = analytics.predict_next_order_date()
-                if next_order_date and start_of_month <= next_order_date <= end_of_month:
-                    places_needing_order.append(place.id)
-            
+
+            place_ids = list(
+                queryset.filter(
+                    Exists(PreOrder.objects.filter(place_id=OuterRef('pk')))
+                ).values_list('pk', flat=True)
+            )
+            from .analytics import bulk_predict_next_order_dates
+            predictions = bulk_predict_next_order_dates(place_ids)
+            places_needing_order = [
+                pid for pid, predicted in predictions.items()
+                if predicted and start_of_month <= predicted <= end_of_month
+            ]
             return queryset.filter(id__in=places_needing_order)
             
         return queryset

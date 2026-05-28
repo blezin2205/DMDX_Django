@@ -1,23 +1,41 @@
 {% if results %}
-  <ul class="list-group list-group-flush delivery-search-results-list mb-0">
-    {% for item in results %}
-      <li class="list-group-item list-group-item-action p-0 border-0 border-bottom">
-        <button type="button"
-          class="delivery-staging-pick-link btn btn-link text-start text-dark text-decoration-none w-100 p-2 rounded-0"
+  <table class="table table-sm align-middle compact-supply-table order-detail-table delivery-search-results-table mb-0">
+    <thead>
+      <tr>
+        <th scope="col" class="col-name text-start">Назва</th>
+        <th scope="col" class="col-pack">Пакування / Тести</th>
+        <th scope="col" class="col-category">Категорія</th>
+        <th scope="col" class="col-ref">REF</th>
+        <th scope="col" class="col-smn home-table-smn">SMN</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in results %}
+        <tr class="delivery-staging-pick-link"
+          role="button"
+          tabindex="0"
           data-gen-sup-id="{{ item.id }}"
           data-delivery-order-id="{{ delivery_order_id }}"
           data-pick-url="{% url 'add_gen_sup_in_delivery_order_manual_list' %}">
-          <div class="fw-medium small mb-1">{{ item.name }}</div>
-          <div class="d-flex flex-wrap gap-2 text-muted" style="font-size:0.72rem">
-            {% if item.ref %}<span><i class="bi bi-hash"></i>{{ item.ref }}</span>{% endif %}
-            {% if item.SMN_code %}<span><i class="bi bi-upc"></i>{{ item.SMN_code }}</span>{% endif %}
-            {% if item.category %}<span><i class="bi bi-tag"></i>{{ item.category.name }}</span>{% endif %}
-            {% if item.package_and_tests %}<span><i class="bi bi-box"></i>{{ item.package_and_tests }}</span>{% endif %}
-          </div>
-        </button>
-      </li>
-    {% endfor %}
-  </ul>
+          <th scope="row" class="text-start col-name">
+            <span class="fw-medium">{{ item.name }}</span>
+          </th>
+          <td class="truncate-cell col-pack" title="{{ item.package_and_tests|default_if_none:'' }}">
+            {{ item.package_and_tests|default:"" }}
+          </td>
+          <td class="col-category">
+            {% if item.category %}{{ item.category.name }}{% endif %}
+          </td>
+          <td class="truncate-cell col-ref" title="{{ item.ref|default_if_none:'' }}">
+            {% if item.ref is not none %}{{ item.ref }}{% endif %}
+          </td>
+          <td class="truncate-cell col-smn home-table-smn" title="{{ item.SMN_code|default_if_none:'' }}">
+            {% if item.SMN_code is not none %}{{ item.SMN_code }}{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% elif search_attempted %}
   <div class="p-2 text-muted small">Нічого не знайдено</div>
 {% endif %}

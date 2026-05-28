@@ -206,6 +206,37 @@ class PreorderAnalytics:
         }
 
 
+def bulk_predict_next_order_dates(place_ids):
+    """
+    Прогноз дати наступного передзамовлення для багатьох організацій одним запитом.
+    Повертає {place_id: date | None}. Логіка та сама, що в PreorderAnalytics.predict_next_order_date.
+    """
+    from collections import defaultdict
+
+    if not place_ids:
+        return {}
+
+    preorders_by_place = defaultdict(list)
+    for place_id, dt in (
+        PreOrder.objects.filter(place_id__in=place_ids)
+        .values_list('place_id', 'dateCreated')
+        .order_by('place_id', 'dateCreated')
+    ):
+        preorders_by_place[place_id].append(dt)
+
+    result = {}
+    for place_id in place_ids:
+        dates = preorders_by_place.get(place_id, [])
+        if len(dates) < 2:
+            result[place_id] = None
+            continue
+        intervals = [(dates[i] - dates[i - 1]).days for i in range(1, len(dates))]
+        avg_interval = sum(intervals) / len(intervals)
+        predicted = dates[-1] + timedelta(days=avg_interval)
+        result[place_id] = predicted.date() if hasattr(predicted, 'date') else predicted
+    return result
+
+
 def build_orders_analytics(order_qs, *, include_top_places=True, for_user=None):
     """
     Знімок для дашборду замовлень (графіки Chart.js).

@@ -33,7 +33,9 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
 from django.db import transaction
-from .analytics import PreorderAnalytics, build_orders_analytics, build_preorders_analytics, build_supply_statistics, build_clients_info_analytics
+from .analytics import PreorderAnalytics, build_orders_analytics, build_preorders_analytics, build_supply_statistics, build_clients_info_analytics, bulk_predict_next_order_dates
+from .query_utils import related_count_subquery, devices_list_queryset, servicenotes_list_queryset, places_for_filter_queryset, place_choice_label
+from .topbar_cart_counts import topbar_cart_count_context
 from .home_table_display import HOME_TABLE_DISPLAY_JS_TO_MODEL, home_table_display_settings_for_user
 from django.utils import timezone
 from googletrans import Translator
@@ -190,12 +192,8 @@ def register_exls_selected_buttons(request):
     return render(request, 'partials/register_butons_for_seelcted_orders.html', {'cheked': cheked, 'merge_button_available': merge_button_available})
 
 def countCartItemsHelper(request):
-    """Same data as template context cartCountData (see context_processors.cart_count_data)."""
-    from .topbar_cart_counts import build_topbar_cart_count_data, empty_topbar_cart_count_data
-
-    if not request.user.is_authenticated:
-        return empty_topbar_cart_count_data()
-    return build_topbar_cart_count_data(request)
+    """Повні лічильники для явних викликів (не context processor)."""
+    return topbar_cart_count_context(request)['cartCountData']
 
 @login_required(login_url='login')
 def full_image_view_for_device_image(request, device_id):
@@ -438,7 +436,11 @@ def updateCartItemCount(request):
             next_url = parsed_url.path
             if parsed_url.query:
                 next_url = f'{next_url}?{parsed_url.query}'
-    return render(request, 'partials/cart/cart-badge.html', {'cart_next_url': next_url})
+    return render(
+        request,
+        'partials/cart/cart-badge.html',
+        {'cart_next_url': next_url, **topbar_cart_count_context(request)},
+    )
 
 
 def updatePreCartItemCount(request):
@@ -451,7 +453,11 @@ def updatePreCartItemCount(request):
             next_url = parsed_url.path
             if parsed_url.query:
                 next_url = f'{next_url}?{parsed_url.query}'
-    return render(request, 'partials/cart/precart-badge.html', {'precart_next_url': next_url})
+    return render(
+        request,
+        'partials/cart/precart-badge.html',
+        {'precart_next_url': next_url, **topbar_cart_count_context(request)},
+    )
 
 
 @login_required(login_url='login')
@@ -2559,8 +2565,8 @@ def agreements_for_client_analytics(request, client_id):
 
 @login_required(login_url='login')
 def devicesForClient(request, client_id):
-    place = get_object_or_404(Place, pk=client_id)
-    devices = place.device_set.all()
+    place = get_object_or_404(Place.objects.select_related('city_ref'), pk=client_id)
+    devices = devices_list_queryset(place.device_set.all())
     title = f'Всі прилади для клієнта: \n {place.name}, {place.city_ref.name}'
     if not devices:
         title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
@@ -2570,7 +2576,7 @@ def devicesForClient(request, client_id):
 
 
 def devicesList(request):
-    devices = Device.objects.all().order_by('-id')
+    devices = devices_list_queryset(Device.objects.all().order_by('-id'))
     devFilters = DeviceFilter(request.GET, queryset=devices)
     devices = devFilters.qs
     title = f'Вcі прилади'
@@ -2590,8 +2596,8 @@ def serviceNotesForClient(request, client_id):
             obj.save()
             return HttpResponseRedirect(request.path_info)
 
-    place = get_object_or_404(Place, pk=client_id)
-    serviceNotes = place.servicenote_set.all()
+    place = get_object_or_404(Place.objects.select_related('city_ref'), pk=client_id)
+    serviceNotes = servicenotes_list_queryset(place.servicenote_set.all())
     title = f'Всі сервісні замітки для клієнта: \n {place.name}, {place.city}'
     return render(request, 'supplies/service/serviceNotes.html',
                   {'title': title, 'serviceNotes': serviceNotes, 'form': form,
@@ -3546,7 +3552,7 @@ def _devices_render_to_xls(request, language='uk'):
     """
     Helper function to export devices to Excel in the specified language
     """
-    devices = Device.objects.all()
+    devices = devices_list_queryset(Device.objects.all())
 
     # Define language-specific strings
     if language == 'en':
@@ -4371,12 +4377,12 @@ def _place_list_for_client_cards(place_qs):
         place_qs.select_related('city_ref', 'worker_NP')
         .prefetch_related('workers')
         .annotate(
-            card_preorder_count=Count('preorder', distinct=True),
-            card_order_count=Count('order', distinct=True),
-            card_workers_count=Count('workers', distinct=True),
-            card_booked_count=Count('supplyinbookedorder', distinct=True),
-            card_servicenote_count=Count('servicenote', distinct=True),
-            card_device_count=Count('device', distinct=True),
+            card_preorder_count=related_count_subquery(PreOrder, 'place_id'),
+            card_order_count=related_count_subquery(Order, 'place_id'),
+            card_workers_count=related_count_subquery(Workers, 'for_place_id'),
+            card_booked_count=related_count_subquery(SupplyInBookedOrder, 'supply_for_place_id'),
+            card_servicenote_count=related_count_subquery(ServiceNote, 'for_place_id'),
+            card_device_count=related_count_subquery(Device, 'in_place_id'),
         )
         .order_by('-id')
     )
@@ -4431,9 +4437,8 @@ def serviceNotes(request):
             obj.save()
             return redirect('/serviceNotes')
 
-    serviceNotes = ServiceNote.objects.all().order_by('-id')
-    serviceFilters = ServiceNotesFilter(request.GET, queryset=serviceNotes)
-    serviceNotes = serviceFilters.qs
+    serviceFilters = ServiceNotesFilter(request.GET, queryset=ServiceNote.objects.all().order_by('-id'))
+    serviceNotes = servicenotes_list_queryset(serviceFilters.qs)
     return render(request, 'supplies/service/serviceNotes.html',
                   {'title': f'Сервiсні записи', 'serviceNotes': serviceNotes,
                    'form': form, 'serviceFilters': serviceFilters, 'isService': True})
@@ -4938,16 +4943,12 @@ def teams_reminders_task():
     
     # First filter places that have at least one preorder
     places_with_preorders = Place.objects.filter(preorder__isnull=False, preorder__isPreorder=True).distinct()
-    
-    # Then filter based on predicted next order date
-    from .analytics import PreorderAnalytics
-    places_needing_order = []
-    
-    for place in places_with_preorders:
-        analytics = PreorderAnalytics(place)
-        next_order_date = analytics.predict_next_order_date()
-        if next_order_date == current_date:
-           places_needing_order.append(place.id)
+    place_ids = list(places_with_preorders.values_list('pk', flat=True))
+    predictions = bulk_predict_next_order_dates(place_ids)
+    places_needing_order = [
+        pid for pid, predicted in predictions.items()
+        if predicted == current_date
+    ]
     place_need_preorder_today = Place.objects.filter(id__in=places_needing_order)       
     place_need_preorder_today_count = place_need_preorder_today.count()
     if place_need_preorder_today_count > 0:

@@ -22,6 +22,12 @@
     font-weight: 600;
 }
 
+.delivery-comment-form .delivery-comment-input {
+    flex: 1 1 14rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
 .delivery-detail-page .delivery-detail-actions {
     display: flex;
     flex-wrap: wrap;
@@ -37,14 +43,9 @@
     margin-bottom: 0.5rem;
 }
 
-.order-detail-table .nested-supply-table col.od-col-actions {
-    width: 4.5rem;
-}
-
-.order-detail-table .delivery-detail-actions-head,
-.order-detail-table .delivery-detail-actions-col {
-    width: 4.5rem;
-    max-width: 4.5rem;
+.delivery-detail-tools .order-detail-table-card {
+    position: relative;
+    z-index: 1;
 }
 
 .delivery-detail-empty-row td {
@@ -55,121 +56,229 @@
     z-index: 20;
 }
 
+.delivery-manual-search-input-wrap {
+    position: relative;
+    z-index: 1062;
+    background: #fff;
+}
+
+.delivery-manual-search-input-wrap:has(.delivery-search-dropdown:not(.d-none)) .form-control {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-color: transparent;
+}
+
 .delivery-search-dropdown {
     position: absolute;
-    top: calc(100% + 2px);
+    top: 100%;
     left: 0;
     right: 0;
-    z-index: 1060;
-    max-height: min(320px, 50vh);
-    overflow-y: auto;
+    z-index: 1061;
+    max-height: var(--delivery-search-dropdown-height);
+    overflow: hidden;
     background: #fff;
     border: 1px solid rgba(148, 163, 184, 0.45);
-    border-radius: 0.5rem;
+    border-top: none;
+    border-radius: 0 0 0.5rem 0.5rem;
     box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
 }
 
-.delivery-search-results-list .list-group-item:last-child {
-    border-bottom: 0 !important;
+.delivery-search-dropdown-inner {
+    max-height: var(--delivery-search-dropdown-height);
+    overflow-y: auto;
+    overflow-x: auto;
+    background: #fff;
 }
 
-.delivery-search-results-list .delivery-staging-pick-link:hover {
-    background-color: rgba(241, 245, 249, 0.9);
+.delivery-search-results-table {
+    margin: 0;
+    table-layout: fixed;
 }
 
-.delivery-detail-tools .order-detail-table-card {
-    position: relative;
-    z-index: 1;
+.delivery-search-results-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f1f5f9;
+    box-shadow: 0 1px 0 rgba(148, 163, 184, 0.35);
 }
 
-/* Вкладені LOT / к-сть / термін — однакова висота рядка, контент по центру колонки */
+.delivery-search-results-table tbody tr.delivery-staging-pick-link {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.delivery-search-results-table tbody tr.delivery-staging-pick-link:hover > th,
+.delivery-search-results-table tbody tr.delivery-staging-pick-link:hover > td {
+    background-color: #dbeafe;
+}
+
+.delivery-search-results-table tbody tr.delivery-staging-pick-link:focus-visible {
+    outline: 2px solid rgba(59, 130, 246, 0.55);
+    outline-offset: -2px;
+}
+
+.delivery-search-results-table tbody tr.delivery-staging-pick-link:focus-visible > th,
+.delivery-search-results-table tbody tr.delivery-staging-pick-link:focus-visible > td {
+    background-color: #dbeafe;
+}
+
+/* Вкладена підтаблиця LOT / к-сть / термін — компактна, контент по центру */
 .delivery-detail-page {
-    --delivery-nested-row-height: 4rem;
-    --delivery-nested-error-height: 1.05rem;
+    --delivery-nested-lot-width: 5.25rem;
+    --delivery-nested-qty-width: 3.25rem;
+    --delivery-nested-exp-width: 6.25rem;
+    --delivery-nested-actions-width: 4.25rem;
+    --delivery-nested-control-height: calc(1.5em + 0.35rem + 2px);
+    --delivery-nested-btn-size: 1.65rem;
+    --delivery-nested-row-padding-y: 0.25rem;
+    --delivery-nested-row-padding-x: 0.35rem;
+    --delivery-search-dropdown-height: min(320px, 50vh);
+    --delivery-comment-spacer-height: 10rem;
+    --delivery-nested-table-width: calc(
+        var(--delivery-nested-lot-width)
+        + var(--delivery-nested-qty-width)
+        + var(--delivery-nested-exp-width)
+        + var(--delivery-nested-actions-width)
+    );
+}
+
+.delivery-detail-page .delivery-comment-spacer {
+    min-height: var(--delivery-comment-spacer-height);
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.delivery-detail-page .delivery-comment-section {
+    width: 100%;
+}
+
+.delivery-detail-page .delivery-comment-section__body {
+    padding: 0.85rem 1rem;
+}
+
+.delivery-detail-page .order-detail-table .supplyRow {
+    width: var(--delivery-nested-table-width);
+    min-width: var(--delivery-nested-table-width);
+    max-width: var(--delivery-nested-table-width);
+    padding: var(--delivery-nested-row-padding-y) var(--delivery-nested-row-padding-x);
+    vertical-align: middle;
+}
+
+.delivery-detail-page .nested-supply-table col.od-col-lot {
+    width: var(--delivery-nested-lot-width);
+}
+
+.delivery-detail-page .nested-supply-table col.od-col-qty {
+    width: var(--delivery-nested-qty-width);
+}
+
+.delivery-detail-page .nested-supply-table col.od-col-exp {
+    width: var(--delivery-nested-exp-width);
+}
+
+.delivery-detail-page .nested-supply-table col.od-col-actions {
+    width: var(--delivery-nested-actions-width);
+}
+
+.delivery-detail-page .order-detail-table .nested-supply-table td,
+.delivery-detail-page .order-detail-table .nested-supply-table th {
+    padding: var(--delivery-nested-row-padding-y) var(--delivery-nested-row-padding-x);
 }
 
 .delivery-detail-page .nested-supply-table .delivery-detail-nested-row > td {
     box-sizing: border-box;
-    height: var(--delivery-nested-row-height);
-    min-height: var(--delivery-nested-row-height);
-    max-height: var(--delivery-nested-row-height);
-    padding: 0.15rem 0.3rem;
     vertical-align: middle;
     text-align: center;
-    overflow: hidden;
+    line-height: 1.2;
 }
 
 .delivery-detail-page .nested-supply-table .supply-lot-col,
 .delivery-detail-page .nested-supply-table .supply-qty-col,
 .delivery-detail-page .nested-supply-table .supply-exp-col,
-.delivery-detail-page .nested-supply-table .delivery-detail-actions-col {
+.delivery-detail-page .nested-supply-table .delivery-detail-actions-col,
+.delivery-detail-page .nested-supply-table .supply-lot-head,
+.delivery-detail-page .nested-supply-table .supply-qty-head,
+.delivery-detail-page .nested-supply-table .supply-exp-head,
+.delivery-detail-page .nested-supply-table .delivery-detail-actions-head {
     text-align: center;
 }
 
-.delivery-detail-page .nested-supply-table .delivery-detail-actions-col {
-    width: 4.5rem;
-    max-width: 4.5rem;
+.delivery-detail-page .nested-supply-table .delivery-detail-actions-col,
+.delivery-detail-page .nested-supply-table .delivery-detail-actions-head {
+    width: var(--delivery-nested-actions-width);
+    max-width: var(--delivery-nested-actions-width);
 }
 
 .delivery-detail-page .delivery-nested-cell {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 100%;
-    height: 100%;
-    min-height: calc(var(--delivery-nested-row-height) - 0.3rem);
+    min-height: var(--delivery-nested-control-height);
     margin: 0 auto;
+    box-sizing: border-box;
 }
 
 .delivery-detail-page .delivery-nested-cell--view {
-    justify-content: center;
     line-height: 1.25;
 }
 
 .delivery-detail-page .delivery-nested-cell--actions {
-    flex-direction: row;
     flex-wrap: nowrap;
-    gap: 0.2rem;
-    justify-content: center;
+    gap: 0.15rem;
     align-items: center;
 }
 
 .delivery-detail-page .nested-supply-table .delivery-detail-nested-row .form-control-sm {
+    display: block;
     width: 100%;
-    max-width: 6.5rem;
+    max-width: 100%;
     margin: 0 auto;
+    padding: 0.2rem 0.25rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
     text-align: center;
-    padding-left: 0.35rem;
-    padding-right: 0.35rem;
+    height: var(--delivery-nested-control-height);
+    min-height: var(--delivery-nested-control-height);
+    box-sizing: border-box;
 }
 
-.delivery-detail-page .nested-supply-table .supply-qty-col .form-control-sm {
-    max-width: 4.25rem;
+.delivery-detail-page .nested-supply-table .delivery-detail-nested-row .form-control-sm.is-invalid {
+    background-image: none;
+    padding-right: 0.25rem;
 }
 
-.delivery-detail-page .nested-supply-table .supply-exp-col .form-control-sm {
-    max-width: 6.75rem;
+.delivery-detail-page .nested-supply-table .delivery-detail-nested-row .form-control-sm::placeholder {
+    color: var(--bs-secondary-color, #6c757d);
+    opacity: 1;
 }
 
-.delivery-detail-page .delivery-nested-cell__error {
-    flex: 0 0 var(--delivery-nested-error-height);
-    min-height: var(--delivery-nested-error-height);
-    max-height: var(--delivery-nested-error-height);
-    width: 100%;
-    margin: 0;
+.delivery-detail-page .nested-supply-table .delivery-detail-nested-row .btn-sm {
+    width: var(--delivery-nested-btn-size);
+    height: var(--delivery-nested-btn-size);
+    min-width: var(--delivery-nested-btn-size);
+    min-height: var(--delivery-nested-btn-size);
     padding: 0;
-    line-height: var(--delivery-nested-error-height);
-    font-size: 0.65rem;
-    text-align: center;
-    color: #dc3545;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    align-self: center;
+    flex-shrink: 0;
+    line-height: 1;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
-.delivery-detail-page .delivery-nested-cell__error:empty {
-    visibility: hidden;
+.delivery-detail-page .nested-supply-table .delivery-detail-nested-row .btn-sm .bi {
+    line-height: 1;
+}
+
+.delivery-detail-page .nested-supply-table .delivery-detail-nested-row .bi-keyboard {
+    font-size: 0.75rem;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
 .delivery-detail-page .nested-supply-table .delivery-detail-nested-row .qty-value,

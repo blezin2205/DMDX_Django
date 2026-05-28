@@ -701,11 +701,9 @@ class SupplyInBookedOrder(models.Model):
     @property
     def get_sub_el_with_in_cart(self):
         count_in_order_in_cart = 0
-        try:
-            sups_in_cart = BookedSupplyInOrderInCart.objects.get(supply=self)
-            count_in_order_in_cart = sups_in_cart.count_in_order
-        except:
-            pass
+        cart_item = getattr(self, 'bookedsupplyinorderincart', None)
+        if cart_item is not None:
+            count_in_order_in_cart = cart_item.count_in_order
         cond = self.count_in_order - self.countOnHold - count_in_order_in_cart
         return cond <= 0
 

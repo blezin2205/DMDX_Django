@@ -142,6 +142,8 @@
     justify-content: flex-end;
     align-items: center;
     overflow: visible;
+    gap: 0.45rem;
+    flex-wrap: wrap;
 }
 
 .filter-actions-group {
@@ -151,6 +153,8 @@
     flex-wrap: nowrap;
 }
 
+.filter-actions-group + .filter-actions-group,
+.filter-actions-group + .filter-actions-excel,
 .filter-actions-group .home-table-display-dropdown,
 .filter-actions-group .filter-actions-excel {
     margin-left: 0.35rem;
@@ -488,7 +492,9 @@ body.home-hide-edit.home-hide-cart .home-supply-list-scope .home-table-actions-c
         flex: 1 1 auto;
     }
     .filter-actions-group .home-table-display-dropdown,
-    .filter-actions-group .filter-actions-excel {
+    .filter-actions-group .filter-actions-excel,
+    .filter-actions-group + .filter-actions-group,
+    .filter-actions-group + .filter-actions-excel {
         margin-left: 0;
         padding-left: 0;
         border-left: none;

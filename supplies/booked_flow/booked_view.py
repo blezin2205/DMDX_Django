@@ -11,6 +11,7 @@ from ..filters import *
 from ..forms import *
 from ..tasks import *
 from ..views import *
+from ..topbar_cart_counts import topbar_cart_count_context
 from urllib.parse import urlparse
 from django.utils.http import url_has_allowed_host_and_scheme
 
@@ -32,15 +33,24 @@ def _safe_redirect_target(request, explicit_next=None, default='/'):
     return default
 
 
+def _booked_supply_rows_queryset(qs):
+    """Рядки броні в таблиці: select_related замість N+1 на supply, place, category, cart."""
+    return qs.select_related(
+        'generalSupply',
+        'generalSupply__category',
+        'supply',
+        'supply_for_place',
+        'bookedsupplyinorderincart',
+    ).order_by('generalSupply__name', 'id')
+
+
 @login_required(login_url='login')
 def booked_supplies_list(request, client_id):
     isClient = request.user.isClient()
-    place = Place.objects.get(id=client_id)
-    # Prefetch GeneralSupply related to SupplyInBookedOrder to minimize DB queries
-    supplies_list = SupplyInBookedOrder.objects.filter(supply_for_place=place) \
-        .order_by('id') \
-        .order_by('generalSupply__name') \
-        .select_related('generalSupply')
+    place = get_object_or_404(Place.objects.select_related('city_ref'), pk=client_id)
+    supplies_list = _booked_supply_rows_queryset(
+        SupplyInBookedOrder.objects.filter(supply_for_place=place)
+    )
 
     title = f'Всі бронювання для: \n{place.name}, {place.city_ref.name}'
     suppFilter = BookedSuppliesFilter(request.GET, queryset=supplies_list)
@@ -229,7 +239,7 @@ def booked_cart_badge_count_refresh(request):
     return render(
         request,
         'booked_flow/booked-cart-badge.html',
-        {'booked_next_url': next_url},
+        {'booked_next_url': next_url, **topbar_cart_count_context(request)},
     )
 
 
@@ -397,7 +407,9 @@ def minus_from_booked_supply_list_item(request):
     sup.supply.countOnHold -= 1
     sup.supply.save(update_fields=['countOnHold'])
     gen_sup = sup.generalSupply
-    supply_list = gen_sup.supplyinbookedorder_set.filter(supply_for_place=sup.supply_for_place).order_by('id')
+    supply_list = _booked_supply_rows_queryset(
+        gen_sup.supplyinbookedorder_set.filter(supply_for_place=sup.supply_for_place)
+    )
     if sup.count_in_order == 0:
         sup.delete()
         if supply_list.count() == 0:
@@ -418,7 +430,9 @@ def plus_from_booked_supply_list_item(request):
     sup.supply.save(update_fields=['countOnHold'])
     sup.save(update_fields=['count_in_order', 'supply'])
     gen_sup = sup.generalSupply
-    supply_list = gen_sup.supplyinbookedorder_set.filter(supply_for_place=sup.supply_for_place).order_by('id')
+    supply_list = _booked_supply_rows_queryset(
+        gen_sup.supplyinbookedorder_set.filter(supply_for_place=sup.supply_for_place)
+    )
     return render(request, 'booked_flow/booked_supply_list_item.html',
                   {'el': gen_sup, 'supply_list': supply_list})
 

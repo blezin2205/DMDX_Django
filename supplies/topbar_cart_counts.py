@@ -25,6 +25,34 @@ _NP_UNCOMPLETED_CODES = (
 NP_UNCOMPLETED_STATUS_CODES = _NP_UNCOMPLETED_CODES
 
 
+def is_full_document_request(request) -> bool:
+    """
+    True лише для «справжньої» сторінки в браузері (повний HTML з header).
+    HTMX/AJAX часткові відповіді та службові refresh-ендпоінти — False.
+    """
+    if not getattr(request, 'user', None) or not request.user.is_authenticated:
+        return False
+
+    htmx = getattr(request, 'htmx', None)
+    if htmx:
+        # hx-boost / відновлення з history — фактично повне завантаження документа
+        if htmx.boosted or htmx.history_restore_request:
+            return True
+        return False
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return False
+
+    return True
+
+
+def topbar_cart_count_context(request):
+    """Контекст для шаблонів бейджів (cartCountData)."""
+    if not request.user.is_authenticated:
+        return {'cartCountData': empty_topbar_cart_count_data()}
+    return {'cartCountData': build_topbar_cart_count_data(request)}
+
+
 def queryset_orders_with_uncompleted_np_tracking():
     """
     Унікальні замовлення, де є хоча б одна накладна НП з «незавершеним» status_code

@@ -1,7 +1,6 @@
 {% load mathfilters %}
 {% load myapp_extras %}
 {% load static %}
-{% load crispy_forms_filters %}
 
 {% if status_of_task %}
   <h2 class="{% if status_of_task == 'SUCCESS' %}text-success{% else %}text-danger{% endif %}"><u>{{ status_of_task }}</u></h2>
@@ -10,25 +9,18 @@
 <div class="container-fluid py-3 delivery-detail-page">
   <div class="card shadow-sm mb-3">
     <div class="card-header py-2 {% if not delivery_order.isHasBeenSaved %}bg-warning bg-opacity-10{% else %}bg-primary bg-opacity-10{% endif %}">
-      <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
-        <div>
-          {% if request.GET.next %}
-            <a href="{{ request.GET.next }}" class="btn btn-sm btn-outline-secondary mb-2"><i class="bi bi-arrow-left"></i> Назад</a>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="small {% if not delivery_order.isHasBeenSaved %}text-danger{% else %}text-muted{% endif %} mb-0">
+          {% if not delivery_order.isHasBeenSaved %}
+            <i>Товари ще не додані на склад</i>
           {% else %}
-            <a href="{% url 'all_deliveries' %}" class="btn btn-sm btn-outline-secondary mb-2"><i class="bi bi-arrow-left"></i> До списку</a>
+            <i>Поставка закрита — редагування недоступне</i>
           {% endif %}
-          <h5 class="mb-1 fw-bold">Поставка №{{ delivery_order.id }}</h5>
-          <div class="small text-muted">
-            <span class="me-3"><i class="bi bi-person"></i> {{ delivery_order.from_user.first_name }} {{ delivery_order.from_user.last_name }}</span>
-            <span><i class="bi bi-calendar3"></i> {{ delivery_order.date_created|date:"d.m.Y" }}</span>
-          </div>
         </div>
-        <div class="text-end">
-          <div class="mb-2">
-            <span class="delivery-detail-badge">{{ total_group_count }} назв.</span>
-            <span class="delivery-detail-badge delivery-detail-badge--muted">{{ total_count }} шт.</span>
-          </div>
-          <form method="POST" action="{% url 'delivery_order_export_to_excel' delivery_order.id %}" class="d-inline">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <span class="delivery-detail-badge">{{ total_group_count }} назв.</span>
+          <span class="delivery-detail-badge delivery-detail-badge--muted">{{ total_count }} шт.</span>
+          <form method="POST" action="{% url 'delivery_order_export_to_excel' delivery_order.id %}" class="d-inline mb-0">
             {% csrf_token %}
             <button type="submit" class="btn btn-sm btn-outline-secondary" name="xls_button">
               <i class="bi bi-file-earmark-excel"></i>
@@ -36,11 +28,6 @@
           </form>
         </div>
       </div>
-      {% if not delivery_order.isHasBeenSaved %}
-        <p class="small text-danger mb-0 mt-2"><i>Товари ще не додані на склад</i></p>
-      {% else %}
-        <p class="small text-muted mb-0 mt-2"><i>Поставка закрита — редагування недоступне</i></p>
-      {% endif %}
     </div>
   </div>
 
@@ -143,22 +130,21 @@
         </form>
         <div class="delivery-manual-search position-relative mb-3">
           <label for="delivery-manual-search-input" class="form-label small fw-semibold text-muted mb-1">Додати товар вручну</label>
-          <div class="input-group input-group-sm">
+          <div class="delivery-manual-search-input-wrap">
             <input type="search" enterkeyhint="search" autocomplete="off"
               id="delivery-manual-search-input"
-              class="form-control"
+              class="form-control form-control-sm"
               name="search"
               placeholder="Пошук за назвою / REF / SMN code..."
               hx-post="{% url 'search-gen-sup-for-manual-add-in-delivery-order' delivery_order.id %}"
-              hx-target="#delivery-search-results"
+              hx-target="#delivery-search-results-body"
               hx-swap="innerHTML"
               hx-trigger="input changed delay:400ms, search">
-            <button type="button" class="btn btn-outline-secondary delivery-search-clear" aria-label="Очистити пошук" title="Очистити">
-              <i class="bi bi-x-lg"></i>
-            </button>
-          </div>
-          <div id="delivery-search-results" class="delivery-search-dropdown d-none" aria-live="polite">
-            {% include 'partials/search_results_for_manual_add_in_delivery_order.html' %}
+            <div id="delivery-search-results" class="delivery-search-dropdown d-none" aria-live="polite">
+              <div id="delivery-search-results-body" class="delivery-search-dropdown-inner">
+                {% include 'partials/search_results_for_manual_add_in_delivery_order.html' %}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -200,14 +186,25 @@
     </div>
   {% endif %}
 
-  <div class="card shadow-sm mb-3">
-    <div class="card-body py-3">
-      <form method="POST" action="{% url 'save-delivery' delivery_order.id %}">
-        {% csrf_token %}
-        <p class="delivery-section-label mb-2">Коментар до поставки</p>
-        {{ form.description|as_crispy_field }}
-        <button class="btn btn-sm btn-primary" type="submit" name="save">Зберегти коментар</button>
-      </form>
+  <div class="delivery-comment-spacer">
+    <div class="card shadow-sm delivery-comment-section">
+      <div class="card-body delivery-comment-section__body">
+        {% if delivery_order.isHasBeenSaved %}
+          <form method="POST" action="{% url 'save-delivery' delivery_order.id %}" class="delivery-comment-form">
+            {% csrf_token %}
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <label for="id_description" class="delivery-section-label mb-0 flex-shrink-0">Коментар</label>
+              {{ form.description }}
+              <button class="btn btn-sm btn-outline-primary flex-shrink-0" type="submit" name="save">Зберегти</button>
+            </div>
+          </form>
+        {% else %}
+          <div class="delivery-comment-form d-flex flex-wrap align-items-center gap-2">
+            <label for="id_description" class="delivery-section-label mb-0 flex-shrink-0">Коментар</label>
+            {{ form.description }}
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 
@@ -242,6 +239,10 @@
     var message = 'Ця дія додасть зазначену кількість кожного товару в цьому списку до основного списку товарів на складі!\n\nПродовжити?';
     if (!confirm(message)) return;
     var formData = new FormData(deliveryForm);
+    var commentInput = document.getElementById('id_description');
+    if (commentInput) {
+      formData.set('description', commentInput.value);
+    }
     fetch(deliveryForm.action, { method: deliveryForm.method, body: formData })
       .then(function (response) {
         if (!response.ok) throw new Error(response.statusText);
@@ -310,7 +311,8 @@ window.deliveryStagingRemoveEmptyGroup = function (btn) {
 (function () {
   var searchInput = document.getElementById('delivery-manual-search-input');
   var searchResults = document.getElementById('delivery-search-results');
-  var clearBtn = document.querySelector('.delivery-search-clear');
+  var searchResultsBody = document.getElementById('delivery-search-results-body');
+
   function toggleSearchDropdown(show) {
     if (!searchResults) return;
     searchResults.classList.toggle('d-none', !show);
@@ -318,26 +320,36 @@ window.deliveryStagingRemoveEmptyGroup = function (btn) {
 
   function clearManualSearch() {
     if (searchInput) searchInput.value = '';
-    if (searchResults) searchResults.innerHTML = '';
+    if (searchResultsBody) searchResultsBody.innerHTML = '';
     toggleSearchDropdown(false);
     searchInput && searchInput.focus();
-  }
-
-  if (clearBtn) {
-    clearBtn.addEventListener('click', clearManualSearch);
   }
 
   if (searchInput) {
     searchInput.addEventListener('input', function () {
       if (!this.value.trim()) {
-        if (searchResults) searchResults.innerHTML = '';
+        if (searchResultsBody) searchResultsBody.innerHTML = '';
+        toggleSearchDropdown(false);
+      }
+    });
+    searchInput.addEventListener('search', function () {
+      if (!this.value.trim()) {
+        if (searchResultsBody) searchResultsBody.innerHTML = '';
         toggleSearchDropdown(false);
       }
     });
   }
 
+  document.body.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var pickRow = e.target.closest('tr.delivery-staging-pick-link');
+    if (!pickRow || !pickRow.closest('#delivery-search-results')) return;
+    e.preventDefault();
+    pickRow.click();
+  });
+
   document.body.addEventListener('htmx:afterSwap', function (evt) {
-    if (evt.detail.target && evt.detail.target.id === 'delivery-search-results') {
+    if (evt.detail.target && evt.detail.target.id === 'delivery-search-results-body') {
       var hasContent = evt.detail.target.textContent.trim().length > 0;
       toggleSearchDropdown(hasContent);
     }

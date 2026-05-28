@@ -1,6 +1,7 @@
 import datetime
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
+from django import forms
 from .decorators import allowed_users
 from .models import *
 from .serializers import *
@@ -110,6 +111,8 @@ def upload_sup_from_delivery_order_and_save_db(request, delivery_order_id):
         #                      args=[request, delivery_order_id], daemon=True)
         # t.start()
         del_order = DeliveryOrder.objects.get(id=delivery_order_id)
+        comment = (request.POST.get('description') or '').strip()
+        del_order.comment = comment or None
         sup_set = del_order.deliverysupplyincart_set.filter(isRecognized=True)
         total_requests = len(sup_set)
         i = 0
@@ -152,7 +155,7 @@ def save_delivery(request, delivery_order_id):
             string_data = form.cleaned_data['description']
             delivery_order.comment = string_data
             delivery_order.save()
-        return redirect("/all_deliveries")
+        return redirect('delivery_detail', delivery_id=delivery_order_id)
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -269,8 +272,29 @@ def delivery_detail(request, delivery_id):
     form = NewDeliveryForm()
     form.initial['description'] = delivery_order.comment
     form.fields['description'].label = "Коментар"
+    comment_widget_attrs = {
+        'class': 'form-control form-control-sm delivery-comment-input',
+        'placeholder': 'Коментар до поставки',
+        'autocomplete': 'off',
+    }
+    if not delivery_order.isHasBeenSaved:
+        comment_widget_attrs['form'] = 'deliveryForm'
+    form.fields['description'].widget = forms.TextInput(attrs=comment_widget_attrs)
+
+    user_name = ''
+    if delivery_order.from_user:
+        user_name = f'{delivery_order.from_user.first_name or ""} {delivery_order.from_user.last_name or ""}'.strip()
+    subtitle_parts = []
+    if user_name:
+        subtitle_parts.append(user_name)
+    if delivery_order.date_created:
+        subtitle_parts.append(delivery_order.date_created.strftime('%d.%m.%Y'))
+    subtitle = ' · '.join(subtitle_parts)
 
     return render(request, 'supplies/delivery/delivery_detail.html', {
+        'title': f'Поставка №{delivery_order.id}',
+        'title_icon': 'bi-box-seam',
+        'subtitle': subtitle,
         'total_count': total_count,
         'total_group_count': len(recognized_groups) + len(unrecognized_groups),
         'recognized_groups': recognized_groups,
@@ -357,6 +381,7 @@ def add_gen_sup_in_delivery_order_manual_list_edit_action(request):
             'delivery_order': del_sup.delivery_order,
             'line': del_sup,
             'staging': staging,
+            'field_errors': {},
         }
         return render(request, 'partials/delivery/delivery_detail_nested_row_edit.html', context)
 

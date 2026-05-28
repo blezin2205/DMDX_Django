@@ -1,18 +1,16 @@
-from .topbar_cart_counts import build_topbar_cart_count_data, empty_topbar_cart_count_data
+from .topbar_cart_counts import (
+    empty_topbar_cart_count_data,
+    is_full_document_request,
+    topbar_cart_count_context,
+)
 
 
 def cart_count_data(request):
     """
-    Inject cartCountData for all templates (top bar, cart badges).
-
-    Тимчасово без запитів до БД (діагностика швидкості).
-    Щоб увімкнути підрахунки — у цій функції викличте cart_count_data_live(request).
+    cartCountData для header (бейджі замовлень/передзамовлень, попередження staff).
+    Рахуємо лише на повному завантаженні сторінки — не на HTMX/AJAX фрагментах.
+    Оновлення cart/precart/booked бейджів — через окремі hx-get ендпоінти з явним контекстом.
     """
-    return {'cartCountData': empty_topbar_cart_count_data()}
-
-
-def cart_count_data_live(request):
-    """Повний підрахунок бейджів (коли знову потрібні лічильники в топбарі)."""
-    if not request.user.is_authenticated:
+    if not is_full_document_request(request):
         return {'cartCountData': empty_topbar_cart_count_data()}
-    return {'cartCountData': build_topbar_cart_count_data(request)}
+    return topbar_cart_count_context(request)
