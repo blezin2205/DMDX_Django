@@ -6,9 +6,11 @@
     {% if request.user|has_group:"empl" or request.user.is_staff %}
         <col class="od-col-updated">
     {% endif %}
-    {% if request.user|has_group:"empl" or request.user.is_staff %}
-        {% if order.detail_has_preorder_lines %}
-            <col class="od-col-preorder">
+    {% if not is_print %}
+        {% if request.user|has_group:"empl" or request.user.is_staff %}
+            {% if order.detail_has_preorder_lines %}
+                <col class="od-col-preorder">
+            {% endif %}
         {% endif %}
     {% endif %}
 </colgroup>

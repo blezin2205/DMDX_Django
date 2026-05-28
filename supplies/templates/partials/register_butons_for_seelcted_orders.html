@@ -13,6 +13,14 @@
     onmouseover="showTooltip(event, this)"
     onmouseout="hideTooltip()"
     ><i class="bi bi-file-earmark-excel fs-4"></i></button>
+
+    <button class="btn btn-outline-primary py-0 px-2"
+            type="button"
+            id="print-selected-orders-btn"
+            role="button"
+            data-tooltip-content="Друкувати вибрані замовлення. Кожне замовлення відкриється в окремому вікні."
+            onmouseover="showTooltip(event, this)"
+            onmouseout="hideTooltip()"><i class="bi bi-printer fs-4"></i></button>
 {% endif %}
 
 {% if merge_button_available %}

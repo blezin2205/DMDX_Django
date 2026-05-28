@@ -1,0 +1,734 @@
+{% extends 'supplies/base/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/order-detail.css' %}" type="text/css">
+<link rel="stylesheet" href="{% static 'css/delivery-detail.css' %}" type="text/css">
+<style>
+.live-scan-status {
+    border-radius: 10px;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+.live-scan-status--idle {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    color: #64748b;
+}
+.live-scan-status--ok {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+.live-scan-status--err {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+.live-scan-capture-wrap {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+.live-scan-capture-wrap:focus-within {
+    outline: none;
+}
+#live-scan-capture {
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+.live-scan-last-raw {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    word-break: break-all;
+}
+.live-scan-db-save-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed #e2e8f0;
+}
+.live-scan-db-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #94a3b8;
+}
+.live-scan-db-dot--pending {
+    background: #f59e0b;
+    animation: live-scan-db-pulse 0.9s ease-in-out infinite;
+}
+.live-scan-db-dot--ok {
+    background: #22c55e;
+}
+.live-scan-db-dot--err {
+    background: #ef4444;
+}
+.live-scan-db-dot--idle {
+    background: #cbd5e1;
+}
+@keyframes live-scan-db-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+.live-scan-db-dot--row {
+    width: 10px;
+    height: 10px;
+    vertical-align: middle;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3 delivery-detail-page">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+      <h4 class="title-text mb-1">
+        <i class="bi bi-upc-scan title-icon me-2"></i>{{ title }}
+      </h4>
+      <p class="small text-muted mb-0">
+        Сканер у Synchronous Mode · пошук на Enter · каталог GeneralSupply завантажено на сторінку
+      </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'delivery_detail' delivery_order.id %}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-box-seam"></i> Відкрити поставку
+      </a>
+      <a href="{% url 'upload_supplies_for_new_delivery' %}" class="btn btn-sm btn-outline-secondary">
+        Класичне завантаження
+      </a>
+    </div>
+  </div>
+
+  <div id="live-scan-status" class="live-scan-status live-scan-status--idle" role="status" aria-live="polite">
+    Очікую скан… Фокус у прихованому полі. Після кожного скану натисніть Enter (сканер робить це автоматично).
+  </div>
+
+  <div class="live-scan-capture-wrap">
+    <label for="live-scan-capture" class="visually-hidden">Сканер</label>
+    <input type="text"
+           id="live-scan-capture"
+           autocomplete="off"
+           autocorrect="off"
+           autocapitalize="off"
+           spellcheck="false"
+           inputmode="none">
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body py-3">
+      <p class="category-section-title mb-2">Тип штрих-коду</p>
+      <div class="d-flex flex-wrap gap-2" id="live-scan-barcode-type-options">
+        <label class="form-check form-check-inline mb-0">
+          <input class="form-check-input" type="radio" name="live_barcode_type" value="Data Matrix" checked>
+          Lifotronic (Data Matrix)
+        </label>
+        <label class="form-check form-check-inline mb-0">
+          <input class="form-check-input" type="radio" name="live_barcode_type" value="Siemens">
+          Siemens
+        </label>
+      </div>
+      <p class="small text-muted mt-2 mb-0">
+        Сканів: <strong id="live-scan-total">0</strong>
+        · знайдено рядків: <strong id="live-scan-recognized-lines">0</strong>
+        · не знайдено: <strong id="live-scan-unrecognized-lines">0</strong>
+      </p>
+      <p class="live-scan-last-raw text-muted small mt-2 mb-0 d-none" id="live-scan-last-raw-wrap">
+        Останній код: <span id="live-scan-last-raw"></span>
+      </p>
+      <div class="live-scan-db-save-row">
+        <span id="live-scan-db-dot" class="live-scan-db-dot live-scan-db-dot--idle" aria-hidden="true"></span>
+        <span id="live-scan-db-label" class="small fw-semibold text-muted">БД: ще не сканували</span>
+        <span class="small text-muted">
+          збережено <strong id="live-scan-db-ok" class="text-success">0</strong>
+          · помилки <strong id="live-scan-db-fail" class="text-danger">0</strong>
+          · в дорозі <strong id="live-scan-db-pending">0</strong>
+        </span>
+        <button type="button"
+                id="live-scan-retry-failed-btn"
+                class="btn btn-sm btn-outline-danger d-none ms-auto"
+                title="Повторно відправити на сервер скани, що не збереглися">
+          <i class="bi bi-arrow-repeat me-1"></i>Завантажити помилкові
+          (<span id="live-scan-retry-failed-count">0</span>)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3 order-detail-table-card">
+    <div class="card-header py-2 bg-light border-bottom">
+      <span class="fw-semibold text-success">Знайдено</span>
+      <span class="delivery-detail-badge ms-2" id="live-scan-recognized-groups-badge">0 назв.</span>
+    </div>
+    <div class="order-detail-table-responsive">
+      <table class="table table-sm align-middle compact-supply-table order-detail-table mb-0">
+        <thead>
+          <tr>
+            <th scope="col" class="col-name text-start">Назва</th>
+            <th scope="col" class="col-pack">Пакування / Тести</th>
+            <th scope="col" class="col-category">Категорія</th>
+            <th scope="col" class="col-ref">REF</th>
+            <th scope="col" class="col-smn home-table-smn">SMN</th>
+            <th scope="col" class="supplyRow">
+              <table class="table table-sm table-borderless mb-0 nested-supply-table nested-supply-table--head">
+                {% include 'partials/delivery/delivery_detail_nested_colgroup.html' %}
+                <thead>
+                  <tr>
+                    <th class="supply-lot-head">LOT</th>
+                    <th class="supply-qty-head">К-сть</th>
+                    <th class="supply-exp-head">Термін</th>
+                    <th></th>
+                  </tr>
+                </thead>
+              </table>
+            </th>
+          </tr>
+        </thead>
+        <tbody id="live-scan-tbody-recognized"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3 order-detail-table-card">
+    <div class="card-header py-2 bg-light border-bottom">
+      <span class="fw-semibold text-danger">Не знайдено</span>
+      <span class="delivery-detail-badge ms-2" id="live-scan-unrecognized-groups-badge">0 назв.</span>
+    </div>
+    <div class="order-detail-table-responsive">
+      <table class="table table-sm align-middle compact-supply-table order-detail-table mb-0">
+        <thead>
+          <tr>
+            <th scope="col" class="col-name text-start">Штрихкод / дані</th>
+            <th scope="col" class="col-pack">—</th>
+            <th scope="col" class="col-category">—</th>
+            <th scope="col" class="col-ref">SMN</th>
+            <th scope="col" class="col-smn">—</th>
+            <th scope="col" class="supplyRow">
+              <table class="table table-sm table-borderless mb-0 nested-supply-table nested-supply-table--head">
+                {% include 'partials/delivery/delivery_detail_nested_colgroup.html' %}
+                <thead>
+                  <tr>
+                    <th class="supply-lot-head">LOT</th>
+                    <th class="supply-qty-head">К-сть</th>
+                    <th class="supply-exp-head">Термін</th>
+                    <th></th>
+                  </tr>
+                </thead>
+              </table>
+            </th>
+          </tr>
+        </thead>
+        <tbody id="live-scan-tbody-unrecognized"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/delivery-live-scan.js' %}"></script>
+<script>
+(function () {
+  const deliveryOrderId = {{ delivery_order.id }};
+  const saveUrl = "{% url 'live_scan_delivery_probe_save' delivery_order.id %}";
+  const generalSupplies = {{ general_supplies_json|safe }};
+  const index = DeliveryLiveScan.buildGeneralSupplyIndex(generalSupplies);
+
+  const capture = document.getElementById('live-scan-capture');
+  const statusEl = document.getElementById('live-scan-status');
+  const tbodyRecognized = document.getElementById('live-scan-tbody-recognized');
+  const tbodyUnrecognized = document.getElementById('live-scan-tbody-unrecognized');
+
+  let totalScans = 0;
+  let recognizedLineCount = 0;
+  let unrecognizedLineCount = 0;
+  const recognizedGroups = new Map();
+  const unrecognizedGroups = new Map();
+  let recognizedGroupCounter = 0;
+  let unrecognizedGroupCounter = 0;
+
+  const barcodeTypeOptions = document.getElementById('live-scan-barcode-type-options');
+
+  function getBarcodeType() {
+    const checked = document.querySelector('input[name="live_barcode_type"]:checked');
+    return checked ? checked.value : 'Data Matrix';
+  }
+
+  function refocusCapture() {
+    clearCaptureInput();
+    capture.focus();
+  }
+
+  function barcodeTypeLabel(value) {
+    return value === 'Siemens' ? 'Siemens' : 'Lifotronic (Data Matrix)';
+  }
+
+  function setStatus(kind, message) {
+    statusEl.className = 'live-scan-status live-scan-status--' + kind;
+    statusEl.textContent = message;
+  }
+
+  function updateCounters() {
+    document.getElementById('live-scan-total').textContent = String(totalScans);
+    document.getElementById('live-scan-recognized-lines').textContent = String(recognizedLineCount);
+    document.getElementById('live-scan-unrecognized-lines').textContent = String(unrecognizedLineCount);
+    document.getElementById('live-scan-recognized-groups-badge').textContent =
+      recognizedGroups.size + ' назв.';
+    document.getElementById('live-scan-unrecognized-groups-badge').textContent =
+      unrecognizedGroups.size + ' назв.';
+  }
+
+  function nestedRowHtml(lot, count, expiryLabel) {
+    return (
+      '<tr class="delivery-detail-nested-row">' +
+        '<td class="supply-lot-col"><div class="delivery-nested-cell delivery-nested-cell--view">' +
+          escapeHtml(lot || '—') + '</div></td>' +
+        '<td class="supply-qty-col"><div class="delivery-nested-cell delivery-nested-cell--view">' +
+          '<span class="qty-value fw-semibold">' + count + '</span></div></td>' +
+        '<td class="supply-exp-col"><div class="delivery-nested-cell delivery-nested-cell--view">' +
+          escapeHtml(expiryLabel || '—') + '</div></td>' +
+        '<td class="delivery-detail-actions-col text-nowrap">' +
+          '<span class="live-scan-db-dot live-scan-db-dot--row live-scan-db-dot--pending" title="Зберігаю в БД…"></span>' +
+        '</td>' +
+      '</tr>'
+    );
+  }
+
+  let dbSaveOk = 0;
+  let dbSaveFail = 0;
+  let dbSavePending = 0;
+  let lastDbSaveState = 'idle';
+  const failedSaves = [];
+  let dbRetryInProgress = false;
+  const retryFailedBtn = document.getElementById('live-scan-retry-failed-btn');
+
+  function makeFailSaveId() {
+    return 'f-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+  }
+
+  function removeFailedSave(id) {
+    const idx = failedSaves.findIndex(function (item) { return item.id === id; });
+    if (idx >= 0) {
+      failedSaves.splice(idx, 1);
+    }
+    updateRetryFailedButton();
+  }
+
+  function updateRetryFailedButton() {
+    if (!retryFailedBtn) {
+      return;
+    }
+    const count = failedSaves.length;
+    const countEl = document.getElementById('live-scan-retry-failed-count');
+    if (countEl) {
+      countEl.textContent = String(count);
+    }
+    retryFailedBtn.classList.toggle('d-none', count === 0);
+    retryFailedBtn.disabled = dbRetryInProgress || count === 0;
+    if (dbRetryInProgress) {
+      retryFailedBtn.setAttribute('aria-busy', 'true');
+    } else {
+      retryFailedBtn.removeAttribute('aria-busy');
+    }
+  }
+
+  function setRowDbState(row, state, title) {
+    if (!row) {
+      return;
+    }
+    const dot = row.querySelector('.live-scan-db-dot');
+    if (!dot) {
+      return;
+    }
+    dot.className = 'live-scan-db-dot live-scan-db-dot--row live-scan-db-dot--' + state;
+    dot.title = title || '';
+  }
+
+  function updateDbSaveIndicator() {
+    const dot = document.getElementById('live-scan-db-dot');
+    const label = document.getElementById('live-scan-db-label');
+    document.getElementById('live-scan-db-ok').textContent = String(dbSaveOk);
+    document.getElementById('live-scan-db-fail').textContent = String(dbSaveFail);
+    document.getElementById('live-scan-db-pending').textContent = String(dbSavePending);
+    if (!dot || !label) {
+      return;
+    }
+    if (dbSavePending > 0) {
+      dot.className = 'live-scan-db-dot live-scan-db-dot--pending';
+      label.className = 'small fw-semibold text-warning';
+      label.textContent = 'БД: зберігаю… (' + dbSavePending + ' в дорозі)';
+    } else if (lastDbSaveState === 'ok') {
+      dot.className = 'live-scan-db-dot live-scan-db-dot--ok';
+      label.className = 'small fw-semibold text-success';
+      label.textContent = 'БД: останній скан збережено';
+    } else if (lastDbSaveState === 'err') {
+      dot.className = 'live-scan-db-dot live-scan-db-dot--err';
+      label.className = 'small fw-semibold text-danger';
+      label.textContent = 'БД: останній скан не збережено';
+    } else {
+      dot.className = 'live-scan-db-dot live-scan-db-dot--idle';
+      label.className = 'small fw-semibold text-muted';
+      label.textContent = 'БД: ще не сканували';
+    }
+    updateRetryFailedButton();
+  }
+
+  function finishDbSaveAttempt(row, ok, errorMessage, failEntry, raw, barcodeType) {
+    dbSavePending = Math.max(0, dbSavePending - 1);
+    if (ok) {
+      dbSaveOk += 1;
+      lastDbSaveState = 'ok';
+      setRowDbState(row, 'ok', 'Збережено в БД');
+      if (failEntry) {
+        removeFailedSave(failEntry.id);
+        dbSaveFail = Math.max(0, dbSaveFail - 1);
+      }
+    } else {
+      lastDbSaveState = 'err';
+      setRowDbState(row, 'err', errorMessage || 'Помилка збереження');
+      if (!failEntry && raw) {
+        failedSaves.push({
+          id: makeFailSaveId(),
+          raw: raw,
+          barcodeType: barcodeType,
+          lineRow: row,
+        });
+        dbSaveFail += 1;
+      }
+    }
+    updateDbSaveIndicator();
+    updateRetryFailedButton();
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function ensureRecognizedGroup(gs) {
+    const key = 'gs-' + gs.id;
+    if (recognizedGroups.has(key)) {
+      return recognizedGroups.get(key);
+    }
+    recognizedGroupCounter += 1;
+    const tr = document.createElement('tr');
+    tr.id = 'live-scan-group-' + key;
+    tr.className = 'order-detail-group-row delivery-detail-group-row';
+    tr.innerHTML =
+      '<th scope="row" class="text-start col-name">' +
+        '<span class="col-idx">' + recognizedGroupCounter + '.</span> ' +
+        escapeHtml(gs.name) +
+      '</th>' +
+      '<td class="truncate-cell col-pack" title="' + escapeHtml(gs.package_and_tests) + '">' +
+        escapeHtml(gs.package_and_tests) + '</td>' +
+      '<td class="col-category">' + escapeHtml(gs.category) + '</td>' +
+      '<td class="truncate-cell col-ref" title="' + escapeHtml(gs.ref) + '">' + escapeHtml(gs.ref) + '</td>' +
+      '<td class="truncate-cell col-smn home-table-smn" title="' + escapeHtml(gs.SMN_code) + '">' +
+        escapeHtml(gs.SMN_code) + '</td>' +
+      '<td class="supplyRow">' +
+        '<table class="rounded-3 overflow-hidden table table-light table-borderless table-sm mb-0 nested-supply-table">' +
+          '<tbody id="live-scan-nested-' + key + '"></tbody>' +
+        '</table>' +
+      '</td>';
+    tbodyRecognized.appendChild(tr);
+    const group = {
+      key: key,
+      gs: gs,
+      lines: new Map(),
+      nestedTbody: tr.querySelector('#live-scan-nested-' + key),
+    };
+    recognizedGroups.set(key, group);
+    return group;
+  }
+
+  function ensureUnrecognizedGroup(raw, smn) {
+    const key = 'unk-' + raw;
+    if (unrecognizedGroups.has(key)) {
+      return unrecognizedGroups.get(key);
+    }
+    unrecognizedGroupCounter += 1;
+    const tr = document.createElement('tr');
+    tr.id = 'live-scan-group-' + key;
+    tr.className = 'order-detail-group-row delivery-detail-group-row';
+    tr.innerHTML =
+      '<th scope="row" class="text-start col-name">' +
+        '<span class="col-idx">' + unrecognizedGroupCounter + '.</span> ' +
+        '<span class="text-muted small">Barcode:</span> ' + escapeHtml(raw) +
+      '</th>' +
+      '<td class="col-pack">—</td>' +
+      '<td class="col-category">—</td>' +
+      '<td class="truncate-cell col-ref">' + escapeHtml(smn || '') + '</td>' +
+      '<td class="col-smn">—</td>' +
+      '<td class="supplyRow">' +
+        '<table class="rounded-3 overflow-hidden table table-light table-borderless table-sm mb-0 nested-supply-table">' +
+          '<tbody id="live-scan-nested-' + key + '"></tbody>' +
+        '</table>' +
+      '</td>';
+    tbodyUnrecognized.appendChild(tr);
+    const group = {
+      key: key,
+      lines: new Map(),
+      nestedTbody: tr.querySelector('#live-scan-nested-' + key),
+    };
+    unrecognizedGroups.set(key, group);
+    return group;
+  }
+
+  function bumpLine(group, lineKey, lot, expiryLabel, isRecognized) {
+    let line = group.lines.get(lineKey);
+    if (!line) {
+      const row = document.createElement('tr');
+      row.className = 'delivery-detail-nested-row';
+      row.dataset.lineKey = lineKey;
+      row.innerHTML = nestedRowHtml(lot, 1, expiryLabel);
+      group.nestedTbody.appendChild(row);
+      line = { row: row, count: 1 };
+      group.lines.set(lineKey, line);
+      if (isRecognized) {
+        recognizedLineCount += 1;
+      } else {
+        unrecognizedLineCount += 1;
+      }
+    } else {
+      line.count += 1;
+      line.row.querySelector('.qty-value').textContent = String(line.count);
+    }
+    return line;
+  }
+
+  function persistScan(raw, barcodeType, lineRow, existingFailEntry) {
+    if (typeof csrftoken === 'undefined' || !csrftoken) {
+      finishDbSaveAttempt(lineRow, false, 'Немає CSRF-токена', existingFailEntry, raw, barcodeType);
+      return Promise.resolve();
+    }
+    dbSavePending += 1;
+    setRowDbState(lineRow, 'pending', 'Зберігаю в БД…');
+    updateDbSaveIndicator();
+    updateRetryFailedButton();
+
+    return fetch(saveUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken,
+      },
+      body: JSON.stringify({ barcode: raw, barcode_type: barcodeType }),
+    })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok) {
+            throw new Error(data.error || ('HTTP ' + response.status));
+          }
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          return data;
+        });
+      })
+      .then(function () {
+        finishDbSaveAttempt(lineRow, true, null, existingFailEntry, raw, barcodeType);
+      })
+      .catch(function (err) {
+        console.warn('live scan save failed', err);
+        finishDbSaveAttempt(
+          lineRow,
+          false,
+          err && err.message ? err.message : 'Помилка мережі',
+          existingFailEntry,
+          raw,
+          barcodeType
+        );
+      });
+  }
+
+  function retryAllFailedSaves() {
+    if (dbRetryInProgress || failedSaves.length === 0) {
+      return;
+    }
+    dbRetryInProgress = true;
+    updateRetryFailedButton();
+    const snapshot = failedSaves.slice();
+    let chain = Promise.resolve();
+    snapshot.forEach(function (entry) {
+      chain = chain.then(function () {
+        return persistScan(entry.raw, entry.barcodeType, entry.lineRow, entry);
+      });
+    });
+    chain.finally(function () {
+      dbRetryInProgress = false;
+      updateRetryFailedButton();
+      if (failedSaves.length === 0) {
+        lastDbSaveState = 'ok';
+        updateDbSaveIndicator();
+      }
+      refocusCapture();
+    });
+  }
+
+  if (retryFailedBtn) {
+    retryFailedBtn.addEventListener('click', function () {
+      retryAllFailedSaves();
+    });
+  }
+
+  let scanFinishing = false;
+
+  function clearCaptureInput() {
+    capture.value = '';
+    if (capture.setRangeText) {
+      try {
+        capture.setSelectionRange(0, 0);
+      } catch (err) { /* ignore */ }
+    }
+  }
+
+  /** Сканери часто додають \\r у value або дублюють Enter — дістаємо окремі коди. */
+  function extractScanCodes(value) {
+    return value
+      .replace(/\u001d/g, '')
+      .split(/[\r\n]+/)
+      .map(function (s) { return s.trim(); })
+      .filter(function (s) { return s.length > 0; });
+  }
+
+  function isEnterKey(e) {
+    return e.key === 'Enter' || e.key === 'NumpadEnter' || e.keyCode === 13;
+  }
+
+  function finishScanFromInput() {
+    if (scanFinishing) {
+      return;
+    }
+    const value = capture.value;
+    if (!value.trim()) {
+      return;
+    }
+    scanFinishing = true;
+    const codes = extractScanCodes(value);
+    clearCaptureInput();
+    try {
+      if (!codes.length) {
+        return;
+      }
+      codes.forEach(function (raw) {
+        handleScan(raw);
+      });
+    } finally {
+      scanFinishing = false;
+      clearCaptureInput();
+      capture.focus();
+    }
+  }
+
+  function handleScan(raw) {
+    const barcodeType = getBarcodeType();
+    const parsed = DeliveryLiveScan.parseBarcode(raw, barcodeType);
+    const result = DeliveryLiveScan.lookupGeneralSupply(parsed, raw, index);
+
+    totalScans += 1;
+    document.getElementById('live-scan-last-raw-wrap').classList.remove('d-none');
+    document.getElementById('live-scan-last-raw').textContent = raw;
+
+    let lineEntry;
+    if (result.recognized) {
+      const gs = result.generalSupply;
+      const group = ensureRecognizedGroup(gs);
+      const lineKey = (result.lot || '') + '|' + (result.expiryIso || '');
+      lineEntry = bumpLine(group, lineKey, result.lot, result.expiryLabel, true);
+      setStatus('ok', 'Знайдено: ' + (gs.name || '') + ' · LOT ' + (result.lot || '—') + ' · к-сть ' + lineEntry.count);
+      DeliveryLiveScan.playFeedback('ok');
+    } else {
+      const group = ensureUnrecognizedGroup(raw, result.smn || '');
+      const lineKey = (result.lot || '') + '|' + (result.expiryLabel || '');
+      lineEntry = bumpLine(group, lineKey, result.lot, result.expiryLabel, false);
+      setStatus('err', 'Не знайдено в каталозі GeneralSupply · к-сть ' + lineEntry.count);
+      DeliveryLiveScan.playFeedback('err');
+    }
+
+    updateCounters();
+    persistScan(raw, barcodeType, lineEntry.row);
+  }
+
+  capture.addEventListener('keydown', function (e) {
+    if (!isEnterKey(e)) {
+      return;
+    }
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    finishScanFromInput();
+  });
+
+  capture.addEventListener('keyup', function (e) {
+    if (!isEnterKey(e)) {
+      return;
+    }
+    e.preventDefault();
+    clearCaptureInput();
+    capture.focus();
+  });
+
+  capture.addEventListener('input', function () {
+    if (/[\r\n]/.test(capture.value)) {
+      finishScanFromInput();
+    }
+  });
+
+  if (barcodeTypeOptions) {
+    barcodeTypeOptions.querySelectorAll('input[name="live_barcode_type"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        setStatus('idle', 'Тип: ' + barcodeTypeLabel(getBarcodeType()) + '. Очікую скан…');
+        refocusCapture();
+      });
+    });
+    barcodeTypeOptions.addEventListener('click', function () {
+      window.setTimeout(refocusCapture, 0);
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('a[href]')) {
+      return;
+    }
+    if (e.target.closest('#live-scan-barcode-type-options')) {
+      window.setTimeout(refocusCapture, 0);
+      return;
+    }
+    if (e.target.closest('button, select, textarea')) {
+      return;
+    }
+    if (e.target.closest('input:not([name="live_barcode_type"])')) {
+      return;
+    }
+    refocusCapture();
+  });
+
+  DeliveryLiveScan.bindAudioUnlock(capture);
+  document.addEventListener('click', function () {
+    DeliveryLiveScan.bindAudioUnlock(capture);
+  }, { once: true, passive: true });
+
+  window.addEventListener('load', function () {
+    clearCaptureInput();
+    capture.focus();
+  });
+})();
+</script>
+{% endblock %}

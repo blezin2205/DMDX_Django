@@ -1,0 +1,34 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Друк — Замовлення №{{ order.id }}</title>
+    <link rel="stylesheet" href="{% static 'css/order-detail.css' %}" type="text/css">
+    <link rel="stylesheet" href="{% static 'css/order-detail-print.css' %}" type="text/css">
+</head>
+<body>
+<div class="order-detail-print-page">
+    <div class="order-detail-print-toolbar no-print">
+        <a href="{% url 'orderDetail' order.id 0 %}?next={{ request.GET.next|default:'/orders'|urlencode }}" class="order-detail-print-btn">
+            ← Назад
+        </a>
+        <div class="order-detail-print-toolbar-actions">
+            <span style="font-size: 0.82rem; color: #64748b;">Всього позицій: {{ total_supply_rows }}</span>
+            <button type="button" class="order-detail-print-btn order-detail-print-btn--primary" onclick="window.print()">
+                Друкувати
+            </button>
+        </div>
+    </div>
+
+    {% include 'partials/orders/orderDetail_print_sheet.html' %}
+</div>
+
+<script>
+    window.addEventListener('load', function () {
+        window.print();
+    });
+</script>
+</body>
+</html>

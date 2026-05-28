@@ -23,6 +23,9 @@ urlpatterns = [
      path('update-cart-item-count/', views.updateCartItemCount, name='cart-count'),
      path('update-precart-item-count/', views.updatePreCartItemCount, name='precart-count'),
      path('upload_supplies_for_new_delivery/', view_upload.upload_supplies_for_new_delivery_noncelery, name='upload_supplies_for_new_delivery'),
+     path('live_scan_delivery_probe/', view_upload.live_scan_delivery_probe, name='live_scan_delivery_probe'),
+     path('live_scan_delivery_probe/<int:delivery_order_id>/', view_upload.live_scan_delivery_probe, name='live_scan_delivery_probe_existing'),
+     path('live_scan_delivery_probe/<int:delivery_order_id>/save/', view_upload.live_scan_delivery_probe_save, name='live_scan_delivery_probe_save'),
      path('new_delivery_save_delivery/<int:delivery_order_id>', view_upload.save_delivery, name='save-delivery'),
      path('delete_delivery_action/<int:delivery_order_id>', view_upload.delete_delivery_action, name='delete-delivery-action'),
      path('np-info', views.np_info_table_sync_for_user, name='np-info'),
@@ -150,6 +153,8 @@ urlpatterns = [
     path('serviceNotes/update/<int:note_id>', views.updateNote, name='updateNote'),
 
     path('order-detail-general-supply/<int:order_id>/<int:supp_id>', views.order_detail_general_supply_info, name='orderDetailGeneralSupplyInfo'),
+    path('orders/print-bulk/', views.orderDetail_print_bulk, name='orderDetailPrintBulk'),
+    path('orders/<int:order_id>/print/', views.orderDetail_print, name='orderDetailPrint'),
     path('orders/<int:order_id>/<int:sup_id>', views.orderDetail, name='orderDetail'),
     # path('orders/<int:order_id>/<int:sup_id>', views.orderDetail_with_highlighted, name='orderDetail_with_highlighted'),
 

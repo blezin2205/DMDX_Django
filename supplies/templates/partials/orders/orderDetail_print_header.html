@@ -1,0 +1,50 @@
+<div class="order-detail-print-header">
+    <div class="order-detail-print-header-top">
+        <div class="order-detail-print-header-meta">
+            <span>{{ order.dateCreated|date:"d.m.Y" }}</span>
+            <span>{{ order.userCreated.first_name }} {{ order.userCreated.last_name }}</span>
+        </div>
+
+        <div class="order-detail-print-header-center">
+            <div class="order-detail-print-order-no">
+                {% if order.isMerged %}
+                    <span class="order-detail-print-badge order-detail-print-badge--merged">Об'єднане</span>
+                {% endif %}
+                Замовлення №{{ order.id }}
+            </div>
+            <p class="order-detail-print-place">{{ order.place.name }}, {{ order.place.city_ref.name }}</p>
+        </div>
+
+        <div class="order-detail-print-header-status">
+            {% if order.isComplete %}
+                <span class="order-detail-print-badge order-detail-print-badge--complete">
+                    Виконано — {{ order.dateSent|date:"d.m.Y" }}
+                </span>
+                {% if order.userSent %}
+                    <span>{{ order.userSent.first_name }} {{ order.userSent.last_name }}</span>
+                {% endif %}
+            {% else %}
+                <span class="order-detail-print-badge order-detail-print-badge--pending">В очікуванні</span>
+                {% if order.dateToSend %}
+                    <span>Відправка: {{ order.dateToSend|date:"d.m.Y" }}</span>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    {% if order.for_preorder or order.card_related_preorders_count or order.comment %}
+    <div class="order-detail-print-header-extra">
+        {% if order.for_preorder %}
+            <span><strong>Передзамовлення:</strong> №{{ order.for_preorder.id }}{% if order.for_preorder.comment %} — {{ order.for_preorder.comment }}{% endif %}</span>
+        {% endif %}
+        {% if order.card_related_preorders_count %}
+            <span><strong>Пов'язані передзамовлення:</strong>
+                {% for preorder in order.related_preorders.all %}№{{ preorder.id }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            </span>
+        {% endif %}
+        {% if order.comment %}
+            <span><strong>Коментар:</strong> {{ order.comment }}</span>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>

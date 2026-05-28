@@ -1,0 +1,450 @@
+/**
+ * Друк деталей замовлення — компактний альбомний A4.
+ */
+
+@page {
+    size: A4 landscape;
+    margin: 3mm 2mm;
+}
+
+@media print {
+    html, body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: #fff;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .order-detail-print-page {
+        padding: 0 !important;
+    }
+
+    .order-detail-print-header,
+    .order-detail-print-table-wrap {
+        border-radius: 0;
+    }
+
+    .order-detail-print-header {
+        margin-bottom: 0.15rem;
+        padding: 0.1rem 0.2rem;
+    }
+
+    .order-detail-print-header-extra {
+        margin-top: 0.1rem;
+        padding-top: 0.1rem;
+    }
+
+    .order-detail-table thead th {
+        position: static;
+    }
+
+    .order-detail-table tbody tr.order-detail-group-row {
+        page-break-inside: avoid;
+    }
+
+    .order-detail-date--good,
+    .order-detail-date--today,
+    .order-detail-date--bad {
+        color: #000 !important;
+    }
+}
+
+.order-detail-print-page {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    color: #000;
+    padding: 0.35rem 0.25rem 0.5rem;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.order-detail-print-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.order-detail-print-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.order-detail-print-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: #334155;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.order-detail-print-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.order-detail-print-btn--primary {
+    color: #fff;
+    background: #4f6d9a;
+    border-color: #4f6d9a;
+}
+
+.order-detail-print-btn--primary:hover {
+    background: #3d5678;
+    color: #fff;
+}
+
+.order-detail-print-header {
+    margin-bottom: 0.2rem;
+    padding: 0.15rem 0.25rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 3px;
+    background: #fff;
+}
+
+.order-detail-print-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+}
+
+.order-detail-print-header-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    font-size: 9px;
+    color: #000;
+    min-width: 0;
+    flex: 0 1 auto;
+    line-height: 1.15;
+}
+
+.order-detail-print-header-meta span {
+    white-space: nowrap;
+}
+
+.order-detail-print-header-center {
+    flex: 1 1 auto;
+    text-align: center;
+    min-width: 0;
+}
+
+.order-detail-print-order-no {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 300;
+    color: #000;
+    line-height: 1.1;
+}
+
+.order-detail-print-place {
+    font-size: 10.5px;
+    font-weight: 300;
+    color: #000;
+    line-height: 1.15;
+    margin: 0.05rem 0 0;
+}
+
+.order-detail-print-header-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+    font-size: 9px;
+    color: #000;
+    min-width: 0;
+    flex: 0 1 auto;
+    text-align: right;
+    line-height: 1.15;
+}
+
+.order-detail-print-badge {
+    display: inline-block;
+    padding: 0;
+    border-radius: 0;
+    font-size: 9px;
+    font-weight: 300;
+    color: #000;
+    background: transparent;
+    white-space: nowrap;
+}
+
+.order-detail-print-badge--complete,
+.order-detail-print-badge--pending,
+.order-detail-print-badge--merged {
+    background: transparent;
+    color: #000;
+}
+
+.order-detail-print-header-extra {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem 0.5rem;
+    margin-top: 0.15rem;
+    padding-top: 0.15rem;
+    border-top: 1px solid #e2e8f0;
+    font-size: 8.5px;
+    color: #000;
+    line-height: 1.15;
+}
+
+.order-detail-print-header-extra strong {
+    color: #000;
+    font-weight: 300;
+}
+
+.order-detail-print-table-wrap {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.order-detail-print-page .order-detail-table-responsive {
+    overflow: visible;
+}
+
+.order-detail-print-page .order-detail-table {
+    font-size: 10.5px;
+    font-weight: 300;
+    color: #000;
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.order-detail-print-page .order-detail-table thead th {
+    background: #4f6d9a;
+    color: #fff;
+    border-color: #3d5678;
+    font-size: 9.5px;
+    font-weight: 400;
+    padding: 0.2rem 0.18rem;
+    line-height: 1.2;
+    white-space: normal;
+}
+
+.order-detail-print-page .order-detail-table tbody td,
+.order-detail-print-page .order-detail-table tbody th {
+    border-color: #cbd5e1;
+    border-bottom: 1px solid #cbd5e1;
+    padding: 0.18rem 0.16rem;
+    vertical-align: middle;
+    font-weight: 300;
+    color: #000;
+}
+
+.order-detail-print-page .order-detail-table .col-name {
+    width: 30%;
+    min-width: 0;
+    max-width: 30%;
+    word-break: break-word;
+}
+
+.order-detail-print-page .order-detail-table thead th.col-name {
+    font-size: 9.5px;
+    font-weight: 400;
+    color: #fff;
+    line-height: 1.2;
+}
+
+.order-detail-print-page .order-detail-table tbody th.col-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #000;
+    line-height: 1.25;
+}
+
+.order-detail-print-page .order-detail-table .order-detail-internal-name {
+    font-weight: 600;
+    color: #000;
+}
+
+.order-detail-print-page .order-detail-table .col-pack {
+    width: 8%;
+    max-width: none;
+    min-width: 0;
+    font-size: 10px;
+    white-space: normal;
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+.order-detail-print-page .order-detail-table .col-category {
+    width: 8%;
+    min-width: 0;
+    max-width: none;
+    font-size: 10px;
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+.order-detail-print-page .order-detail-table .col-ref {
+    width: 6%;
+    max-width: none;
+    min-width: 0;
+    font-size: 10px;
+}
+
+.order-detail-print-page .order-detail-table .col-smn {
+    width: 7%;
+    min-width: 0;
+    max-width: none;
+    font-size: 9.5px;
+}
+
+.order-detail-print-page .order-detail-table .supplyRow {
+    width: 41%;
+    min-width: 0;
+    padding: 0.1rem 0.08rem 0.1rem 0.12rem;
+}
+
+.order-detail-print-page .order-detail-table .nested-supply-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+.order-detail-print-page .order-detail-table .nested-supply-table col.od-col-lot { width: 28%; }
+.order-detail-print-page .order-detail-table .nested-supply-table col.od-col-qty { width: 14%; }
+.order-detail-print-page .order-detail-table .nested-supply-table col.od-col-exp { width: 22%; }
+.order-detail-print-page .order-detail-table .nested-supply-table col.od-col-updated { width: 36%; }
+
+.order-detail-print-page .order-detail-table .nested-supply-table--head thead th {
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 400;
+    padding: 0;
+    line-height: 1.15;
+}
+
+.order-detail-print-page .order-detail-table .nested-supply-table--head thead th.supply-lot-head,
+.order-detail-print-page .order-detail-table .nested-supply-table--head thead th.supply-qty-head,
+.order-detail-print-page .order-detail-table .nested-supply-table--head thead th.supply-exp-head {
+    padding-right: 0.04rem;
+}
+
+.order-detail-print-page .order-detail-table .nested-supply-table--head thead th.order-detail-updated-head {
+    padding-left: 0.25rem;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.order-detail-print-page .order-detail-table .nested-supply-table td {
+    padding: 0.14rem 0.06rem;
+    font-size: 10px;
+    font-weight: 300;
+    color: #000;
+    line-height: 1.2;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.order-detail-print-page .order-detail-table .nested-supply-table .supply-lot-col,
+.order-detail-print-page .order-detail-table .nested-supply-table .supply-qty-col,
+.order-detail-print-page .order-detail-table .nested-supply-table .supply-exp-col {
+    padding-left: 0.06rem;
+    padding-right: 0.06rem;
+}
+
+.order-detail-print-page .order-detail-table .nested-supply-table .order-detail-updated-col {
+    padding-left: 0.25rem;
+    padding-right: 0.08rem;
+    font-size: 10px;
+    font-weight: 300;
+    color: #9ca3af;
+}
+
+.order-detail-print-page .order-detail-table .nested-supply-table .supply-lot-col,
+.order-detail-print-page .order-detail-table .nested-supply-table .lot-value,
+.order-detail-print-page .order-detail-table .nested-supply-table .supply-qty-col,
+.order-detail-print-page .order-detail-table .nested-supply-table .qty-value,
+.order-detail-print-page .order-detail-table .nested-supply-table .supply-exp-col,
+.order-detail-print-page .order-detail-table .nested-supply-table .supply-exp-col span,
+.order-detail-print-page .order-detail-table .order-detail-date--good,
+.order-detail-print-page .order-detail-table .order-detail-date--today,
+.order-detail-print-page .order-detail-table .order-detail-date--bad {
+    font-size: 10px;
+    font-weight: 600;
+    color: #000 !important;
+}
+
+.order-detail-print-page .order-detail-table .truncate-cell {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+.order-detail-print-page .order-detail-table .col-idx {
+    font-size: 9px;
+    font-weight: 300;
+    color: #000;
+    margin-right: 0.15rem;
+}
+
+.order-detail-print-page .order-detail-table .nested-supply-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.order-detail-print-page .table {
+    margin-bottom: 0;
+}
+
+.order-detail-print-page .table-borderless > :not(caption) > * > * {
+    border-width: 0;
+}
+
+.order-detail-print-page .order-detail-table .nested-supply-table.table-borderless td {
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: #e2e8f0;
+}
+
+.order-detail-print-page .order-detail-table .nested-supply-table.table-borderless tbody tr:last-child td {
+    border-bottom-width: 0;
+}
+
+.order-detail-print-page a {
+    color: #000;
+    font-weight: inherit;
+}
+
+.order-detail-print-sheet {
+    margin-bottom: 0.5rem;
+}
+
+.order-detail-print-sheet + .order-detail-print-sheet {
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px dashed #cbd5e1;
+}
+
+@media print {
+    .order-detail-print-sheet {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        margin-bottom: 0.35rem;
+        padding-top: 0;
+    }
+
+    .order-detail-print-sheet + .order-detail-print-sheet {
+        margin-top: 0.65rem;
+        padding-top: 0.65rem;
+        border-top: 1px dashed #94a3b8;
+    }
+}

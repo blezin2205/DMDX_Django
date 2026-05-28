@@ -10,6 +10,12 @@
         <h4 class="title-text mb-4 text-center">
             <i class="bi bi-upc-scan title-icon me-2"></i>{{ title }}
         </h4>
+        <p class="text-center small mb-3">
+            <a href="{% url 'live_scan_delivery_probe' %}"
+               class="link-primary"
+               id="live-scan-intro-link"
+               role="button">Спробувати live-скан (по одному коду)</a>
+        </p>
 
         <section class="category-section mb-4">
             <p class="category-section-title">Підказки сканера</p>
@@ -98,7 +104,79 @@
     </div>
 </div>
 
+<div class="modal fade" id="liveScanIntroModal" tabindex="-1" aria-labelledby="liveScanIntroModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="liveScanIntroModalLabel">
+                    <i class="bi bi-upc-scan me-2"></i>Live-скан: налаштування сканера
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрити"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning mb-3" role="alert">
+                    <strong>Обовʼязково:</strong> на сканері увімкніть <strong>Synchronous Mode</strong> (синхронний режим).
+                    Режим <strong>Storage Mode</strong> для live-скану не підходить — коди накопичуються в памʼяті сканера
+                    і не потрапляють у браузер по одному.
+                </div>
+
+                <h6 class="fw-semibold mb-2">Як це працює</h6>
+                <ul class="small mb-3 ps-3">
+                    <li>Сканер працює як <strong>клавіатура</strong>: надсилає штрих-код у браузер і в кінці натискає <strong>Enter</strong>.</li>
+                    <li>Після кожного скану одразу зʼявляється рядок у таблиці та звук (знайдено / не знайдено).</li>
+                    <li>Збереження в поставку йде <strong>у фоні</strong>; зелена або червона крапка показує, чи запис потрапив у базу.</li>
+                    <li>Якщо щось не збереглося — кнопка <strong>«Завантажити помилкові»</strong> повторить відправку.</li>
+                </ul>
+
+                <h6 class="fw-semibold mb-2">Режим на сканері</h6>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="scanner-hint-card border border-success border-2">
+                            <p class="scanner-hint-card__title text-success fw-semibold">✓ Synchronous Mode</p>
+                            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903384/syncMode_cr1ova.png" alt="Synchronous Mode" class="scanner-hint-card__img">
+                            <p class="small text-muted mb-0 mt-1">Потрібен для live-скану</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="scanner-hint-card opacity-75">
+                            <p class="scanner-hint-card__title text-muted">Storage Mode</p>
+                            <img src="https://res.cloudinary.com/hmflrailz/image/upload/v1714903295/storeMode_mohdkj.png" alt="Storage Mode" class="scanner-hint-card__img">
+                            <p class="small text-danger mb-0 mt-1">Не використовувати тут</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-semibold mb-2">На сторінці live-скану</h6>
+                <ul class="small mb-0 ps-3">
+                    <li>Оберіть тип штрих-коду: <strong>Lifotronic (Data Matrix)</strong> або <strong>Siemens</strong> — як на етикетці.</li>
+                    <li>Не перемикайте тип під час серії сканів без потреби.</li>
+                    <li>Фокус має бути на сторінці (після перемикання типу клікніть у вільне місце, якщо сканер «мовчить»).</li>
+                </ul>
+            </div>
+            <div class="modal-footer flex-wrap gap-2">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Скасувати</button>
+                <a href="{% url 'live_scan_delivery_probe' %}" class="btn btn-primary" id="live-scan-intro-continue">
+                    <i class="bi bi-lightning me-1"></i>Перейти до live-скану
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    (function () {
+        var introLink = document.getElementById('live-scan-intro-link');
+        var introModalEl = document.getElementById('liveScanIntroModal');
+        if (!introLink || !introModalEl || typeof bootstrap === 'undefined') {
+            return;
+        }
+        var introModal = bootstrap.Modal.getOrCreateInstance(introModalEl);
+        introLink.addEventListener('click', function (e) {
+            e.preventDefault();
+            introModal.show();
+        });
+    })();
+
     function showLoadingButton() {
         document.getElementById('submitButton').style.display = 'none';
         document.getElementById('loadingButton').style.display = 'block';

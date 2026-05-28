@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Друк — {{ print_orders|length }} замовлень</title>
+    <link rel="stylesheet" href="{% static 'css/order-detail.css' %}" type="text/css">
+    <link rel="stylesheet" href="{% static 'css/order-detail-print.css' %}" type="text/css">
+</head>
+<body>
+<div class="order-detail-print-page">
+    <div class="order-detail-print-toolbar no-print">
+        <a href="{% url 'orders' %}" class="order-detail-print-btn">← Назад</a>
+        <div class="order-detail-print-toolbar-actions">
+            <span style="font-size: 0.82rem; color: #64748b;">Замовлень: {{ print_orders|length }}</span>
+            <button type="button" class="order-detail-print-btn order-detail-print-btn--primary" onclick="window.print()">
+                Друкувати
+            </button>
+        </div>
+    </div>
+
+    {% for sheet in print_orders %}
+        {% include 'partials/orders/orderDetail_print_sheet.html' with order=sheet.order supply_groups=sheet.supply_groups %}
+    {% empty %}
+        <p class="no-print">Замовлення для друку не знайдено.</p>
+    {% endfor %}
+</div>
+
+{% if print_orders %}
+<script>
+    window.addEventListener('load', function () {
+        window.print();
+    });
+</script>
+{% endif %}
+</body>
+</html>

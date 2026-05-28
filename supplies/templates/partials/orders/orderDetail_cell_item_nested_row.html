@@ -6,11 +6,11 @@
     </td>
     <td class="supply-qty-col">
         <div class="order-detail-qty-stepper">
-            {% if not order.isComplete and request.user.is_staff %}
+            {% if not is_print and not order.isComplete and request.user.is_staff %}
                 {% include 'order_detail_buttons/sup_minus_button.html' %}
             {% endif %}
             <span class="qty-value">{{ el.count_in_order }}</span>
-            {% if not order.isComplete and request.user.is_staff %}
+            {% if not is_print and not order.isComplete and request.user.is_staff %}
                 {% include 'order_detail_buttons/sup_plus_button.html' %}
             {% endif %}
         </div>
@@ -29,8 +29,9 @@
             {% endif %}
         </td>
     {% endif %}
-    {% if request.user|has_group:"empl" or request.user.is_staff %}
-        {% if order.detail_has_preorder_lines %}
+    {% if not is_print %}
+        {% if request.user|has_group:"empl" or request.user.is_staff %}
+            {% if order.detail_has_preorder_lines %}
             <td class="order-detail-preorder-col truncate-cell">
                 {% if el.supply_in_preorder %}
                     <a href="{% url 'preorderDetail' el.supply_in_preorder.supply_for_order.id el.supply_in_preorder.id %}?next={{ request.get_full_path }}"
@@ -39,6 +40,7 @@
                     </a>
                 {% endif %}
             </td>
+            {% endif %}
         {% endif %}
     {% endif %}
 </tr>

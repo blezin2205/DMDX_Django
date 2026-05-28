@@ -4036,6 +4036,75 @@ def order_detail_general_supply_info(request, order_id, supp_id):
     )
 
 
+def _order_detail_print_sheet_data(order_id):
+    order = _order_detail_single(order_id).filter(pk=order_id).first()
+    if not order:
+        return None
+    supplies_qs = SupplyInOrder.objects.filter(supply_for_order_id=order_id).select_related(
+        'generalSupply',
+        'generalSupply__category',
+        'supply',
+        'supply_in_preorder',
+        'supply_in_preorder__supply_for_order',
+    )
+    supply_groups = _group_order_supplies_for_display(supplies_qs)
+    total_supply_rows = sum(len(g['items']) for g in supply_groups)
+    return {
+        'order': order,
+        'supply_groups': supply_groups,
+        'total_supply_rows': total_supply_rows,
+    }
+
+
+@login_required(login_url='login')
+def orderDetail_print_bulk(request):
+    ids_raw = request.GET.get('ids', '')
+    order_ids = []
+    for part in ids_raw.split(','):
+        part = part.strip()
+        if part.isdigit():
+            order_ids.append(int(part))
+
+    seen = set()
+    print_orders = []
+    for order_id in order_ids:
+        if order_id in seen or len(print_orders) >= 50:
+            continue
+        seen.add(order_id)
+        sheet = _order_detail_print_sheet_data(order_id)
+        if sheet:
+            print_orders.append(sheet)
+
+    return render(
+        request,
+        'supplies/orders/orderDetail_print_bulk.html',
+        {
+            'title': f'Друк — {len(print_orders)} замовлень',
+            'print_orders': print_orders,
+            'is_print': True,
+        },
+    )
+
+
+@login_required(login_url='login')
+def orderDetail_print(request, order_id):
+    sheet = _order_detail_print_sheet_data(order_id)
+    if not sheet:
+        raise Http404
+
+    return render(
+        request,
+        'supplies/orders/orderDetail_print.html',
+        {
+            'title': f'Друк — Замовлення № {order_id}',
+            'order': sheet['order'],
+            'supply_groups': sheet['supply_groups'],
+            'total_supply_rows': sheet['total_supply_rows'],
+            'is_print': True,
+        },
+    )
+
+
 @login_required(login_url='login')
 def orderDetail(request, order_id, sup_id):
     order = get_object_or_404(_order_detail_single(order_id), pk=order_id)

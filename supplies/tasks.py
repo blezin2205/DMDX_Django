@@ -78,6 +78,39 @@ def makeDataUpload_nonCelery(string_data, for_delivery_order, barcode_type):
     return (total_sups_delivered, total_requests)
 
 
+def process_single_barcode_scan(barcode_raw, for_delivery_order, barcode_type):
+    """Обробляє один штрих-код (як один елемент у makeDataUpload_nonCelery)."""
+    barcode_raw = (barcode_raw or '').strip()
+    if not barcode_raw:
+        return None
+    items, _ = makeDataUpload_nonCelery(barcode_raw, for_delivery_order, barcode_type)
+    return items[0] if items else None
+
+
+def find_general_supply_by_smn(smn):
+    """Шукає GeneralSupply за SMN/GTIN з урахуванням різних форматів запису в БД."""
+    candidates = []
+    seen = set()
+
+    def add(value):
+        if value and value not in seen:
+            seen.add(value)
+            candidates.append(value)
+
+    add(smn)
+    if smn.startswith('01') and len(smn) > 2:
+        add(smn[2:])
+    else:
+        add(f'01{smn}')
+
+    for candidate in candidates:
+        gen_sup = GeneralSupply.objects.filter(SMN_code=candidate).first()
+        if gen_sup:
+            return gen_sup
+
+    raise GeneralSupply.DoesNotExist
+
+
 def create_supply_objects(barcode, smn, lot, date_expired, for_delivery_order, search_by_ref=False):
     try:
         date_expired_date = datetime.datetime.strptime(date_expired, '%y%m%d')
@@ -85,7 +118,7 @@ def create_supply_objects(barcode, smn, lot, date_expired, for_delivery_order, s
         if search_by_ref:
             gen_sup = GeneralSupply.objects.get(ref=smn)
         else:
-            gen_sup = GeneralSupply.objects.get(SMN_code=smn)
+            gen_sup = find_general_supply_by_smn(smn)
 
         try:
             sup_delivery = for_delivery_order.deliverysupplyincart_set.get(

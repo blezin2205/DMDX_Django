@@ -134,6 +134,14 @@
                     {% endif %}
                 </div>
                 <div class="d-flex align-items-center gap-2">
+                    <a href="{% url 'orderDetailPrint' order.id %}?next={{ request.get_full_path|urlencode }}"
+                       class="btn btn-outline-secondary btn-sm"
+                       target="_blank"
+                       rel="noopener"
+                       data-toggle="tooltip"
+                       title="Друк">
+                        <i class="bi bi-printer"></i>
+                    </a>
                     <a href="{% url 'orderDetailCsv' order.id %}" class="btn btn-outline-secondary btn-sm" data-toggle="tooltip" title="Export to Excel">
                         <i class="bi bi-file-earmark-excel"></i>
                     </a>
@@ -464,5 +472,4 @@
         });
     });
 </script>
-
 {% endblock %}

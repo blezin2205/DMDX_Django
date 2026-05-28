@@ -122,12 +122,15 @@
   {% if not delivery_order.isHasBeenSaved %}
     <div class="card shadow-sm mb-3 delivery-detail-tools">
       <div class="card-body py-3">
-        <form method="GET" action="{% url 'add_more_scan_to_exist_delivery_order' delivery_order.id %}" class="mb-3">
+        <form method="GET" action="{% url 'add_more_scan_to_exist_delivery_order' delivery_order.id %}" class="mb-3 d-inline">
           {% csrf_token %}
           <button type="submit" class="btn btn-sm btn-outline-primary">
             <i class="bi bi-upc-scan"></i> Додати скан до поставки
           </button>
         </form>
+        <a href="{% url 'live_scan_delivery_probe_existing' delivery_order.id %}" class="btn btn-sm btn-outline-secondary mb-3 ms-1">
+          <i class="bi bi-lightning"></i> Live-скан
+        </a>
         <div class="delivery-manual-search position-relative mb-3">
           <label for="delivery-manual-search-input" class="form-label small fw-semibold text-muted mb-1">Додати товар вручну</label>
           <div class="delivery-manual-search-input-wrap">

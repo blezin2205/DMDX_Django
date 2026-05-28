@@ -5,10 +5,14 @@
     <th scope="row" class="text-start col-name">
         <span class="col-idx">{{ group.counter }}.</span>
         {% if el.generalSupply %}
-            {% if request.user|has_group:"empl" or request.user.is_staff %}
-                <a href="#" class="text-decoration-none link-dark order-detail-gen-sup-link" data-general-supply-id="{{ el.generalSupply.id }}">
+            {% if not is_print %}
+                {% if request.user|has_group:"empl" or request.user.is_staff %}
+                    <a href="#" class="text-decoration-none link-dark order-detail-gen-sup-link" data-general-supply-id="{{ el.generalSupply.id }}">
+                        {{ el.generalSupply.name }}
+                    </a>
+                {% else %}
                     {{ el.generalSupply.name }}
-                </a>
+                {% endif %}
             {% else %}
                 {{ el.generalSupply.name }}
             {% endif %}

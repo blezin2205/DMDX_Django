@@ -511,6 +511,32 @@
         return document.querySelectorAll('input.np-selection-checkbox[name="register_print_buttons"]');
     }
 
+    function printSelectedOrders() {
+        const checkboxes = Array.from(getOrderSelectionCheckboxes()).filter(function (checkbox) {
+            return checkbox.checked;
+        });
+        if (!checkboxes.length) {
+            alert('Виберіть замовлення для друку');
+            return;
+        }
+        const ids = checkboxes.map(function (checkbox) {
+            return checkbox.value;
+        }).join(',');
+        window.open(
+            '{% url "orderDetailPrintBulk" %}?ids=' + encodeURIComponent(ids),
+            '_blank',
+            'noopener,noreferrer'
+        );
+    }
+
+    document.body.addEventListener('click', function (event) {
+        if (!event.target.closest('#print-selected-orders-btn')) {
+            return;
+        }
+        event.preventDefault();
+        printSelectedOrders();
+    });
+
     function updateSelectAllOrdersButtonVisibility() {
         const selectAllBtn = document.getElementById('select-all-orders-btn');
         if (!selectAllBtn) {

@@ -14,7 +14,7 @@ from django.db.models import *
 from django.http import HttpResponse
 from xlsxwriter.workbook import Workbook
 from django.db.models import Sum
-from .tasks import makeDataUpload_nonCelery
+from .tasks import makeDataUpload_nonCelery, process_single_barcode_scan
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import threading
@@ -71,6 +71,84 @@ def upload_supplies_for_new_delivery_noncelery(request, delivery_order_id=None):
             return JsonResponse({'success': False, 'message': 'Форма не дійсна.'})
             # return redirect('/all_deliveries')
     return render(request, 'supplies/delivery/upload_supplies_for_new_delivery.html', {'form': form, 'title': title, 'delivery_order_id': delivery_order_id})
+
+
+def _general_supplies_for_live_scan_json():
+    return [
+        {
+            'id': gs.id,
+            'name': gs.name or '',
+            'ref': gs.ref or '',
+            'SMN_code': gs.SMN_code or '',
+            'package_and_tests': gs.package_and_tests or '',
+            'category': gs.category.name if gs.category_id else '',
+        }
+        for gs in GeneralSupply.objects.select_related('category').order_by('name')
+    ]
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def live_scan_delivery_probe(request, delivery_order_id=None):
+    """Тестова сторінка live-скану: приховане поле + пошук по GeneralSupply на клієнті."""
+    if delivery_order_id is not None:
+        delivery_order = get_object_or_404(DeliveryOrder, pk=delivery_order_id)
+        if delivery_order.isHasBeenSaved:
+            return redirect('delivery_detail', delivery_id=delivery_order.id)
+        title = f'Live-скан · поставка №{delivery_order.id}'
+    else:
+        delivery_order = DeliveryOrder(from_user=request.user)
+        delivery_order.save()
+        title = f'Live-скан · нова поставка №{delivery_order.id}'
+
+    return render(
+        request,
+        'supplies/delivery/live_scan_delivery_probe.html',
+        {
+            'title': title,
+            'delivery_order': delivery_order,
+            'general_supplies_json': json.dumps(_general_supplies_for_live_scan_json()),
+        },
+    )
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def live_scan_delivery_probe_save(request, delivery_order_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request'}, status=400)
+    delivery_order = get_object_or_404(DeliveryOrder, pk=delivery_order_id)
+    if delivery_order.isHasBeenSaved:
+        return JsonResponse({'error': 'Поставка вже закрита'}, status=400)
+    data = json.loads(request.body)
+    barcode_type = data.get('barcode_type', 'Data Matrix')
+    barcode_raw = (data.get('barcode') or '').strip()
+    if not barcode_raw:
+        return JsonResponse({'error': 'Порожній штрих-код'}, status=400)
+    item = process_single_barcode_scan(barcode_raw, delivery_order, barcode_type)
+    if item is None:
+        return JsonResponse({'error': 'Не вдалося розпізнати формат'}, status=400)
+    recognized = bool(item.general_supply_id)
+    payload = {
+        'recognized': recognized,
+        'line_id': item.id,
+        'count': item.count,
+        'supply_lot': item.supplyLot or '',
+        'smn_code': item.SMN_code or '',
+        'barcode': item.barcode or '',
+        'expired_date': item.expiredDate.strftime('%Y-%m-%d') if item.expiredDate else (item.expiredDate_desc or ''),
+    }
+    if recognized:
+        gs = item.general_supply
+        payload.update({
+            'general_supply_id': gs.id,
+            'name': gs.name or '',
+            'ref': gs.ref or '',
+            'category': gs.category.name if gs.category_id else '',
+            'package_and_tests': gs.package_and_tests or '',
+        })
+    return JsonResponse(payload)
+
 
 def threading_create_delivery_async(request, string_data, for_delivery_order, barcode_type, isUpdate = False):
     total_sups_delivered, total_requests = makeDataUpload_nonCelery(string_data, for_delivery_order, barcode_type)

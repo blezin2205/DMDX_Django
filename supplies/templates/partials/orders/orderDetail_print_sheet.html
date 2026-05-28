@@ -1,0 +1,44 @@
+{% load myapp_extras %}
+<div class="order-detail-print-sheet">
+    {% include 'partials/orders/orderDetail_print_header.html' %}
+
+    <div class="order-detail-print-table-wrap order-detail-table-card">
+        <div class="order-detail-table-responsive">
+            <table class="table table-sm align-middle compact-supply-table order-detail-table mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col" class="col-name text-start">Назва</th>
+                        <th scope="col" class="col-pack">Пак./Тести</th>
+                        <th scope="col" class="col-category">Кат.</th>
+                        <th scope="col" class="col-ref">REF</th>
+                        <th scope="col" class="col-smn home-table-smn">SMN</th>
+                        <th scope="col" class="supplyRow">
+                            <table class="table table-sm table-borderless mb-0 nested-supply-table nested-supply-table--head">
+                                {% include 'partials/orders/orderDetail_nested_colgroup.html' %}
+                                <thead>
+                                    <tr>
+                                        <th class="supply-lot-head">LOT</th>
+                                        <th class="supply-qty-head">К-ть</th>
+                                        <th class="supply-exp-head">Терм.</th>
+                                        {% if request.user|has_group:"empl" or request.user.is_staff %}
+                                            <th class="order-detail-updated-head">Онов.</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                            </table>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for group in supply_groups %}
+                        {% include 'partials/orders/orderDetail_group_row.html' %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">Товарів у замовленні немає</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
