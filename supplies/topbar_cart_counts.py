@@ -7,14 +7,12 @@ from datetime import date
 from django.db.models import Count, Q, Sum
 
 from .models import (
-    AppSettings,
     BookedOrderInCart,
     Order,
-    OrderInCart,
-    PreorderInCart,
     PreOrder,
     StatusNPParselFromDoucmentID,
 )
+from .user_request_cache import active_order_in_cart, active_preorder_in_cart
 
 _NP_UNCOMPLETED_CODES = (
     '3', '4', '41', '5', '6', '7', '8', '10', '11', '12',
@@ -97,8 +95,8 @@ def build_topbar_cart_count_data(request):
         return cached
 
     user = request.user
-    app_settings, _created = AppSettings.objects.get_or_create(userCreated=user)
-    is_client = user.groups.filter(name='client').exists()
+    app_settings = user.get_app_settings()
+    is_client = user.isClient()
     is_one_cart = ''
     booked_cart_first = None
 
@@ -125,7 +123,7 @@ def build_topbar_cart_count_data(request):
             is_one_cart = ''
         booked_cart_first = booked_carts.first()
 
-    order_in_cart = OrderInCart.objects.first()
+    order_in_cart = active_order_in_cart(user)
     if order_in_cart is None:
         cart_items = 0
     else:
@@ -133,7 +131,7 @@ def build_topbar_cart_count_data(request):
             order_in_cart.supplyinorderincart_set.aggregate(t=Sum('count_in_order'))['t'] or 0
         )
 
-    precart_order = PreorderInCart.objects.filter(userCreated=user, isComplete=False).first()
+    precart_order = active_preorder_in_cart(user)
     if precart_order is None:
         precart_items = 0
     else:

@@ -42,11 +42,10 @@ class CustomUser(AbstractUser):
         return place_id
 
     def _in_auth_group(self, name):
-        """Membership check; uses prefetch_related('…__groups') when present (lists / cards)."""
-        cache = getattr(self, '_prefetched_objects_cache', None)
-        if cache is not None and 'groups' in cache:
-            return any(g.name == name for g in cache['groups'])
-        return self.groups.filter(name=name).exists()
+        """Membership check; one group query per user per request when groups aren't prefetched."""
+        from .user_request_cache import ensure_user_group_names
+
+        return name in ensure_user_group_names(self)
 
     def isClient(self):
         return self._in_auth_group('client')
@@ -76,7 +75,11 @@ class CustomUser(AbstractUser):
         return None
 
     def get_app_settings(self):
-        app_settings, created = AppSettings.objects.get_or_create(userCreated=self)
+        cache_attr = '_dmdx_app_settings_cache'
+        if hasattr(self, cache_attr):
+            return getattr(self, cache_attr)
+        app_settings, _created = AppSettings.objects.get_or_create(userCreated=self)
+        setattr(self, cache_attr, app_settings)
         return app_settings
     
     def is_allow_to_edit_preorder(self):

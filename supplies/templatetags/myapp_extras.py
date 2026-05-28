@@ -3,6 +3,11 @@ from ..models import *
 from django.utils import timezone
 from datetime import datetime
 import re
+from ..user_request_cache import (
+    ensure_user_group_names,
+    order_in_cart_supply_counts,
+    precart_row_maps,
+)
 
 register = template.Library()
 
@@ -101,23 +106,13 @@ def has_group(sups_in_delivery_order_set):
     return total_count or 0
 
 
-_GROUP_NAMES_CACHE_ATTR = '_dmdx_group_names_frozen'
-
 
 @register.filter(name='has_group')
 def has_group(user, group_name):
     if not getattr(user, 'is_authenticated', False):
         return False
-    if not hasattr(user, _GROUP_NAMES_CACHE_ATTR):
-        setattr(
-            user,
-            _GROUP_NAMES_CACHE_ATTR,
-            frozenset(user.groups.values_list('name', flat=True)),
-        )
-    return group_name in getattr(user, _GROUP_NAMES_CACHE_ATTR)
+    return group_name in ensure_user_group_names(user)
 
-
-_CART_SUPPLY_COUNT_MAP_ATTR = '_dmdx_cart_supply_count_map'
 
 
 @register.simple_tag(takes_context=True)
@@ -126,21 +121,7 @@ def supply_in_cart_count(context, supp):
     request = context.get('request')
     if not request or not request.user.is_authenticated:
         return 0
-    user = request.user
-    if not hasattr(user, _CART_SUPPLY_COUNT_MAP_ATTR):
-        order = OrderInCart.objects.filter(userCreated=user, isComplete=False).first()
-        if not order:
-            setattr(user, _CART_SUPPLY_COUNT_MAP_ATTR, {})
-        else:
-            rows = order.supplyinorderincart_set.exclude(supply__isnull=True).values_list(
-                'supply_id', 'count_in_order'
-            )
-            setattr(
-                user,
-                _CART_SUPPLY_COUNT_MAP_ATTR,
-                {int(sid): int(cnt or 0) for sid, cnt in rows if sid is not None},
-            )
-    mapping = getattr(user, _CART_SUPPLY_COUNT_MAP_ATTR)
+    mapping = order_in_cart_supply_counts(request.user)
     return int(mapping.get(supp.id, 0) or 0)
 
 
@@ -154,47 +135,23 @@ def in_cart_placeholder(sup_id):
 def in_precart(supId, user):
     if not getattr(user, 'is_authenticated', False):
         return False
-    cache_attr = '_dmdx_precart_supply_ids'
-    if not hasattr(user, cache_attr):
-        preorder = PreorderInCart.objects.filter(userCreated=user, isComplete=False).first()
-        if not preorder:
-            setattr(user, cache_attr, frozenset())
-        else:
-            ids = SupplyInPreorderInCart.objects.filter(supply_for_order=preorder).exclude(
-                supply__isnull=True
-            ).values_list('supply_id', flat=True)
-            setattr(user, cache_attr, frozenset(int(x) for x in ids if x is not None))
+    supply_ids, _general = precart_row_maps(user)
     pk = _coerce_pk(supId)
     if pk is None:
         return False
-    return pk in getattr(user, cache_attr)
+    return pk in supply_ids
 
-
-_PRECART_GENERAL_MAP_ATTR = '_dmdx_precart_general_counts'
 
 
 @register.filter
 def in_precart_general(supId, user):
     if not getattr(user, 'is_authenticated', False):
         return None
-    if not hasattr(user, _PRECART_GENERAL_MAP_ATTR):
-        preorder = PreorderInCart.objects.filter(userCreated=user, isComplete=False).first()
-        if not preorder:
-            setattr(user, _PRECART_GENERAL_MAP_ATTR, {})
-        else:
-            rows = SupplyInPreorderInCart.objects.filter(supply_for_order=preorder).values_list(
-                'general_supply_id', 'count_in_order'
-            )
-            setattr(
-                user,
-                _PRECART_GENERAL_MAP_ATTR,
-                {int(gid): cnt for gid, cnt in rows if gid is not None},
-            )
-    m = getattr(user, _PRECART_GENERAL_MAP_ATTR)
+    _supply_ids, general_counts = precart_row_maps(user)
     pk = _coerce_pk(supId)
     if pk is None:
         return None
-    val = m.get(pk)
+    val = general_counts.get(pk)
     return val if val is not None else None
 
 
@@ -202,27 +159,11 @@ def in_precart_general(supId, user):
 def in_precart_general_with_place(context, supId, user, place_id=None):
     if not getattr(user, 'is_authenticated', False):
         return 0
-    cache_attr = '_dmdx_precart_gs_place_%s' % ('none' if place_id is None else str(place_id))
-    if not hasattr(user, cache_attr):
-        preorder = PreorderInCart.objects.filter(
-            userCreated=user, place_id=place_id, isComplete=False
-        ).first()
-        if not preorder:
-            setattr(user, cache_attr, {})
-        else:
-            rows = SupplyInPreorderInCart.objects.filter(supply_for_order=preorder).values_list(
-                'general_supply_id', 'count_in_order'
-            )
-            setattr(
-                user,
-                cache_attr,
-                {int(gid): int(cnt or 0) for gid, cnt in rows if gid is not None},
-            )
-    m = getattr(user, cache_attr)
+    _supply_ids, general_counts = precart_row_maps(user, place_id=place_id)
     pk = _coerce_pk(supId)
     if pk is None:
         return 0
-    return int(m.get(pk, 0) or 0)
+    return int(general_counts.get(pk, 0) or 0)
 
 
 @register.filter

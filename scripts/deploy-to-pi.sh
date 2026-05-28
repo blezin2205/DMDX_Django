@@ -29,7 +29,7 @@ rsync -avz --delete \
   --exclude '.DS_Store' \
   "${ROOT}/" "${REMOTE}"
 
-echo "==> Docker compose up --build on Pi"
+echo "==> Docker compose up --build on Pi (requirements_docker.txt + settings_docker.py)"
 ssh "${SSH_TARGET}" "cd ${PI_PATH} && docker compose -f docker-compose.yml up --build -d"
 
 echo "==> Done. App: http://${PI_HOST}:8000"

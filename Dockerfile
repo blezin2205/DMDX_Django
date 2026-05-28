@@ -8,8 +8,8 @@ ENV PYTHONUNBUFFERED=1
 # Створюємо папку для проєкту всередині контейнера
 WORKDIR /app
 
-# Спочатку копіюємо тільки requirements і встановлюємо їх
-COPY requirements.txt .
+# Спочатку копіюємо Docker-залежності і встановлюємо їх
+COPY requirements_docker.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копіюємо всі інші файли проєкту
