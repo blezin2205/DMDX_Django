@@ -1,0 +1,43 @@
+<tr id="delivery-detail-nested-row-{{ line.id }}" class="delivery-detail-nested-row delivery-detail-nested-row--edit">
+  <td class="supply-lot-col">
+    <div class="delivery-nested-cell">
+      <input name="lot_input_field_{{ item.id }}" value="{{ del_sup.supplyLot|default:'' }}" type="text"
+        class="form-control form-control-sm" placeholder="LOT">
+      <div class="delivery-nested-cell__error" aria-hidden="true"></div>
+    </div>
+  </td>
+  <td class="supply-qty-col">
+    <div class="delivery-nested-cell">
+      <input name="count_input_field_{{ item.id }}" value="{{ del_sup.count }}" type="number" min="1" step="1" required
+        class="form-control form-control-sm {% if field_errors.count %}is-invalid{% endif %}">
+      <div class="delivery-nested-cell__error">{% if field_errors.count %}{{ field_errors.count }}{% endif %}</div>
+    </div>
+  </td>
+  <td class="supply-exp-col">
+    <div class="delivery-nested-cell">
+      <input name="expired_input_field_{{ item.id }}" value="{{ del_sup.expiredDate_desc }}" type="text"
+        class="form-control form-control-sm delivery-date-mask {% if field_errors.expired %}is-invalid{% endif %}"
+        placeholder="РРРР-ММ-ДД" maxlength="10" data-delivery-date-mask required>
+      <div class="delivery-nested-cell__error">{% if field_errors.expired %}{{ field_errors.expired }}{% endif %}</div>
+    </div>
+  </td>
+  <td class="delivery-detail-actions-col text-nowrap">
+    <div class="delivery-nested-cell delivery-nested-cell--actions">
+      <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
+        hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_delete_action' %}"
+        hx-vals='{"del_sup_id": "{{ del_sup.id }}"}'
+        hx-target="closest tr.delivery-detail-nested-row"
+        hx-swap="delete">
+        <i class="bi bi-trash3"></i>
+      </button>
+      <button type="button" class="btn btn-sm btn-primary py-0 px-1"
+        hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_save_action' %}"
+        hx-vals='{"gen_sup_id": {{ item.id }}, "del_sup_id": {{ del_sup.id }}, "delivery_order_id": {{ delivery_order_id }}{% if staging %}, "save_mode": "staging"{% endif %}}'
+        hx-include="#delivery-detail-nested-row-{{ line.id }}"
+        hx-target="closest tr.delivery-detail-nested-row"
+        hx-swap="outerHTML">
+        <i class="bi bi-check-lg"></i>
+      </button>
+    </div>
+  </td>
+</tr>

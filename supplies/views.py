@@ -6,7 +6,6 @@ from django.urls import reverse
 from .decorators import unauthenticated_user, allowed_users
 from .models import *
 from .serializers import *
-from DMDX_Django.mixpanel_config import *
 from datetime import date
 from django.contrib.auth import authenticate, login, logout
 from .filters import *
@@ -30,10 +29,8 @@ import requests
 import csv
 import pymsteams
 from django.db.models import Sum, F, Exists, OuterRef, Max, Case, When, Value, IntegerField, Q, BooleanField, Avg, Count
-from .tasks import *
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-from firebase_admin import storage
 from django.template.loader import render_to_string
 from django.db import transaction
 from .analytics import PreorderAnalytics, build_orders_analytics, build_preorders_analytics, build_supply_statistics, build_clients_info_analytics
@@ -47,13 +44,6 @@ from urllib.parse import urlparse
 # @login_required(login_url='login')
 # @allowed_users(allowed_roles=['admin'])
 # def receive_and_load_new_supplies_order(request):
-
-def celery_test(request):
-    task = go_to_sleep.delay(1)
-    return render(request, 'supplies/misc/celery-test.html', {'task_id': task.task_id})
-
-
-
 
 _APP_SETTINGS_TOGGLE_FIELDS = frozenset(AppSettingsForm.Meta.fields)
 
@@ -188,79 +178,6 @@ def chartOfSoldSupplies(request):
     # chart = fig.to_html()
     context = {}
     return render(request, "supplies/misc/chart-sold.html", context)
-
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
-def load_xms_data(request):
-    print('Hello')
-    counter = 0
-
-    blobs = storage.bucket().list_blobs()
-
-
-    files = []
-    for blob in blobs:
-        print(blob)
-        print(blob.public_url)
-
-    file_url = ''
-
-
-    if request.POST:
-        file = request.FILES["excel_file"]
-        file_name = default_storage.save(file.name, ContentFile(file.read()))
-        blob = storage.bucket().blob(file.name)
-        blob.upload_from_string(file.read(), content_type=file.content_type)
-
-        file_url = blob.generate_signed_url(expiration=3600)
-        print("FILE URL = ", file_url)
-
-
-
-
-
-    return render(request, 'supplies/misc/load_xms_data.html', {'counter': counter, 'file_url': file_url})
-
-
-
-    # reader = pandas.read_csv('/Users/macbook/Documents/DIAMEDIX/supp_workers.csv')
-    # vals = reader.values
-    # for row in vals:
-    #     id_place = int(row[4])
-    #     name = row[1]
-    #     tel = None
-    #     if row[2] != 'nan':
-    #         tel = row[2]
-    #     pos = None
-    #     if row[3] != 'nan':
-    #         pos = row[3]
-    #
-    #     telnm = str(tel).removeprefix('+').replace('-', '').replace(' ', '').strip()
-    #     if telnm[0] != '3':
-    #         telnm = '38' + telnm
-    #     print(telnm)
-
-        # workr = Workers(name=name, telNumber=telnm, position=pos, for_place_id=id_place)
-        # workr.save()
-
-        # city_ref = int(row[0])
-        # place = Place(id=id, name=name, city=city, address=address)
-        # place.save()
-
-    #
-    # for obj in vals:
-    #     ref = obj[0]
-    #     print('----------------------------------')
-    #     print(obj)
-        # smn = str(obj[2]).removesuffix('.0')
-        # name = str(obj[1])
-        # packed = obj[2]
-        # tests = obj[5]
-        # tests = obj[5]
-        # if name != 'nan':
-        #     print(name, ref, packed)
-        #     genSup = GeneralSupply(name=name, ref=ref, package_and_tests=packed, category_id=5)
-        #     genSup.save()
 
 @login_required(login_url='login')
 def register_exls_selected_buttons(request):
@@ -696,19 +613,18 @@ from django_user_agents.utils import get_user_agent
 
 @login_required(login_url='login')
 def home(request):
-    track_event('page_viewed', {'page_name': 'home'})
     isClient = request.user.isClient() and not request.user.is_staff
     place = None
     booked_list_exist = False
     if isClient:
-        user_places = request.user.place_set.all()
+        user_places = request.user.place_set.prefetch_related('allowed_categories')
         user_allowed_categories = set()
         for plc in user_places:
-            categories = plc.allowed_categories.values_list('id', flat=True)
-            # user_allowed_categories.add(categories.values())
-            booked_list_exist = SupplyInBookedOrder.objects.filter(supply_for_place=plc).exists()
-            for quer in categories:
-                user_allowed_categories.add(quer)
+            for cat in plc.allowed_categories.all():
+                user_allowed_categories.add(cat.id)
+        booked_list_exist = SupplyInBookedOrder.objects.filter(
+            supply_for_place__in=user_places
+        ).exists()
         place = user_places.first()
         html_page = 'supplies/home/home_for_client.html'
         supplies = (
@@ -721,25 +637,18 @@ def home(request):
         suppFilter.form.fields['category'].queryset = category
 
     else:
-        # Prefetch для 'general' задає SupplyFilter.filter_by_order (один Prefetch на qs).
         supplies = GeneralSupply.objects.select_related('category').order_by('name')
         ua = get_user_agent(request)
         if ua.is_mobile:
             html_page = 'supplies/home/home_mobile.html'
         else:
             html_page = 'supplies/home/home_desktop.html'
-        # Дефолт «В наявності» має зберігатися при пагінації: `?page=N` не повинен
-        # вимикати умову, яка раніше спрацьовувала лише при порожньому GET.
         filter_get = request.GET.copy()
         if not set(filter_get.keys()) - {'page'}:
             filter_get['ordering'] = SupplyFilter.EXIST_CHOICES.В_наявності
         suppFilter = SupplyFilter(filter_get, queryset=supplies)
 
-    
     supplies = suppFilter.qs
-
-    # if suppFilter.data['ordering'] == "onlyGood":
-    #     print("onlyGood")
 
     paginator = Paginator(supplies, 30)
     page_number = request.GET.get('page')
@@ -1658,8 +1567,6 @@ def childSupply(request):
 def supply_statistics(request):
     if request.user.isClient() and not request.user.is_staff:
         return redirect('home')
-    track_event('page_viewed', {'page_name': 'supply_statistics'})
-    supply_statistics = build_supply_statistics(request.user)
     return render(
         request,
         'supplies/home/supply_statistics.html',
@@ -1669,8 +1576,15 @@ def supply_statistics(request):
             'isAll': False,
             'isChild': False,
             'isSupplyStats': True,
-            'supply_statistics': supply_statistics},
+        },
     )
+
+
+@login_required(login_url='login')
+def supply_statistics_data(request):
+    if request.user.isClient() and not request.user.is_staff:
+        return JsonResponse({'error': 'forbidden'}, status=403)
+    return JsonResponse(build_supply_statistics(request.user))
 
 
 @login_required(login_url='login')
@@ -1831,111 +1745,125 @@ def _order_detail_single(order_id):
     )
 
 
+_ORDER_NP_TRANSIT_STATUS_CODES = [
+    '1', '2', '3', '4', '41', '5', '6', '7', '8', '10', '11', '12',
+    '101', '102', '103', '104', '105', '106', '111', '112',
+]
+
+
+def _orders_default_ordering():
+    return (
+        '-isPinned',
+        'isComplete',
+        'dateToSend',
+        Case(
+            When(
+                statusnpparselfromdoucmentid__status_code__in=_ORDER_NP_TRANSIT_STATUS_CODES,
+                then=Value(0),
+            ),
+            default=Value(1),
+            output_field=IntegerField(),
+        ),
+        '-id',
+    )
+
+
+def _orders_base_queryset(user):
+    is_client = user.groups.filter(name='client').exists()
+    ordering = _orders_default_ordering()
+    if is_client:
+        qs = Order.objects.filter(place__user=user).order_by(*ordering)
+    else:
+        qs = Order.objects.all().order_by(*ordering)
+    return qs, is_client
+
+
+def _orders_page_from_filtered(order_filtered, *, page_number=None, skip_pagination=False):
+    if skip_pagination:
+        return _orders_list_queryset(order_filtered)
+    paginator = Paginator(order_filtered, 20)
+    orders_page = paginator.get_page(page_number)
+    page_ids = [o.pk for o in orders_page.object_list]
+    if page_ids:
+        annotated_by_id = {
+            o.pk: o for o in _orders_list_queryset(Order.objects.filter(pk__in=page_ids))
+        }
+        orders_page.object_list = [annotated_by_id[pk] for pk in page_ids if pk in annotated_by_id]
+    return orders_page
+
+
 @login_required(login_url='login')
 def orders(request):
     isClient = request.user.groups.filter(name='client').exists()
     app_settings = request.user.get_app_settings()
     disable_order_confirmation_send_action = app_settings.disable_order_confirmation_send_action
+    ordersObj, _ = _orders_base_queryset(request.user)
+    pinned_orders = ordersObj.filter(isPinned=True)
+    pinned_orders_exists = pinned_orders.exists()
+    totalCount = ordersObj.count()
     if isClient:
-        ordersObj = Order.objects.filter(place__user=request.user).order_by(
-            '-isPinned', 
-            'isComplete', 
-            'dateToSend', 
-            Case(
-                When(
-                    statusnpparselfromdoucmentid__status_code__in=['1', '2', '3', '4', '41', '5', '6', '7', '8', '10', '11', '12', '101', '102', '103', '104', '105', '106', '111', '112'],
-                    then=Value(0)
-                ),
-                default=Value(1),
-                output_field=IntegerField(),
-            ),
-            '-id'
-        )
-        pinned_orders = ordersObj.filter(isPinned=True)
-        pinned_orders_exists = pinned_orders.count() > 0
-        totalCount = ordersObj.count()
         title = f'Всі замовлення для {request.user.first_name} {request.user.last_name}. ({totalCount} шт.)'
-
     else:
-        ordersObj = Order.objects.all().order_by(
-            '-isPinned', 
-            'isComplete', 
-            'dateToSend', 
-            Case(
-                When(
-                    statusnpparselfromdoucmentid__status_code__in=['1', '2', '3', '4', '41', '5', '6', '7', '8', '10', '11', '12', '101', '102', '103', '104', '105', '106', '111', '112'],
-                    then=Value(0)
-                ),
-                default=Value(1),
-                output_field=IntegerField(),
-            ),
-            '-id'
-        )
-        pinned_orders = ordersObj.filter(isPinned=True)
-        pinned_orders_exists = pinned_orders.count() > 0
-        totalCount = ordersObj.count()
         title = f'Всі замовлення. ({totalCount} шт.)'
 
     orderFilter = OrderFilter(request.POST or None, queryset=ordersObj)
-    orders = _orders_list_queryset(orderFilter.qs)
-    orders_analytics = build_orders_analytics(
-        orderFilter.qs, include_top_places=not isClient, for_user=request.user
+    order_filtered = orderFilter.qs
+    skip_pagination = bool(request.POST and request.POST.get('isComplete') == '0')
+    orders = _orders_page_from_filtered(
+        order_filtered,
+        page_number=request.GET.get('page'),
+        skip_pagination=skip_pagination,
     )
 
-    # Skip pagination if isComplete filter is set to '0' (В очікуванні)
-    if request.POST and request.POST.get('isComplete') == '0':
-        orders = orders  # Return all filtered orders without pagination
-        print("Return all filtered orders without pagination")
-    else:
-        paginator = Paginator(orders, 20)
-        page_number = request.GET.get('page')
-        orders = paginator.get_page(page_number)
-        
     is_more_then_one_order_exists_for_the_same_place = False
     uncomplete_orders_exists = False
     if not isClient:
-        filtered_orders = _orders_list_queryset(ordersObj.filter(isComplete=False))
-        uncomplete_orders_exists = filtered_orders.count() > 0
-        orders_by_place = defaultdict(list)
-        for order in filtered_orders:
-            orders_by_place[order.place].append(order)
-        is_more_then_one_order_exists_for_the_same_place = any(len(orders) > 1 for orders in orders_by_place.values())    
-        
-        if 'uncomplete_orders_complete_all_action' in request.POST:
-            print('---------------------uncomplete_orders_complete_all_action--------------------------------')
-            completed_count = 0
-            for order in filtered_orders:
-                try:
-                    update_order_status_core(order, request.user)
-                    completed_count += 1
-                except Exception as e:
-                    print(f"Error completing order {order.id}: {str(e)}")
-            
-            return JsonResponse({
-                'message': f'Успішно завершено {completed_count} з {len(filtered_orders)} замовлень',
-                'status': 'success',
-                'completed_count': completed_count,
-                'total_count': len(filtered_orders)
-            })
-            
-        if 'merge_all_orders_for_the_same_place' in request.POST:
-            print('---------------------merge_all_orders_for_the_same_place--------------------------------')
-            # Get all orders from the current queryset
-            merged_orders = merge_orders(filtered_orders, request.user)
-            
-            if not merged_orders:
+        uncomplete_qs = ordersObj.filter(isComplete=False)
+        uncomplete_orders_exists = uncomplete_qs.exists()
+        is_more_then_one_order_exists_for_the_same_place = (
+            uncomplete_qs.values('place_id')
+            .annotate(c=Count('id'))
+            .filter(c__gt=1, place_id__isnull=False)
+            .exists()
+        )
+
+        if (
+            'uncomplete_orders_complete_all_action' in request.POST
+            or 'merge_all_orders_for_the_same_place' in request.POST
+        ):
+            filtered_orders = list(_orders_list_queryset(uncomplete_qs))
+            if 'uncomplete_orders_complete_all_action' in request.POST:
+                print('---------------------uncomplete_orders_complete_all_action--------------------------------')
+                completed_count = 0
+                for order in filtered_orders:
+                    try:
+                        update_order_status_core(order, request.user)
+                        completed_count += 1
+                    except Exception as e:
+                        print(f"Error completing order {order.id}: {str(e)}")
+
                 return JsonResponse({
-                    'message': 'Не було об\'єднано жодного замовлення. Для об\'єднання потрібно щонайменше 2 замовлення для однієї організації',
-                    'status': 'warning'
+                    'message': f'Успішно завершено {completed_count} з {len(filtered_orders)} замовлень',
+                    'status': 'success',
+                    'completed_count': completed_count,
+                    'total_count': len(filtered_orders)
                 })
-                
-            return JsonResponse({
-                'message': 'Замовлення успішно об\'єднано',
-                'merged_order_ids': [order.id for order in merged_orders],
-                'status': 'success'
-            })
-            
-            
+
+            if 'merge_all_orders_for_the_same_place' in request.POST:
+                print('---------------------merge_all_orders_for_the_same_place--------------------------------')
+                merged_orders = merge_orders(filtered_orders, request.user)
+
+                if not merged_orders:
+                    return JsonResponse({
+                        'message': 'Не було об\'єднано жодного замовлення. Для об\'єднання потрібно щонайменше 2 замовлення для однієї організації',
+                        'status': 'warning'
+                    })
+
+                return JsonResponse({
+                    'message': 'Замовлення успішно об\'єднано',
+                    'merged_order_ids': [order.id for order in merged_orders],
+                    'status': 'success'
+                })
 
     if request.method == 'POST':
         selected_orders = request.POST.getlist('register_print_buttons')
@@ -1954,8 +1882,7 @@ def orders(request):
             if not (request.user.groups.filter(name='empl').exists() or request.user.is_staff):
                 return HttpResponseForbidden("You don't have permission to perform this action")
             pinned_orders.update(isPinned=False)
-            pinned_orders = pinned_orders.filter(isPinned=True)
-            pinned_orders_exists = pinned_orders.count() > 0
+            pinned_orders_exists = pinned_orders.filter(isPinned=True).exists()
             
         if 'print_choosed' in request.POST:
             print('---------------------PRINT CHOOSED --------------------------------')
@@ -2068,8 +1995,7 @@ def orders(request):
                                'isOrdersTab': True,
                                'disable_order_confirmation_send_action': disable_order_confirmation_send_action,
                                'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place,
-                               'uncomplete_orders_exists': uncomplete_orders_exists,
-                               'orders_analytics': orders_analytics})
+                               'uncomplete_orders_exists': uncomplete_orders_exists})
 
 
     return render(request, 'supplies/orders/orders_new.html',
@@ -2082,8 +2008,20 @@ def orders(request):
                    'disable_order_confirmation_send_action': disable_order_confirmation_send_action,
                    'pinned_orders_exists': pinned_orders_exists, 
                    'is_more_then_one_order_exists_for_the_same_place': is_more_then_one_order_exists_for_the_same_place,
-                   'uncomplete_orders_exists': uncomplete_orders_exists,
-                   'orders_analytics': orders_analytics})
+                   'uncomplete_orders_exists': uncomplete_orders_exists})
+
+
+@login_required(login_url='login')
+def orders_analytics(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'method not allowed'}, status=405)
+    ordersObj, is_client = _orders_base_queryset(request.user)
+    orderFilter = OrderFilter(request.POST, queryset=ordersObj)
+    return JsonResponse(
+        build_orders_analytics(
+            orderFilter.qs, include_top_places=not is_client, for_user=request.user
+        )
+    )
 
 
 
@@ -2223,95 +2161,65 @@ def _preorders_list_select_related(qs):
     return qs.select_related('userCreated', 'place', 'place__city_ref')
 
 
+def _preorder_state_priority_qs(qs):
+    return qs.annotate(
+        state_priority=Case(
+            When(state_of_delivery='awaiting_from_customer', then=Value(1)),
+            When(state_of_delivery='accepted_by_customer', then=Value(2)),
+            When(state_of_delivery='Awaiting', then=Value(3)),
+            When(state_of_delivery='Partial', then=Value(4)),
+            When(state_of_delivery='Complete', then=Value(5)),
+            When(state_of_delivery='Complete_Handle', then=Value(6)),
+            default=Value(0),
+            output_field=IntegerField(),
+        )
+    )
+
+
+def _preorders_analytics_base_queryset(user):
+    is_client = user.groups.filter(name='client').exists()
+    if is_client:
+        return PreOrder.objects.filter(place__user=user), is_client
+    return PreOrder.objects.all(), is_client
+
+
+def _preorders_list_queryset(user, *, is_archive):
+    is_client = user.groups.filter(name='client').exists()
+    if is_client:
+        qs = PreOrder.objects.filter(place__user=user)
+    else:
+        qs = PreOrder.objects.all()
+    qs = qs.filter(isClosed=is_archive)
+    qs = _preorder_state_priority_qs(qs)
+    if is_client:
+        return qs.order_by('isComplete', 'state_priority', '-id')
+    return qs.order_by('-isPinned', 'isComplete', 'state_priority', '-id')
+
+
+def _auto_close_completed_preorders(qs, *, staff_scope=False):
+    if staff_scope:
+        done_q = Q(state_of_delivery='Complete') | Q(state_of_delivery='Complete_Handle')
+        qs.filter(done_q).update(isClosed=True, isComplete=True, isPinned=False)
+    else:
+        qs.filter(state_of_delivery='Complete').update(isClosed=True, isComplete=True)
+
+
 @login_required(login_url='login')
 def preorders(request):
-    isArchiveChoosed = False
-
+    isArchiveChoosed = 'get_archive_preorders' in request.POST
     isClient = request.user.groups.filter(name='client').exists()
-    if isClient:
-        orders_analytics_base = PreOrder.objects.filter(place__user=request.user)
-    else:
-        orders_analytics_base = PreOrder.objects.all()
+
+    orders = _preorders_list_queryset(request.user, is_archive=isArchiveChoosed)
+    if not isArchiveChoosed:
+        _auto_close_completed_preorders(orders, staff_scope=not isClient)
 
     if isClient:
-        if 'get_archive_preorders' in request.POST:
-            isArchiveChoosed = True
-            orders = PreOrder.objects.filter(place__user=request.user, isClosed=True).annotate(
-            state_priority=Case(
-                When(state_of_delivery='awaiting_from_customer', then=Value(1)),
-                When(state_of_delivery='accepted_by_customer', then=Value(2)),
-                When(state_of_delivery='Awaiting', then=Value(3)),
-                When(state_of_delivery='Partial', then=Value(4)),
-                When(state_of_delivery='Complete', then=Value(5)),
-                When(state_of_delivery='Complete_Handle', then=Value(6)),
-                default=Value(0),
-                output_field=IntegerField(),
-                )
-            ).order_by('isComplete', 'state_priority', '-id')
-        else:
-            orders = PreOrder.objects.filter(place__user=request.user, isClosed=False).annotate(
-            state_priority=Case(
-                When(state_of_delivery='awaiting_from_customer', then=Value(1)),
-                When(state_of_delivery='accepted_by_customer', then=Value(2)),
-                When(state_of_delivery='Awaiting', then=Value(3)),
-                When(state_of_delivery='Partial', then=Value(4)),
-                When(state_of_delivery='Complete', then=Value(5)),
-                When(state_of_delivery='Complete_Handle', then=Value(6)),
-                default=Value(0),
-                output_field=IntegerField(),
-                )
-            ).order_by('isComplete', 'state_priority', '-id')
-            completed_orders = orders.filter(state_of_delivery='Complete')
-            if completed_orders.count() > 0:
-                for ord in completed_orders:
-                    ord.isClosed = True
-                    ord.isComplete = True
-                    ord.save(update_fields=['isClosed', 'isComplete'])
         title = f'Всі передзамовлення для {request.user.first_name} {request.user.last_name}'
     else:
-        if 'get_archive_preorders' in request.POST:
-            isArchiveChoosed = True
-            orders = PreOrder.objects.filter(isClosed=True).annotate(
-            state_priority=Case(
-                When(state_of_delivery='awaiting_from_customer', then=Value(1)),
-                When(state_of_delivery='accepted_by_customer', then=Value(2)),
-                When(state_of_delivery='Awaiting', then=Value(3)),
-                When(state_of_delivery='Partial', then=Value(4)),
-                When(state_of_delivery='Complete', then=Value(5)),
-                When(state_of_delivery='Complete_Handle', then=Value(6)),
-                default=Value(0),
-                output_field=IntegerField(),
-                )
-            ).order_by('-isPinned', 'isComplete', 'state_priority', '-id')
-        else:
-            orders = PreOrder.objects.filter(isClosed=False).annotate(
-            state_priority=Case(
-                When(state_of_delivery='awaiting_from_customer', then=Value(1)),
-                When(state_of_delivery='accepted_by_customer', then=Value(2)),
-                When(state_of_delivery='Awaiting', then=Value(3)),
-                When(state_of_delivery='Partial', then=Value(4)),
-                When(state_of_delivery='Complete', then=Value(5)),
-                When(state_of_delivery='Complete_Handle', then=Value(6)),
-                default=Value(0),
-                output_field=IntegerField(),
-                )
-            ).order_by('-isPinned', 'isComplete', 'state_priority', '-id')
-            completed_orders = orders.filter(Q(state_of_delivery='Complete') | Q(state_of_delivery='Complete_Handle'))
-            if completed_orders.count() > 0:
-                for ord in completed_orders:
-                    ord.isClosed = True
-                    ord.isComplete = True
-                    ord.isPinned = False    
-                    ord.save(update_fields=['isClosed', 'isComplete', 'isPinned'])
         title = 'Всі передзамовлення'
 
     preorderFilter = PreorderFilter(request.POST, queryset=orders)
     orders = _preorders_list_select_related(preorderFilter.qs)
-
-    preorderAnalyticsFilter = PreorderFilter(request.POST, queryset=orders_analytics_base)
-    preorders_analytics = build_preorders_analytics(
-        preorderAnalyticsFilter.qs, include_top_places=not isClient, for_user=request.user
-    )
 
     if request.method == 'POST':
         selected_orders = request.POST.getlist('xls_preorder_print_buttons')
@@ -2326,8 +2234,20 @@ def preorders(request):
 
     return render(request, 'supplies/orders/preorders.html',
                   {'title': title, 'isArchiveChoosed': isArchiveChoosed, 'orders': orders, 'preorderFilter': preorderFilter, 'isOrders': False,
-                   'isPreordersTab': True,
-                   'preorders_analytics': preorders_analytics})
+                   'isPreordersTab': True})
+
+
+@login_required(login_url='login')
+def preorders_analytics(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'method not allowed'}, status=405)
+    base, is_client = _preorders_analytics_base_queryset(request.user)
+    preorderFilter = PreorderFilter(request.POST, queryset=base)
+    return JsonResponse(
+        build_preorders_analytics(
+            preorderFilter.qs, include_top_places=not is_client, for_user=request.user
+        )
+    )
 
 
 @login_required(login_url='login')
@@ -2559,53 +2479,55 @@ def ordersForClient(request, client_id):
     place = get_object_or_404(Place, pk=client_id)
     orders = place.order_set.all().order_by('-id')
     orderFilter = OrderFilter(request.GET, queryset=orders)
-    orders = _orders_list_queryset(orderFilter.qs)
+    order_filtered = orderFilter.qs
+    paginator = Paginator(order_filtered, 20)
+    page_number = request.GET.get('page')
+    orders_page = paginator.get_page(page_number)
+    page_ids = [o.pk for o in orders_page.object_list]
+    if page_ids:
+        annotated_by_id = {
+            o.pk: o for o in _orders_list_queryset(Order.objects.filter(pk__in=page_ids))
+        }
+        orders_page.object_list = [annotated_by_id[pk] for pk in page_ids if pk in annotated_by_id]
     title = f'Всі замовлення для клієнта: \n {place.name}, {place.city_ref.name}'
-    if not orders:
+    if not order_filtered.exists():
         title = f'В клієнта "{place.name}, {place.city_ref.name}" ще немає замовлень'
 
-    orders_analytics = build_orders_analytics(
-        orderFilter.qs, include_top_places=False, for_user=request.user
-    )
     return render(request, 'supplies/orders/orders_new.html', {
         'title': title,
-        'orders': orders,
+        'orders': orders_page,
         'orderFilter': orderFilter,
         'isClients': True,
-        'orders_analytics': orders_analytics})
+        'client_id': client_id,
+    })
+
+
+@login_required(login_url='login')
+def orders_for_client_analytics(request, client_id):
+    place = get_object_or_404(Place, pk=client_id)
+    orders = place.order_set.all().order_by('-id')
+    orderFilter = OrderFilter(request.GET, queryset=orders)
+    return JsonResponse(
+        build_orders_analytics(
+            orderFilter.qs, include_top_places=False, for_user=request.user
+        )
+    )
 
 
 @login_required(login_url='login')
 def agreementsForClient(request, client_id):
     place = get_object_or_404(Place, pk=client_id)
     title = f'Всі передзамовлення для клієнта: \n {place.name}, {place.city_ref.name}'
-    isArchiveChoosed = False
-    orders_analytics_base = place.preorder_set.all()
-    if 'get_archive_preorders' in request.POST:
-        isArchiveChoosed = True
+    isArchiveChoosed = 'get_archive_preorders' in request.POST
+    if isArchiveChoosed:
         orders = place.preorder_set.filter(isClosed=True).order_by('-state_of_delivery', '-id')
     else:
-        orders = place.preorder_set.filter(isClosed=False).annotate(
-            state_priority=Case(
-                When(state_of_delivery='awaiting_from_customer', then=Value(1)),
-                When(state_of_delivery='accepted_by_customer', then=Value(2)),
-                When(state_of_delivery='Awaiting', then=Value(3)),
-                When(state_of_delivery='Partial', then=Value(4)),
-                When(state_of_delivery='Complete', then=Value(5)),
-                When(state_of_delivery='Complete_Handle', then=Value(6)),
-                default=Value(0),
-                output_field=IntegerField(),
-            )
+        orders = _preorder_state_priority_qs(
+            place.preorder_set.filter(isClosed=False)
         ).order_by('isComplete', 'state_priority', '-id')
 
     preorderFilter = PreorderFilter(request.GET, queryset=orders)
-    orders = preorderFilter.qs
-
-    preorderAnalyticsFilter = PreorderFilter(request.GET, queryset=orders_analytics_base)
-    preorders_analytics = build_preorders_analytics(
-        preorderAnalyticsFilter.qs, include_top_places=False, for_user=request.user
-    )
-
+    orders = _preorders_list_select_related(preorderFilter.qs)
 
     if request.method == 'POST':
         selected_orders = request.POST.getlist('xls_preorder_print_buttons')
@@ -2621,7 +2543,18 @@ def agreementsForClient(request, client_id):
             'isOrders': True,
             'isArchiveChoosed': isArchiveChoosed,
             'isPreordersTab': True, 'fromClientList': True,
-            'preorders_analytics': preorders_analytics})
+            'client_id': client_id})
+
+
+@login_required(login_url='login')
+def agreements_for_client_analytics(request, client_id):
+    place = get_object_or_404(Place, pk=client_id)
+    preorderFilter = PreorderFilter(request.GET, queryset=place.preorder_set.all())
+    return JsonResponse(
+        build_preorders_analytics(
+            preorderFilter.qs, include_top_places=False, for_user=request.user
+        )
+    )
 
 
 @login_required(login_url='login')
@@ -3477,6 +3410,9 @@ def deleteServiceNote(request, note_id):
 
 
 def orderDetail_pdf(request, order_id):
+    if not getattr(settings, 'ENABLE_WKHTMLTOPDF', True):
+        return HttpResponse('PDF (xhtml2pdf) вимкнено (LIGHTWEIGHT_MODE)', status=503)
+
     order = get_object_or_404(Order, pk=order_id)
     supplies_in_order = order.supplyinorder_set.all()
 
@@ -4451,20 +4387,37 @@ def _place_singleton_for_client_card(place_id):
     return _place_list_for_client_cards(Place.objects.filter(pk=place_id)).first()
 
 
+def _clients_info_filtered_places(request):
+    placeFilter = PlaceFilter(request.GET, queryset=Place.objects.all().order_by('-id'))
+    return placeFilter, placeFilter.qs.order_by('-id')
+
+
+CLIENTS_LIST_PAGE_SIZE = 10
+
+
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin', 'empl'])
 def clientsInfo(request):
-    place = Place.objects.all().order_by('-id')
-    placeFilter = PlaceFilter(request.GET, queryset=place)
-    place_filtered = placeFilter.qs
-    clients_analytics = build_clients_info_analytics(place_filtered)
-    place_page_qs = _place_list_for_client_cards(place_filtered)
-    paginator = Paginator(place_page_qs, 20)
+    placeFilter, place_filtered = _clients_info_filtered_places(request)
+    paginator = Paginator(place_filtered, CLIENTS_LIST_PAGE_SIZE)
     page_number = request.GET.get('page')
-    place = paginator.get_page(page_number)
+    place_page = paginator.get_page(page_number)
+    page_ids = [p.pk for p in place_page.object_list]
+    if page_ids:
+        annotated_by_id = {
+            p.pk: p for p in _place_list_for_client_cards(Place.objects.filter(pk__in=page_ids))
+        }
+        place_page.object_list = [annotated_by_id[pk] for pk in page_ids if pk in annotated_by_id]
     return render(request, 'supplies/clients/clientsList.html',
-                  {'title': f'Клієнти', 'clients': place, 'placeFilter': placeFilter,
-                   'isClients': True, 'clients_analytics': clients_analytics})
+                  {'title': f'Клієнти', 'clients': place_page, 'placeFilter': placeFilter,
+                   'isClients': True})
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin', 'empl'])
+def clientsInfo_analytics(request):
+    _, place_filtered = _clients_info_filtered_places(request)
+    return JsonResponse(build_clients_info_analytics(place_filtered))
 
 
 @login_required(login_url='login')

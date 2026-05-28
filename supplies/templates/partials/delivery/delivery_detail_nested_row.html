@@ -1,0 +1,68 @@
+{% load myapp_extras %}
+<tr id="delivery-detail-nested-row-{{ line.id }}" class="delivery-detail-nested-row"{% if hx_swap_oob %} hx-swap-oob="{{ hx_swap_oob }}"{% endif %}>
+  {% if line.general_supply %}
+    <td class="supply-lot-col">
+      <div class="delivery-nested-cell delivery-nested-cell--view">
+        <span class="lot-value">{{ line.supplyLot|default:"—" }}</span>
+      </div>
+    </td>
+    <td class="supply-qty-col">
+      <div class="delivery-nested-cell delivery-nested-cell--view">
+        <span class="qty-value fw-semibold">{{ line.count }}</span>
+        {% if line.isHandleAdded %}
+          <i class="bi bi-keyboard text-muted ms-1" title="Додано вручну"></i>
+        {% endif %}
+      </div>
+    </td>
+    <td class="supply-exp-col">
+      <div class="delivery-nested-cell delivery-nested-cell--view">
+        {% if line.expiredDate %}
+          <span class="order-detail-date--{% if line.date_is_good %}good{% elif line.date_is_today %}today{% else %}bad{% endif %}">
+            {{ line.expiredDate|date:"d.m.Y" }}
+          </span>
+        {% else %}—{% endif %}
+      </div>
+    </td>
+    <td class="delivery-detail-actions-col text-nowrap">
+      {% if not delivery_order.isHasBeenSaved %}
+        <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1"
+          hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_edit_action' %}"
+          hx-vals='{"item_id": {{ line.id }}{% if staging %}, "context": "staging"{% endif %}}'
+          hx-target="closest tr.delivery-detail-nested-row"
+          hx-swap="outerHTML">
+          <i class="bi bi-pencil"></i>
+        </button>
+        {% if staging %}
+        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
+          hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_delete_action' %}"
+          hx-vals='{"del_sup_id": "{{ line.id }}"}'
+          hx-target="closest tr.delivery-detail-nested-row"
+          hx-swap="delete">
+          <i class="bi bi-trash3"></i>
+        </button>
+        {% endif %}
+      {% endif %}
+    </td>
+  {% else %}
+    <td class="supply-lot-col">
+      <div class="delivery-nested-cell delivery-nested-cell--view">{{ line.supplyLot|default:"—" }}</div>
+    </td>
+    <td class="supply-qty-col">
+      <div class="delivery-nested-cell delivery-nested-cell--view fw-semibold">{{ line.count }}</div>
+    </td>
+    <td class="supply-exp-col">
+      <div class="delivery-nested-cell delivery-nested-cell--view small text-muted">{{ line.expiredDate_desc|default:"—" }}</div>
+    </td>
+    <td class="delivery-detail-actions-col text-nowrap">
+      {% if not delivery_order.isHasBeenSaved %}
+        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
+          hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_delete_action' %}"
+          hx-vals='{"del_sup_id": "{{ line.id }}"}'
+          hx-target="closest tr.delivery-detail-nested-row"
+          hx-swap="delete">
+          <i class="bi bi-trash3"></i>
+        </button>
+      {% endif %}
+    </td>
+  {% endif %}
+</tr>

@@ -1,54 +1,23 @@
 {% if results %}
-    {% csrf_token %}
-    <style>
-        .supply-card {
-            transition: all 0.2s ease-in-out;
-            border: 1px solid rgba(0,0,0,0.1) !important;
-        }
-        .supply-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
-            border-color: var(--bs-primary) !important;
-            background-color: var(--bs-light);
-        }
-    </style>
-    <div class="overflow-auto px-3 py-2" style="max-height: 400px">
-        {% for item in results %}
-            <div class="card supply-card my-2">
-                <a hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list' %}" 
-                   hx-vals='{"gen_sup_id": {{ item.id }}, "delivery_order_id": "{{ delivery_order_id }}"}' 
-                   hx-target="#results_choosed_gen_supps" 
-                   hx-swap="afterbegin" 
-                   class="text-decoration-none text-dark p-3">
-                    
-                    <div class="row g-3 align-items-center">
-                        <div class="col-md-8">
-                            <div class="fs-6 fw-medium mb-2">{{ item.name }}</div>
-                            <div class="d-flex flex-wrap gap-2 text-muted small">
-                                {% if item.ref %}
-                                    <span title="Reference"><i class="bi bi-hash me-1"></i>{{ item.ref }}</span>
-                                {% endif %}
-                                {% if item.SMN_code %}
-                                    <span title="SMN Code"><i class="bi bi-upc me-1"></i>{{ item.SMN_code }}</span>
-                                {% endif %}
-                                {% if item.category %}
-                                    <span class="badge bg-light text-dark border">
-                                        <i class="bi bi-tag me-1"></i>{{ item.category }}
-                                    </span>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="col-md-4 text-md-end">
-                            {% if item.package_and_tests %}
-                                <span class="badge bg-light text-dark border">
-                                    <i class="bi bi-box me-1"></i>{{ item.package_and_tests }}
-                                </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </a>
-            </div>
-        {% endfor %}
-    </div>
+  <ul class="list-group list-group-flush delivery-search-results-list mb-0">
+    {% for item in results %}
+      <li class="list-group-item list-group-item-action p-0 border-0 border-bottom">
+        <button type="button"
+          class="delivery-staging-pick-link btn btn-link text-start text-dark text-decoration-none w-100 p-2 rounded-0"
+          data-gen-sup-id="{{ item.id }}"
+          data-delivery-order-id="{{ delivery_order_id }}"
+          data-pick-url="{% url 'add_gen_sup_in_delivery_order_manual_list' %}">
+          <div class="fw-medium small mb-1">{{ item.name }}</div>
+          <div class="d-flex flex-wrap gap-2 text-muted" style="font-size:0.72rem">
+            {% if item.ref %}<span><i class="bi bi-hash"></i>{{ item.ref }}</span>{% endif %}
+            {% if item.SMN_code %}<span><i class="bi bi-upc"></i>{{ item.SMN_code }}</span>{% endif %}
+            {% if item.category %}<span><i class="bi bi-tag"></i>{{ item.category.name }}</span>{% endif %}
+            {% if item.package_and_tests %}<span><i class="bi bi-box"></i>{{ item.package_and_tests }}</span>{% endif %}
+          </div>
+        </button>
+      </li>
+    {% endfor %}
+  </ul>
+{% elif search_attempted %}
+  <div class="p-2 text-muted small">Нічого не знайдено</div>
 {% endif %}

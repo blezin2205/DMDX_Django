@@ -6,6 +6,12 @@
 {{ title }}
 {% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/app-home.css' %}" type="text/css">
+<link rel="stylesheet" href="{% static 'css/order-detail.css' %}" type="text/css">
+<link rel="stylesheet" href="{% static 'css/delivery-detail.css' %}" type="text/css">
+{% endblock %}
+
 {% block content %}
 
     {% include 'supplies/cart/delivery_cart.html' %}

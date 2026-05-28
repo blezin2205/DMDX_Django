@@ -23,6 +23,7 @@ from django.db.models import QuerySet
 from django.utils import timezone
 import ssl
 from django.core.paginator import Paginator
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -579,6 +580,20 @@ def process_status_data_multi(
 NP_GET_STATUS_DOCUMENTS_CHUNK_SIZE = 100
 
 
+def _np_tracking_refresh_cache_key(order_id: int) -> str:
+    return f'np_order_tracking_refresh:{order_id}'
+
+
+def np_tracking_refresh_on_cooldown(order_id: int) -> bool:
+    """True, якщо для замовлення нещодавно вже був запит до API НП (lazy HTMX)."""
+    return cache.get(_np_tracking_refresh_cache_key(order_id)) is not None
+
+
+def mark_np_tracking_refreshed(order_id: int) -> None:
+    timeout = getattr(settings, 'NP_ORDER_TRACKING_REFRESH_COOLDOWN_SECONDS', 600)
+    cache.set(_np_tracking_refresh_cache_key(order_id), 1, timeout=timeout)
+
+
 def order_needs_np_tracking_api_refresh(order: Order) -> bool:
     """False, якщо вже «фінальний» статус — повторний запит до API не робимо."""
     has_status, status_code = get_order_status(order)
@@ -664,19 +679,35 @@ def get_parsels_status_data(order: Order) -> QuerySet:
     """Get parsels status data"""
     return order.statusnpparselfromdoucmentid_set.all()
 
-def get_np_delivery_details(order: Order) -> Tuple[QuerySet, bool]:
-    """Get NP delivery details sequentially"""
-    print("Call for order: ", order.id)
+def get_np_delivery_details(
+    order: Order,
+    *,
+    respect_refresh_cooldown: bool = False,
+) -> Tuple[QuerySet, bool]:
+    """
+    Оновити статуси НП у БД (за потреби) і повернути збережені рядки.
+
+    ``respect_refresh_cooldown=True`` — для lazy HTMX: не викликати API НП частіше
+    ніж ``NP_ORDER_TRACKING_REFRESH_COOLDOWN_SECONDS`` (за замовчуванням 10 хв)
+    на одне замовлення, незалежно від користувача.
+    """
     has_status, status_code = get_order_status(order)
     noMoreUpdate = False
 
     if has_status:
         noMoreUpdate = status_code == 2 or status_code == 9
 
-    if not noMoreUpdate:
+    should_call_api = not noMoreUpdate
+    if should_call_api and respect_refresh_cooldown and np_tracking_refresh_on_cooldown(order.id):
+        should_call_api = False
+        logger.debug('NP tracking API skipped (cooldown) for order %s', order.id)
+
+    if should_call_api:
         documents, userCreatedList = get_order_documents(order)
         data = fetch_np_status(documents)
         process_status_data(data, order, userCreatedList)
+        if respect_refresh_cooldown:
+            mark_np_tracking_refreshed(order.id)
 
     parsels_status_data = get_parsels_status_data(order)
     return parsels_status_data, noMoreUpdate
@@ -744,9 +775,6 @@ def complete_all_orders_with_np_status_code():
                 
             except Exception as e:
                 logger.error(f"Error processing order {order.id}: {str(e)}")
-                # Send error to Sentry
-                import sentry_sdk
-                sentry_sdk.capture_exception(e)
             
             logger.info("="*100)
         
@@ -763,18 +791,15 @@ def complete_all_orders_with_np_status_code():
             order_details_log += f"  - Order info: {detail['order_info']}\n"
             order_details_log += "  " + "="*50 + "\n"
         
-        # Send a single comprehensive log to Sentry with all order details
-        import sentry_sdk
-        sentry_sdk.capture_message(
-            f"NP status update task completed successfully at {current_time}. Processed {orders.count()} orders.\n\n{order_details_log}",
-            level="info"
+        logger.info(
+            "NP status update task completed at %s. Processed %s orders.\n%s",
+            current_time,
+            orders.count(),
+            order_details_log,
         )
-        
+
     except Exception as e:
         logger.error(f"Error in complete_all_orders_with_np_status_code: {str(e)}")
-        # Send error to Sentry
-        import sentry_sdk
-        sentry_sdk.capture_exception(e)
     finally:
         # Remove the handler to avoid duplicate logs in future runs
         if settings.DEBUG and 'handler' in locals():
@@ -785,7 +810,10 @@ def np_delivery_detail_info_for_order(request, order_id):
     View function to handle NP delivery detail info requests
     """
     order = Order.objects.get(id=order_id)
-    parsels_status_data, noMoreUpdate = get_np_delivery_details(order)
+    parsels_status_data, noMoreUpdate = get_np_delivery_details(
+        order,
+        respect_refresh_cooldown=True,
+    )
     
     response = render(request, 'partials/delivery/np_delivery_info_in_list_of_orders.html',
                      {'parsels_status_data': parsels_status_data})

@@ -108,11 +108,12 @@ class OrderFilter(django_filters.FilterSet):
             return queryset.filter(place__isPrivatePlace=False)
 
     def filter_by_state_of_np(self, queryset, name, value):
+        np_for_order = StatusNPParselFromDoucmentID.objects.filter(for_order_id=OuterRef('pk'))
         if value == '1':
-            return queryset.filter(statusnpparselfromdoucmentid__status_code=9)
+            return queryset.filter(Exists(np_for_order.filter(status_code='9')))
         elif value == '0':
             excluded_status_codes = [1, 2, 3, 4, 41, 5, 6, 7, 8, 10, 11, 12, 101, 102, 103, 104, 105, 106, 111, 112]
-            return queryset.filter(statusnpparselfromdoucmentid__status_code__in=excluded_status_codes)
+            return queryset.filter(Exists(np_for_order.filter(status_code__in=excluded_status_codes)))
 
     def filter_by_search_text(self, queryset, name, value):
         if not value:
@@ -225,45 +226,46 @@ class SupplyFilter(django_filters.FilterSet):
     def filter_by_order(self, queryset, name, value):
         lots_qs = Supply.objects.order_by('expiredDate', 'id')
         gen_prefetch = Prefetch('general', queryset=lots_qs)
+        has_lot = Exists(Supply.objects.filter(general_supply_id=OuterRef('pk')))
 
         if value == 'onlyExistChild':
-            # distinct() after filtering on reverse FK can drop prefetch hints from the
-            # incoming queryset; re-apply category + lots prefetch for home table N+1s.
             return (
                 queryset.select_related('category')
-                .filter(general__isnull=False)
-                .distinct()
+                .filter(has_lot)
                 .prefetch_related(gen_prefetch)
             )
         elif value == 'onlyNotExistChild':
             return (
                 queryset.select_related('category')
-                .filter(general__isnull=True)
-                .distinct()
+                .filter(~has_lot)
                 .prefetch_related(gen_prefetch)
             )
         elif value == 'onlyGood':
-            sups = Supply.objects.filter(expiredDate__gte=timezone.now().date())
-            prefetch = Prefetch('general', queryset=sups)
-            supplies = (
+            today = timezone.now().date()
+            good_lots = Supply.objects.filter(
+                general_supply_id=OuterRef('pk'),
+                expiredDate__gte=today,
+            )
+            good_lots_qs = Supply.objects.filter(expiredDate__gte=today).order_by('expiredDate', 'id')
+            return (
                 queryset.select_related('category')
-                .prefetch_related(prefetch)
-                .filter(general__in=sups)
-                .distinct()
+                .filter(Exists(good_lots))
+                .prefetch_related(Prefetch('general', queryset=good_lots_qs))
                 .order_by('name')
             )
-            return supplies
         elif value == 'onlyExpired':
-            sups = Supply.objects.filter(expiredDate__lt=timezone.now().date())
-            prefetch = Prefetch('general', queryset=sups)
-            supplies = (
+            today = timezone.now().date()
+            expired_lots = Supply.objects.filter(
+                general_supply_id=OuterRef('pk'),
+                expiredDate__lt=today,
+            )
+            expired_lots_qs = Supply.objects.filter(expiredDate__lt=today).order_by('expiredDate', 'id')
+            return (
                 queryset.select_related('category')
-                .prefetch_related(prefetch)
-                .filter(general__in=sups)
-                .distinct()
+                .filter(Exists(expired_lots))
+                .prefetch_related(Prefetch('general', queryset=expired_lots_qs))
                 .order_by('name')
             )
-            return supplies
         # A-Z / порожнє ordering — ті самі лоти, що в "В наявності", без додаткового filter
         return (
             queryset.select_related('category')
@@ -354,16 +356,27 @@ class PlaceFilter(django_filters.FilterSet):
         self.filters['preorder_filter'].label = "Фільтр передзамовлень"
 
     def filter_by_is_has_options_button(self, queryset, name, value):
+        # Exists замість JOIN + distinct — інакше на проді з великим обсягом даних запит >30 с (Heroku H12).
         if 'booked_supplies' in value:
-            queryset = queryset.filter(supplyinbookedorder__isnull=False).distinct()
+            queryset = queryset.filter(
+                Exists(SupplyInBookedOrder.objects.filter(supply_for_place_id=OuterRef('pk')))
+            )
         if 'preorders' in value:
-            queryset = queryset.filter(preorder__isnull=False).distinct()
+            queryset = queryset.filter(
+                Exists(PreOrder.objects.filter(place_id=OuterRef('pk')))
+            )
         if 'orders' in value:
-            queryset = queryset.filter(order__isnull=False).distinct()
+            queryset = queryset.filter(
+                Exists(Order.objects.filter(place_id=OuterRef('pk')))
+            )
         if 'service_notes' in value:
-            queryset = queryset.filter(servicenote__isnull=False).distinct()
+            queryset = queryset.filter(
+                Exists(ServiceNote.objects.filter(for_place_id=OuterRef('pk')))
+            )
         if 'devices' in value:
-            queryset = queryset.filter(device__isnull=False).distinct()
+            queryset = queryset.filter(
+                Exists(Device.objects.filter(in_place_id=OuterRef('pk')))
+            )
         return queryset
 
     def filter_by_preorder_type(self, queryset, name, value):
@@ -373,7 +386,12 @@ class PlaceFilter(django_filters.FilterSet):
         if value == 'has_current_month_preorders':
             current_date = timezone.now()
             start_of_month = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            return queryset.filter(preorder__dateCreated__gte=start_of_month).distinct()
+            return queryset.filter(
+                Exists(PreOrder.objects.filter(
+                    place_id=OuterRef('pk'),
+                    dateCreated__gte=start_of_month,
+                ))
+            )
             
         elif value == 'needs_order_this_month':
             current_date = timezone.now()

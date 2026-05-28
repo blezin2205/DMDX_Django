@@ -1,0 +1,25 @@
+<tr id="delivery-detail-group-row-staging-gs-{{ item.id }}"
+    class="order-detail-group-row delivery-detail-group-row delivery-detail-group-row--staging">
+  <th scope="row" class="text-start col-name">
+    <span class="col-idx">{{ group.counter }}.</span>
+    {{ item.name }}
+  </th>
+  <td class="truncate-cell col-pack" title="{{ item.package_and_tests|default_if_none:'' }}">
+    {{ item.package_and_tests|default:"" }}
+  </td>
+  <td class="col-category">{% if item.category %}{{ item.category.name }}{% endif %}</td>
+  <td class="truncate-cell col-ref" title="{{ item.ref|default_if_none:'' }}">
+    {% if item.ref is not none %}{{ item.ref }}{% endif %}
+  </td>
+  <td class="truncate-cell col-smn home-table-smn" title="{{ item.SMN_code|default_if_none:'' }}">
+    {% if item.SMN_code is not none %}{{ item.SMN_code }}{% endif %}
+  </td>
+  <td class="supplyRow">
+    <table class="rounded-3 overflow-hidden table table-light table-borderless table-sm mb-0 nested-supply-table">
+      {% include 'partials/delivery/delivery_detail_nested_colgroup.html' %}
+      <tbody id="delivery-detail-nested-tbody-staging-gs-{{ item.id }}">
+        {% include 'partials/delivery/delivery_staging_nested_row_draft.html' %}
+      </tbody>
+    </table>
+  </td>
+</tr>

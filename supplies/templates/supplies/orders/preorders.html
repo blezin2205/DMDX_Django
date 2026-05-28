@@ -126,7 +126,7 @@
     overflow: hidden;
 }
 </style>
-     <form method="post" class="form-inline justify-content-center">
+     <form method="post" id="preorders-filter-form" class="form-inline justify-content-center">
       {% csrf_token %}
      <div class="{% if request.user_agent.is_mobile %}d-flex flex-column gap-3{% else %}d-flex flex-column gap-2{% endif %}">
          <div class="preorders-filter-panel bg-light border shadow-sm rounded-3 w-100">
@@ -147,8 +147,6 @@
              </div>
          </div>
 
-         {% if preorders_analytics %}
-         {{ preorders_analytics|json_script:"preorders-analytics-data" }}
          <div class="orders-analytics-wrap mb-2 w-100">
              <div class="card border shadow-sm rounded-3 overflow-hidden">
                  <button class="btn btn-light w-100 text-start d-flex align-items-center justify-content-between py-2 px-3 border-0 rounded-0"
@@ -161,8 +159,18 @@
                      <span class="text-muted small">Повний набір у межах доступу після фільтрів; дані не залежать від перемикача «Показати архів» (лише список нижче).</span>
                      <i class="bi bi-chevron-down ms-2"></i>
                  </button>
-                 <div id="preordersAnalyticsBody" class="collapse">
+                 <div id="preordersAnalyticsBody" class="collapse"
+                      data-analytics-url="{% if fromClientList %}{% url 'agreementsForClientAnalytics' client_id %}{% else %}{% url 'preordersAnalytics' %}{% endif %}"
+                      data-analytics-method="{% if fromClientList %}GET{% else %}POST{% endif %}">
                      <div class="card-body border-top bg-white pt-3">
+                         <div id="poAnalyticsLoading" class="text-center py-4 d-none">
+                             <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                             <span class="ms-2 text-muted small">Завантаження аналітики…</span>
+                         </div>
+                         <div id="poAnalyticsError" class="alert alert-danger py-2 small d-none mb-0" role="alert">
+                             Не вдалося завантажити аналітику. Спробуйте ще раз.
+                         </div>
+                         <div id="poAnalyticsContent" class="d-none">
                          <div class="oa-kpi-compact row g-1 row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-3 mb-2">
                              <div class="col">
                                  <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Усього передзамовлень у вибірці">
@@ -295,11 +303,11 @@
                              </div>
                          </div>
                          <p class="text-muted small mt-3 mb-0" id="po-extra-note"></p>
+                         </div>
                      </div>
                  </div>
              </div>
          </div>
-         {% endif %}
          
          {% if request.user_agent.is_mobile %}
          <div class="container w-100 d-flex align-items-center justify-content-between">
@@ -379,291 +387,5 @@
 {% endblock %}
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-<script>
-(function () {
-    var el = document.getElementById('preorders-analytics-data');
-    if (!el || typeof Chart === 'undefined') return;
-    var data;
-    try {
-        data = JSON.parse(el.textContent);
-    } catch (e) {
-        return;
-    }
-    if (!data) return;
-
-    var setText = function (id, v) {
-        var n = document.getElementById(id);
-        if (n) n.textContent = v;
-    };
-    setText('po-total', String(data.total));
-    setText('po-not-archived', String(data.not_archived != null ? data.not_archived : 0));
-    setText('po-in-archive', String(data.in_archive != null ? data.in_archive : 0));
-    setText('po-completed', String(data.completed));
-    setText('po-pending', String(data.pending));
-    setText('po-created-by-clients', String(data.created_by_clients != null ? data.created_by_clients : 0));
-    setText('po-unique-client-creators', String(data.unique_client_creators != null ? data.unique_client_creators : 0));
-    setText('po-with-orders', String(data.with_orders != null ? data.with_orders : 0));
-    setText('po-avg-lines', String(data.avg_line_positions));
-    var cBM = data.created_by_me != null ? data.created_by_me : 0;
-    var dSM = data.date_sent_by_me != null ? data.date_sent_by_me : 0;
-    setText('po-created-datesent-me', String(cBM) + '/' + String(dSM));
-    setText('po-with-date-sent', String(data.with_date_sent != null ? data.with_date_sent : 0));
-
-    var note = document.getElementById('po-extra-note');
-    if (note && data.pinned > 0) {
-        note.textContent = 'Закріплених у вибірці: ' + data.pinned + '.';
-    }
-
-    var pal = { green: '#198754', blue: '#0d6efd', slate: '#6c757d', teal: '#0dcaf0', orange: '#fd7e14', purple: '#6f42c1' };
-
-    function poBadgeTextColor(hex) {
-        if (!hex) return '#fff';
-        var h = String(hex).toLowerCase();
-        if (h === '#ffc107' || h === '#fd7e14') return '#212529';
-        return '#fff';
-    }
-
-    if (data.status_breakdown && data.status_breakdown.length) {
-        var leg = document.getElementById('poStatusLegend');
-        var pieLabels = [];
-        var pieCounts = [];
-        var pieColors = [];
-        data.status_breakdown.forEach(function (row) {
-            if (leg) {
-                var rowWrap = document.createElement('div');
-                rowWrap.className = 'd-flex align-items-center gap-2 border rounded px-2 py-2 bg-white shadow-sm';
-                var ic = document.createElement('i');
-                ic.className = 'bi ' + row.icon + ' flex-shrink-0';
-                ic.style.color = row.color;
-                ic.style.fontSize = '1.15rem';
-                ic.setAttribute('aria-hidden', 'true');
-                var labEl = document.createElement('span');
-                labEl.className = 'small flex-grow-1';
-                labEl.textContent = row.label;
-                var badge = document.createElement('span');
-                badge.className = 'badge rounded-pill fw-semibold flex-shrink-0';
-                badge.style.backgroundColor = row.color;
-                badge.style.color = poBadgeTextColor(row.color);
-                badge.textContent = String(row.count);
-                rowWrap.appendChild(ic);
-                rowWrap.appendChild(labEl);
-                rowWrap.appendChild(badge);
-                leg.appendChild(rowWrap);
-            }
-            if (row.count > 0) {
-                pieLabels.push(row.label);
-                pieCounts.push(row.count);
-                pieColors.push(row.color);
-            }
-        });
-        if (pieLabels.length) {
-            var ctxSt = document.getElementById('poChartStatuses');
-            if (ctxSt) {
-                new Chart(ctxSt, {
-                    type: 'doughnut',
-                    data: {
-                        labels: pieLabels,
-                        datasets: [{
-                            data: pieCounts,
-                            backgroundColor: pieColors,
-                            borderWidth: 1,
-                            borderColor: '#fff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        cutout: '52%'
-                    }
-                });
-            }
-        }
-    }
-
-    if (data.monthly && data.monthly.labels.length) {
-        var monthlySizer = document.getElementById('poMonthlyChartSizer');
-        var scrollWrap = monthlySizer ? monthlySizer.closest('.oa-chart-scroll-x') : null;
-        var nM = data.monthly.labels.length;
-        var pxPerPoint = nM > 48 ? 28 : (nM > 24 ? 32 : 40);
-        if (monthlySizer && scrollWrap) {
-            var viewW = scrollWrap.getBoundingClientRect().width || scrollWrap.clientWidth || 320;
-            monthlySizer.style.minWidth = Math.max(viewW, nM * pxPerPoint) + 'px';
-        }
-        var ctxMo = document.getElementById('poChartMonthly');
-        var chartMo = new Chart(ctxMo, {
-            type: 'line',
-            data: {
-                labels: data.monthly.labels,
-                datasets: [{
-                    label: 'Передзамовлень',
-                    data: data.monthly.counts,
-                    borderColor: pal.blue,
-                    backgroundColor: 'rgba(13, 110, 253, 0.12)',
-                    fill: true,
-                    tension: 0.25,
-                    pointRadius: nM > 60 ? 2 : 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: {
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 0,
-                            autoSkip: false,
-                            font: { size: nM > 36 ? 9 : 10 }
-                        }
-                    },
-                    y: { ticks: { precision: 0 }, beginAtZero: true }
-                }
-            }
-        });
-        if (monthlySizer && typeof ResizeObserver !== 'undefined') {
-            var roM = new ResizeObserver(function () {
-                try { chartMo.resize(); } catch (e) {}
-            });
-            roM.observe(monthlySizer);
-        }
-    }
-
-    if (data.meta && data.meta.show_top_places && data.top_places && data.top_places.labels.length) {
-        var wrap = document.getElementById('poTopPlacesWrap');
-        if (wrap) wrap.removeAttribute('hidden');
-        var nPl = data.top_places.labels.length;
-        var plSizer = document.getElementById('poPlacesChartSizer');
-        if (plSizer) {
-            plSizer.style.minHeight = Math.max(200, nPl * 24 + 56) + 'px';
-        }
-        var plScroll = plSizer ? plSizer.closest('.oa-chart-scroll-y') : null;
-        var chartPl = new Chart(document.getElementById('poChartPlaces'), {
-            type: 'bar',
-            data: {
-                labels: data.top_places.labels,
-                datasets: [{
-                    label: 'Передзамовлень',
-                    data: data.top_places.counts,
-                    backgroundColor: pal.blue
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { ticks: { precision: 0 } },
-                    y: { ticks: { font: { size: nPl > 35 ? 8 : 9 }, maxRotation: 0 } }
-                }
-            }
-        });
-        if (plScroll && typeof ResizeObserver !== 'undefined') {
-            var roPl = new ResizeObserver(function () {
-                try { chartPl.resize(); } catch (e) {}
-            });
-            roPl.observe(plScroll);
-        }
-    }
-
-    var tp = data.top_products;
-    if (tp && tp.labels && tp.labels.length) {
-        var wrapP = document.getElementById('poTopProductsWrap');
-        if (wrapP) wrapP.removeAttribute('hidden');
-
-        var catsRaw = tp.categories || [];
-        var categories = tp.labels.map(function (_, i) {
-            return (catsRaw[i] != null && String(catsRaw[i]).length) ? String(catsRaw[i]) : '—';
-        });
-        var selCat = document.getElementById('poProdCat');
-        var selLim = document.getElementById('poProdLimit');
-        if (selCat) {
-            var uniq = {};
-            categories.forEach(function (c) { uniq[c] = true; });
-            var sorted = Object.keys(uniq).sort(function (a, b) {
-                return a.localeCompare(b, 'uk');
-            });
-            sorted.forEach(function (c) {
-                var opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
-                selCat.appendChild(opt);
-            });
-        }
-
-        var canvasProd = document.getElementById('poChartProducts');
-        var chartProd = null;
-        var prodSizer = document.getElementById('poProductsChartSizer');
-        var prodScroll = prodSizer ? prodSizer.closest('.oa-chart-scroll-y') : null;
-        var roProd = null;
-
-        function rebuildProductsChart() {
-            if (!canvasProd) return;
-            var catVal = selCat ? selCat.value : '';
-            var lim = selLim ? parseInt(selLim.value, 10) : 50;
-            if (!lim || lim < 1) lim = 50;
-
-            var labelsOut = [];
-            var valuesOut = [];
-            for (var i = 0; i < tp.labels.length; i++) {
-                if (catVal && categories[i] !== catVal) continue;
-                labelsOut.push(tp.labels[i]);
-                valuesOut.push(tp.quantities[i]);
-                if (labelsOut.length >= lim) break;
-            }
-
-            var existing = typeof Chart !== 'undefined' ? Chart.getChart(canvasProd) : null;
-            if (existing) existing.destroy();
-
-            if (!labelsOut.length) {
-                if (prodSizer) prodSizer.style.minHeight = '120px';
-                return;
-            }
-
-            var nPr = labelsOut.length;
-            if (prodSizer) {
-                prodSizer.style.minHeight = Math.max(200, nPr * 24 + 56) + 'px';
-            }
-            chartProd = new Chart(canvasProd, {
-                type: 'bar',
-                data: {
-                    labels: labelsOut,
-                    datasets: [{
-                        label: 'Одиниць у передзамовленнях',
-                        data: valuesOut,
-                        backgroundColor: pal.teal
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { ticks: { precision: 0 } },
-                        y: { ticks: { font: { size: nPr > 35 ? 8 : 9 }, maxRotation: 0 } }
-                    }
-                }
-            });
-            if (prodScroll && typeof ResizeObserver !== 'undefined' && !roProd) {
-                roProd = new ResizeObserver(function () {
-                    try { if (chartProd) chartProd.resize(); } catch (e) {}
-                });
-                roProd.observe(prodScroll);
-            }
-        }
-
-        rebuildProductsChart();
-        if (selCat) selCat.addEventListener('change', rebuildProductsChart);
-        if (selLim) selLim.addEventListener('change', rebuildProductsChart);
-    }
-
-})();
-</script>
+<script src="{% static 'js/preorders-analytics-lazy.js' %}"></script>
 {% endblock %}

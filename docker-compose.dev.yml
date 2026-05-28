@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:17
+    restart: always
+    volumes:
+      - postgres_local_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=dmdx
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=4646
+
+  web:
+    build: .
+    # Використовуємо стандартний сервер розробки Django замість gunicorn
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      # МАГІЯ ТУТ: Підключаємо вашу локальну папку до папки /app в Докері
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DB_NAME=dmdx
+      - DB_USER=postgres
+      - DB_PASSWORD=4646
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      - db
+
+volumes:
+  postgres_local_data:

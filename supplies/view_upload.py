@@ -1,5 +1,5 @@
 import datetime
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from .decorators import allowed_users
 from .models import *
@@ -13,10 +13,7 @@ from django.db.models import *
 from django.http import HttpResponse
 from xlsxwriter.workbook import Workbook
 from django.db.models import Sum
-from .tasks import *
-from .views import *
-from celery_progress.backend import Progress
-from celery.result import AsyncResult
+from .tasks import makeDataUpload_nonCelery
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import threading
@@ -25,64 +22,6 @@ from django.core.paginator import Paginator
 # @login_required(login_url='login')
 # @allowed_users(allowed_roles=['admin'])
 # def receive_and_load_new_supplies_order(request):
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
-def celery_test(request):
-    task = go_to_sleep.delay(1)
-    return render(request, 'supplies/celery-test.html', {'task_id': task.task_id})
-
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
-def get_progress(request, task_id, for_delivery_order_id):
-    result = AsyncResult(task_id)
-    progress = Progress(result)
-    percent_complete = int(progress.get_info()['progress']['percent'])
-    if percent_complete == 100:
-        delivery_order = DeliveryOrder.objects.get(id=for_delivery_order_id)
-        supplies = delivery_order.deliverysupplyincart_set.all().order_by('general_supply__name')
-        total_count = supplies.aggregate(total_count=Sum('count'))['total_count']
-        form = NewDeliveryForm()
-        form.fields['description'].label = "Коментар"
-
-        supDict = {}
-        for d in supplies:
-            t = supDict.setdefault(d.isRecognized, [])
-            t.append(d)
-        supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
-        status_of_task = result.status
-        return render(request, 'supplies/cart/delivery_cart.html', {'status_of_task': status_of_task, 'supDict': supDict, 'delivery_order': delivery_order, 'total_count': total_count, 'form': form})
-
-    print(task_id)
-    print(percent_complete)
-    context = {'task_id': task_id, 'for_delivery_order_id': for_delivery_order_id, 'value': percent_complete}
-    return render(request, 'partials/common/progress-bar.html', context)
-
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
-def upload_supplies_for_new_delivery(request, delivery_order_id=None):
-    form = NewDeliveryForm()
-    if delivery_order_id != None:
-        title = f'Додати штрих-коди до поставки № {delivery_order_id}'
-    else:
-        title = "Створити нову поставку"
-    if request.method == 'POST':
-        barcode_type = request.POST.get('barcode_type')
-        form = NewDeliveryForm(request.POST)
-        if form.is_valid():
-            string_data = form.cleaned_data['description']
-            if delivery_order_id != None:
-                for_delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
-                title = f'Додати штрих-коди до поставки № {for_delivery_order.id}'
-            else:
-                for_delivery_order = DeliveryOrder(from_user=request.user)
-                for_delivery_order.save()
-                title = "Створити нову поставку"
-            task = makeDataUpload.delay(string_data, for_delivery_order.id, barcode_type)
-            context = {'task_id': task.task_id, 'value': 0, 'for_delivery_order_id': for_delivery_order.id}
-            return render(request, 'supplies/delivery/upload_supplies_new_delivery_progress.html', context)
-
-    return render(request, 'supplies/delivery/upload_supplies_for_new_delivery.html', {'form': form, 'title': title})
-
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def upload_supplies_for_new_delivery_from_js_script(request):
@@ -256,42 +195,138 @@ def delete_delivery_action(request, delivery_order_id):
             print('delete_all')
         return redirect("/all_deliveries")
 
+def _delivery_cart_line_queryset(delivery_order_id):
+    return (
+        DeliverySupplyInCart.objects.filter(delivery_order_id=delivery_order_id)
+        .select_related(
+            'general_supply',
+            'general_supply__category',
+            'supply',
+            'delivery_order',
+        )
+        .order_by('general_supply__category_id', 'general_supply__name', 'supplyLot', 'id')
+    )
+
+
+def _group_delivery_supplies_for_display(items):
+    """Групує рядки поставки за general_supply (як orderDetail)."""
+    from collections import OrderedDict
+
+    buckets = OrderedDict()
+    for item in items:
+        if item.general_supply_id:
+            key = ('gs', item.general_supply_id)
+        else:
+            key = ('unk', item.barcode or '', item.SMN_code or '', item.pk)
+        buckets.setdefault(key, []).append(item)
+    return [{'counter': idx, 'items': group_items} for idx, group_items in enumerate(buckets.values(), start=1)]
+
+
+def _delivery_group_for_item(item, *, staging_only=False):
+    if item.general_supply_id:
+        siblings_qs = _delivery_cart_line_queryset(item.delivery_order_id).filter(
+            general_supply_id=item.general_supply_id,
+            isRecognized=item.isRecognized,
+        )
+        if staging_only:
+            siblings_qs = siblings_qs.filter(isHandleAdded=True)
+        siblings = list(siblings_qs)
+    else:
+        siblings = [item]
+    groups = _group_delivery_supplies_for_display(siblings)
+    return groups[0] if groups else None
+
+
+def _staging_group_header_stub(general_supply):
+    """Заголовок групи в staging-таблиці до першого збереженого рядка."""
+    class _Header:
+        pass
+
+    header = _Header()
+    header.general_supply = general_supply
+    header.id = 0
+    header.barcode = None
+    header.SMN_code = None
+    return header
+
+
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def delivery_detail(request, delivery_id):
-    delivery_order = DeliveryOrder.objects.get(id=delivery_id)
-    supplies = delivery_order.deliverysupplyincart_set.all().order_by('general_supply__name')
-    total_count = supplies.aggregate(total_count=Sum('count'))['total_count']
+    delivery_order = get_object_or_404(
+        DeliveryOrder.objects.select_related('from_user'),
+        pk=delivery_id,
+    )
+    supplies = list(_delivery_cart_line_queryset(delivery_id))
+    total_count = sum((item.count or 0) for item in supplies)
+    # Ручні (isHandleAdded) після reload — у «Знайдено»; секція staging лише для поточної сесії HTMX.
+    recognized = [d for d in supplies if d.isRecognized]
+    unrecognized = [d for d in supplies if not d.isRecognized]
+    recognized_groups = _group_delivery_supplies_for_display(recognized)
+    unrecognized_groups = _group_delivery_supplies_for_display(unrecognized)
+    staging_groups = []
+
     form = NewDeliveryForm()
     form.initial['description'] = delivery_order.comment
     form.fields['description'].label = "Коментар"
 
-    supDict = {}
-    for d in supplies:
-        t = supDict.setdefault(d.isRecognized, [])
-        t.append(d)
-    supDict = dict(sorted(supDict.items(), key=lambda x: not x[0]))
-    return render(request, 'supplies/delivery/delivery_detail.html', {'total_count': total_count, 'supDict': supDict, 'delivery_order': delivery_order, 'form': form})
+    return render(request, 'supplies/delivery/delivery_detail.html', {
+        'total_count': total_count,
+        'total_group_count': len(recognized_groups) + len(unrecognized_groups),
+        'recognized_groups': recognized_groups,
+        'unrecognized_groups': unrecognized_groups,
+        'staging_groups': staging_groups,
+        'delivery_order': delivery_order,
+        'form': form,
+    })
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def search_results_for_manual_add_in_delivery_order(request, delivery_order_id):
-    search_text = request.POST.get('search')
+    search_text = (request.POST.get('search') or '').strip()
     results = None
-    if search_text != "":
-        results = GeneralSupply.objects.filter(Q(name__icontains=search_text) | Q(ref__icontains=search_text) | Q(SMN_code__icontains=search_text))
-    context = {"results": results, 'delivery_order_id': delivery_order_id}
+    if search_text:
+        results = (
+            GeneralSupply.objects.filter(
+                Q(name__icontains=search_text)
+                | Q(ref__icontains=search_text)
+                | Q(SMN_code__icontains=search_text)
+            )
+            .select_related('category')
+            .order_by('name')[:30]
+        )
+    context = {
+        'results': results,
+        'delivery_order_id': delivery_order_id,
+        'search_attempted': bool(search_text),
+    }
     return render(request, 'partials/search_results_for_manual_add_in_delivery_order.html', context)
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def add_gen_sup_in_delivery_order_manual_list(request):
     if request.method == 'POST':
+        import uuid
+
         gen_sup_id = request.POST.get('gen_sup_id')
         delivery_order_id = request.POST.get('delivery_order_id')
-        gen_sup = GeneralSupply.objects.get(id=gen_sup_id)
-        context = {"item": gen_sup, 'delivery_order_id': delivery_order_id}
-        return render(request, 'partials/search_add_manual_results_for_results_choosed_gen_supps.html', context)
+        create_group = request.POST.get('create_group') == '1'
+        gen_sup = GeneralSupply.objects.select_related('category').get(id=gen_sup_id)
+        delivery_order = DeliveryOrder.objects.get(id=delivery_order_id)
+        try:
+            staging_group_count = int(request.POST.get('staging_group_count', 0))
+        except (TypeError, ValueError):
+            staging_group_count = 0
+        context = {
+            'item': gen_sup,
+            'delivery_order_id': delivery_order_id,
+            'delivery_order': delivery_order,
+            'draft_uid': uuid.uuid4().hex[:10],
+            'group': {'counter': staging_group_count + 1},
+        }
+        if create_group:
+            return render(request, 'partials/delivery/delivery_staging_new_group_row.html', context)
+        return render(request, 'partials/delivery/delivery_staging_nested_row_draft.html', context)
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -309,44 +344,134 @@ def add_gen_sup_in_delivery_order_manual_list_delete_action(request):
 def add_gen_sup_in_delivery_order_manual_list_edit_action(request):
     if request.method == 'POST':
         deliverySupplyInCart_id = request.POST.get('item_id')
-        del_sup = DeliverySupplyInCart.objects.get(id=deliverySupplyInCart_id)
+        del_sup = DeliverySupplyInCart.objects.select_related(
+            'general_supply', 'general_supply__category', 'delivery_order',
+        ).get(id=deliverySupplyInCart_id)
         gen_sup = del_sup.general_supply
 
-        context = {"item": gen_sup, 'delivery_order_id': del_sup.delivery_order_id, 'del_sup': del_sup}
-        return render(request, 'partials/search_results_for_results_choosed_gen_supps.html', context)
+        staging = request.POST.get('context') == 'staging'
+        context = {
+            'item': gen_sup,
+            'delivery_order_id': del_sup.delivery_order_id,
+            'del_sup': del_sup,
+            'delivery_order': del_sup.delivery_order,
+            'line': del_sup,
+            'staging': staging,
+        }
+        return render(request, 'partials/delivery/delivery_detail_nested_row_edit.html', context)
+
+def _parse_manual_delivery_line_form(request, gen_sup_id):
+    """Парсинг полів ручного додавання; повертає (lot, expired_str, expired_date, count, field_errors)."""
+    lot = (request.POST.get(f'lot_input_field_{gen_sup_id}') or '').strip()
+    expired_str = (request.POST.get(f'expired_input_field_{gen_sup_id}') or '').strip()
+    count_raw = (request.POST.get(f'count_input_field_{gen_sup_id}') or '').strip()
+    field_errors = {}
+    expired_date = None
+    count_val = None
+
+    if not expired_str:
+        field_errors['expired'] = 'Вкажіть термін (РРРР-ММ-ДД)'
+    else:
+        try:
+            expired_date = datetime.datetime.strptime(expired_str, '%Y-%m-%d').date()
+        except ValueError:
+            field_errors['expired'] = 'Невірний формат терміну'
+    if not count_raw:
+        field_errors['count'] = 'Вкажіть кількість'
+    else:
+        try:
+            count_val = int(count_raw)
+            if count_val < 1:
+                field_errors['count'] = 'Кількість має бути більше 0'
+                count_val = None
+        except ValueError:
+            field_errors['count'] = 'Невірна кількість'
+            count_val = None
+
+    return lot, expired_str, expired_date, count_val, field_errors
+
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
 def add_gen_sup_in_delivery_order_manual_list_save_action(request):
     if request.method == 'POST':
+        import uuid
+
         delivery_order_id = request.POST.get('delivery_order_id')
-        del_sup_id = request.POST.get('del_sup_id') or None
+        del_sup_id = request.POST.get('del_sup_id')
+        if del_sup_id in (None, '', 'None', 'null'):
+            del_sup_id = None
         gen_sup_id = request.POST.get('gen_sup_id')
-        input_lot = request.POST.get(f'lot_input_field_{gen_sup_id}').strip()
-        input_expired = request.POST.get(f'expired_input_field_{gen_sup_id}').strip()
-        input_count = request.POST.get(f'count_input_field_{gen_sup_id}').strip()
+        if not gen_sup_id:
+            return HttpResponse('gen_sup_id required', status=400)
         gen_sup = GeneralSupply.objects.get(id=gen_sup_id)
         del_order = DeliveryOrder.objects.get(id=delivery_order_id)
+        staging = request.POST.get('save_mode') == 'staging'
 
-        date_expired_date = datetime.datetime.strptime(input_expired, '%Y-%m-%d').date()
+        input_lot, input_expired, date_expired_date, input_count, field_errors = _parse_manual_delivery_line_form(
+            request, gen_sup_id
+        )
+        if field_errors:
+            if del_sup_id:
+                del_sup = DeliverySupplyInCart.objects.select_related(
+                    'general_supply', 'general_supply__category', 'delivery_order',
+                ).get(id=del_sup_id)
+                del_sup.supplyLot = input_lot or None
+                del_sup.expiredDate_desc = input_expired
+                if request.POST.get(f'count_input_field_{gen_sup_id}', '').strip():
+                    try:
+                        del_sup.count = int(request.POST.get(f'count_input_field_{gen_sup_id}').strip())
+                    except ValueError:
+                        pass
+                return render(request, 'partials/delivery/delivery_detail_nested_row_edit.html', {
+                    'item': gen_sup,
+                    'delivery_order_id': delivery_order_id,
+                    'del_sup': del_sup,
+                    'delivery_order': del_order,
+                    'line': del_sup,
+                    'staging': staging,
+                    'field_errors': field_errors,
+                })
+            return render(request, 'partials/delivery/delivery_staging_nested_row_draft.html', {
+                'item': gen_sup,
+                'delivery_order_id': delivery_order_id,
+                'delivery_order': del_order,
+                'draft_uid': request.POST.get('draft_uid') or uuid.uuid4().hex[:10],
+                'field_lot': input_lot,
+                'field_expired': input_expired,
+                'field_count': request.POST.get(f'count_input_field_{gen_sup_id}', ''),
+                'field_errors': field_errors,
+            })
+
         try:
             sup_delivery = DeliverySupplyInCart.objects.get(id=del_sup_id)
-            sup_delivery.supplyLot = input_lot
+            sup_delivery.supplyLot = input_lot or None
             sup_delivery.count = input_count
             sup_delivery.expiredDate = date_expired_date
             sup_delivery.expiredDate_desc = input_expired
-        except:
-            sup_delivery = DeliverySupplyInCart(general_supply=gen_sup,
-                                                supplyLot=input_lot,
-                                                count=input_count,
-                                                expiredDate_desc=input_expired,
-                                                expiredDate=date_expired_date,
-                                                isRecognized=True,
-                                                isHandleAdded=True,
-                                                delivery_order=del_order)
+        except DeliverySupplyInCart.DoesNotExist:
+            sup_delivery = DeliverySupplyInCart(
+                general_supply=gen_sup,
+                supplyLot=input_lot or None,
+                count=input_count,
+                expiredDate_desc=input_expired,
+                expiredDate=date_expired_date,
+                isRecognized=True,
+                isHandleAdded=True,
+                delivery_order=del_order,
+            )
         sup_delivery.save()
-        context = {"item": sup_delivery}
-        return render(request, 'partials/delivery/saved_instance_of_manual_added_sup_in_delivery.html', context)
+        sup_delivery = DeliverySupplyInCart.objects.select_related(
+            'general_supply',
+            'general_supply__category',
+            'delivery_order',
+        ).get(pk=sup_delivery.pk)
+        return render(request, 'partials/delivery/delivery_detail_nested_row.html', {
+            'line': sup_delivery,
+            'delivery_order': del_order,
+            'staging': staging,
+        })
+
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])

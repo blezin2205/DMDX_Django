@@ -1,0 +1,54 @@
+<tr class="delivery-item-row" id="delivery-item-{{ item.id }}">
+  {% if item.general_supply %}
+    <td class="delivery-item-name">
+      <div class="fw-medium text-truncate" title="{{ item.general_supply.name }}">{{ item.general_supply.name }}</div>
+      <div class="delivery-item-meta">
+        {% if item.general_supply.ref %}<span><i class="bi bi-hash"></i>{{ item.general_supply.ref }}</span>{% endif %}
+        {% if item.general_supply.SMN_code %}<span><i class="bi bi-upc"></i>{{ item.general_supply.SMN_code }}</span>{% endif %}
+        {% if item.isHandleAdded %}<span title="Вручну"><i class="bi bi-keyboard"></i></span>{% endif %}
+      </div>
+    </td>
+    <td class="text-muted small">{% if item.general_supply.category %}{{ item.general_supply.category }}{% else %}—{% endif %}</td>
+    <td>{{ item.supplyLot|default:"—" }}</td>
+    <td>
+      {% if item.expiredDate %}
+        <span class="delivery-detail-date delivery-detail-date--{% if item.date_is_good %}good{% elif item.date_is_today %}today{% else %}bad{% endif %}">
+          {{ item.expiredDate|date:"d.m.Y" }}
+        </span>
+      {% else %}—{% endif %}
+    </td>
+    <td class="text-end fw-semibold">{{ item.count }}</td>
+    <td class="text-end text-nowrap">
+      {% if not item.delivery_order.isHasBeenSaved %}
+        <button type="button" class="btn btn-sm btn-outline-warning"
+          hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_edit_action' %}"
+          hx-vals='{"item_id": {{ item.id }}}'
+          hx-target="closest tr.delivery-item-row"
+          hx-swap="outerHTML">
+          <i class="bi bi-pencil"></i>
+        </button>
+      {% endif %}
+    </td>
+  {% else %}
+    <td colspan="2">
+      <div class="small"><span class="text-muted">Barcode:</span> {{ item.barcode|default:"—" }}</div>
+      <div class="delivery-item-meta">
+        {% if item.SMN_code %}<span><i class="bi bi-upc"></i>{{ item.SMN_code }}</span>{% endif %}
+      </div>
+    </td>
+    <td>{{ item.supplyLot|default:"—" }}</td>
+    <td class="small text-muted">{{ item.expiredDate_desc|default:"—" }}</td>
+    <td class="text-end fw-semibold">{{ item.count }}</td>
+    <td class="text-end text-nowrap">
+      {% if not item.delivery_order.isHasBeenSaved %}
+        <button type="button" class="btn btn-sm btn-outline-danger"
+          hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_delete_action' %}"
+          hx-vals='{"del_sup_id": "{{ item.id }}"}'
+          hx-target="closest tr.delivery-item-row"
+          hx-swap="delete">
+          <i class="bi bi-trash3"></i>
+        </button>
+      {% endif %}
+    </td>
+  {% endif %}
+</tr>

@@ -1,39 +1,17 @@
-from celery import shared_task
-from celery_progress.backend import ProgressRecorder
-from django.http import HttpResponse
-from .models import *
-from .serializers import *
-from .filters import *
-from .forms import *
-from django.db.models import *
-from django.http import HttpResponse
-from django.db.models import QuerySet
-
-from time import sleep
-
-@shared_task(bind=True)
-def go_to_sleep(self, duration):
-    progress_recorder = ProgressRecorder(self)
-    for i in range(5):
-        sleep(duration)
-        progress_recorder.set_progress(i + 1, 5, f'On iteration {i}')
-    return HttpResponse("DONE!")
-
-import re
 import datetime
+import re
+
+from .models import DeliveryOrder, DeliverySupplyInCart, GeneralSupply, Supply
+
 
 def makeDataUpload_nonCelery(string_data, for_delivery_order, barcode_type):
-    i = 0
     result_array = string_data.split()
     total_requests = len(result_array)
     total_sups_delivered = []
-    
+
     for item in result_array:
         arr_item = item.split(',')
-        
-        # ---------------------------------------------------------
-        # Існуюча логіка Siemens
-        # ---------------------------------------------------------
+
         if barcode_type == 'Siemens':
             if len(arr_item) == 1:
                 barcode_str = arr_item[0]
@@ -48,56 +26,39 @@ def makeDataUpload_nonCelery(string_data, for_delivery_order, barcode_type):
                 smn = arr_item[0]
                 lot = arr_item[1]
                 date_expired = arr_item[2]
-                sup_delivery = create_supply_objects(item, smn, lot, date_expired, for_delivery_order, search_by_ref=True)
+                sup_delivery = create_supply_objects(
+                    item, smn, lot, date_expired, for_delivery_order, search_by_ref=True
+                )
                 total_sups_delivered.append(sup_delivery)
-            i += 1
-                
-        # ---------------------------------------------------------
-        # НОВА ЛОГІКА: Універсальний Data Matrix (з принтами)
-        # ---------------------------------------------------------
-        # ---------------------------------------------------------
-        # НОВА ЛОГІКА: Безпечний Data Matrix (Алгоритм Очищення)
-        # ---------------------------------------------------------
+
         elif barcode_type == 'Data Matrix':
             if len(arr_item) == 1:
                 barcode_str = arr_item[0]
-                
-                # Копія рядка, яку ми будемо "шматувати" (щоб не зламати оригінал)
                 work_str = barcode_str
-                
+
                 gtin = ""
                 date_expired = ""
                 lot = ""
                 smn = ""
-                
-                # 1. Безпечно витягуємо GTIN (AI 01). Зазвичай він іде самим першим.
+
                 if work_str.startswith('01'):
                     gtin = work_str[2:16]
-                    # Вирізаємо цей шматок з робочого рядка, замінюючи на розділювач '|'
                     work_str = work_str[16:]
                 else:
-                    # Якщо раптом не перший, шукаємо безпечно (тільки 14 цифр)
                     match_01 = re.search(r'(?:^|\x1d)01(\d{14})', work_str)
                     if match_01:
                         gtin = match_01.group(1)
                         work_str = work_str.replace(match_01.group(0), '|', 1)
 
-                # 2. Безпечно витягуємо Дату придатності (AI 17) - строго 6 цифр
+                match_11 = re.search(r'11(\d{6})', work_str)
+                if match_11:
+                    work_str = work_str.replace(match_11.group(0), '|', 1)
+
                 match_17 = re.search(r'17(\d{6})', work_str)
                 if match_17:
                     date_expired = match_17.group(1)
                     work_str = work_str.replace(match_17.group(0), '|', 1)
 
-                # 3. Вирізаємо Дату виробництва (AI 11), якщо вона є, щоб її цифри не заважали
-                match_11 = re.search(r'11(\d{6})', work_str)
-                if match_11:
-                    work_str = work_str.replace(match_11.group(0), '|', 1)
-                    
-                # ТЕПЕР У РОБОЧОМУ РЯДКУ (work_str) НЕМАЄ ДАТ І GTIN.
-                # Шукати 240 та 10 стало абсолютно безпечно!
-
-                # 4. Знаходимо SMN (AI 240)
-                # Шукаємо до кінця рядка, АБО до нашого штучного розділювача '|', АБО до \x1d, АБО до AI 422
                 match_240 = re.search(r'240([A-Za-z0-9]+?)(?:\x1d|\||422|$)', work_str)
                 if match_240:
                     smn_found = match_240.group(1)
@@ -105,25 +66,11 @@ def makeDataUpload_nonCelery(string_data, for_delivery_order, barcode_type):
                 else:
                     smn_found = ""
 
-                # 5. Знаходимо LOT (AI 10)
                 match_10 = re.search(r'10([A-Za-z0-9]+?)(?:\x1d|\||$)', work_str)
                 if match_10:
                     lot = match_10.group(1)
-                
-                # --- ВИЗНАЧАЄМО, ЩО ЙДЕ В ПОШУК (SMN чи GTIN) ---
+
                 smn = smn_found if smn_found else gtin
-                
-                # --- ПРИНТИ ДЛЯ ДЕБАГУ ---
-                # print("="*40)
-                # print(f"[DEBUG Data Matrix] Оригінал: {barcode_str}")
-                # print(f"[DEBUG Data Matrix] Очищений: {work_str} (Без дат і GTIN)")
-                # print(f" -> Знайдено GTIN: '{gtin}'")
-                # print(f" -> Знайдено SMN (AI 240): '{smn_found}'")
-                # print(f" -> ВИКОРИСТАНО ДЛЯ БАЗИ: '{smn}'")
-                # print(f" -> Знайдено LOT: '{lot}'")
-                # print(f" -> Знайдено EXP: '{date_expired}'")
-                # print("="*40)
-                # -------------------------
 
                 sup_delivery = create_supply_objects(item, smn, lot, date_expired, for_delivery_order)
                 total_sups_delivered.append(sup_delivery)
@@ -132,20 +79,20 @@ def makeDataUpload_nonCelery(string_data, for_delivery_order, barcode_type):
 
 
 def create_supply_objects(barcode, smn, lot, date_expired, for_delivery_order, search_by_ref=False):
-
     try:
         date_expired_date = datetime.datetime.strptime(date_expired, '%y%m%d')
-        
-        # Класична логіка пошуку: або по ref, або по SMN_code
+
         if search_by_ref:
             gen_sup = GeneralSupply.objects.get(ref=smn)
         else:
             gen_sup = GeneralSupply.objects.get(SMN_code=smn)
 
         try:
-            sup_delivery = for_delivery_order.deliverysupplyincart_set.get(general_supply=gen_sup, supplyLot=lot, expiredDate=date_expired_date)
+            sup_delivery = for_delivery_order.deliverysupplyincart_set.get(
+                general_supply=gen_sup, supplyLot=lot, expiredDate=date_expired_date
+            )
             sup_delivery.count += 1
-        except:
+        except DeliverySupplyInCart.DoesNotExist:
             sup_delivery = DeliverySupplyInCart(
                 barcode=barcode,
                 SMN_code=smn,
@@ -155,85 +102,28 @@ def create_supply_objects(barcode, smn, lot, date_expired, for_delivery_order, s
                 expiredDate_desc=date_expired_date.strftime('%Y-%m-%d'),
                 expiredDate=date_expired_date,
                 isRecognized=True,
-                delivery_order=for_delivery_order)
+                delivery_order=for_delivery_order,
+            )
         sup_delivery.save()
 
-    except:
+    except Exception:
         try:
-            sup_delivery = for_delivery_order.deliverysupplyincart_set.get(barcode=barcode, delivery_order=for_delivery_order)
+            sup_delivery = for_delivery_order.deliverysupplyincart_set.get(
+                barcode=barcode, delivery_order=for_delivery_order
+            )
             sup_delivery.count += 1
-        except:
+        except DeliverySupplyInCart.DoesNotExist:
             sup_delivery = DeliverySupplyInCart(
                 barcode=barcode,
                 SMN_code=smn,
                 supplyLot=lot,
                 count=1,
                 expiredDate_desc=date_expired,
-                delivery_order=for_delivery_order)
+                delivery_order=for_delivery_order,
+            )
         sup_delivery.save()
-        
+
     return sup_delivery
-
-
-@shared_task(bind=True)
-def makeDataUpload(self, string_data, for_delivery_order, barcode_type):
-    i = 0
-    result_array = string_data.split()
-    total_requests = len(result_array)
-    for item in result_array:
-        arr_item = item.split(',')
-        if barcode_type == 'Siemens':
-            if len(arr_item) == 1:
-                barcode_str = arr_item[0]
-                smn = barcode_str[32:-6]
-                smn = smn[-8:]
-                lot = barcode_str[18:-25]
-                date_expired = barcode_str[23:-17]
-                date_expired = date_expired[-6:]
-                create_supply_objects(item, smn, lot, date_expired, for_delivery_order)
-            elif len(arr_item) == 3:
-                smn = arr_item[0]
-                lot = arr_item[1]
-                date_expired = arr_item[2]
-                create_supply_objects(item, smn, lot, date_expired, for_delivery_order, True)
-            i += 1
-        if barcode_type == 'Alegria':
-            if len(arr_item) == 1:
-                barcode_str = arr_item[0]
-                smn = barcode_str[2:16]
-                lot = barcode_str[-7:]
-                date_expired = barcode_str[26:-9]
-                create_supply_objects(item, smn, lot, date_expired, for_delivery_order)
-
-
-
-@shared_task(bind=True)
-def gen_sup_and_update_db(self, del_order_id):
-    del_order = DeliveryOrder.objects.get(id=del_order_id)
-    sup_set = del_order.deliverysupplyincart_set.filter(isRecognized=True)
-    progress_recorder = ProgressRecorder(self)
-    total_requests = len(sup_set)
-    i = 0
-    for item in sup_set:
-        if item.general_supply:
-            try:
-                sup = item.general_supply.general.get(supplyLot=item.supplyLot, expiredDate=item.expiredDate)
-                sup.count += item.count
-            except:
-                sup = Supply(name=item.general_supply.name,
-                             general_supply=item.general_supply,
-                             category=item.general_supply.category,
-                             ref=item.general_supply.ref,
-                             supplyLot=item.supplyLot,
-                             count=item.count,
-                             expiredDate=item.expiredDate)
-            item.supply = sup
-            sup.save()
-            item.save()
-        i += 1
-        progress_recorder.set_progress(i, total_requests, f'On iteration {i}')
-    del_order.isHasBeenSaved = True
-    del_order.save()
 
 
 def gen_sup_and_update_db_async(request, del_order_id):
@@ -242,19 +132,22 @@ def gen_sup_and_update_db_async(request, del_order_id):
     for item in sup_set:
         if item.general_supply:
             try:
-                sup = item.general_supply.general.get(supplyLot=item.supplyLot, expiredDate=item.expiredDate)
+                sup = item.general_supply.general.get(
+                    supplyLot=item.supplyLot, expiredDate=item.expiredDate
+                )
                 sup.count += item.count
-            except:
-                sup = Supply(name=item.general_supply.name,
-                             general_supply=item.general_supply,
-                             category=item.general_supply.category,
-                             ref=item.general_supply.ref,
-                             supplyLot=item.supplyLot,
-                             count=item.count,
-                             expiredDate=item.expiredDate)
+            except Supply.DoesNotExist:
+                sup = Supply(
+                    name=item.general_supply.name,
+                    general_supply=item.general_supply,
+                    category=item.general_supply.category,
+                    ref=item.general_supply.ref,
+                    supplyLot=item.supplyLot,
+                    count=item.count,
+                    expiredDate=item.expiredDate,
+                )
             item.supply = sup
             sup.save()
             item.save()
     del_order.isHasBeenSaved = True
     del_order.save()
-

@@ -1,0 +1,41 @@
+<tr id="delivery-staging-draft-{{ draft_uid }}" class="delivery-detail-nested-row delivery-detail-nested-row--draft">
+  <td class="supply-lot-col">
+    <div class="delivery-nested-cell">
+      <input name="lot_input_field_{{ item.id }}" type="text" class="form-control form-control-sm"
+        placeholder="LOT" value="{{ field_lot|default:'' }}">
+      <div class="delivery-nested-cell__error" aria-hidden="true"></div>
+    </div>
+  </td>
+  <td class="supply-qty-col">
+    <div class="delivery-nested-cell">
+      <input name="count_input_field_{{ item.id }}" type="number" min="1" step="1" required
+        class="form-control form-control-sm {% if field_errors.count %}is-invalid{% endif %}"
+        value="{{ field_count|default:'' }}">
+      <div class="delivery-nested-cell__error">{% if field_errors.count %}{{ field_errors.count }}{% endif %}</div>
+    </div>
+  </td>
+  <td class="supply-exp-col">
+    <div class="delivery-nested-cell">
+      <input name="expired_input_field_{{ item.id }}" type="text"
+        class="form-control form-control-sm delivery-date-mask {% if field_errors.expired %}is-invalid{% endif %}"
+        placeholder="РРРР-ММ-ДД" maxlength="10" data-delivery-date-mask value="{{ field_expired|default:'' }}" required>
+      <div class="delivery-nested-cell__error">{% if field_errors.expired %}{{ field_errors.expired }}{% endif %}</div>
+    </div>
+  </td>
+  <td class="delivery-detail-actions-col text-nowrap">
+    <div class="delivery-nested-cell delivery-nested-cell--actions">
+      <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1"
+        hx-on::click="this.closest('tr')?.remove(); window.deliveryStagingRemoveEmptyGroup && window.deliveryStagingRemoveEmptyGroup(this);">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <button type="button" class="btn btn-sm btn-primary py-0 px-1"
+        hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_save_action' %}"
+        hx-vals='{"gen_sup_id": {{ item.id }}, "delivery_order_id": {{ delivery_order_id }}, "save_mode": "staging", "draft_uid": "{{ draft_uid }}"}'
+        hx-include="#delivery-staging-draft-{{ draft_uid }}"
+        hx-target="closest tr"
+        hx-swap="outerHTML">
+        <i class="bi bi-check-lg"></i>
+      </button>
+    </div>
+  </td>
+</tr>

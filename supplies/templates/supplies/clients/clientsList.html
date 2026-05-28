@@ -9,6 +9,7 @@
 {% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/app-home.css' %}" type="text/css">
 <style>
     .client-card {
         transition: all 0.3s ease;
@@ -165,7 +166,7 @@
     }
 </style>
 
-    <form method="get" class="form-inline justify-content-center">
+    <form method="get" id="clients-filter-form" class="form-inline justify-content-center">
         <div class="clients-filter-panel w-100">
             <div class="mb-2">
                 {{ placeFilter.form.is_has_options_button|as_crispy_field }}
@@ -185,8 +186,6 @@
         </div>
     </form>
 
-{% if clients_analytics %}
-{{ clients_analytics|json_script:"clients-info-analytics-data" }}
 <style>
 .orders-analytics-wrap .oa-kpi-cell {
     display: flex;
@@ -239,8 +238,17 @@
             <span class="text-muted small">усі організації з поточної вибірки після фільтрів (не лише сторінка)</span>
             <i class="bi bi-chevron-down ms-2"></i>
         </button>
-        <div id="clientsInfoAnalyticsBody" class="collapse">
+        <div id="clientsInfoAnalyticsBody" class="collapse"
+             data-analytics-url="{% url 'clientsInfoAnalytics' %}">
             <div class="card-body border-top bg-white pt-3">
+                <div id="ciAnalyticsLoading" class="text-center py-4 d-none">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <span class="ms-2 text-muted small">Завантаження аналітики…</span>
+                </div>
+                <div id="ciAnalyticsError" class="alert alert-danger py-2 small d-none mb-0" role="alert">
+                    Не вдалося завантажити аналітику. Спробуйте ще раз.
+                </div>
+                <div id="ciAnalyticsContent" class="d-none">
                 <div class="oa-kpi-compact row g-1 row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 mb-3">
                     <div class="col">
                         <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100">
@@ -320,11 +328,11 @@
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endif %}
 
 {% if request.user_agent.is_mobile %}<div class="row row-cols-1 row-cols-lg-1 g-3 py-3"> {% else %} <div class="row row-cols-2 row-cols-lg-2 g-3 py-3"> {% endif %}
     {% for client in clients %}
@@ -333,41 +341,30 @@
     {% endfor %}
 </div>
 
-    <form method="get" class="form-inline justify-content-center">
-        {% if clients.paginator.num_pages > 1 %}
-<nav aria-label="Page navigation" class="mt-5">
-    <ul class="pagination justify-content-center">
+{% if clients.paginator.num_pages > 1 %}
+<nav class="d-flex justify-content-center my-3" aria-label="Навігація по сторінках">
+    <div class="btn-group home-view-switch home-pagination" role="group">
         {% if clients.has_previous %}
-            <li class="page-item"><a class="page-link" href="{% my_url clients.previous_page_number 'page' request.GET.urlencode %}">&laquo;</a></li>
+            <a class="btn home-view-btn" href="{% my_url clients.previous_page_number 'page' request.GET.urlencode %}" title="Попередня сторінка">&laquo;</a>
         {% else %}
-            <li class="page-item disabled"><a class="page-link" href="#">&laquo;</a></li>
+            <span class="btn home-view-btn disabled" title="Попередня сторінка" aria-disabled="true">&laquo;</span>
         {% endif %}
-
-    {% for n in clients.paginator.page_range %}
-  {% if clients.number == n %}
-       <li class="page-item active"><a class="page-link" href="#">{{ n }}</a></li>
-  {% elif n > clients.number|add:'-3' and n < clients.number|add:'3' %}
-    <li class="page-item"><a class="page-link" href="{% my_url n 'page' request.GET.urlencode %}">{{ n }}</a></li>
-  {% endif %}
-{% endfor %}
-
-{#        {% for i in orders.paginator.page_range %}#}
-{#            {% if orders.number == i %}#}
-{#                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>#}
-{#            {% else %}#}
-{#                <li class="page-item"><a class="page-link" href="{% my_url i 'page' request.GET.urlencode %}">{{ i }}</a></li>#}
-{#            {% endif %}#}
-{#        {% endfor %}#}
+        {% pagination_page_numbers clients 5 as clients_page_nums %}
+        {% for n in clients_page_nums %}
+            {% if clients.number == n %}
+                <span class="btn home-view-btn active" aria-current="page">{{ n }}</span>
+            {% else %}
+                <a class="btn home-view-btn" href="{% my_url n 'page' request.GET.urlencode %}">{{ n }}</a>
+            {% endif %}
+        {% endfor %}
         {% if clients.has_next %}
-            <li class="page-item"><a class="page-link" href="{% my_url clients.next_page_number 'page' request.GET.urlencode %}">&raquo;</a></li>
+            <a class="btn home-view-btn" href="{% my_url clients.next_page_number 'page' request.GET.urlencode %}" title="Наступна сторінка">&raquo;</a>
         {% else %}
-            <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
+            <span class="btn home-view-btn disabled" title="Наступна сторінка" aria-disabled="true">&raquo;</span>
         {% endif %}
-
-    </ul>
+    </div>
 </nav>
 {% endif %}
- </form>
 
 
  <script>
@@ -480,77 +477,146 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script>
 (function () {
-    var el = document.getElementById('clients-info-analytics-data');
-    if (!el || typeof Chart === 'undefined') return;
-    var D;
-    try { D = JSON.parse(el.textContent); } catch (e) { return; }
-    if (!D || D.total == null) return;
+    var collapseEl = document.getElementById('clientsInfoAnalyticsBody');
+    if (!collapseEl || typeof Chart === 'undefined') return;
+
+    var loadingEl = document.getElementById('ciAnalyticsLoading');
+    var contentEl = document.getElementById('ciAnalyticsContent');
+    var errorEl = document.getElementById('ciAnalyticsError');
+    var typeChart = null;
+    var citiesChart = null;
+    var citiesResizeObserver = null;
+    var loadedQuery = null;
+    var fetchInFlight = false;
+
+    function setVisible(el, show) {
+        if (!el) return;
+        el.classList.toggle('d-none', !show);
+    }
+
+    function destroyCharts() {
+        if (typeChart) { typeChart.destroy(); typeChart = null; }
+        if (citiesChart) { citiesChart.destroy(); citiesChart = null; }
+        if (citiesResizeObserver) { citiesResizeObserver.disconnect(); citiesResizeObserver = null; }
+    }
 
     function setText(id, v) {
         var n = document.getElementById(id);
         if (n) n.textContent = v;
     }
-    setText('ci-total', String(D.total));
-    setText('ci-private', String(D.private_places));
-    setText('ci-public', String(D.public_places));
-    setText('ci-with-users', String(D.with_login_users));
-    setText('ci-without-users', String(D.without_login_users));
-    setText('ci-np', String(D.in_np));
-    setText('ci-orders', String(D.related_orders));
-    setText('ci-preorders', String(D.related_preorders));
-    setText('ci-workers', String(D.related_workers));
-    setText('ci-devices', String(D.related_devices));
 
-    var tc = D.type_chart;
-    if (tc && tc.counts && tc.counts.some(function (x) { return x > 0; })) {
-        new Chart(document.getElementById('ciChartType'), {
-            type: 'doughnut',
-            data: {
-                labels: tc.labels,
-                datasets: [{
-                    data: tc.counts,
-                    backgroundColor: tc.colors || ['#0d6efd', '#6c757d'],
-                    borderWidth: 1,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: { legend: { position: 'bottom' } },
-                cutout: '52%'
-            }
-        });
-    }
+    function renderAnalytics(D) {
+        if (!D || D.total == null) return;
+        destroyCharts();
 
-    var cities = D.top_cities;
-    if (cities && cities.labels && cities.labels.length) {
-        var cs = document.getElementById('ciCitiesChartSizer');
-        var scr = cs ? cs.closest('.oa-chart-scroll-y') : null;
-        var n = cities.labels.length;
-        if (cs && scr) { cs.style.minHeight = Math.max(200, n * 24 + 56) + 'px'; }
-        var ch = new Chart(document.getElementById('ciChartCities'), {
-            type: 'bar',
-            data: {
-                labels: cities.labels,
-                datasets: [{ label: 'Організацій', data: cities.counts, backgroundColor: '#198754' }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { ticks: { precision: 0 } },
-                    y: { ticks: { font: { size: n > 15 ? 9 : 10 }, maxRotation: 0 } }
+        setText('ci-total', String(D.total));
+        setText('ci-private', String(D.private_places));
+        setText('ci-public', String(D.public_places));
+        setText('ci-with-users', String(D.with_login_users));
+        setText('ci-without-users', String(D.without_login_users));
+        setText('ci-np', String(D.in_np));
+        setText('ci-orders', String(D.related_orders));
+        setText('ci-preorders', String(D.related_preorders));
+        setText('ci-workers', String(D.related_workers));
+        setText('ci-devices', String(D.related_devices));
+
+        var tc = D.type_chart;
+        if (tc && tc.counts && tc.counts.some(function (x) { return x > 0; })) {
+            typeChart = new Chart(document.getElementById('ciChartType'), {
+                type: 'doughnut',
+                data: {
+                    labels: tc.labels,
+                    datasets: [{
+                        data: tc.counts,
+                        backgroundColor: tc.colors || ['#0d6efd', '#6c757d'],
+                        borderWidth: 1,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { position: 'bottom' } },
+                    cutout: '52%'
                 }
+            });
+        }
+
+        var cities = D.top_cities;
+        if (cities && cities.labels && cities.labels.length) {
+            var cs = document.getElementById('ciCitiesChartSizer');
+            var scr = cs ? cs.closest('.oa-chart-scroll-y') : null;
+            var n = cities.labels.length;
+            if (cs && scr) { cs.style.minHeight = Math.max(200, n * 24 + 56) + 'px'; }
+            citiesChart = new Chart(document.getElementById('ciChartCities'), {
+                type: 'bar',
+                data: {
+                    labels: cities.labels,
+                    datasets: [{ label: 'Організацій', data: cities.counts, backgroundColor: '#198754' }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { precision: 0 } },
+                        y: { ticks: { font: { size: n > 15 ? 9 : 10 }, maxRotation: 0 } }
+                    }
+                }
+            });
+            if (scr && typeof ResizeObserver !== 'undefined') {
+                citiesResizeObserver = new ResizeObserver(function () {
+                    try { citiesChart.resize(); } catch (e) {}
+                });
+                citiesResizeObserver.observe(scr);
             }
-        });
-        if (scr && typeof ResizeObserver !== 'undefined') {
-            var ro = new ResizeObserver(function () { try { ch.resize(); } catch (e) {} });
-            ro.observe(scr);
         }
     }
+
+    function currentFilterQuery() {
+        var params = new URLSearchParams(window.location.search);
+        params.delete('page');
+        return params.toString();
+    }
+
+    function loadAnalytics() {
+        var filterQuery = currentFilterQuery();
+        if (loadedQuery === filterQuery || fetchInFlight) return;
+
+        var baseUrl = collapseEl.getAttribute('data-analytics-url');
+        if (!baseUrl) return;
+
+        fetchInFlight = true;
+        setVisible(loadingEl, true);
+        setVisible(errorEl, false);
+        setVisible(contentEl, false);
+
+        var url = filterQuery ? baseUrl + '?' + filterQuery : baseUrl;
+        fetch(url, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function (response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(function (data) {
+                loadedQuery = filterQuery;
+                renderAnalytics(data);
+                setVisible(contentEl, true);
+            })
+            .catch(function () {
+                loadedQuery = null;
+                setVisible(errorEl, true);
+            })
+            .finally(function () {
+                fetchInFlight = false;
+                setVisible(loadingEl, false);
+            });
+    }
+
+    collapseEl.addEventListener('shown.bs.collapse', loadAnalytics);
 })();
 </script>
 {% endblock %}

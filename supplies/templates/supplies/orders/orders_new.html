@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/app-home.css' %}" type="text/css">
 <div class="modal fade" id="npModal" tabindex="-1" aria-labelledby="npModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered {% if request.user_agent.is_mobile %} modal-fullscreen-sm-down{% else %} modal-lg{% endif %}">
         <div class="modal-content">
@@ -213,7 +214,7 @@
 }
 </style>
 
- <form method="post" class="form-inline justify-content-center">
+ <form method="post" id="orders-filter-form" class="form-inline justify-content-center">
     {% csrf_token %}
     <div class="container">
         {% if messages %}
@@ -249,8 +250,6 @@
                 </div>
             </div>
 
-            {% if orders_analytics %}
-            {{ orders_analytics|json_script:"orders-analytics-data" }}
             <div class="orders-analytics-wrap mb-2">
                 <div class="card border shadow-sm rounded-3 overflow-hidden">
                     <button class="btn btn-light w-100 text-start d-flex align-items-center justify-content-between py-2 px-3 border-0 rounded-0"
@@ -263,8 +262,18 @@
                         <span class="text-muted small">для поточної вибірки після фільтрів</span>
                         <i class="bi bi-chevron-down ms-2"></i>
                     </button>
-                    <div id="ordersAnalyticsBody" class="collapse">
+                    <div id="ordersAnalyticsBody" class="collapse"
+                         data-analytics-url="{% if isClients %}{% url 'ordersForClientAnalytics' client_id %}{% else %}{% url 'ordersAnalytics' %}{% endif %}"
+                         data-analytics-method="{% if isClients %}GET{% else %}POST{% endif %}">
                         <div class="card-body border-top bg-white pt-3">
+                            <div id="oaAnalyticsLoading" class="text-center py-4 d-none">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                <span class="ms-2 text-muted small">Завантаження аналітики…</span>
+                            </div>
+                            <div id="oaAnalyticsError" class="alert alert-danger py-2 small d-none mb-0" role="alert">
+                                Не вдалося завантажити аналітику. Спробуйте ще раз.
+                            </div>
+                            <div id="oaAnalyticsContent" class="d-none">
                             <div class="oa-kpi-compact row g-1 row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-3 mb-2">
                                 <div class="col">
                                     <div class="oa-kpi-cell rounded border bg-light px-2 py-1 h-100" title="Усього замовлень у поточній вибірці після фільтрів">
@@ -363,11 +372,11 @@
                                 </div>
                             </div>
                             <p class="text-muted small mt-3 mb-0" id="oa-merged-note"></p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            {% endif %}
             
             {% if request.user|has_group:"empl" or request.user.is_staff %}
             <div class="orders-actions-panel bg-light border shadow-sm rounded-3" id="orders-actions-panel" hidden>
@@ -458,41 +467,30 @@
         {% include 'partials/orders/order_delete_cell.html' %}
     </div>
   </form>
- <form method="get" class="form-inline justify-content-center">
-        {% if orders.paginator.num_pages > 1 %}
-<nav aria-label="Page navigation" class="mt-5">
-    <ul class="pagination justify-content-center">
+{% if orders.paginator.num_pages > 1 %}
+<nav class="d-flex justify-content-center my-3" aria-label="Навігація по сторінках">
+    <div class="btn-group home-view-switch home-pagination" role="group">
         {% if orders.has_previous %}
-            <li class="page-item"><a class="page-link" href="{% my_url orders.previous_page_number 'page' request.GET.urlencode %}">&laquo;</a></li>
+            <a class="btn home-view-btn" href="{% my_url orders.previous_page_number 'page' request.GET.urlencode %}" title="Попередня сторінка">&laquo;</a>
         {% else %}
-            <li class="page-item disabled"><a class="page-link" href="#">&laquo;</a></li>
+            <span class="btn home-view-btn disabled" title="Попередня сторінка" aria-disabled="true">&laquo;</span>
         {% endif %}
-
-    {% for n in orders.paginator.page_range %}
-  {% if orders.number == n %}
-       <li class="page-item active"><a class="page-link" href="#">{{ n }}</a></li>
-  {% elif n > orders.number|add:'-3' and n < orders.number|add:'3' %}
-    <li class="page-item"><a class="page-link" href="{% my_url n 'page' request.GET.urlencode %}">{{ n }}</a></li>
-  {% endif %}
-{% endfor %}
-
-{#        {% for i in orders.paginator.page_range %}#}
-{#            {% if orders.number == i %}#}
-{#                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>#}
-{#            {% else %}#}
-{#                <li class="page-item"><a class="page-link" href="{% my_url i 'page' request.GET.urlencode %}">{{ i }}</a></li>#}
-{#            {% endif %}#}
-{#        {% endfor %}#}
+        {% pagination_page_numbers orders 5 as orders_page_nums %}
+        {% for n in orders_page_nums %}
+            {% if orders.number == n %}
+                <span class="btn home-view-btn active" aria-current="page">{{ n }}</span>
+            {% else %}
+                <a class="btn home-view-btn" href="{% my_url n 'page' request.GET.urlencode %}">{{ n }}</a>
+            {% endif %}
+        {% endfor %}
         {% if orders.has_next %}
-            <li class="page-item"><a class="page-link" href="{% my_url orders.next_page_number 'page' request.GET.urlencode %}">&raquo;</a></li>
+            <a class="btn home-view-btn" href="{% my_url orders.next_page_number 'page' request.GET.urlencode %}" title="Наступна сторінка">&raquo;</a>
         {% else %}
-            <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
+            <span class="btn home-view-btn disabled" title="Наступна сторінка" aria-disabled="true">&raquo;</span>
         {% endif %}
-
-    </ul>
+    </div>
 </nav>
 {% endif %}
- </form>
  <script>
     function toggle_order_pinned_status(orderId, is_pinned) {
         console.log('Pin tapped for order:', orderId, 'Setting pinned to:', is_pinned);
@@ -756,199 +754,139 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script>
 (function () {
-    var el = document.getElementById('orders-analytics-data');
-    if (!el || typeof Chart === 'undefined') return;
-    var data;
-    try {
-        data = JSON.parse(el.textContent);
-    } catch (e) {
-        return;
-    }
-    if (!data) return;
+    var collapseEl = document.getElementById('ordersAnalyticsBody');
+    if (!collapseEl || typeof Chart === 'undefined') return;
 
-    var setText = function (id, v) {
-        var n = document.getElementById(id);
-        if (n) n.textContent = v;
-    };
-    setText('oa-total', String(data.total));
-    setText('oa-current-month', String(data.current_month_count != null ? data.current_month_count : 0));
-    var cmLabel = document.getElementById('oa-current-month-label');
-    if (cmLabel && data.current_month_label) {
-        cmLabel.textContent = 'У поточному місяці (' + data.current_month_label + ')';
-    }
-    var cmCell = document.getElementById('oa-current-month-cell');
-    if (cmCell && data.current_month_label) {
-        cmCell.title = 'Замовлення за ' + data.current_month_label + ' у поточній вибірці (дата відправлення або створення)';
-    }
-    setText('oa-completed', String(data.completed));
-    setText('oa-pending', String(data.pending));
-    setText('oa-with-preorders', String(data.with_preorders != null ? data.with_preorders : 0));
-    var cBM = data.created_by_me != null ? data.created_by_me : 0;
-    var sBM = data.sent_by_me != null ? data.sent_by_me : 0;
-    setText('oa-created-sent-me', String(cBM) + '/' + String(sBM));
-    setText('oa-with-documents-id', String(data.with_documents_id != null ? data.with_documents_id : 0));
-    setText('oa-avg-lines', String(data.avg_line_positions));
-    var mn = document.getElementById('oa-merged-note');
-    if (mn && data.merged > 0) {
-        mn.textContent = 'З них об\'єднаних записів (isMerged): ' + data.merged + '.';
-    }
+    var loadingEl = document.getElementById('oaAnalyticsLoading');
+    var contentEl = document.getElementById('oaAnalyticsContent');
+    var errorEl = document.getElementById('oaAnalyticsError');
+    var filterForm = document.getElementById('orders-filter-form');
+    var charts = [];
+    var resizeObservers = [];
+    var loadedFingerprint = null;
+    var fetchInFlight = false;
+    var productsChart = null;
+    var productsResizeObserver = null;
 
     var pal = { green: '#198754', blue: '#0d6efd', slate: '#6c757d', teal: '#0dcaf0', orange: '#fd7e14', purple: '#6f42c1' };
 
-    if (data.monthly && data.monthly.labels.length) {
-        var monthlySizer = document.getElementById('oaMonthlyChartSizer');
-        var scrollWrap = monthlySizer ? monthlySizer.closest('.oa-chart-scroll-x') : null;
-        var nM = data.monthly.labels.length;
-        var pxPerPoint = nM > 48 ? 28 : (nM > 24 ? 32 : 40);
-        if (monthlySizer && scrollWrap) {
-            var viewW = scrollWrap.getBoundingClientRect().width || scrollWrap.clientWidth || 320;
-            monthlySizer.style.minWidth = Math.max(viewW, nM * pxPerPoint) + 'px';
-        }
-        var ctxMo = document.getElementById('oaChartMonthly');
-        var chartMo = new Chart(ctxMo, {
-            type: 'line',
-            data: {
-                labels: data.monthly.labels,
-                datasets: [{
-                    label: 'Замовлень',
-                    data: data.monthly.counts,
-                    borderColor: pal.blue,
-                    backgroundColor: 'rgba(13, 110, 253, 0.12)',
-                    fill: true,
-                    tension: 0.25,
-                    pointRadius: nM > 60 ? 2 : 3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: {
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 0,
-                            autoSkip: false,
-                            font: { size: nM > 36 ? 9 : 10 }
-                        }
-                    },
-                    y: { ticks: { precision: 0 }, beginAtZero: true }
-                }
-            }
-        });
-        if (monthlySizer && typeof ResizeObserver !== 'undefined') {
-            var roM = new ResizeObserver(function () {
-                try { chartMo.resize(); } catch (e) {}
-            });
-            roM.observe(monthlySizer);
-        }
+    function setVisible(el, show) {
+        if (el) el.classList.toggle('d-none', !show);
     }
 
-    if (data.meta && data.meta.show_top_places && data.top_places && data.top_places.labels.length) {
-        var wrap = document.getElementById('oaTopPlacesWrap');
-        if (wrap) wrap.removeAttribute('hidden');
-        var nPl = data.top_places.labels.length;
-        var plSizer = document.getElementById('oaPlacesChartSizer');
-        if (plSizer) {
-            plSizer.style.minHeight = Math.max(200, nPl * 24 + 56) + 'px';
-        }
-        var plScroll = plSizer ? plSizer.closest('.oa-chart-scroll-y') : null;
-        var chartPl = new Chart(document.getElementById('oaChartPlaces'), {
-            type: 'bar',
-            data: {
-                labels: data.top_places.labels,
-                datasets: [{
-                    label: 'Замовлень',
-                    data: data.top_places.counts,
-                    backgroundColor: pal.blue
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { ticks: { precision: 0 } },
-                    y: { ticks: { font: { size: nPl > 35 ? 8 : 9 }, maxRotation: 0 } }
-                }
-            }
-        });
-        if (plScroll && typeof ResizeObserver !== 'undefined') {
-            var roPl = new ResizeObserver(function () {
-                try { chartPl.resize(); } catch (e) {}
-            });
-            roPl.observe(plScroll);
-        }
+    function destroyCharts() {
+        charts.forEach(function (ch) { try { ch.destroy(); } catch (e) {} });
+        charts = [];
+        resizeObservers.forEach(function (ro) { try { ro.disconnect(); } catch (e) {} });
+        resizeObservers = [];
+        productsChart = null;
+        productsResizeObserver = null;
     }
 
-    var tp = data.top_products;
-    if (tp && tp.labels && tp.labels.length) {
-        var wrapP = document.getElementById('oaTopProductsWrap');
-        if (wrapP) wrapP.removeAttribute('hidden');
-
-        var catsRaw = tp.categories || [];
-        var categories = tp.labels.map(function (_, i) {
-            return (catsRaw[i] != null && String(catsRaw[i]).length) ? String(catsRaw[i]) : '—';
+    function filterFingerprint() {
+        var method = (collapseEl.getAttribute('data-analytics-method') || 'POST').toUpperCase();
+        if (method === 'GET') {
+            return window.location.search || '';
+        }
+        if (!filterForm) return '';
+        var fd = new FormData(filterForm);
+        ['isComplete', 'for_state_of_client', 'for_np_delivery_state', 'search_text'].forEach(function (name) {
+            fd.get(name);
         });
-        var selCat = document.getElementById('oaProdCat');
-        var selLim = document.getElementById('oaProdLimit');
-        if (selCat) {
-            var uniq = {};
-            categories.forEach(function (c) { uniq[c] = true; });
-            var sorted = Object.keys(uniq).sort(function (a, b) {
-                return a.localeCompare(b, 'uk');
-            });
-            sorted.forEach(function (c) {
-                var opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
-                selCat.appendChild(opt);
-            });
+        var parts = [];
+        fd.forEach(function (value, key) {
+            if (key === 'csrfmiddlewaretoken') return;
+            if (key.indexOf('_action') !== -1 || key.indexOf('_buttons') !== -1) return;
+            parts.push(key + '=' + value);
+        });
+        parts.sort();
+        return parts.join('&');
+    }
+
+    function renderOrdersAnalytics(data) {
+        destroyCharts();
+        if (!data) return;
+
+        var setText = function (id, v) {
+            var n = document.getElementById(id);
+            if (n) n.textContent = v;
+        };
+        setText('oa-total', String(data.total));
+        setText('oa-current-month', String(data.current_month_count != null ? data.current_month_count : 0));
+        var cmLabel = document.getElementById('oa-current-month-label');
+        if (cmLabel && data.current_month_label) {
+            cmLabel.textContent = 'У поточному місяці (' + data.current_month_label + ')';
+        }
+        var cmCell = document.getElementById('oa-current-month-cell');
+        if (cmCell && data.current_month_label) {
+            cmCell.title = 'Замовлення за ' + data.current_month_label + ' у поточній вибірці (дата відправлення або створення)';
+        }
+        setText('oa-completed', String(data.completed));
+        setText('oa-pending', String(data.pending));
+        setText('oa-with-preorders', String(data.with_preorders != null ? data.with_preorders : 0));
+        var cBM = data.created_by_me != null ? data.created_by_me : 0;
+        var sBM = data.sent_by_me != null ? data.sent_by_me : 0;
+        setText('oa-created-sent-me', String(cBM) + '/' + String(sBM));
+        setText('oa-with-documents-id', String(data.with_documents_id != null ? data.with_documents_id : 0));
+        setText('oa-avg-lines', String(data.avg_line_positions));
+        var mn = document.getElementById('oa-merged-note');
+        if (mn) {
+            mn.textContent = data.merged > 0 ? ('З них об\'єднаних записів (isMerged): ' + data.merged + '.') : '';
         }
 
-        var canvasProd = document.getElementById('oaChartProducts');
-        var chartProd = null;
-        var prodSizer = document.getElementById('oaProductsChartSizer');
-        var prodScroll = prodSizer ? prodSizer.closest('.oa-chart-scroll-y') : null;
-        var roProd = null;
-
-        function rebuildProductsChart() {
-            if (!canvasProd) return;
-            var catVal = selCat ? selCat.value : '';
-            var lim = selLim ? parseInt(selLim.value, 10) : 50;
-            if (!lim || lim < 1) lim = 50;
-
-            var labelsOut = [];
-            var valuesOut = [];
-            for (var i = 0; i < tp.labels.length; i++) {
-                if (catVal && categories[i] !== catVal) continue;
-                labelsOut.push(tp.labels[i]);
-                valuesOut.push(tp.quantities[i]);
-                if (labelsOut.length >= lim) break;
+        if (data.monthly && data.monthly.labels.length) {
+            var monthlySizer = document.getElementById('oaMonthlyChartSizer');
+            var scrollWrap = monthlySizer ? monthlySizer.closest('.oa-chart-scroll-x') : null;
+            var nM = data.monthly.labels.length;
+            var pxPerPoint = nM > 48 ? 28 : (nM > 24 ? 32 : 40);
+            if (monthlySizer && scrollWrap) {
+                var viewW = scrollWrap.getBoundingClientRect().width || scrollWrap.clientWidth || 320;
+                monthlySizer.style.minWidth = Math.max(viewW, nM * pxPerPoint) + 'px';
             }
-
-            var existing = typeof Chart !== 'undefined' ? Chart.getChart(canvasProd) : null;
-            if (existing) existing.destroy();
-
-            if (!labelsOut.length) {
-                if (prodSizer) prodSizer.style.minHeight = '120px';
-                return;
+            var chartMo = new Chart(document.getElementById('oaChartMonthly'), {
+                type: 'line',
+                data: {
+                    labels: data.monthly.labels,
+                    datasets: [{
+                        label: 'Замовлень',
+                        data: data.monthly.counts,
+                        borderColor: pal.blue,
+                        backgroundColor: 'rgba(13, 110, 253, 0.12)',
+                        fill: true,
+                        tension: 0.25,
+                        pointRadius: nM > 60 ? 2 : 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { maxRotation: 45, minRotation: 0, autoSkip: false, font: { size: nM > 36 ? 9 : 10 } } },
+                        y: { ticks: { precision: 0 }, beginAtZero: true }
+                    }
+                }
+            });
+            charts.push(chartMo);
+            if (monthlySizer && typeof ResizeObserver !== 'undefined') {
+                var roM = new ResizeObserver(function () { try { chartMo.resize(); } catch (e) {} });
+                roM.observe(monthlySizer);
+                resizeObservers.push(roM);
             }
+        }
 
-            var nPr = labelsOut.length;
-            if (prodSizer) {
-                prodSizer.style.minHeight = Math.max(200, nPr * 24 + 56) + 'px';
-            }
-            chartProd = new Chart(canvasProd, {
+        if (data.meta && data.meta.show_top_places && data.top_places && data.top_places.labels.length) {
+            var wrap = document.getElementById('oaTopPlacesWrap');
+            if (wrap) wrap.removeAttribute('hidden');
+            var nPl = data.top_places.labels.length;
+            var plSizer = document.getElementById('oaPlacesChartSizer');
+            if (plSizer) plSizer.style.minHeight = Math.max(200, nPl * 24 + 56) + 'px';
+            var plScroll = plSizer ? plSizer.closest('.oa-chart-scroll-y') : null;
+            var chartPl = new Chart(document.getElementById('oaChartPlaces'), {
                 type: 'bar',
                 data: {
-                    labels: labelsOut,
-                    datasets: [{
-                        label: 'Одиниць у замовленнях',
-                        data: valuesOut,
-                        backgroundColor: pal.teal
-                    }]
+                    labels: data.top_places.labels,
+                    datasets: [{ label: 'Замовлень', data: data.top_places.counts, backgroundColor: pal.blue }]
                 },
                 options: {
                     indexAxis: 'y',
@@ -957,23 +895,178 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         x: { ticks: { precision: 0 } },
-                        y: { ticks: { font: { size: nPr > 35 ? 8 : 9 }, maxRotation: 0 } }
+                        y: { ticks: { font: { size: nPl > 35 ? 8 : 9 }, maxRotation: 0 } }
                     }
                 }
             });
-            if (prodScroll && typeof ResizeObserver !== 'undefined' && !roProd) {
-                roProd = new ResizeObserver(function () {
-                    try { if (chartProd) chartProd.resize(); } catch (e) {}
-                });
-                roProd.observe(prodScroll);
+            charts.push(chartPl);
+            if (plScroll && typeof ResizeObserver !== 'undefined') {
+                var roPl = new ResizeObserver(function () { try { chartPl.resize(); } catch (e) {} });
+                roPl.observe(plScroll);
+                resizeObservers.push(roPl);
             }
         }
 
-        rebuildProductsChart();
-        if (selCat) selCat.addEventListener('change', rebuildProductsChart);
-        if (selLim) selLim.addEventListener('change', rebuildProductsChart);
+        var tp = data.top_products;
+        if (tp && tp.labels && tp.labels.length) {
+            var wrapP = document.getElementById('oaTopProductsWrap');
+            if (wrapP) wrapP.removeAttribute('hidden');
+            var catsRaw = tp.categories || [];
+            var categories = tp.labels.map(function (_, i) {
+                return (catsRaw[i] != null && String(catsRaw[i]).length) ? String(catsRaw[i]) : '—';
+            });
+            var selCat = document.getElementById('oaProdCat');
+            var selLim = document.getElementById('oaProdLimit');
+            if (selCat && !selCat.dataset.initialized) {
+                selCat.innerHTML = '<option value="">Усі категорії</option>';
+                var uniq = {};
+                categories.forEach(function (c) { uniq[c] = true; });
+                Object.keys(uniq).sort(function (a, b) { return a.localeCompare(b, 'uk'); }).forEach(function (c) {
+                    var opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    selCat.appendChild(opt);
+                });
+                selCat.dataset.initialized = '1';
+            }
+
+            var canvasProd = document.getElementById('oaChartProducts');
+            var prodSizer = document.getElementById('oaProductsChartSizer');
+            var prodScroll = prodSizer ? prodSizer.closest('.oa-chart-scroll-y') : null;
+
+            function rebuildProductsChart() {
+                if (!canvasProd) return;
+                var catVal = selCat ? selCat.value : '';
+                var lim = selLim ? parseInt(selLim.value, 10) : 50;
+                if (!lim || lim < 1) lim = 50;
+                var labelsOut = [];
+                var valuesOut = [];
+                for (var i = 0; i < tp.labels.length; i++) {
+                    if (catVal && categories[i] !== catVal) continue;
+                    labelsOut.push(tp.labels[i]);
+                    valuesOut.push(tp.quantities[i]);
+                    if (labelsOut.length >= lim) break;
+                }
+                if (productsChart) { try { productsChart.destroy(); } catch (e) {} productsChart = null; }
+                if (!labelsOut.length) {
+                    if (prodSizer) prodSizer.style.minHeight = '120px';
+                    return;
+                }
+                var nPr = labelsOut.length;
+                if (prodSizer) prodSizer.style.minHeight = Math.max(200, nPr * 24 + 56) + 'px';
+                productsChart = new Chart(canvasProd, {
+                    type: 'bar',
+                    data: {
+                        labels: labelsOut,
+                        datasets: [{ label: 'Одиниць у замовленнях', data: valuesOut, backgroundColor: pal.teal }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { precision: 0 } },
+                            y: { ticks: { font: { size: nPr > 35 ? 8 : 9 }, maxRotation: 0 } }
+                        }
+                    }
+                });
+                charts.push(productsChart);
+                if (prodScroll && typeof ResizeObserver !== 'undefined' && !productsResizeObserver) {
+                    productsResizeObserver = new ResizeObserver(function () {
+                        try { if (productsChart) productsChart.resize(); } catch (e) {}
+                    });
+                    productsResizeObserver.observe(prodScroll);
+                    resizeObservers.push(productsResizeObserver);
+                }
+            }
+
+            rebuildProductsChart();
+            if (selCat && !selCat.dataset.bound) {
+                selCat.addEventListener('change', rebuildProductsChart);
+                selCat.dataset.bound = '1';
+            }
+            if (selLim && !selLim.dataset.bound) {
+                selLim.addEventListener('change', rebuildProductsChart);
+                selLim.dataset.bound = '1';
+            }
+        }
     }
 
+    function loadAnalytics() {
+        var fingerprint = filterFingerprint();
+        if (loadedFingerprint === fingerprint || fetchInFlight) return;
+
+        var url = collapseEl.getAttribute('data-analytics-url');
+        var method = (collapseEl.getAttribute('data-analytics-method') || 'POST').toUpperCase();
+        if (!url) return;
+
+        fetchInFlight = true;
+        setVisible(loadingEl, true);
+        setVisible(errorEl, false);
+        setVisible(contentEl, false);
+
+        var options = {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        };
+
+        if (method === 'GET') {
+            options.method = 'GET';
+            fetch(url + (window.location.search || ''), options)
+                .then(function (response) {
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    return response.json();
+                })
+                .then(function (data) {
+                    loadedFingerprint = fingerprint;
+                    renderOrdersAnalytics(data);
+                    setVisible(contentEl, true);
+                })
+                .catch(function () {
+                    loadedFingerprint = null;
+                    setVisible(errorEl, true);
+                })
+                .finally(function () {
+                    fetchInFlight = false;
+                    setVisible(loadingEl, false);
+                });
+            return;
+        }
+
+        if (!filterForm) {
+            fetchInFlight = false;
+            setVisible(loadingEl, false);
+            return;
+        }
+
+        var fd = new FormData(filterForm);
+        var csrf = filterForm.querySelector('[name=csrfmiddlewaretoken]');
+        options.method = 'POST';
+        options.body = fd;
+        if (csrf) options.headers['X-CSRFToken'] = csrf.value;
+
+        fetch(url, options)
+            .then(function (response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(function (data) {
+                loadedFingerprint = fingerprint;
+                renderOrdersAnalytics(data);
+                setVisible(contentEl, true);
+            })
+            .catch(function () {
+                loadedFingerprint = null;
+                setVisible(errorEl, true);
+            })
+            .finally(function () {
+                fetchInFlight = false;
+                setVisible(loadingEl, false);
+            });
+    }
+
+    collapseEl.addEventListener('shown.bs.collapse', loadAnalytics);
 })();
 </script>
 {% endblock %}

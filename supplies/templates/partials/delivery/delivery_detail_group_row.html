@@ -1,0 +1,45 @@
+{% load myapp_extras %}
+{% if group.items %}
+{% with el=group.items.0 %}
+<tr id="delivery-detail-group-row-{% if staging %}staging-{% endif %}{% if el.general_supply %}gs-{{ el.general_supply.id }}{% else %}unk-{{ el.id }}{% endif %}"
+    class="order-detail-group-row delivery-detail-group-row{% if staging %} delivery-detail-group-row--staging{% endif %}"{% if hx_swap_oob %} hx-swap-oob="{{ hx_swap_oob }}"{% endif %}>
+  {% if el.general_supply %}
+    <th scope="row" class="text-start col-name">
+      <span class="col-idx">{{ group.counter }}.</span>
+      {{ el.general_supply.name }}
+    </th>
+    <td class="truncate-cell col-pack" title="{{ el.general_supply.package_and_tests|default_if_none:'' }}">
+      {{ el.general_supply.package_and_tests|default:"" }}
+    </td>
+    <td class="col-category">
+      {% if el.general_supply.category %}{{ el.general_supply.category.name }}{% endif %}
+    </td>
+    <td class="truncate-cell col-ref" title="{{ el.general_supply.ref|default_if_none:'' }}">
+      {% if el.general_supply.ref is not none %}{{ el.general_supply.ref }}{% endif %}
+    </td>
+    <td class="truncate-cell col-smn home-table-smn" title="{{ el.general_supply.SMN_code|default_if_none:'' }}">
+      {% if el.general_supply.SMN_code is not none %}{{ el.general_supply.SMN_code }}{% endif %}
+    </td>
+  {% else %}
+    <th scope="row" class="text-start col-name" colspan="1">
+      <span class="col-idx">{{ group.counter }}.</span>
+      <span class="text-muted small">Barcode:</span> {{ el.barcode|default:"—" }}
+    </th>
+    <td class="col-pack">—</td>
+    <td class="col-category">—</td>
+    <td class="truncate-cell col-ref">{{ el.SMN_code|default:"" }}</td>
+    <td class="col-smn">—</td>
+  {% endif %}
+  <td class="supplyRow">
+    <table class="rounded-3 overflow-hidden table table-light table-borderless table-sm mb-0 nested-supply-table">
+      {% include 'partials/delivery/delivery_detail_nested_colgroup.html' %}
+      <tbody id="delivery-detail-nested-tbody-{% if staging %}staging-{% endif %}{% if el.general_supply %}gs-{{ el.general_supply.id }}{% else %}unk-{{ el.id }}{% endif %}">
+        {% for line in group.items %}
+          {% include 'partials/delivery/delivery_detail_nested_row.html' with staging=staging %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </td>
+</tr>
+{% endwith %}
+{% endif %}

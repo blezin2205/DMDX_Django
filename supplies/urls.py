@@ -1,5 +1,5 @@
 from django.urls import path, re_path
-from . import views, NPViews, view_upload, firebase_view
+from . import views, NPViews, view_upload
 from . import apiViews
 from .NPModels import *
 from .booked_flow import booked_view
@@ -22,7 +22,6 @@ urlpatterns = [
 
      path('update-cart-item-count/', views.updateCartItemCount, name='cart-count'),
      path('update-precart-item-count/', views.updatePreCartItemCount, name='precart-count'),
-     path('get_progress_for_upload_supplies_new_order/<task_id>/<int:for_delivery_order_id>', view_upload.get_progress, name='get-progress'),
      path('upload_supplies_for_new_delivery/', view_upload.upload_supplies_for_new_delivery_noncelery, name='upload_supplies_for_new_delivery'),
      path('new_delivery_save_delivery/<int:delivery_order_id>', view_upload.save_delivery, name='save-delivery'),
      path('delete_delivery_action/<int:delivery_order_id>', view_upload.delete_delivery_action, name='delete-delivery-action'),
@@ -48,8 +47,7 @@ urlpatterns = [
     path('home_table_display/toggle/', views.home_table_display_toggle, name='home_table_display_toggle'),
     path('childSupply', views.childSupply, name='childSupply'),
     path('supply-statistics', views.supply_statistics, name='supply_statistics'),
-    path('load_xms_data', views.load_xms_data, name='load_xms_data'),
-    path('celery-test', view_upload.celery_test, name='celery_test'),
+    path('supply-statistics/data', views.supply_statistics_data, name='supply_statistics_data'),
 
 
      path('count-on-hold-make', views.countOnHoldMake, name='countOnHoldMake'),
@@ -104,8 +102,10 @@ urlpatterns = [
     path('logout', views.logoutUser, name='logout'),
 
     path('orders', views.orders, name='orders'),
+    path('orders/analytics', views.orders_analytics, name='ordersAnalytics'),
 
     path('preorders', views.preorders, name='preorders'),
+    path('preorders/analytics', views.preorders_analytics, name='preordersAnalytics'),
     path('delete-preorder/<int:order_id>', views.deletePreorder, name='delete-preorder'),
     path('delete_preorder_sup_in_preorder_cart/<int:sup_id>/<int:order_id>', views.delete_preorder_sup_in_preorder_cart, name='delete-preorder-sup-in-preorder-cart'),
     path('update-preorder-status/<int:order_id>', views.updatePreorderStatus, name='updatePreorderStatus'),
@@ -114,8 +114,11 @@ urlpatterns = [
     path('minus_from_preorders_detail_general_item', views.minus_from_preorders_detail_general_item, name='minus_from_preorders_detail_general_item'),
 
     path('clientsInfo', views.clientsInfo, name='clientsInfo'),
+    path('clientsInfo/analytics', views.clientsInfo_analytics, name='clientsInfoAnalytics'),
     path('clientsInfo/<int:client_id>/orders', views.ordersForClient, name='ordersForClient'),
+    path('clientsInfo/<int:client_id>/orders/analytics', views.orders_for_client_analytics, name='ordersForClientAnalytics'),
     path('clientsInfo/<int:client_id>/agreements', views.agreementsForClient, name='agreementsForClient'),
+    path('clientsInfo/<int:client_id>/agreements/analytics', views.agreements_for_client_analytics, name='agreementsForClientAnalytics'),
     path('clientsInfo/<int:client_id>/devices', views.devicesForClient, name='devicesForClient'),
     path('clientsInfo/<int:place_id>/add-new-worker', views.addNewWorkerForClient, name='newWorkerForPlace'),
     path('clientsInfo/<int:client_id>/serviceNotes', views.serviceNotesForClient, name='serviceNotesForClient'),
@@ -221,9 +224,6 @@ urlpatterns = [
     path('add_more_np_places_input_group', NPViews.add_more_np_places_input_group, name='add_more_np_places_input_group'),
     path('copy_np_places_input_group', NPViews.copy_np_places_input_group, name='copy_np_places_input_group'),
     path('minus_add_more_np_places_input_group', NPViews.minus_add_more_np_places_input_group, name='minus_add_more_np_places_input_group'),
-    re_path(r'^list/(?P<path>.*)$', firebase_view.list_files, name='list_files'),
-    path('upload/', firebase_view.upload_files, name='upload_files'),
-    path('delete_file/', firebase_view.delete_file, name='delete_file'),
     path('nova_poshta_registers', NPViews.nova_poshta_registers, name='nova_poshta_registers'),
     path('orderCellUpdateNPStatus/<int:order_id>', NPViews.orderCellUpdateNPStatus, name='orderCellUpdateNPStatus'),
     path('updateOrderPinnedStatus/<int:order_id>', views.updateOrderPinnedStatus, name='updateOrderPinnedStatus'),

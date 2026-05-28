@@ -255,7 +255,7 @@ def build_orders_analytics(order_qs, *, include_top_places=True, for_user=None):
     completed = agg['completed'] or 0
     pending = agg['pending'] or 0
     merged = agg['merged'] or 0
-    line_rows = SupplyInOrder.objects.filter(supply_for_order__in=order_qs).count()
+    line_rows = SupplyInOrder.objects.filter(supply_for_order_id__in=order_qs.values('pk')).count()
     avg_line_positions = round(line_rows / total, 2) if total else 0.0
     with_preorders = order_qs.filter(
         Q(for_preorder__isnull=False) | Q(related_preorders__isnull=False)
@@ -309,9 +309,10 @@ def build_orders_analytics(order_qs, *, include_top_places=True, for_user=None):
             monthly['counts'].append(r['c'])
 
     top_products = {'labels': [], 'quantities': [], 'categories': []}
+    order_ids = order_qs.values('pk')
     for r in (
         SupplyInOrder.objects.filter(
-            supply_for_order__in=order_qs,
+            supply_for_order_id__in=order_ids,
             generalSupply__isnull=False,
         )
         .values('generalSupply__name', 'generalSupply__category__name')
@@ -442,7 +443,7 @@ def build_preorders_analytics(preorder_qs, *, include_top_places=True, for_user=
         .count()
     )
 
-    line_rows = SupplyInPreorder.objects.filter(supply_for_order__in=preorder_qs).count()
+    line_rows = SupplyInPreorder.objects.filter(supply_for_order_id__in=preorder_qs.values('pk')).count()
     avg_line_positions = round(line_rows / total, 2) if total else 0.0
 
     with_orders = preorder_qs.filter(
@@ -490,7 +491,7 @@ def build_preorders_analytics(preorder_qs, *, include_top_places=True, for_user=
     top_products = {'labels': [], 'quantities': [], 'categories': []}
     for r in (
         SupplyInPreorder.objects.filter(
-            supply_for_order__in=preorder_qs,
+            supply_for_order_id__in=preorder_qs.values('pk'),
             generalSupply__isnull=False,
         )
         .values('generalSupply__name', 'generalSupply__category__name')
@@ -714,10 +715,11 @@ def build_clients_info_analytics(place_qs):
     with_login_users = place_qs.annotate(nu=Count('user', distinct=True)).filter(nu__gt=0).count()
     without_login_users = total - with_login_users
 
-    related_orders = Order.objects.filter(place__in=place_qs).count()
-    related_preorders = PreOrder.objects.filter(place__in=place_qs).count()
-    related_workers = Workers.objects.filter(for_place__in=place_qs).count()
-    related_devices = Device.objects.filter(in_place__in=place_qs).count()
+    place_ids = place_qs.values('pk')
+    related_orders = Order.objects.filter(place_id__in=place_ids).count()
+    related_preorders = PreOrder.objects.filter(place_id__in=place_ids).count()
+    related_workers = Workers.objects.filter(for_place_id__in=place_ids).count()
+    related_devices = Device.objects.filter(in_place_id__in=place_ids).count()
 
     top_cities = {'labels': [], 'counts': []}
     for r in (

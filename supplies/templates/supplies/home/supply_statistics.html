@@ -66,162 +66,165 @@
     </div>
 </div>
 
-{% if supply_statistics %}
-{{ supply_statistics|json_script:"supply-stats-data" }}
-<div class="supply-stats-wrap container pb-4">
-    {% if supply_statistics.meta.is_client_scope %}
-    <p class="text-muted small">Дані в межах ваших дозволених категорій, ваших замовлень і передзамовлень.</p>
-    {% endif %}
-
-    <div class="row g-1 row-cols-1 row-cols-sm-2 row-cols-lg-4 mb-3">
-        <div class="col">
-            <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
-                <span class="ss-kpi-label">Номенклатур (назв)</span>
-                <span class="ss-kpi-val" id="ss-nomen">—</span>
-            </div>
-        </div>
-        <div class="col">
-            <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
-                <span class="ss-kpi-label">Партій / лотів</span>
-                <span class="ss-kpi-val" id="ss-lots">—</span>
-            </div>
-        </div>
-        <div class="col">
-            <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
-                <span class="ss-kpi-label">Усього одиниць на складі</span>
-                <span class="ss-kpi-val" id="ss-units">—</span>
-            </div>
-        </div>
-        <div class="col">
-            <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
-                <span class="ss-kpi-label">У броні / резерв (countOnHold)</span>
-                <span class="ss-kpi-val" id="ss-hold">—</span>
-            </div>
-        </div>
-        <div class="col">
-            <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
-                <span class="ss-kpi-label">Прострочені лоти</span>
-                <span class="ss-kpi-val text-danger" id="ss-exp">—</span>
-            </div>
-        </div>
-        <div class="col">
-            <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
-                <span class="ss-kpi-label">Придатні</span>
-                <span class="ss-kpi-val text-success" id="ss-good">—</span>
-            </div>
-        </div>
-        <div class="col">
-            <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
-                <span class="ss-kpi-label">Замовлень у вибірці</span>
-                <span class="ss-kpi-val" id="ss-orders">—</span>
-            </div>
-        </div>
+<div class="supply-stats-wrap container pb-4" id="supplyStatsRoot" data-stats-url="{% url 'supply_statistics_data' %}">
+    <div id="ssLoading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+        <p class="text-muted small mt-2 mb-0">Завантаження статистики…</p>
     </div>
+    <div id="ssError" class="alert alert-danger d-none" role="alert">
+        Не вдалося завантажити статистику.
+        <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="ssRetryBtn">Спробувати ще раз</button>
+    </div>
+    <div id="ssEmpty" class="d-none">
+        <p class="text-muted">Немає даних для статистики.</p>
+    </div>
+    <div id="ssContent" class="d-none">
+        <p id="ssClientScopeNote" class="text-muted small d-none">Дані в межах ваших дозволених категорій, ваших замовлень і передзамовлень.</p>
 
-    <div class="row g-3 mb-3">
-        <div class="col-lg-6">
-            <h6 class="text-muted small text-uppercase mb-2">Терміни придатності (лоти)</h6>
-            <div class="border rounded-2 bg-white p-2" style="max-height: 280px;">
-                <canvas id="ssChartExpiry"></canvas>
+        <div class="row g-1 row-cols-1 row-cols-sm-2 row-cols-lg-4 mb-3">
+            <div class="col">
+                <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
+                    <span class="ss-kpi-label">Номенклатур (назв)</span>
+                    <span class="ss-kpi-val" id="ss-nomen">—</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
+                    <span class="ss-kpi-label">Партій / лотів</span>
+                    <span class="ss-kpi-val" id="ss-lots">—</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
+                    <span class="ss-kpi-label">Усього одиниць на складі</span>
+                    <span class="ss-kpi-val" id="ss-units">—</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
+                    <span class="ss-kpi-label">У броні / резерв (countOnHold)</span>
+                    <span class="ss-kpi-val" id="ss-hold">—</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
+                    <span class="ss-kpi-label">Прострочені лоти</span>
+                    <span class="ss-kpi-val text-danger" id="ss-exp">—</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
+                    <span class="ss-kpi-label">Придатні</span>
+                    <span class="ss-kpi-val text-success" id="ss-good">—</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="border rounded-3 bg-light px-2 py-1 h-100 ss-kpi-row">
+                    <span class="ss-kpi-label">Замовлень у вибірці</span>
+                    <span class="ss-kpi-val" id="ss-orders">—</span>
+                </div>
             </div>
         </div>
-        <div class="col-lg-6">
-            <h6 class="text-muted small text-uppercase mb-2">Номенклатура по категоріях</h6>
-            <p class="text-muted small mb-1">Кількість назв товарів у кожній категорії.</p>
+
+        <div class="row g-3 mb-3">
+            <div class="col-lg-6">
+                <h6 class="text-muted small text-uppercase mb-2">Терміни придатності (лоти)</h6>
+                <div class="border rounded-2 bg-white p-2" style="max-height: 280px;">
+                    <canvas id="ssChartExpiry"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <h6 class="text-muted small text-uppercase mb-2">Номенклатура по категоріях</h6>
+                <p class="text-muted small mb-1">Кількість назв товарів у кожній категорії.</p>
+                <div class="ss-chart-scroll-y border rounded-2 bg-white">
+                    <div id="ssCatNomSizer" class="ss-bar-sizer"><canvas id="ssChartCatNom"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <h6 class="text-muted small text-uppercase mb-2">Складські одиниці по категоріях</h6>
+            <p class="text-muted small mb-1">Сума поля «кількість» по партіях, згрупована за категорією номенклатури.</p>
             <div class="ss-chart-scroll-y border rounded-2 bg-white">
-                <div id="ssCatNomSizer" class="ss-bar-sizer"><canvas id="ssChartCatNom"></canvas></div>
+                <div id="ssCatStockSizer" class="ss-bar-sizer"><canvas id="ssChartCatStock"></canvas></div>
             </div>
         </div>
-    </div>
 
-    <div class="mb-3">
-        <h6 class="text-muted small text-uppercase mb-2">Складські одиниці по категоріях</h6>
-        <p class="text-muted small mb-1">Сума поля «кількість» по партіях, згрупована за категорією номенклатури.</p>
-        <div class="ss-chart-scroll-y border rounded-2 bg-white">
-            <div id="ssCatStockSizer" class="ss-bar-sizer"><canvas id="ssChartCatStock"></canvas></div>
+        <div class="mb-3">
+            <h6 class="text-muted small text-uppercase mb-2">Топ товарів за кількістю на складі</h6>
+            <p class="text-muted small mb-1">До 50 назв; прокрутка у області графіка.</p>
+            <div class="ss-chart-scroll-y border rounded-2 bg-white">
+                <div id="ssTopStockSizer" class="ss-bar-sizer"><canvas id="ssChartTopStock"></canvas></div>
+            </div>
         </div>
-    </div>
 
-    <div class="mb-3">
-        <h6 class="text-muted small text-uppercase mb-2">Топ товарів за кількістю на складі</h6>
-        <p class="text-muted small mb-1">До 50 назв; прокрутка у області графіка.</p>
-        <div class="ss-chart-scroll-y border rounded-2 bg-white">
-            <div id="ssTopStockSizer" class="ss-bar-sizer"><canvas id="ssChartTopStock"></canvas></div>
+        <div class="mb-3">
+            <h6 class="text-muted small text-uppercase mb-2">Топ товарів за обсягом у замовленнях</h6>
+            <p class="text-muted small mb-1">До 50 позицій за сумою одиниць у відвантаженнях (у межах вибірки замовлень).</p>
+            <div class="ss-chart-scroll-y border rounded-2 bg-white">
+                <div id="ssTopOrdSizer" class="ss-bar-sizer"><canvas id="ssChartTopOrders"></canvas></div>
+            </div>
         </div>
-    </div>
 
-    <div class="mb-3">
-        <h6 class="text-muted small text-uppercase mb-2">Топ товарів за обсягом у замовленнях</h6>
-        <p class="text-muted small mb-1">До 50 позицій за сумою одиниць у відвантаженнях (у межах вибірки замовлень).</p>
-        <div class="ss-chart-scroll-y border rounded-2 bg-white">
-            <div id="ssTopOrdSizer" class="ss-bar-sizer"><canvas id="ssChartTopOrders"></canvas></div>
+        <div class="mb-3">
+            <h6 class="text-muted small text-uppercase mb-2">Топ товарів за обсягом у передзамовленнях</h6>
+            <p class="text-muted small mb-1">До 50 номенклатур за сумою замовлених одиниць у передзамовленнях (у межах вибірки).</p>
+            <div class="ss-chart-scroll-y border rounded-2 bg-white">
+                <div id="ssTopPreSizer" class="ss-bar-sizer"><canvas id="ssChartTopPreorders"></canvas></div>
+            </div>
         </div>
-    </div>
 
-    <div class="mb-3">
-        <h6 class="text-muted small text-uppercase mb-2">Топ товарів за обсягом у передзамовленнях</h6>
-        <p class="text-muted small mb-1">До 50 номенклатур за сумою замовлених одиниць у передзамовленнях (у межах вибірки).</p>
-        <div class="ss-chart-scroll-y border rounded-2 bg-white">
-            <div id="ssTopPreSizer" class="ss-bar-sizer"><canvas id="ssChartTopPreorders"></canvas></div>
+        <div class="mb-3">
+            <h6 class="text-muted small text-uppercase mb-2">Нові партії по місяцях</h6>
+            <p class="text-muted small mb-2">Кількість записів Supply за датою створення партії. Усі місяці; за потреби прокрутка по горизонталі.</p>
+            <div class="ss-chart-scroll-x border rounded-2 bg-white">
+                <div id="ssLotsMonthlySizer" class="ss-line-sizer"><canvas id="ssChartLotsMonthly"></canvas></div>
+            </div>
         </div>
-    </div>
 
-    <div class="mb-3">
-        <h6 class="text-muted small text-uppercase mb-2">Нові партії по місяцях</h6>
-        <p class="text-muted small mb-2">Кількість записів Supply за датою створення партії. Усі місяці; за потреби прокрутка по горизонталі.</p>
-        <div class="ss-chart-scroll-x border rounded-2 bg-white">
-            <div id="ssLotsMonthlySizer" class="ss-line-sizer"><canvas id="ssChartLotsMonthly"></canvas></div>
-        </div>
-    </div>
-
-    <div class="mb-3">
-        <h6 class="text-muted small text-uppercase mb-2">Відвантажені одиниці по місяцях</h6>
-        <p class="text-muted small mb-2">Сума count_in_order у замовленнях за місяць відправлення або створення замовлення.</p>
-        <div class="ss-chart-scroll-x border rounded-2 bg-white">
-            <div id="ssShipMonthlySizer" class="ss-line-sizer"><canvas id="ssChartShipMonthly"></canvas></div>
+        <div class="mb-3">
+            <h6 class="text-muted small text-uppercase mb-2">Відвантажені одиниці по місяцях</h6>
+            <p class="text-muted small mb-2">Сума count_in_order у замовленнях за місяць відправлення або створення замовлення.</p>
+            <div class="ss-chart-scroll-x border rounded-2 bg-white">
+                <div id="ssShipMonthlySizer" class="ss-line-sizer"><canvas id="ssChartShipMonthly"></canvas></div>
+            </div>
         </div>
     </div>
 </div>
-{% else %}
-<div class="container py-3"><p class="text-muted">Немає даних для статистики.</p></div>
-{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <script>
 (function () {
-    var el = document.getElementById('supply-stats-data');
-    if (!el || typeof Chart === 'undefined') return;
-    var D;
-    try { D = JSON.parse(el.textContent); } catch (e) { return; }
-    if (!D || !D.summary) return;
+    var root = document.getElementById('supplyStatsRoot');
+    if (!root || typeof Chart === 'undefined') return;
+
+    var loadingEl = document.getElementById('ssLoading');
+    var errorEl = document.getElementById('ssError');
+    var emptyEl = document.getElementById('ssEmpty');
+    var contentEl = document.getElementById('ssContent');
+    var retryBtn = document.getElementById('ssRetryBtn');
+    var charts = [];
+    var resizeObservers = [];
+    var fetchInFlight = false;
 
     var pal = { blue: '#0d6efd', teal: '#0dcaf0', green: '#198754', red: '#dc3545', amber: '#ffc107', slate: '#6c757d', indigo: '#6610f2' };
+
+    function setVisible(el, show) {
+        if (el) el.classList.toggle('d-none', !show);
+    }
+
+    function destroyCharts() {
+        charts.forEach(function (ch) { try { ch.destroy(); } catch (e) {} });
+        charts = [];
+        resizeObservers.forEach(function (ro) { try { ro.disconnect(); } catch (e) {} });
+        resizeObservers = [];
+    }
 
     function setText(id, v) {
         var n = document.getElementById(id);
         if (n) n.textContent = v;
-    }
-    var s = D.summary;
-    setText('ss-nomen', String(s.nomenclature));
-    setText('ss-lots', String(s.lots));
-    setText('ss-units', String(s.total_units));
-    setText('ss-hold', String(s.total_on_hold));
-    setText('ss-exp', String(s.expired_lots));
-    setText('ss-good', String(s.good_dated_lots));
-    setText('ss-orders', String(s.orders_in_scope));
-
-    var exp = D.expiry;
-    if (exp && exp.counts && exp.counts.some(function (x) { return x > 0; })) {
-        new Chart(document.getElementById('ssChartExpiry'), {
-            type: 'doughnut',
-            data: {
-                labels: exp.labels,
-                datasets: [{ data: exp.counts, backgroundColor: [pal.red, pal.green], borderWidth: 0 }]
-            },
-            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
-        });
     }
 
     function setupHBar(canvasId, sizerId, labels, values, color, label) {
@@ -231,7 +234,6 @@
         var n = labels.length;
         var px = n > 40 ? 20 : 24;
         if (sizer && scroll) {
-            var vw = scroll.getBoundingClientRect().width || scroll.clientWidth || 300;
             sizer.style.minHeight = Math.max(200, n * px + 48) + 'px';
         }
         var ch = new Chart(document.getElementById(canvasId), {
@@ -248,26 +250,13 @@
                 scales: { x: { ticks: { precision: 0 } }, y: { ticks: { font: { size: n > 30 ? 8 : 9 } } } }
             }
         });
+        charts.push(ch);
         if (scroll && typeof ResizeObserver !== 'undefined') {
             var ro = new ResizeObserver(function () { try { ch.resize(); } catch (e) {} });
             ro.observe(scroll);
+            resizeObservers.push(ro);
         }
     }
-
-    var cn = D.categories_nomenclature;
-    if (cn && cn.labels.length) setupHBar('ssChartCatNom', 'ssCatNomSizer', cn.labels, cn.counts, pal.blue, 'Назв');
-
-    var cs = D.categories_stock;
-    if (cs && cs.labels.length) setupHBar('ssChartCatStock', 'ssCatStockSizer', cs.labels, cs.units, pal.teal, 'Одиниць');
-
-    var ts = D.top_stock;
-    if (ts && ts.labels.length) setupHBar('ssChartTopStock', 'ssTopStockSizer', ts.labels, ts.units, pal.green, 'Одиниць');
-
-    var to = D.top_orders;
-    if (to && to.labels.length) setupHBar('ssChartTopOrders', 'ssTopOrdSizer', to.labels, to.quantities, pal.amber, 'У замовленнях');
-
-    var tp = D.top_preorders;
-    if (tp && tp.labels.length) setupHBar('ssChartTopPreorders', 'ssTopPreSizer', tp.labels, tp.quantities, pal.indigo, 'У передзамовленнях');
 
     function setupLineMonth(canvasId, sizerId, series, valueKey, lineLabel, color) {
         var labs = series.labels;
@@ -311,18 +300,108 @@
                 }
             }
         });
+        charts.push(ch);
         if (sizer && typeof ResizeObserver !== 'undefined') {
             var ro = new ResizeObserver(function () { try { ch.resize(); } catch (e) {} });
             ro.observe(sizer);
+            resizeObservers.push(ro);
         }
     }
 
-    if (D.lots_monthly && D.lots_monthly.labels.length) {
-        setupLineMonth('ssChartLotsMonthly', 'ssLotsMonthlySizer', D.lots_monthly, 'counts', 'Нових лотів', pal.blue);
+    function renderStats(D) {
+        destroyCharts();
+        if (!D || !D.summary) {
+            setVisible(contentEl, false);
+            setVisible(emptyEl, true);
+            return;
+        }
+
+        var clientNote = document.getElementById('ssClientScopeNote');
+        if (clientNote) {
+            setVisible(clientNote, !!(D.meta && D.meta.is_client_scope));
+        }
+
+        var s = D.summary;
+        setText('ss-nomen', String(s.nomenclature));
+        setText('ss-lots', String(s.lots));
+        setText('ss-units', String(s.total_units));
+        setText('ss-hold', String(s.total_on_hold));
+        setText('ss-exp', String(s.expired_lots));
+        setText('ss-good', String(s.good_dated_lots));
+        setText('ss-orders', String(s.orders_in_scope));
+
+        var exp = D.expiry;
+        if (exp && exp.counts && exp.counts.some(function (x) { return x > 0; })) {
+            charts.push(new Chart(document.getElementById('ssChartExpiry'), {
+                type: 'doughnut',
+                data: {
+                    labels: exp.labels,
+                    datasets: [{ data: exp.counts, backgroundColor: [pal.red, pal.green], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
+            }));
+        }
+
+        var cn = D.categories_nomenclature;
+        if (cn && cn.labels.length) setupHBar('ssChartCatNom', 'ssCatNomSizer', cn.labels, cn.counts, pal.blue, 'Назв');
+
+        var cs = D.categories_stock;
+        if (cs && cs.labels.length) setupHBar('ssChartCatStock', 'ssCatStockSizer', cs.labels, cs.units, pal.teal, 'Одиниць');
+
+        var ts = D.top_stock;
+        if (ts && ts.labels.length) setupHBar('ssChartTopStock', 'ssTopStockSizer', ts.labels, ts.units, pal.green, 'Одиниць');
+
+        var to = D.top_orders;
+        if (to && to.labels.length) setupHBar('ssChartTopOrders', 'ssTopOrdSizer', to.labels, to.quantities, pal.amber, 'У замовленнях');
+
+        var tp = D.top_preorders;
+        if (tp && tp.labels.length) setupHBar('ssChartTopPreorders', 'ssTopPreSizer', tp.labels, tp.quantities, pal.indigo, 'У передзамовленнях');
+
+        if (D.lots_monthly && D.lots_monthly.labels.length) {
+            setupLineMonth('ssChartLotsMonthly', 'ssLotsMonthlySizer', D.lots_monthly, 'counts', 'Нових лотів', pal.blue);
+        }
+        if (D.shipped_monthly && D.shipped_monthly.labels.length) {
+            setupLineMonth('ssChartShipMonthly', 'ssShipMonthlySizer', D.shipped_monthly, 'units', 'Одиниць відвантажено', pal.green);
+        }
+
+        setVisible(emptyEl, false);
+        setVisible(contentEl, true);
     }
-    if (D.shipped_monthly && D.shipped_monthly.labels.length) {
-        setupLineMonth('ssChartShipMonthly', 'ssShipMonthlySizer', D.shipped_monthly, 'units', 'Одиниць відвантажено', pal.green);
+
+    function loadStats() {
+        if (fetchInFlight) return;
+        var url = root.getAttribute('data-stats-url');
+        if (!url) return;
+
+        fetchInFlight = true;
+        setVisible(loadingEl, true);
+        setVisible(errorEl, false);
+        setVisible(emptyEl, false);
+        setVisible(contentEl, false);
+
+        fetch(url, {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function (response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return response.json();
+            })
+            .then(function (data) {
+                renderStats(data);
+            })
+            .catch(function () {
+                destroyCharts();
+                setVisible(errorEl, true);
+            })
+            .finally(function () {
+                fetchInFlight = false;
+                setVisible(loadingEl, false);
+            });
     }
+
+    if (retryBtn) retryBtn.addEventListener('click', loadStats);
+    loadStats();
 })();
 </script>
 {% endblock %}
