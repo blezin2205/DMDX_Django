@@ -204,6 +204,16 @@ if db_from_env:
 django_heroku.settings(locals())
 DATABASES['default']['CONN_MAX_AGE'] = 0
 
+# Heroku: обрізати «завислі» SQL раніше за router timeout (30s), щоб worker звільнявся.
+# Gunicorn --timeout 20s + statement_timeout 20s — подвійний захист.
+if 'DYNO' in os.environ:
+    _db_opts = DATABASES['default'].setdefault('OPTIONS', {})
+    _stmt_ms = os.environ.get('PG_STATEMENT_TIMEOUT_MS', '20000')
+    _pg_options = _db_opts.get('options', '')
+    if 'statement_timeout' not in _pg_options:
+        _timeout_flag = f'-c statement_timeout={_stmt_ms}'
+        _db_opts['options'] = f'{_pg_options} {_timeout_flag}'.strip() if _pg_options else _timeout_flag
+
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
 
