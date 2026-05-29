@@ -82,7 +82,6 @@ google-cloud-storage==2.3.0
 google-crc32c==1.5.0
 google-resumable-media==2.7.1
 googleapis-common-protos==1.63.2
-googletrans==3.1.0a0
 googletrans-py==4.0.0
 grpcio==1.65.2
 grpcio-status==1.44.0
