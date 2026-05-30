@@ -97,7 +97,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'supplies.middleware.CSRFErrorMiddleware',  # Custom CSRF error handling
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # LastSeenMiddleware — тимчасово вимкнено (діагностика швидкості); код у supplies/middleware.py
+    'supplies.middleware.LastSeenMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
@@ -369,6 +369,9 @@ else:
 
 # Auto-close setting for NP documents
 IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED = os.environ.get('IS_ORDER_AUTO_CLOSE_AFTER_NP_DOC_RECEIVED', 'True').lower() == 'true'
+
+# Запис last_seen для авторизованих користувачів (не частіше ніж раз на 90 с).
+ENABLE_LAST_SEEN_TRACKING = os.environ.get('ENABLE_LAST_SEEN_TRACKING', 'False').lower() == 'true'
 
 REST_FRAMEWORK = {
    'DEFAULT_AUTHENTICATION_CLASSES': (

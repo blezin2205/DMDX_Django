@@ -1,6 +1,7 @@
 from django.urls import path, re_path
 from . import views, NPViews, view_upload
 from . import apiViews
+from .excel_sheets import excel_views
 from .NPModels import *
 from .booked_flow import booked_view
 from .utils import csrf_token_view
@@ -75,8 +76,8 @@ urlpatterns = [
 
     path('allDevices/', views.devicesList, name='allDevices'),
     path('allDevices/full_image_view_for_device_image/<int:device_id>', views.full_image_view_for_device_image, name='full_image_view_for_device_image'),
-    path('allDevices/export-to-xls', views.devices_render_to_xls, name='devices_render_to_xls'),
-    path('allDevices/export-to-xls-en', views.devices_render_to_xls_en, name='devices_render_to_xls_en'),
+    path('allDevices/export-to-xls', excel_views.devices_render_to_xls, name='devices_render_to_xls'),
+    path('allDevices/export-to-xls-en', excel_views.devices_render_to_xls_en, name='devices_render_to_xls_en'),
 
 
 
@@ -165,10 +166,10 @@ urlpatterns = [
     path('preorders/<int:order_id>/generate-order', views.preorderDetail_generateOrder, name='preorderDetail-generate-order'),
 
     path('order-detail-pdf/<int:order_id>', views.orderDetail_pdf, name='orderDetailPdf'),
-    path('order-detail-csv/<int:order_id>', views.render_to_xls, name='orderDetailCsv'),
+    path('order-detail-csv/<int:order_id>', excel_views.render_to_xls, name='orderDetailCsv'),
     path('order_add_to_preorder/<int:order_id>', views.order_add_to_preorder, name='order_add_to_preorder'),
-    path('preorder-detail-csv/<int:order_id>', views.preorder_render_to_xls, name='preorderDetailCsv'),
-     path('preorder-detail-all-items-csv/<int:order_id>', views.preorder_render_to_xls_all_items, name='preorderDetailCsvAll'),
+    path('preorder-detail-csv/<int:order_id>', excel_views.preorder_render_to_xls, name='preorderDetailCsv'),
+     path('preorder-detail-all-items-csv/<int:order_id>', excel_views.preorder_render_to_xls_all_items, name='preorderDetailCsvAll'),
     path('convert_order_to_booked_order/<int:order_id>', booked_view.convert_order_to_booked_order, name='convert_order_to_booked_order'),
 
     path('order_delete_order_previews_cell/<int:order_id>', views.order_delete, name='order_delete'),
@@ -224,7 +225,7 @@ urlpatterns = [
     path('orders-np-uncompleted-modal-body', NPViews.orders_np_uncompleted_modal_body, name='orders_np_uncompleted_modal_body'),
     path('np_create_ID_button_subscribe/<int:order_id>', NPViews.np_create_ID_button_subscribe, name='np_create_ID_button_subscribe'),
     path('get_register_for_orders', NPViews.get_register_for_orders, name='get_register_for_orders'),
-    path('register_exls_selected_buttons', views.register_exls_selected_buttons, name='register_exls_selected_buttons'),
+    path('register_exls_selected_buttons', excel_views.register_exls_selected_buttons, name='register_exls_selected_buttons'),
     path('get_print_xls_for_preorders', NPViews.get_print_xls_for_preorders, name='get_print_xls_for_preorders'),
     path('get_print_xls_for_preorders', NPViews.get_print_xls_for_preorders, name='get_print_xls_for_preorders'),
     path('add_more_np_places_input_group', NPViews.add_more_np_places_input_group, name='add_more_np_places_input_group'),
@@ -233,13 +234,13 @@ urlpatterns = [
     path('nova_poshta_registers', NPViews.nova_poshta_registers, name='nova_poshta_registers'),
     path('orderCellUpdateNPStatus/<int:order_id>', NPViews.orderCellUpdateNPStatus, name='orderCellUpdateNPStatus'),
     path('updateOrderPinnedStatus/<int:order_id>', views.updateOrderPinnedStatus, name='updateOrderPinnedStatus'),
-    path('import-general-supplies/', views.import_general_supplies_from_excel, name='import_general_supplies_from_excel'),
-    path('import-new-preorder-from-excel/', views.import_new_preorder_from_excel, name='import_new_preorder_from_excel'),
+    path('import-general-supplies/', excel_views.import_general_supplies_from_excel, name='import_general_supplies_from_excel'),
+    path('import-new-preorder-from-excel/', excel_views.import_new_preorder_from_excel, name='import_new_preorder_from_excel'),
     path('analytics/<int:place_id>/', views.analytics_report, name='analytics_report'),
-    path('analytics/<int:place_id>/export-to-excel/', views.analytics_report_to_xls, name='analytics_report_to_xls'),
+    path('analytics/<int:place_id>/export-to-excel/', excel_views.analytics_report_to_xls, name='analytics_report_to_xls'),
     path('analytics/<int:place_id>/preorder-items/', views.preorder_items_table, name='preorder_items_table'),
-    path('analytics/<int:place_id>/preorder-items/export/', views.preorder_items_table_to_xls, name='preorder_items_table_to_xls'),
-    path('analytics/<int:place_id>/preorder-items/export-en/', views.preorder_items_table_to_xls_en, name='preorder_items_table_to_xls_en'),
+    path('analytics/<int:place_id>/preorder-items/export/', excel_views.preorder_items_table_to_xls, name='preorder_items_table_to_xls'),
+    path('analytics/<int:place_id>/preorder-items/export-en/', excel_views.preorder_items_table_to_xls_en, name='preorder_items_table_to_xls_en'),
     path('analytics_preorders_list_for_client/', views.analytics_preorders_list_for_client, name='analytics_preorders_list_for_client'),
     path('staff/users-last-seen/', views.staff_users_last_seen, name='staff_users_last_seen'),
 ]

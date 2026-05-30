@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
+from django.conf import settings
 from django.utils.deprecation import MiddlewareMixin
 
 from .models import CustomUser
@@ -63,6 +64,8 @@ class LastSeenMiddleware(MiddlewareMixin):
         return response
 
     def _touch_last_seen(self, request):
+        if not settings.ENABLE_LAST_SEEN_TRACKING:
+            return
         user = getattr(request, 'user', None)
         if not user or not user.is_authenticated:
             return
