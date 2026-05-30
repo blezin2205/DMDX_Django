@@ -1035,39 +1035,109 @@ def choose_place_in_cart_not_precart(request):
 
     return render(request, 'partials/cart/choose_uncompleted_order_in_cart.html', {'orders': orders, 'place': place, 'preorders': preorders, 'isPlaceChoosed': place != None})
 
+def _render_preorder_detail_row_response(request, gen_sup_in_preorder, preorder, *, refresh_status=False):
+    preorder.refresh_from_db()
+    gen_sup_in_preorder.refresh_from_db()
+    response = render(
+        request,
+        'supplies/orders/preorder_detail_list_item_swap.html',
+        {
+            'el': gen_sup_in_preorder,
+            'order': preorder,
+        },
+    )
+    if refresh_status:
+        response = trigger_client_event(response, 'preorderDetailRefreshStatus', {})
+    return response
+
+
+def _preorder_row_delete_response(preorder, row_id, *, refresh_status=False):
+    response = HttpResponse(status=200)
+    response['HX-Retarget'] = f'#preorder-detail-supply-row-{row_id}'
+    response['HX-Reswap'] = 'delete'
+    if refresh_status:
+        response = trigger_client_event(response, 'preorderDetailRefreshStatus', {})
+    return response
+
+
+def _adjust_preorder_line_count(gen_sup_in_preorder, delta):
+    """
+    delta: +1 or -1.
+    Повертає (result, preorder, deleted_row_id|None).
+    """
+    preorder = gen_sup_in_preorder.supply_for_order
+    ordered = gen_sup_in_preorder.count_in_order or 0
+
+    if delta < 0:
+        if not gen_sup_in_preorder.can_decrement:
+            return 'unchanged', preorder, None
+        new_count = ordered - 1
+        if new_count <= 0:
+            deleted_row_id = gen_sup_in_preorder.id
+            gen_sup_in_preorder.delete()
+            if preorder and preorder.should_track_delivery_status_on_quantity_edit():
+                preorder.update_order_state_of_delivery_status()
+            return 'deleted', preorder, deleted_row_id
+        gen_sup_in_preorder.count_in_order = new_count
+    else:
+        gen_sup_in_preorder.count_in_order = ordered + 1
+
+    gen_sup_in_preorder.save_count_in_order(update_preorder_status=True)
+    return 'updated', preorder, None
+
+
 @login_required(login_url='login')
+@transaction.atomic
 def minus_from_preorders_detail_general_item(request):
     el_id = request.GET.get('el_id')
     for_preorder_id = request.GET.get('for_preorder_id')
-    gen_sup_in_preorder = SupplyInPreorder.objects.get(id=el_id, supply_for_order_id=for_preorder_id)
-    gen_sup_in_preorder.count_in_order -= 1
-    if gen_sup_in_preorder.count_in_order == 0:
-        gen_sup_in_preorder.delete()
-        return HttpResponse(status=200)
-    else:
-        gen_sup_in_preorder.save(update_fields=['count_in_order'])
+    gen_sup_in_preorder = SupplyInPreorder.objects.select_for_update(of=('self',)).select_related(
+        'generalSupply', 'generalSupply__category',
+    ).prefetch_related('supplyinorder_set').get(
+        id=el_id, supply_for_order_id=for_preorder_id,
+    )
+    result, preorder, deleted_row_id = _adjust_preorder_line_count(gen_sup_in_preorder, -1)
 
-    print(el_id)
-    print(for_preorder_id)
-    return render(request, 'supplies/orders/preorder_detail_list_item.html', {'el': gen_sup_in_preorder, 'order': gen_sup_in_preorder.supply_for_order})
+    if result == 'deleted':
+        return _preorder_row_delete_response(
+            preorder, deleted_row_id, refresh_status=preorder.should_track_delivery_status_on_quantity_edit(),
+        )
+    if result == 'unchanged':
+        return _render_preorder_detail_row_response(request, gen_sup_in_preorder, preorder)
+
+    return _render_preorder_detail_row_response(
+        request, gen_sup_in_preorder, preorder,
+        refresh_status=preorder.should_track_delivery_status_on_quantity_edit(),
+    )
 
 @login_required(login_url='login')
+@transaction.atomic
 def plus_from_preorders_detail_general_item(request):
     el_id = request.GET.get('el_id')
     for_preorder_id = request.GET.get('for_preorder_id')
-    gen_sup_in_preorder = SupplyInPreorder.objects.get(id=el_id, supply_for_order_id=for_preorder_id)
-    gen_sup_in_preorder.count_in_order += 1
-    gen_sup_in_preorder.save(update_fields=['count_in_order'])
-
-    print(el_id)
-    print(for_preorder_id)
-    return render(request, 'supplies/orders/preorder_detail_list_item.html', {'el': gen_sup_in_preorder, 'order': gen_sup_in_preorder.supply_for_order})
+    gen_sup_in_preorder = SupplyInPreorder.objects.select_for_update(of=('self',)).select_related(
+        'generalSupply', 'generalSupply__category',
+    ).prefetch_related('supplyinorder_set').get(
+        id=el_id, supply_for_order_id=for_preorder_id,
+    )
+    _adjust_preorder_line_count(gen_sup_in_preorder, 1)
+    preorder = gen_sup_in_preorder.supply_for_order
+    return _render_preorder_detail_row_response(
+        request, gen_sup_in_preorder, preorder,
+        refresh_status=preorder.should_track_delivery_status_on_quantity_edit(),
+    )
 
 @login_required(login_url='login')
+@transaction.atomic
 def delete_from_preorders_detail_general_item(request, el_id):
-    gen_sup_in_preorder = SupplyInPreorder.objects.get(id=el_id)
+    gen_sup_in_preorder = SupplyInPreorder.objects.select_for_update().get(id=el_id)
+    preorder = gen_sup_in_preorder.supply_for_order
+    row_id = gen_sup_in_preorder.id
     gen_sup_in_preorder.delete()
-    return HttpResponse(status=200)
+    refresh = preorder.should_track_delivery_status_on_quantity_edit() if preorder else False
+    if refresh:
+        preorder.update_order_state_of_delivery_status()
+    return _preorder_row_delete_response(preorder, row_id, refresh_status=refresh)
 
 
 @login_required(login_url='login')
@@ -3377,7 +3447,7 @@ def preorderDetail(request, order_id, sup_id=None):
     supplies_in_order = order.supplyinpreorder_set.select_related(
         'generalSupply',
         'generalSupply__category'
-    ).all()
+    ).prefetch_related('supplyinorder_set').all()
     # Optimize the related orders query
     all_related_orders = _orders_list_queryset(
         Order.objects.filter(
@@ -3393,6 +3463,12 @@ def preorderDetail(request, order_id, sup_id=None):
     return render(request, 'supplies/orders/preorderDetail.html',
                   {'title': title, 'order': order, 'supplies': supplies_in_order, 'isOrders': True, 'all_related_orders': all_related_orders,
                    'highlighted_sup_id': sup_id})
+
+
+@login_required(login_url='login')
+def preorder_detail_status_oob(request, order_id):
+    order = get_object_or_404(PreOrder, pk=order_id)
+    return render(request, 'partials/preorders/preorder_detail_oob_refresh.html', {'order': order})
     
 @login_required(login_url='login')
 def preorderDetailModal(request, order_id):

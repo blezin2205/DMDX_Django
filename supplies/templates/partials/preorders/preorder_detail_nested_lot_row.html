@@ -1,0 +1,19 @@
+<tr>
+    <td class="supply-lot-col">
+        <span class="lot-value">{% if supp.lot is not none %}{{ supp.lot }}{% endif %}</span>
+    </td>
+    <td class="supply-qty-col">
+        <span class="qty-value">{{ supp.count_in_order }}</span>
+    </td>
+    <td class="supply-exp-col">
+        <span class="order-detail-date--{% if supp.date_is_good %}good{% elif supp.date_is_today %}today{% else %}bad{% endif %}">
+            {{ supp.date_expired|date:"d.m.Y" }}
+        </span>
+    </td>
+    <td class="order-detail-preorder-col truncate-cell">
+        <a href="{% url 'orderDetail' order_id=supp.supply_for_order.id sup_id=supp.id %}?next={{ request.get_full_path|urlencode }}"
+           {% if not supp.supply_for_order.isComplete %}class="link-warning"{% endif %}>
+            №{{ supp.supply_for_order.id }}
+        </a>
+    </td>
+</tr>

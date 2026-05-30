@@ -161,6 +161,7 @@ urlpatterns = [
     # path('orders/<int:order_id>/<int:sup_id>', views.orderDetail_with_highlighted, name='orderDetail_with_highlighted'),
 
     path('preorders/<int:order_id>/', views.preorderDetail, name='preorderDetail'),
+    path('preorders/<int:order_id>/status-oob/', views.preorder_detail_status_oob, name='preorder_detail_status_oob'),
     path('preorders/<int:order_id>/<int:sup_id>/', views.preorderDetail, name='preorderDetail'),
     path('preorder-detail-modal/<int:order_id>', views.preorderDetailModal, name='preorderDetailModal'),
     path('preorders/<int:order_id>/generate-order', views.preorderDetail_generateOrder, name='preorderDetail-generate-order'),

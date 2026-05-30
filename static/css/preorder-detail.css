@@ -1,0 +1,95 @@
+/**
+ * Деталі передзамовлення — лише те, чого немає в order-detail.css.
+ */
+
+/* Нумерація рядків — CSS counter, не зникає після HTMX swap */
+.preorder-detail-page .order-detail-table > tbody {
+    counter-reset: preorder-row;
+}
+
+.preorder-detail-page .order-detail-table > tbody > tr {
+    counter-increment: preorder-row;
+}
+
+.preorder-detail-page .order-detail-table .col-idx::before {
+    content: counter(preorder-row) ".";
+}
+
+/* Додаткові колонки передзамовлення (лише коли isComplete) */
+.preorder-detail-page .order-detail-table .col-ordered,
+.preorder-detail-page .order-detail-table .col-delivered,
+.preorder-detail-page .order-detail-table .col-debt {
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+    text-align: center;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.preorder-detail-page .order-detail-table .preorder-detail-booked-badge {
+    display: block;
+    margin-top: 0.1rem;
+    padding: 0.02rem 0.25rem;
+    border-radius: 0.25rem;
+    background: rgba(234, 88, 12, 0.15);
+    color: #c2410c;
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+/* Без підтоварів: висота supplyRow як один nested-рядок у order-detail */
+.preorder-detail-page .order-detail-table td.supplyRow.supplyRow--empty::after {
+    content: '';
+    display: block;
+    height: 1.75rem;
+}
+
+/* Кольорові рядки — без сірого hover з order-detail-group-row */
+.preorder-detail-page .order-detail-table tbody tr.table-success.order-detail-group-row:hover,
+.preorder-detail-page .order-detail-table tbody tr.table-warning.order-detail-group-row:hover,
+.preorder-detail-page .order-detail-table tbody tr.table-danger.order-detail-group-row:hover {
+    background: inherit;
+}
+
+.preorder-detail-page .order-detail-related-card .card-header {
+    padding: 0.55rem 0.85rem;
+    background: rgba(241, 245, 249, 0.65);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.preorder-detail-page .order-detail-related-card .card-body {
+    padding: 0.65rem 0.85rem 0.85rem;
+}
+
+[data-bs-theme="dark"] .preorder-detail-page .order-detail-table .preorder-detail-booked-badge {
+    background: rgba(251, 146, 60, 0.2);
+    color: #fdba74;
+}
+
+[data-bs-theme="dark"] .preorder-detail-page .order-detail-related-card .card-header {
+    background: rgba(30, 41, 59, 0.75);
+    border-bottom-color: var(--dmdx-border);
+}
+
+[data-bs-theme="dark"] .preorder-detail-page .order-detail-table tbody tr.table-success {
+    --bs-table-bg: rgba(25, 135, 84, 0.18);
+    --bs-table-color: var(--dmdx-text);
+}
+
+[data-bs-theme="dark"] .preorder-detail-page .order-detail-table tbody tr.table-warning {
+    --bs-table-bg: rgba(255, 193, 7, 0.14);
+    --bs-table-color: var(--dmdx-text);
+}
+
+[data-bs-theme="dark"] .preorder-detail-page .order-detail-table tbody tr.table-danger {
+    --bs-table-bg: rgba(220, 53, 69, 0.14);
+    --bs-table-color: var(--dmdx-text);
+}
+
+[data-bs-theme="dark"] .preorder-detail-page .order-detail-table tbody tr.table-success.order-detail-group-row:hover > *,
+[data-bs-theme="dark"] .preorder-detail-page .order-detail-table tbody tr.table-warning.order-detail-group-row:hover > *,
+[data-bs-theme="dark"] .preorder-detail-page .order-detail-table tbody tr.table-danger.order-detail-group-row:hover > * {
+    --bs-table-bg-state: var(--bs-table-bg);
+    --bs-table-color-state: var(--bs-table-color);
+}

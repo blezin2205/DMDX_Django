@@ -1,0 +1,60 @@
+<div id="preorder-detail-card-header"
+     class="card-header bg-opacity-10 py-2 {% if order.state_of_delivery == 'Complete' or order.state_of_delivery == 'Complete_Handle' %}bg-primary{% else %}bg-warning{% endif %}"
+     {% if oob_swap %}hx-swap-oob="outerHTML"{% endif %}>
+    <div class="row g-2">
+        <div class="col-md-2">
+            <div class="badge bg-secondary d-flex-inline align-items-center gap-2 p-2 mb-1">
+                <i class="bi bi-calendar3"></i>
+                <span>{{ order.dateCreated|date:"d.m.Y" }}</span>
+            </div>
+            <div class="badge bg-secondary d-flex-inline align-items-center gap-2" style="max-width: 200px; white-space: normal; text-align: left;">
+                <i class="bi bi-person flex-shrink-0"></i>
+                <span style="word-wrap: break-word;">{{ order.userCreated.first_name }} {{ order.userCreated.last_name }}</span>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="text-center d-flex flex-column justify-content-center h-100">
+                <div class="d-flex align-items-center justify-content-center gap-2 mb-2 flex-wrap">
+                    {% if order.isPreorder %}
+                        <div class="badge bg-info d-flex align-items-center gap-2 p-2">
+                            <i class="bi bi-clipboard"></i>
+                            <span>Передзамовлення №{{ order.id }}</span>
+                        </div>
+                    {% else %}
+                        <div class="badge bg-secondary d-flex align-items-center gap-2 p-2">
+                            <i class="bi bi-file-text"></i>
+                            <span>Договір №{{ order.id }}</span>
+                        </div>
+                    {% endif %}
+                    {% if order.isClosed %}
+                        <div class="badge bg-secondary d-flex align-items-center gap-2 p-2">
+                            <span>АРХІВ</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-geo-alt text-muted fs-5"></i>
+                    <span class="h5 mb-0">{{ order.place.name }}, {{ order.place.city_ref.name }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div id="preorder-detail-status-badges" class="hstack gap-2 flex-wrap justify-content-end">
+                {% include 'partials/preorders/preorder_detail_status_badges.html' %}
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end align-items-center gap-2 mt-3">
+        <a href="{% url 'preorderDetailCsv' order.id %}" class="btn btn-outline-secondary btn-sm" data-toggle="tooltip" title="Експорт до поставки">
+            <i class="bi bi-file-earmark-excel"></i>
+            <span class="d-none d-md-inline ms-1">До поставки</span>
+        </a>
+        <a href="{% url 'preorderDetailCsvAll' order.id %}" class="btn btn-outline-secondary btn-sm" data-toggle="tooltip" title="Експорт всього списку">
+            <i class="bi bi-file-earmark-spreadsheet"></i>
+            <span class="d-none d-md-inline ms-1">Весь список</span>
+        </a>
+    </div>
+</div>

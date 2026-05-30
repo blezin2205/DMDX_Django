@@ -506,6 +506,16 @@ class PreOrder(models.Model):
     def isAvailableToEdit(self):
         return (self.state_of_delivery == 'awaiting_from_customer' or self.state_of_delivery == 'accepted_by_customer')
 
+    def should_track_delivery_status_on_quantity_edit(self):
+        """Статуси поставки при ± — лише на етапі Partial/Complete, не раніше."""
+        if not self.isComplete:
+            return False
+        return self.state_of_delivery not in (
+            'awaiting_from_customer',
+            'accepted_by_customer',
+            'Awaiting',
+        )
+
     def update_order_state_of_delivery_status(self):
         """Updates the state_of_delivery based on the status of supplies in the preorder"""
         sups_in_preorder = self.supplyinpreorder_set.all()
@@ -672,6 +682,37 @@ class SupplyInPreorder(models.Model):
             return sups_booked_count
         else:
             return 0
+
+    @property
+    def delivered_count(self):
+        return self.count_in_order_current or 0
+
+    @property
+    def can_decrement(self):
+        ordered = self.count_in_order or 0
+        return ordered > self.delivered_count
+
+    def recalculate_state_of_delivery(self):
+        ordered = self.count_in_order or 0
+        delivered = self.delivered_count
+        if delivered <= 0:
+            self.state_of_delivery = 'Awaiting'
+        elif ordered - delivered <= 0:
+            self.state_of_delivery = 'Complete'
+        else:
+            self.state_of_delivery = 'Partial'
+        return self.state_of_delivery
+
+    def save_count_in_order(self, *, update_preorder_status=False):
+        """Зберігає count_in_order і за потреби оновлює state_of_delivery рядка та передзамовлення."""
+        preorder = self.supply_for_order
+        fields = ['count_in_order']
+        if preorder and preorder.should_track_delivery_status_on_quantity_edit():
+            self.recalculate_state_of_delivery()
+            fields.append('state_of_delivery')
+        self.save(update_fields=fields)
+        if update_preorder_status and preorder and preorder.should_track_delivery_status_on_quantity_edit():
+            preorder.update_order_state_of_delivery_status()
 
     def check_if_in_sup_in_rder_exist_booked_sup(self):
         return self.supplyinorder_set.filter(supply_in_booked_order__isnull=False).exists()
