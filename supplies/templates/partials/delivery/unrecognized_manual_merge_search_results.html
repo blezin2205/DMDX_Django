@@ -1,0 +1,38 @@
+{% if results %}
+  <table class="table table-sm align-middle delivery-merge-search-table mb-0">
+    <thead>
+      <tr>
+        <th scope="col" class="col-name text-start">Назва</th>
+        <th scope="col" class="col-pack">Пакування / Тести</th>
+        <th scope="col" class="col-category">Категорія</th>
+        <th scope="col" class="col-ref">REF</th>
+        <th scope="col" class="col-smn">SMN</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in results %}
+        <tr class="delivery-merge-pick-row"
+          role="button"
+          tabindex="0"
+          data-gen-sup-id="{{ item.id }}"
+          data-name="{{ item.name|default:''|escape }}"
+          data-ref="{{ item.ref|default:''|escape }}"
+          data-smn="{{ item.SMN_code|default:''|escape }}"
+          data-category="{{ item.category.name|default:''|escape }}"
+          data-package="{{ item.package_and_tests|default:''|escape }}">
+          <th scope="row" class="text-start col-name">
+            <span class="fw-medium">{{ item.name }}</span>
+          </th>
+          <td class="col-pack">{{ item.package_and_tests|default:"" }}</td>
+          <td class="col-category">{% if item.category %}{{ item.category.name }}{% endif %}</td>
+          <td class="col-ref">{% if item.ref is not none %}{{ item.ref }}{% endif %}</td>
+          <td class="col-smn">{% if item.SMN_code is not none %}{{ item.SMN_code }}{% endif %}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% elif search_attempted %}
+  <div class="p-2 text-muted small">Нічого не знайдено</div>
+{% else %}
+  <div class="p-2 text-muted small">Введіть назву товару для пошуку</div>
+{% endif %}

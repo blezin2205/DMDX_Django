@@ -14,7 +14,14 @@ from django.db.models import *
 from django.http import HttpResponse
 from xlsxwriter.workbook import Workbook
 from django.db.models import Sum
-from .tasks import makeDataUpload_nonCelery, process_single_barcode_scan
+from .tasks import (
+    makeDataUpload_nonCelery,
+    process_single_barcode_scan,
+    merge_identifiers_for_delivery_line,
+    delivery_line_can_manual_merge,
+    apply_merge_identifiers_to_general_supply,
+    scan_expiry_for_delivery_line,
+)
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import threading
@@ -693,4 +700,156 @@ def delivery_order_export_to_excel(request, delivery_order_id):
 
     ws.add_table(3, 0, row_num, len(columns_table) - 1, {'columns': columns_table})
     wb.close()
+    return response
+
+
+def _search_general_supply_by_name(query, *, limit=30):
+    search_text = (query or '').strip()
+    if not search_text:
+        return None
+    return (
+        GeneralSupply.objects.filter(name__icontains=search_text)
+        .select_related('category')
+        .order_by('name')[:limit]
+    )
+
+
+def _merge_modal_context(line, **extra):
+    scan_smn, scan_ref = merge_identifiers_for_delivery_line(line)
+    expiry_date, expiry_iso = scan_expiry_for_delivery_line(line)
+    context = {
+        'line': line,
+        'delivery_order': line.delivery_order,
+        'delivery_order_id': line.delivery_order_id,
+        'scan_smn': scan_smn,
+        'scan_ref': scan_ref,
+        'expiry_date': expiry_date,
+        'expiry_iso': expiry_iso or '',
+        'results': None,
+        'search_attempted': False,
+    }
+    context.update(extra)
+    return context
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def unrecognized_line_manual_merge_modal(request, delivery_order_id, line_id):
+    line = get_object_or_404(
+        DeliverySupplyInCart.objects.select_related('delivery_order'),
+        pk=line_id,
+        delivery_order_id=delivery_order_id,
+        isRecognized=False,
+        general_supply__isnull=True,
+    )
+    if line.delivery_order.isHasBeenSaved:
+        return HttpResponse('Поставка закрита', status=400)
+    if not delivery_line_can_manual_merge(line):
+        return HttpResponse('Немає розпізнаного SMN або REF для привʼязки', status=400)
+    return render(
+        request,
+        'partials/delivery/unrecognized_manual_merge_modal.html',
+        _merge_modal_context(line),
+    )
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def unrecognized_line_manual_merge_search(request, delivery_order_id, line_id):
+    line = get_object_or_404(
+        DeliverySupplyInCart,
+        pk=line_id,
+        delivery_order_id=delivery_order_id,
+        isRecognized=False,
+        general_supply__isnull=True,
+    )
+    if line.delivery_order.isHasBeenSaved or not delivery_line_can_manual_merge(line):
+        return HttpResponse(status=400)
+    search_text = (request.POST.get('search') or '').strip()
+    results = _search_general_supply_by_name(search_text) if search_text else None
+    return render(request, 'partials/delivery/unrecognized_manual_merge_search_results.html', {
+        'results': results,
+        'search_attempted': bool(search_text),
+        'line_id': line.id,
+    })
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['admin'])
+def unrecognized_line_manual_merge_save(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    line_id = request.POST.get('line_id')
+    gen_sup_id = request.POST.get('gen_sup_id')
+    if not line_id or not gen_sup_id:
+        return HttpResponse('line_id та gen_sup_id обовʼязкові', status=400)
+    line = get_object_or_404(
+        DeliverySupplyInCart.objects.select_related('delivery_order'),
+        pk=line_id,
+        isRecognized=False,
+        general_supply__isnull=True,
+    )
+    if line.delivery_order.isHasBeenSaved:
+        return HttpResponse('Поставка закрита', status=400)
+    scan_smn, scan_ref = merge_identifiers_for_delivery_line(line)
+    if not scan_smn and not scan_ref:
+        return HttpResponse('Немає SMN або REF для привʼязки', status=400)
+    gen_sup = get_object_or_404(GeneralSupply, pk=gen_sup_id)
+
+    lot = (request.POST.get('lot') or line.supplyLot or '').strip() or None
+    count_raw = (request.POST.get('count') or '').strip()
+    expired_str = (request.POST.get('expired') or '').strip()
+    field_errors = {}
+
+    if not count_raw:
+        field_errors['count'] = 'Вкажіть кількість'
+        count_val = None
+    else:
+        try:
+            count_val = int(count_raw)
+            if count_val < 1:
+                field_errors['count'] = 'Кількість має бути більше 0'
+                count_val = None
+        except ValueError:
+            field_errors['count'] = 'Невірна кількість'
+            count_val = None
+
+    expiry_date = None
+    if not expired_str:
+        expiry_date, expired_str = scan_expiry_for_delivery_line(line)
+        if not expiry_date:
+            field_errors['expired'] = 'Вкажіть термін (РРРР-ММ-ДД)'
+    else:
+        try:
+            expiry_date = datetime.datetime.strptime(expired_str, '%Y-%m-%d').date()
+        except ValueError:
+            field_errors['expired'] = 'Невірний формат терміну'
+
+    if field_errors:
+        return render(
+            request,
+            'partials/delivery/unrecognized_manual_merge_modal.html',
+            _merge_modal_context(
+                line,
+                selected_gen_sup=gen_sup,
+                field_errors=field_errors,
+                field_lot=lot or '',
+                field_count=count_raw,
+                field_expired=expired_str,
+            ),
+            status=422,
+        )
+
+    apply_merge_identifiers_to_general_supply(gen_sup, scan_smn, scan_ref)
+
+    line.general_supply = gen_sup
+    line.supplyLot = lot
+    line.count = count_val
+    line.expiredDate = expiry_date
+    line.expiredDate_desc = expired_str
+    line.isRecognized = True
+    line.save()
+
+    response = HttpResponse(status=200)
+    response['HX-Refresh'] = 'true'
     return response

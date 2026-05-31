@@ -313,3 +313,122 @@
 .delivery-detail-page .delivery-detail-qty-legend .qty-value--manual {
     color: #1e3a8a;
 }
+
+.delivery-manual-merge-modal .delivery-merge-panel {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 0.75rem 0.85rem;
+    background: #f8fafc;
+}
+
+.delivery-manual-merge-modal .delivery-merge-panel--scan {
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+
+.delivery-manual-merge-modal .delivery-merge-panel--selected {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.delivery-manual-merge-modal .delivery-merge-panel__title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+}
+
+.delivery-manual-merge-modal .delivery-merge-search-results {
+    max-height: min(280px, 45vh);
+    overflow: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    background: #fff;
+}
+
+.delivery-manual-merge-modal .delivery-merge-search-table {
+    margin: 0;
+    width: 100%;
+    table-layout: auto;
+}
+
+.delivery-manual-merge-modal .delivery-merge-search-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #f1f5f9;
+    font-size: 0.72rem;
+    box-shadow: 0 1px 0 rgba(148, 163, 184, 0.35);
+    vertical-align: middle;
+}
+
+.delivery-manual-merge-modal .delivery-merge-search-table th,
+.delivery-manual-merge-modal .delivery-merge-search-table td {
+    font-size: 0.8125rem;
+    padding: 0.35rem 0.5rem;
+    vertical-align: middle;
+}
+
+/* Допоміжні колонки — мінімальна ширина під контент */
+.delivery-manual-merge-modal .delivery-merge-search-table .col-pack,
+.delivery-manual-merge-modal .delivery-merge-search-table .col-category,
+.delivery-manual-merge-modal .delivery-merge-search-table .col-ref,
+.delivery-manual-merge-modal .delivery-merge-search-table .col-smn {
+    width: 1%;
+    white-space: nowrap;
+    word-break: normal;
+}
+
+/* Назва — забирає решту місця, переноситься */
+.delivery-manual-merge-modal .delivery-merge-search-table .col-name {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.25;
+}
+
+.delivery-manual-merge-modal .delivery-merge-pick-row {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.delivery-manual-merge-modal .delivery-merge-pick-row:hover > th,
+.delivery-manual-merge-modal .delivery-merge-pick-row:hover > td,
+.delivery-manual-merge-modal .delivery-merge-pick-row--active > th,
+.delivery-manual-merge-modal .delivery-merge-pick-row--active > td {
+    background-color: #dbeafe;
+}
+
+.delivery-manual-merge-modal .delivery-merge-write-preview {
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.375rem;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.delivery-detail-page .delivery-detail-group-row--unrecognized .col-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-break: break-word;
+}
+
+.delivery-detail-page .delivery-unrecognized-barcode {
+    white-space: normal;
+    word-break: break-all;
+    line-height: 1.25;
+    margin-top: 0.1rem;
+    color: #334155;
+}
+
+.delivery-detail-page .delivery-detail-group-row--unrecognized .truncate-cell {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-break: break-all;
+}

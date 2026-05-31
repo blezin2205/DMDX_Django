@@ -95,11 +95,11 @@
       <table class="table table-sm align-middle compact-supply-table order-detail-table mb-0">
         <thead>
           <tr>
-            <th scope="col" class="col-name text-start">Штрихкод / дані</th>
-            <th scope="col" class="col-pack">—</th>
-            <th scope="col" class="col-category">—</th>
-            <th scope="col" class="col-ref">SMN</th>
-            <th scope="col" class="col-smn">—</th>
+            <th scope="col" class="col-name text-start">Назва</th>
+            <th scope="col" class="col-pack">Пакування / Тести</th>
+            <th scope="col" class="col-category">Категорія</th>
+            <th scope="col" class="col-ref">REF</th>
+            <th scope="col" class="col-smn home-table-smn">SMN</th>
             <th scope="col" class="supplyRow">
               <table class="table table-sm table-borderless mb-0 nested-supply-table nested-supply-table--head">
                 {% include 'partials/delivery/delivery_detail_nested_colgroup.html' %}
@@ -240,6 +240,8 @@
     {% endif %}
   </div>
 </div>
+
+<div id="delivery-manual-merge-modal-root"></div>
 
 <script>
 (function () {
@@ -458,4 +460,147 @@ document.body.addEventListener('htmx:beforeSwap', function (evt) {
     groupRow.remove();
   }
 });
+
+(function () {
+  var mergeModalInstance = null;
+
+  function getMergeModalEl() {
+    return document.getElementById('deliveryManualMergeModal');
+  }
+
+  function hideMergeModal() {
+    var modalEl = getMergeModalEl();
+    if (modalEl && mergeModalInstance) {
+      mergeModalInstance.hide();
+    }
+    mergeModalInstance = null;
+  }
+
+  function showMergeModal() {
+    var modalEl = getMergeModalEl();
+    if (!modalEl || typeof bootstrap === 'undefined') return;
+    if (mergeModalInstance) {
+      mergeModalInstance.dispose();
+    }
+    mergeModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+    mergeModalInstance.show();
+    var searchInput = document.getElementById('delivery-merge-search-input');
+    if (searchInput) {
+      searchInput.focus();
+    }
+  }
+
+  function closeMergeSearchResults() {
+    var resultsWrap = document.getElementById('delivery-merge-search-results');
+    if (!resultsWrap) return;
+    resultsWrap.classList.add('d-none');
+    resultsWrap.innerHTML = '<div class="p-2 text-muted small">Введіть назву товару для пошуку</div>';
+  }
+
+  function openMergeSearchResults() {
+    var resultsWrap = document.getElementById('delivery-merge-search-results');
+    if (resultsWrap) resultsWrap.classList.remove('d-none');
+  }
+
+  function updateMergeWritePreview() {
+    var modalEl = getMergeModalEl();
+    var previewEl = document.getElementById('delivery-merge-write-preview');
+    if (!modalEl || !previewEl) return;
+    var scanSmn = modalEl.getAttribute('data-scan-smn') || '';
+    var scanRef = modalEl.getAttribute('data-scan-ref') || '';
+    var refEl = document.getElementById('delivery-merge-selected-ref');
+    var smnEl = document.getElementById('delivery-merge-selected-smn');
+    var parts = [];
+    if (scanSmn) {
+      parts.push('SMN → <strong>' + scanSmn + '</strong> (зараз: ' + (smnEl && smnEl.textContent ? smnEl.textContent : '—') + ')');
+    }
+    if (scanRef) {
+      parts.push('REF → <strong>' + scanRef + '</strong> (зараз: ' + (refEl && refEl.textContent ? refEl.textContent : '—') + ')');
+    }
+    if (!parts.length) {
+      previewEl.classList.add('d-none');
+      previewEl.innerHTML = '';
+      return;
+    }
+    previewEl.classList.remove('d-none');
+    previewEl.innerHTML = '<span class="text-muted">Запишеться в General Supply:</span> ' + parts.join(' · ');
+  }
+
+  function selectMergeRow(row) {
+    var form = document.getElementById('delivery-manual-merge-form');
+    var genSupInput = document.getElementById('delivery-merge-gen-sup-id');
+    var submitBtn = document.getElementById('delivery-merge-submit-btn');
+    if (!form || !genSupInput || !row) return;
+
+    genSupInput.value = row.getAttribute('data-gen-sup-id') || '';
+    var nameEl = document.getElementById('delivery-merge-selected-name');
+    var refEl = document.getElementById('delivery-merge-selected-ref');
+    var smnEl = document.getElementById('delivery-merge-selected-smn');
+    var catEl = document.getElementById('delivery-merge-selected-category');
+    var pkgEl = document.getElementById('delivery-merge-selected-package');
+    if (nameEl) nameEl.textContent = row.getAttribute('data-name') || '—';
+    if (refEl) refEl.textContent = row.getAttribute('data-ref') || '—';
+    if (smnEl) smnEl.textContent = row.getAttribute('data-smn') || '—';
+    if (catEl) catEl.textContent = row.getAttribute('data-category') || '—';
+    if (pkgEl) pkgEl.textContent = row.getAttribute('data-package') || '—';
+
+    form.classList.remove('d-none');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('disabled');
+    }
+    updateMergeWritePreview();
+    closeMergeSearchResults();
+
+    var searchInput = document.getElementById('delivery-merge-search-input');
+    if (searchInput) searchInput.blur();
+  }
+
+  document.body.addEventListener('htmx:afterSwap', function (evt) {
+    var target = evt.detail.target;
+    if (!target || target.id !== 'delivery-manual-merge-modal-root') return;
+    showMergeModal();
+    if (typeof htmx !== 'undefined') {
+      htmx.process(target);
+    }
+    var selectedId = document.getElementById('delivery-merge-gen-sup-id');
+    if (selectedId && selectedId.value) {
+      updateMergeWritePreview();
+    }
+  });
+
+  document.body.addEventListener('click', function (e) {
+    var pickRow = e.target.closest('.delivery-merge-pick-row');
+    if (!pickRow || !pickRow.closest('#delivery-merge-search-results')) return;
+    e.preventDefault();
+    selectMergeRow(pickRow);
+  });
+
+  document.body.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var pickRow = e.target.closest('.delivery-merge-pick-row');
+    if (!pickRow || !pickRow.closest('#delivery-merge-search-results')) return;
+    e.preventDefault();
+    selectMergeRow(pickRow);
+  });
+
+  document.body.addEventListener('input', function (e) {
+    if (e.target.id !== 'delivery-merge-search-input') return;
+    openMergeSearchResults();
+  });
+
+  document.body.addEventListener('htmx:afterSwap', function (evt) {
+    if (evt.detail.target && evt.detail.target.id === 'delivery-merge-search-results') {
+      openMergeSearchResults();
+    }
+  });
+
+  document.body.addEventListener('hidden.bs.modal', function (e) {
+    if (e.target && e.target.id === 'deliveryManualMergeModal') {
+      var root = document.getElementById('delivery-manual-merge-modal-root');
+      if (root) root.innerHTML = '';
+      mergeModalInstance = null;
+    }
+  });
+})();
 </script>

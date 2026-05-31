@@ -50,10 +50,30 @@
       <div class="delivery-nested-cell delivery-nested-cell--view fw-semibold">{{ line.count }}</div>
     </td>
     <td class="supply-exp-col">
-      <div class="delivery-nested-cell delivery-nested-cell--view small text-muted">{{ line.expiredDate_desc|default:"—" }}</div>
+      <div class="delivery-nested-cell delivery-nested-cell--view">
+        {% delivery_line_scan_expiry line as scan_expiry %}
+        {% delivery_line_expiry_status line as expiry_status %}
+        {% if scan_expiry %}
+          <span class="{% if expiry_status %}order-detail-date--{{ expiry_status }}{% endif %}">
+            {{ scan_expiry|date:"d.m.Y" }}
+          </span>
+        {% elif line.expiredDate_desc %}
+          <span class="small text-muted">{{ line.expiredDate_desc }}</span>
+        {% else %}—{% endif %}
+      </div>
     </td>
     {% if not delivery_order.isHasBeenSaved %}
     <td class="delivery-detail-actions-col text-nowrap">
+      <div class="delivery-nested-cell delivery-nested-cell--actions">
+        {% if line|can_delivery_manual_merge %}
+        <button type="button" class="btn btn-sm btn-outline-primary delivery-manual-merge-open"
+          title="Привʼязати товар вручну"
+          hx-get="{% url 'unrecognized-line-manual-merge-modal' delivery_order.id line.id %}"
+          hx-target="#delivery-manual-merge-modal-root"
+          hx-swap="innerHTML">
+          <i class="bi bi-link-45deg"></i>
+        </button>
+        {% endif %}
         <button type="button" class="btn btn-sm btn-outline-danger"
           hx-post="{% url 'add_gen_sup_in_delivery_order_manual_list_delete_action' %}"
           hx-vals='{"del_sup_id": "{{ line.id }}"}'
@@ -61,6 +81,7 @@
           hx-swap="delete">
           <i class="bi bi-trash3"></i>
         </button>
+      </div>
     </td>
     {% endif %}
   {% endif %}

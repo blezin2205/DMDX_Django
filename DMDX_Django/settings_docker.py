@@ -100,11 +100,15 @@ if ENABLE_WKHTMLTOPDF:
 CSRF_TRUSTED_ORIGINS = [
     'https://dmdxstorage.herokuapp.com',
     'https://www.dmdxstorage.herokuapp.com',
+    'https://dmdx.website',
+    'https://www.dmdx.website',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
 ]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # CSRF Settings (INSECURE_COOKIES=True лише для локального Docker prod по HTTP)
 _USE_SECURE_COOKIES = not DEBUG and os.getenv('INSECURE_COOKIES', 'False').lower() != 'true'

@@ -1,0 +1,135 @@
+<div class="modal fade delivery-manual-merge-modal" id="deliveryManualMergeModal" tabindex="-1"
+     aria-labelledby="deliveryManualMergeModalLabel" aria-hidden="true"
+     data-line-id="{{ line.id }}"
+     data-scan-smn="{{ scan_smn|default:''|escape }}"
+     data-scan-ref="{{ scan_ref|default:''|escape }}">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h5 class="modal-title" id="deliveryManualMergeModalLabel">Привʼязати товар вручну</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрити"></button>
+      </div>
+      <div class="modal-body">
+        <div class="delivery-merge-panel delivery-merge-panel--scan mb-3">
+          <div class="delivery-merge-panel__title">Відскановано (автопошук не знайшов у базі)</div>
+          <div class="row g-2 small">
+            <div class="col-md-12">
+              <span class="text-muted">Штрихкод:</span>
+              <span class="font-monospace text-break">{{ line.barcode|default:"—" }}</span>
+            </div>
+            {% if scan_smn %}
+            <div class="col-sm-6">
+              <span class="text-muted">SMN / GTIN (пошук):</span>
+              <span class="fw-semibold">{{ scan_smn }}</span>
+            </div>
+            {% endif %}
+            {% if scan_ref %}
+            <div class="col-sm-6">
+              <span class="text-muted">REF (пошук):</span>
+              <span class="fw-semibold">{{ scan_ref }}</span>
+            </div>
+            {% endif %}
+            <div class="col-sm-4">
+              <span class="text-muted">LOT:</span>
+              <span>{{ line.supplyLot|default:"—" }}</span>
+            </div>
+            <div class="col-sm-2">
+              <span class="text-muted">К-сть:</span>
+              <span class="fw-semibold">{{ line.count|default:"—" }}</span>
+            </div>
+            <div class="col-sm-6">
+              <span class="text-muted">Термін:</span>
+              {% if expiry_date %}
+                <span>{{ expiry_date|date:"d.m.Y" }}</span>
+                <span class="text-muted">({{ expiry_iso }})</span>
+              {% else %}
+                <span>{{ line.expiredDate_desc|default:"—" }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <p class="small text-muted mb-0 mt-2">
+            Після привʼязки {% if scan_smn and scan_ref %}SMN та REF{% elif scan_smn %}SMN{% else %}REF{% endif %}
+            буде записано в обраний General Supply — наступні скани знайдуть товар автоматично.
+          </p>
+        </div>
+
+        <div class="delivery-merge-panel mb-3">
+          <label for="delivery-merge-search-input" class="delivery-merge-panel__title form-label mb-1">
+            Пошук товару за назвою
+          </label>
+          <input type="search" enterkeyhint="search"
+            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+            id="delivery-merge-search-input"
+            class="form-control form-control-sm"
+            name="search"
+            value=""
+            placeholder="Введіть назву General Supply..."
+            hx-post="{% url 'unrecognized-line-manual-merge-search' delivery_order_id line.id %}"
+            hx-target="#delivery-merge-search-results"
+            hx-swap="innerHTML"
+            hx-trigger="input changed delay:400ms, search">
+          <div id="delivery-merge-search-results" class="delivery-merge-search-results mt-2">
+            {% include 'partials/delivery/unrecognized_manual_merge_search_results.html' %}
+          </div>
+        </div>
+
+        <form id="delivery-manual-merge-form" class="delivery-merge-panel delivery-merge-panel--selected{% if not selected_gen_sup %} d-none{% endif %}"
+          hx-post="{% url 'unrecognized-line-manual-merge-save' %}"
+          hx-target="#delivery-manual-merge-modal-root"
+          hx-swap="innerHTML">
+          {% csrf_token %}
+          <input type="hidden" name="line_id" value="{{ line.id }}">
+          <input type="hidden" name="gen_sup_id" id="delivery-merge-gen-sup-id" value="{% if selected_gen_sup %}{{ selected_gen_sup.id }}{% endif %}">
+
+          <div class="delivery-merge-panel__title">Обраний товар</div>
+          <div class="row g-2 small mb-2" id="delivery-merge-selected-details">
+            {% if selected_gen_sup %}
+              <div class="col-12"><span class="text-muted">Назва:</span> <span id="delivery-merge-selected-name">{{ selected_gen_sup.name }}</span></div>
+              <div class="col-sm-4"><span class="text-muted">REF (зараз):</span> <span id="delivery-merge-selected-ref">{{ selected_gen_sup.ref|default:"—" }}</span></div>
+              <div class="col-sm-4"><span class="text-muted">SMN (зараз):</span> <span id="delivery-merge-selected-smn">{{ selected_gen_sup.SMN_code|default:"—" }}</span></div>
+              <div class="col-sm-4"><span class="text-muted">Категорія:</span> <span id="delivery-merge-selected-category">{% if selected_gen_sup.category %}{{ selected_gen_sup.category.name }}{% else %}—{% endif %}</span></div>
+              <div class="col-12"><span class="text-muted">Пакування:</span> <span id="delivery-merge-selected-package">{{ selected_gen_sup.package_and_tests|default:"—" }}</span></div>
+            {% else %}
+              <div class="col-12"><span class="text-muted">Назва:</span> <span id="delivery-merge-selected-name">—</span></div>
+              <div class="col-sm-4"><span class="text-muted">REF (зараз):</span> <span id="delivery-merge-selected-ref">—</span></div>
+              <div class="col-sm-4"><span class="text-muted">SMN (зараз):</span> <span id="delivery-merge-selected-smn">—</span></div>
+              <div class="col-sm-4"><span class="text-muted">Категорія:</span> <span id="delivery-merge-selected-category">—</span></div>
+              <div class="col-12"><span class="text-muted">Пакування:</span> <span id="delivery-merge-selected-package">—</span></div>
+            {% endif %}
+          </div>
+          <div id="delivery-merge-write-preview" class="delivery-merge-write-preview small mb-3{% if not selected_gen_sup %} d-none{% endif %}"></div>
+
+          <div class="row g-2 align-items-end">
+            <div class="col-sm-4">
+              <label class="form-label small mb-0" for="delivery-merge-lot">LOT (зі скану)</label>
+              <input type="text" class="form-control form-control-sm{% if field_errors.lot %} is-invalid{% endif %}"
+                id="delivery-merge-lot" name="lot"
+                value="{% if field_lot != None %}{{ field_lot }}{% else %}{{ line.supplyLot|default:'' }}{% endif %}">
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label small mb-0" for="delivery-merge-expired">Термін (РРРР-ММ-ДД)</label>
+              <input type="text" class="form-control form-control-sm{% if field_errors.expired %} is-invalid{% endif %}"
+                id="delivery-merge-expired" name="expired" data-delivery-date-mask
+                value="{% if field_expired != None %}{{ field_expired }}{% else %}{{ expiry_iso }}{% endif %}">
+              {% if field_errors.expired %}<div class="invalid-feedback d-block">{{ field_errors.expired }}</div>{% endif %}
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label small mb-0" for="delivery-merge-count">К-сть</label>
+              <input type="number" min="1" class="form-control form-control-sm{% if field_errors.count %} is-invalid{% endif %}"
+                id="delivery-merge-count" name="count"
+                value="{% if field_count != None %}{{ field_count }}{% else %}{{ line.count|default:'' }}{% endif %}">
+              {% if field_errors.count %}<div class="invalid-feedback d-block">{{ field_errors.count }}</div>{% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Скасувати</button>
+        <button type="submit" form="delivery-manual-merge-form" class="btn btn-sm btn-primary{% if not selected_gen_sup %} disabled{% endif %}"
+          id="delivery-merge-submit-btn"{% if not selected_gen_sup %} disabled{% endif %}>
+          <i class="bi bi-link-45deg"></i> Привʼязати та оновити {% if scan_smn and scan_ref %}SMN/REF{% elif scan_smn %}SMN{% else %}REF{% endif %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

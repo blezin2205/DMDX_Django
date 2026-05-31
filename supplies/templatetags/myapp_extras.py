@@ -236,3 +236,44 @@ def last_seen_ago(value):
         return f'{hours} год тому'
     days = hours // 24
     return f'{days} дн тому'
+
+
+@register.filter(name='can_delivery_manual_merge')
+def can_delivery_manual_merge(line):
+    from ..tasks import delivery_line_can_manual_merge
+    return delivery_line_can_manual_merge(line)
+
+
+@register.filter(name='delivery_line_scan_smn')
+def delivery_line_scan_smn(line):
+    from ..tasks import merge_identifiers_for_delivery_line
+    smn, _ref = merge_identifiers_for_delivery_line(line)
+    return smn or ''
+
+
+@register.filter(name='delivery_line_scan_ref')
+def delivery_line_scan_ref(line):
+    from ..tasks import merge_identifiers_for_delivery_line
+    _smn, ref = merge_identifiers_for_delivery_line(line)
+    return ref or ''
+
+
+@register.simple_tag
+def delivery_line_scan_expiry(line):
+    from ..tasks import scan_expiry_for_delivery_line
+    expiry_date, _expiry_iso = scan_expiry_for_delivery_line(line)
+    return expiry_date
+
+
+@register.simple_tag
+def delivery_line_expiry_status(line):
+    from ..tasks import scan_expiry_for_delivery_line
+    expiry_date, _expiry_iso = scan_expiry_for_delivery_line(line)
+    order_date = getattr(getattr(line, 'delivery_order', None), 'date_created', None)
+    if not expiry_date or not order_date:
+        return ''
+    if expiry_date > order_date:
+        return 'good'
+    if expiry_date == order_date:
+        return 'today'
+    return 'bad'

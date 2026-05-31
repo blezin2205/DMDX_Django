@@ -111,6 +111,69 @@ def find_general_supply_by_smn(smn):
     raise GeneralSupply.DoesNotExist
 
 
+def merge_identifiers_for_delivery_line(line):
+    """
+    Повертає (scan_smn, scan_ref) — розпізнані зі скану ідентифікатори,
+    за якими йшов (невдалий) пошук у General Supply.
+    """
+    barcode = (line.barcode or '').strip()
+    smn_code = (line.SMN_code or '').strip()
+
+    if barcode and ',' in barcode:
+        parts = [part.strip() for part in barcode.split(',')]
+        if len(parts) == 3 and parts[0]:
+            return None, parts[0]
+
+    if smn_code:
+        return smn_code, None
+
+    return None, None
+
+
+def delivery_line_can_manual_merge(line):
+    scan_smn, scan_ref = merge_identifiers_for_delivery_line(line)
+    return bool(scan_smn or scan_ref)
+
+
+def apply_merge_identifiers_to_general_supply(gen_sup, scan_smn, scan_ref):
+    """Записує SMN/REF зі скану в General Supply для майбутнього автопошуку."""
+    update_fields = []
+    if scan_smn:
+        gen_sup.SMN_code = scan_smn
+        update_fields.append('SMN_code')
+    if scan_ref:
+        gen_sup.ref = scan_ref
+        update_fields.append('ref')
+    if update_fields:
+        gen_sup.save(update_fields=update_fields)
+
+
+def parse_scan_expiry_date(raw):
+    """Парсить термін зі скану (YYMMDD або YYYY-MM-DD)."""
+    if not raw:
+        return None, None
+    value = str(raw).strip()
+    if re.fullmatch(r'\d{6}', value):
+        try:
+            parsed = datetime.datetime.strptime(value, '%y%m%d').date()
+            return parsed, parsed.strftime('%Y-%m-%d')
+        except ValueError:
+            pass
+    for fmt in ('%Y-%m-%d', '%d.%m.%Y'):
+        try:
+            parsed = datetime.datetime.strptime(value, fmt).date()
+            return parsed, parsed.strftime('%Y-%m-%d')
+        except ValueError:
+            continue
+    return None, None
+
+
+def scan_expiry_for_delivery_line(line):
+    if line.expiredDate:
+        return line.expiredDate, line.expiredDate.strftime('%Y-%m-%d')
+    return parse_scan_expiry_date(line.expiredDate_desc)
+
+
 def create_supply_objects(barcode, smn, lot, date_expired, for_delivery_order, search_by_ref=False):
     try:
         date_expired_date = datetime.datetime.strptime(date_expired, '%y%m%d')

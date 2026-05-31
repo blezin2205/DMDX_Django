@@ -41,6 +41,9 @@ urlpatterns = [
      path('all_deliveries/add_gen_sup_in_delivery_order_manual_list_delete_action', view_upload.add_gen_sup_in_delivery_order_manual_list_delete_action, name='add_gen_sup_in_delivery_order_manual_list_delete_action'),
      path('all_deliveries/add_gen_sup_in_delivery_order_manual_list_save_action', view_upload.add_gen_sup_in_delivery_order_manual_list_save_action, name='add_gen_sup_in_delivery_order_manual_list_save_action'),
      path('all_deliveries/add_gen_sup_in_delivery_order_manual_list_edit_action', view_upload.add_gen_sup_in_delivery_order_manual_list_edit_action, name='add_gen_sup_in_delivery_order_manual_list_edit_action'),
+     path('all_deliveries/<int:delivery_order_id>/unrecognized-line/<int:line_id>/manual-merge-modal/', view_upload.unrecognized_line_manual_merge_modal, name='unrecognized-line-manual-merge-modal'),
+     path('all_deliveries/<int:delivery_order_id>/unrecognized-line/<int:line_id>/manual-merge-search/', view_upload.unrecognized_line_manual_merge_search, name='unrecognized-line-manual-merge-search'),
+     path('all_deliveries/unrecognized-line/manual-merge-save/', view_upload.unrecognized_line_manual_merge_save, name='unrecognized-line-manual-merge-save'),
      path('all_deliveries/delivery_order_export_to_excel/<int:delivery_order_id>', view_upload.delivery_order_export_to_excel, name='delivery_order_export_to_excel'),
      path('all_deliveries/save-delivery-and-add-to-db/<int:delivery_order_id>', view_upload.upload_sup_from_delivery_order_and_save_db, name='save-delivery-and-add-to-db'),
 

@@ -2,7 +2,7 @@
 {% if group.items %}
 {% with el=group.items.0 %}
 <tr id="delivery-detail-group-row-{% if staging %}staging-{% endif %}{% if el.general_supply %}gs-{{ el.general_supply.id }}{% else %}unk-{{ el.id }}{% endif %}"
-    class="order-detail-group-row delivery-detail-group-row{% if staging %} delivery-detail-group-row--staging{% endif %}"{% if hx_swap_oob %} hx-swap-oob="{{ hx_swap_oob }}"{% endif %}>
+    class="order-detail-group-row delivery-detail-group-row{% if staging %} delivery-detail-group-row--staging{% endif %}{% if not el.general_supply %} delivery-detail-group-row--unrecognized{% endif %}"{% if hx_swap_oob %} hx-swap-oob="{{ hx_swap_oob }}"{% endif %}>
   {% if el.general_supply %}
     <th scope="row" class="text-start col-name">
       <span class="col-idx">{{ group.counter }}.</span>
@@ -21,14 +21,22 @@
       {% if el.general_supply.SMN_code is not none %}{{ el.general_supply.SMN_code }}{% endif %}
     </td>
   {% else %}
-    <th scope="row" class="text-start col-name" colspan="1">
+    <th scope="row" class="text-start col-name">
       <span class="col-idx">{{ group.counter }}.</span>
-      <span class="text-muted small">Barcode:</span> {{ el.barcode|default:"—" }}
+      {% if el.barcode %}
+        <div class="delivery-unrecognized-barcode small font-monospace">{{ el.barcode }}</div>
+      {% else %}
+        <span class="text-muted">—</span>
+      {% endif %}
     </th>
     <td class="col-pack">—</td>
     <td class="col-category">—</td>
-    <td class="truncate-cell col-ref">{{ el.SMN_code|default:"" }}</td>
-    <td class="col-smn">—</td>
+    <td class="truncate-cell col-ref" title="{{ el|delivery_line_scan_ref|default_if_none:'' }}">
+      {{ el|delivery_line_scan_ref|default:"" }}
+    </td>
+    <td class="truncate-cell col-smn home-table-smn" title="{{ el|delivery_line_scan_smn|default_if_none:'' }}">
+      {{ el|delivery_line_scan_smn|default:"" }}
+    </td>
   {% endif %}
   <td class="supplyRow">
     <table class="rounded-3 overflow-hidden table table-light table-borderless table-sm mb-0 nested-supply-table">
