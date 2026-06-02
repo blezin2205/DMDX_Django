@@ -155,7 +155,8 @@ SESSION_COOKIE_AGE = 1209600  # 2 weeks
 SESSION_COOKIE_SECURE = not DEBUG  # True in production (HTTPS only)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_SAVE_EVERY_REQUEST = True  # Save session on every request
+# False: не писати django_session на кожен HTMX/AJAX (CSRF у cookie, не в сесії).
+SESSION_SAVE_EVERY_REQUEST = False
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session after browser close
 
 ROOT_URLCONF = 'DMDX_Django.urls'
@@ -200,13 +201,19 @@ DATABASES = {
 # 2. Застосовуємо налаштування Heroku, але ЗАБОРОНЯЄМО йому псувати нашу базу даних
 django_heroku.settings(locals(), databases=False)
 
-# 3. Перевіряємо: якщо ми на серверах Heroku
+# 3. Heroku: buildpack heroku/pgbouncer (Procfile), CONN_MAX_AGE=0.
+# start-pgbouncer підміняє DATABASE_URL на localhost; migrate/pg:pull — напряму (heroku run / config).
 if 'DYNO' in os.environ:
-    # Підтягуємо базу з оптимізованим часом життя з'єднання (Pool)
+    _using_pgbouncer = bool(os.environ.get('PGBOUNCER_POOL_MODE'))
+
     DATABASES['default'] = dj_database_url.config(
-        conn_max_age=60,  
-        ssl_require=True
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=0,
+        ssl_require=not _using_pgbouncer,
     )
+
+    if _using_pgbouncer:
+        DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
     # 4. Вмикаємо той самий "запобіжник" на 20 секунд
     _db_opts = DATABASES['default'].setdefault('OPTIONS', {})
