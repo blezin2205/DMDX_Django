@@ -23,32 +23,10 @@
             <div class="app-settings-stack">
                 <section class="app-settings-section" aria-labelledby="settings-notify-heading">
                         <h2 id="settings-notify-heading" class="app-settings-section-header mb-0 h6">
-                            <i class="bi bi-bell" aria-hidden="true"></i>
-                            Сповіщення та поведінка інтерфейсу
+                            <i class="bi bi-sliders" aria-hidden="true"></i>
+                            Поведінка інтерфейсу
                         </h2>
                         <div class="app-settings-section-body">
-                            <div class="app-settings-row">
-                                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-sm-between align-items-sm-center">
-                                    <div class="d-flex align-items-center gap-2 app-settings-row-label">
-                                        <img src="{% static 'images/teams.png' %}" width="30" height="30" alt="" class="flex-shrink-0">
-                                        <span>Сповіщення Teams: нове замовлення, створене мною</span>
-                                    </div>
-                                    <div class="form-check form-switch align-self-start align-self-sm-center flex-shrink-0">
-                                        {{ form.send_teams_msg }}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="app-settings-row">
-                                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-sm-between align-items-sm-center">
-                                    <div class="d-flex align-items-center gap-2 app-settings-row-label">
-                                        <img src="{% static 'images/teams.png' %}" width="30" height="30" alt="" class="flex-shrink-0">
-                                        <span>Сповіщення Teams: нове передзамовлення, створене мною</span>
-                                    </div>
-                                    <div class="form-check form-switch align-self-start align-self-sm-center flex-shrink-0">
-                                        {{ form.send_teams_msg_preorders }}
-                                    </div>
-                                </div>
-                            </div>
                             <div class="app-settings-row">
                                 <div class="d-flex flex-column flex-sm-row gap-3 justify-content-sm-between align-items-sm-center">
                                     <div class="d-flex align-items-center gap-2 app-settings-row-label">

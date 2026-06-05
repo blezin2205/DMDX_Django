@@ -22,14 +22,10 @@ class AppSettingsForm(ModelForm):
     class Meta:
 
         model = AppSettings
-        fields = ['send_teams_msg', 
-                  'send_teams_msg_preorders', 
-                  'enable_show_other_booked_cart', 
+        fields = ['enable_show_other_booked_cart',
                   'disable_order_confirmation_send_action',
                   'enable_preorder_editing_awaiting_state']
         widgets = {
-            'send_teams_msg': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'send_teams_msg_preorders': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'enable_show_other_booked_cart': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'disable_order_confirmation_send_action': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'enable_preorder_editing_awaiting_state': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

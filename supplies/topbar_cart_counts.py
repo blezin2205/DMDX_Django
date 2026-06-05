@@ -15,7 +15,7 @@ from .models import (
 from .user_request_cache import active_order_in_cart, active_preorder_in_cart
 
 _NP_UNCOMPLETED_CODES = (
-    '3', '4', '41', '5', '6', '7', '8', '10', '11', '12',
+    '1','3', '4', '41', '5', '6', '7', '8', '10', '11', '12',
     '101', '102', '103', '104', '105', '106', '111', '112',
 )
 

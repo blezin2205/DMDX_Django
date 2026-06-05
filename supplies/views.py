@@ -26,7 +26,6 @@ from django_htmx.http import trigger_client_event
 from django.contrib import messages
 import requests
 import csv
-import pymsteams
 from django.db.models import Sum, F, Exists, OuterRef, Max, Case, When, Value, IntegerField, Q, BooleanField, Avg, Count
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
@@ -96,7 +95,7 @@ def app_settings(request):
             'form': form,
             'title': 'Налаштування застосунку',
             'title_icon': 'bi-sliders',
-            'subtitle': 'Тумблери зберігаються автоматично при зміні. Сповіщення Teams, корзини інших користувачів і параметри роботи з замовленнями та передзамовленнями.',
+            'subtitle': 'Тумблери зберігаються автоматично при зміні. Push-налаштування — у мобільному додатку.',
         },
     )
 
@@ -220,6 +219,23 @@ def deleteSupply(request, suppId):
     return HttpResponseRedirect(next)
 
 
+def delete_np_parsel_document(status_parsel):
+    """Видалити накладну НП через API та прибрати локальні записи (status + detail info)."""
+    np_document = NPDeliveryCreatedDetailInfo.objects.get(document_id=status_parsel.docNumber)
+    params = {
+        "apiKey": settings.NOVA_POSHTA_API_KEY,
+        "modelName": "InternetDocument",
+        "calledMethod": "delete",
+        "methodProperties": {
+            "DocumentRefs": np_document.ref
+        }
+    }
+    response_data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
+    status_parsel.delete()
+    np_document.delete()
+    return response_data
+
+
 @login_required(login_url='login')
 def deleteSupplyInOrderNPDocumentButton(request):
     data = json.loads(request.body)
@@ -228,22 +244,9 @@ def deleteSupplyInOrderNPDocumentButton(request):
     print(action)
 
     if action == 'delete':
-        statusParsel = StatusNPParselFromDoucmentID.objects.get(pk=prodId)
-        npDocument = NPDeliveryCreatedDetailInfo.objects.get(document_id=statusParsel.docNumber)
-
-        params = {
-            "apiKey": settings.NOVA_POSHTA_API_KEY,
-            "modelName": "InternetDocument",
-            "calledMethod": "delete",
-            "methodProperties": {
-                "DocumentRefs": npDocument.ref
-            }
-        }
-        data = requests.get(settings.NOVA_POSHTA_API_URL, data=json.dumps(params)).json()
-        print(data)
-
-        statusParsel.delete()
-        npDocument.delete()
+        status_parsel = StatusNPParselFromDoucmentID.objects.get(pk=prodId)
+        response_data = delete_np_parsel_document(status_parsel)
+        print(response_data)
         print("NP DOCUMENT ACTION TO DELETE")
         print(prodId)
 
@@ -718,27 +721,12 @@ def update_count_in_preorder_cart(request, itemId):
 
 
 import threading
-def sendTeamsMsg(request, order):
-    from django.conf import settings
-    if not settings.DEBUG:
-        app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
-        if app_settings.send_teams_msg_preorders:
-            myTeamsMessage = pymsteams.connectorcard(
-                settings.TEAMS_WEBHOOK_URL_PREORDERS)
-            myTeamsMessage.title(f'Передамовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
 
-            myTeamsMessage.addLinkButton("Деталі замовлення",
-                                         f'https://dmdxstorage.herokuapp.com/preorders/{order.id}')
-            myTeamsMessage.addLinkButton("Excel",
-                                         f'https://dmdxstorage.herokuapp.com/preorder-detail-csv/{order.id}')
-            created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
-            if order.comment:
-                comment = f'*коментар:*  **{order.comment}**'
-                myTeamsMessage.text(f'{created}\n\n{comment};')
-                myTeamsMessage.send()
-            else:
-                myTeamsMessage.text(f'{created}')
-                myTeamsMessage.send()
+
+def sendPushMsgPreorder(preorder):
+    from .push_notifications import send_push_new_preorder
+    t = threading.Thread(target=send_push_new_preorder, args=[preorder], daemon=True)
+    t.start()
 
 
 @login_required(login_url='login')
@@ -826,8 +814,7 @@ def cartDetailForClient(request):
 
                     suppInOrder.save()
 
-                t = threading.Thread(target=sendTeamsMsg, args=[request, order], daemon=True)
-                t.start()
+                sendPushMsgPreorder(order)
 
             else:
                 if selectedPreorder.comment and comment:
@@ -917,6 +904,7 @@ def carDetailForStaff(request):
                         supply.countOnHold = countOnHold + countInOrder
                         supply.save(update_fields=['countOnHold'])
 
+            sendPushMsgCart(order)
         orderInCart.delete()
 
         return redirect('/orders')
@@ -1154,28 +1142,10 @@ def get_agreement_for_place_for_city_in_cart(request):
     return render(request, 'partials/cart/choose_agreement_forplace_incart.html', {'preorders': preorders})
 
 
-def sendTeamsMsgCart(request, order):
-    from django.conf import settings
-    if not settings.DEBUG:
-        app_settings, created = AppSettings.objects.get_or_create(userCreated=request.user)
-        if app_settings.send_teams_msg:
-            agreementString = ''
-            if order.for_preorder:
-                agreementString = f'Передзамовлення № {order.for_preorder.id}'
-
-            myTeamsMessage = pymsteams.connectorcard(settings.TEAMS_WEBHOOK_URL_ORDERS)
-            myTeamsMessage.title(f'Замовлення №{order.id},\n\n{order.place.name}, {order.place.city_ref.name}')
-
-            myTeamsMessage.addLinkButton("Деталі замовлення", f'https://dmdxstorage.herokuapp.com/orders/{order.id}/0')
-            myTeamsMessage.addLinkButton("Excel", f'https://dmdxstorage.herokuapp.com/order-detail-csv/{order.id}')
-            created = f'*створив:*  **{order.userCreated.first_name} {order.userCreated.last_name}**'
-            if order.comment:
-                comment = f'*коментар:*  **{order.comment}**'
-                myTeamsMessage.text(f'{agreementString}\n\n{created}\n\n{comment};')
-                myTeamsMessage.send()
-            else:
-                myTeamsMessage.text(f'{agreementString}\n\n{created}')
-                myTeamsMessage.send()
+def sendPushMsgCart(order):
+    from .push_notifications import send_push_new_order
+    t = threading.Thread(target=send_push_new_order, args=[order], daemon=True)
+    t.start()
 
 
 @login_required(login_url='login')
@@ -1268,9 +1238,7 @@ def cartDetail(request):
                                 supply.countOnHold = countOnHold + countInOrder
                                 supply.save(update_fields=['countOnHold'])
 
-                    t = threading.Thread(target=sendTeamsMsgCart, args=[request, order], daemon=True)
-                    t.start()
-
+                    sendPushMsgCart(order)
 
                 elif orderType == 'add_to_Exist_order':
                     selected_non_completed_order = request.POST.get('selected_non_completed_order')
@@ -3519,6 +3487,7 @@ def preorderDetail_generateOrder(request, order_id):
 
         if 'create_order' in request.POST:
             if supDict or sup_in_preorder_checked_for_booked.count() > 0:
+                is_new_order = not (order_action == 'existing' and selected_order_id)
                 # If adding to existing order
                 if order_action == 'existing' and selected_order_id:
                     new_order = Order.objects.get(id=selected_order_id)
@@ -3626,8 +3595,8 @@ def preorderDetail_generateOrder(request, order_id):
                     for sio in sups_for_preorder:
                         sio.save()
                                 
-                t = threading.Thread(target=sendTeamsMsgCart, args=[request, new_order], daemon=True)
-                t.start()
+                if is_new_order:
+                    sendPushMsgCart(new_order)
                 return redirect('/orders')
 
             else:
@@ -3800,21 +3769,18 @@ def analytics_preorders_list_for_client(request):
 
 
 def teams_reminders_task():
-    
-    # Отримуємо всі замовлення, які треба відправити сьогодні
+    from .push_notifications import notify_staff_reminder
+
     order_to_send_today = Order.objects.filter(dateToSend=date.today(), isComplete=False)
     order_to_send_today_count = order_to_send_today.count()
     if order_to_send_today_count > 0:
         title = f'Відправити замовлень сьогодні: {order_to_send_today_count} шт.'
-        orderInfo = ''
+        order_info = ''
         for order in order_to_send_today:
-             orderInfo += f' • *№{order.id}:*  **{order.place.name}, {order.place.city_ref.name}**\n\n'
-        teams_reminders_send_message(title, orderInfo)
-        
-    # Отримуємо всі передзамовлення, в яких прогнозована дата передзамовлення сьогодні
+            order_info += f'№{order.id}: {order.place.name}, {order.place.city_ref.name}\n'
+        notify_staff_reminder(title, order_info.strip(), 'reminder_orders')
+
     current_date = timezone.now().date()
-    
-    # First filter places that have at least one preorder
     places_with_preorders = Place.objects.filter(preorder__isnull=False, preorder__isPreorder=True).distinct()
     place_ids = list(places_with_preorders.values_list('pk', flat=True))
     predictions = bulk_predict_next_order_dates(place_ids)
@@ -3822,23 +3788,14 @@ def teams_reminders_task():
         pid for pid, predicted in predictions.items()
         if predicted == current_date
     ]
-    place_need_preorder_today = Place.objects.filter(id__in=places_needing_order)       
+    place_need_preorder_today = Place.objects.filter(id__in=places_needing_order)
     place_need_preorder_today_count = place_need_preorder_today.count()
     if place_need_preorder_today_count > 0:
-        title = f'Організації, яким рекомендовані передзамовлення сьогодні: {place_need_preorder_today_count}'
+        title = f'Рекомендовані передзамовлення сьогодні: {place_need_preorder_today_count}'
         place_info = ''
         for place in place_need_preorder_today:
-            place_info += f' • {place.name}, {place.city_ref.name}\n\n'
-        teams_reminders_send_message(title, place_info)
-    
-def teams_reminders_send_message(title, message, attachment=None):
-    myTeamsMessage = pymsteams.connectorcard(
-        settings.TEAMS_WEBHOOK_URL_REMINDERS)
-    myTeamsMessage.title(title)
-    myTeamsMessage.text(message)
-    if attachment:
-        myTeamsMessage.addSection(attachment)
-    myTeamsMessage.send()
+            place_info += f'{place.name}, {place.city_ref.name}\n'
+        notify_staff_reminder(title, place_info.strip(), 'reminder_preorders')
 
 def merge_orders(orders, user):
     """
@@ -3997,6 +3954,7 @@ def merge_orders(orders, user):
             )
 
         merged_orders.append(new_order)
+        sendPushMsgCart(new_order)
         for order in orders:
             order.delete()
     

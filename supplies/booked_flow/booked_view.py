@@ -300,8 +300,7 @@ def booked_cart_details(request, booked_cart_id):
                         suppInOrder.save()
                         sup.supply.save(update_fields=['countOnHold'])
 
-                    t = threading.Thread(target=sendTeamsMsgCart, args=[request, order], daemon=True)
-                    t.start()
+                    sendPushMsgCart(order)
                     booked_cart.delete()
                 elif orderType == 'add_to_Exist_order':
                     selected_non_completed_order = request.POST.get('selected_non_completed_order')

@@ -78,7 +78,11 @@ class CustomUser(AbstractUser):
         cache_attr = '_dmdx_app_settings_cache'
         if hasattr(self, cache_attr):
             return getattr(self, cache_attr)
-        app_settings, _created = AppSettings.objects.get_or_create(userCreated=self)
+        from .app_settings_fields import APP_SETTINGS_CREATE_DEFAULTS
+        app_settings, _created = AppSettings.objects.get_or_create(
+            userCreated=self,
+            defaults=APP_SETTINGS_CREATE_DEFAULTS,
+        )
         setattr(self, cache_attr, app_settings)
         return app_settings
     
@@ -112,8 +116,10 @@ class TelegramPendingLogin(models.Model):
 
 class AppSettings(models.Model):
     userCreated = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
-    send_teams_msg = models.BooleanField(default=True)
-    send_teams_msg_preorders = models.BooleanField(default=True)
+    push_new_orders = models.BooleanField(default=True)
+    push_new_orders_clients_only = models.BooleanField(default=False)
+    push_new_preorders = models.BooleanField(default=True)
+    push_new_preorders_clients_only = models.BooleanField(default=False)
     enable_show_other_booked_cart = models.BooleanField(default=False)
     disable_order_confirmation_send_action = models.BooleanField(default=False)
     enable_preorder_editing_awaiting_state = models.BooleanField(default=False)
@@ -1023,3 +1029,19 @@ class DeliverySupplyInCart(models.Model):
     class Meta:
         verbose_name = 'Додані товари з поставки'
         verbose_name_plural = 'Додані товари з поставки'
+
+
+class FcmDevice(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='fcm_devices')
+    token = models.CharField(max_length=255, unique=True, db_index=True)
+    platform = models.CharField(max_length=20, default='android')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'FCM пристрій'
+        verbose_name_plural = 'FCM пристрої'
+
+    def __str__(self):
+        return f'{self.user.username} ({self.platform})'

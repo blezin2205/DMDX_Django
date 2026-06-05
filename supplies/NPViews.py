@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse, JsonResponse
 from .NPModels import *
-from .views import update_order_status_core, _order_singleton_for_card
+from .views import delete_np_parsel_document, update_order_status_core, _order_singleton_for_card
 from .forms import *
 import json
 from django.contrib import messages
@@ -138,6 +138,9 @@ def threading_create_np_document_async(request, data, order_id, redirect_url=Fal
 
     inputForm = CreateNPParselForm(data, instance=order)
     placeForm = ClientFormForParcel(data, instance=for_place)
+    inputForm.fields['sender_np_place'].queryset = sender_places
+    placeForm.fields['worker_NP'].queryset = for_place.workers.all()
+    placeForm.fields['address_NP'].queryset = for_place.delivery_places.all()
 
     if inputForm.is_valid() and placeForm.is_valid():
         dateSend = inputForm.cleaned_data['dateDelivery'].strftime('%d.%m.%Y')
@@ -267,7 +270,18 @@ def threading_create_np_document_async(request, data, order_id, redirect_url=Fal
                 warningsString = '\n'.join(f'• {warning}' for warning in data["warnings"])
                 errorsString += f'\n Warnings: {warningsString}'
             raise Exception(errorsString)
-            
+
+    errors = {}
+    if not inputForm.is_valid():
+        errors['inputForm'] = inputForm.errors
+    if not placeForm.is_valid():
+        errors['placeForm'] = placeForm.errors
+    message_parts = []
+    for form_name, form_errors in errors.items():
+        for field, field_errors in form_errors.items():
+            message_parts.append(f'{field}: {", ".join(field_errors)}')
+    raise Exception('Помилка валідації форми: ' + '; '.join(message_parts))
+
 
 def create_np_document_for_order(request, order_id):
     print("create_np_document_for_order start")
@@ -763,11 +777,33 @@ def complete_all_orders_with_np_status_code():
                     "status_code": status_code,
                     "order_info": str(order)
                 })
-                if status_parcel and status_code != "No status" and int(status_code) > 3:
-                    update_order_status_core(order.id, user_sent)
-                    logger.info(f"Successfully updated status for order {order.id}")
+                if status_parcel and status_code != "No status":
+                    code_int = int(status_code)
+                    if code_int == 2:
+                        try:
+                            delete_np_parsel_document(status_parcel)
+                            logger.info(
+                                "Deleted NP document for order %s (status code 2), parcel id %s",
+                                order.id,
+                                status_parcel.pk,
+                            )
+                        except Exception as e:
+                            logger.error(
+                                "Failed to delete NP document for order %s (status code 2): %s",
+                                order.id,
+                                e,
+                            )
+                    elif code_int > 3:
+                        update_order_status_core(order.id, user_sent)
+                        logger.info(f"Successfully updated status for order {order.id}")
+                    else:
+                        logger.info(
+                            "No action for order %s: status code is %s (not 2 and not > 3)",
+                            order.id,
+                            status_code,
+                        )
                 else:
-                    logger.info(f"No status code for order {order.id} or status code is 3 or less")
+                    logger.info(f"No status code for order {order.id}")
                 
                 
                 # Add a small delay between orders to prevent overwhelming the database
