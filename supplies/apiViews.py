@@ -1901,6 +1901,31 @@ class DesktopDeliveryUploadAPIView(APIView):
         )
 
 
+def _serialize_np_status(status_item):
+    return {
+        'id': status_item.id,
+        'status_code': status_item.status_code,
+        'status_desc': status_item.status_desc,
+        'doc_number': status_item.docNumber,
+        'warehouse_sender': status_item.warehouseSender,
+        'recipient': status_item.counterpartyRecipientDescription,
+        'recipient_address': status_item.recipientAddress,
+        'recipient_full_name': status_item.recipientFullNameEW,
+        'phone_recipient': status_item.phoneRecipient,
+        'scheduled_delivery': status_item.scheduledDeliveryDate,
+        'actual_delivery': status_item.actualDeliveryDate,
+        'recipient_datetime': status_item.recipientDateTime,
+        'document_weight': status_item.documentWeight,
+        'factual_weight': status_item.factualWeight,
+        'payer_type': status_item.payerType,
+        'payment_method': status_item.paymentMethod,
+        'seats_amount': status_item.seatsAmount,
+        'document_cost': status_item.documentCost,
+        'announced_price': status_item.announcedPrice,
+        'cargo_description': status_item.cargoDescriptionString,
+    }
+
+
 class DesktopOrderMetaAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication, JWTAuthentication]
@@ -1916,16 +1941,7 @@ class DesktopOrderMetaAPIView(APIView):
             return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
 
         np_statuses = [
-            {
-                'id': status_item.id,
-                'status_code': status_item.status_code,
-                'status_desc': status_item.status_desc,
-                'doc_number': status_item.docNumber,
-                'recipient': status_item.counterpartyRecipientDescription,
-                'scheduled_delivery': status_item.scheduledDeliveryDate,
-                'actual_delivery': status_item.actualDeliveryDate,
-                'recipient_datetime': status_item.recipientDateTime,
-            }
+            _serialize_np_status(status_item)
             for status_item in order.statusnpparselfromdoucmentid_set.all().order_by('-id')
         ]
         documents = [
@@ -2043,19 +2059,7 @@ class DesktopOrderNPRefreshAPIView(APIView):
             order,
             respect_refresh_cooldown=not force,
         )
-        statuses = [
-            {
-                'id': item.id,
-                'status_code': item.status_code,
-                'status_desc': item.status_desc,
-                'doc_number': item.docNumber,
-                'recipient': item.counterpartyRecipientDescription,
-                'scheduled_delivery': item.scheduledDeliveryDate,
-                'actual_delivery': item.actualDeliveryDate,
-                'recipient_datetime': item.recipientDateTime,
-            }
-            for item in parsels_status_data
-        ]
+        statuses = [_serialize_np_status(item) for item in parsels_status_data]
         return Response(
             {
                 'success': True,
