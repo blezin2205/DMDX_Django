@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 from .dmdx_telegram_bot import process_telegram_webhook
 from .excel_sheets.excel_views import _group_order_supplies_for_display
-from .models import RegisterNPInfo
+from .models import RegisterNPInfo, StatusNPParselFromDoucmentID
 from .view_upload import _delivery_cart_line_queryset, _group_delivery_supplies_for_display
 from .tasks import merge_identifiers_for_delivery_line, scan_expiry_for_delivery_line
 
@@ -1611,6 +1611,63 @@ def _serialize_order_for_api(order):
     }
 
 
+def _apply_orders_api_filters(orders, query_params):
+    is_complete = (query_params.get('is_complete') or '').strip()
+    if is_complete in ('0', '1'):
+        orders = orders.filter(isComplete=(is_complete == '1'))
+    else:
+        status_filter = query_params.get('status')
+        if status_filter == 'open':
+            orders = orders.filter(isComplete=False)
+        elif status_filter == 'completed':
+            orders = orders.filter(isComplete=True)
+
+    query = (query_params.get('q') or '').strip()
+    if query:
+        search_q = (
+            Q(place__name__icontains=query)
+            | Q(comment__icontains=query)
+            | Q(place__city__icontains=query)
+            | Q(place__city_ref__name__icontains=query)
+        )
+        if query.isdigit():
+            search_q = search_q | Q(id=int(query))
+        orders = orders.filter(search_q)
+
+    date_to_send = (query_params.get('date_to_send') or '').strip()
+    if date_to_send in ('today', 'expired'):
+        today = timezone.localdate()
+        orders = orders.filter(isComplete=False, dateToSend__isnull=False)
+        if date_to_send == 'today':
+            orders = orders.filter(dateToSend=today)
+        else:
+            orders = orders.filter(dateToSend__lt=today)
+
+    place_type = (query_params.get('place_type') or '').strip()
+    if place_type == '1':
+        orders = orders.filter(place__isPrivatePlace=True)
+    elif place_type == '0':
+        orders = orders.filter(place__isPrivatePlace=False)
+
+    np_delivery_state = (query_params.get('np_delivery_state') or '').strip()
+    if np_delivery_state in ('0', '1'):
+        np_for_order = StatusNPParselFromDoucmentID.objects.filter(for_order_id=OuterRef('pk'))
+        if np_delivery_state == '1':
+            orders = orders.filter(Exists(np_for_order.filter(status_code='9')))
+        else:
+            excluded_status_codes = [1, 2, 3, 4, 41, 5, 6, 7, 8, 10, 11, 12, 101, 102, 103, 104, 105, 106, 111, 112]
+            orders = orders.filter(Exists(np_for_order.filter(status_code__in=excluded_status_codes)))
+
+    place_id = query_params.get('place_id')
+    if place_id:
+        try:
+            orders = orders.filter(place_id=int(place_id))
+        except (TypeError, ValueError):
+            pass
+
+    return orders
+
+
 class OrdersApiView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication, JWTAuthentication]
@@ -1623,26 +1680,7 @@ class OrdersApiView(APIView):
         else:
             base_qs = Order.objects.all()
         orders = _orders_list_queryset(base_qs.order_by(*ordering))
-
-        status_filter = request.query_params.get('status')
-        if status_filter == 'open':
-            orders = orders.filter(isComplete=False)
-        elif status_filter == 'completed':
-            orders = orders.filter(isComplete=True)
-
-        query = (request.query_params.get('q') or '').strip()
-        if query:
-            search_q = Q(place__name__icontains=query) | Q(comment__icontains=query)
-            if query.isdigit():
-                search_q = search_q | Q(id=int(query))
-            orders = orders.filter(search_q)
-
-        place_id = request.query_params.get('place_id')
-        if place_id:
-            try:
-                orders = orders.filter(place_id=int(place_id))
-            except (TypeError, ValueError):
-                pass
+        orders = _apply_orders_api_filters(orders, request.query_params)
 
         try:
             page_size = int(request.query_params.get('page_size', 12))

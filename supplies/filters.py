@@ -69,7 +69,7 @@ class OrderFilter(django_filters.FilterSet):
         ('0', 'В очікуванні')
     )
 
-    isComplete = ChoiceFilter(choices=ADDRESSED_CHOICES, label='Status')
+    isComplete = ChoiceFilter(choices=ADDRESSED_CHOICES, label='Status', method='filter_by_is_complete')
     PRIVATE_CHOICES = (
         ('1', 'Приватні'),
         ('0', 'Державні')
@@ -80,13 +80,29 @@ class OrderFilter(django_filters.FilterSet):
         ('0', 'В очікуванні')
     )
 
+    DATE_TO_SEND_CHOICES = (
+        ('today', 'Відправка сьогодні'),
+        ('expired', 'Просрочена дата відправки'),
+    )
+
     for_state_of_client = ChoiceFilter(choices=PRIVATE_CHOICES, label='Тип організації', method='filter_by_state_of_client')
     for_np_delivery_state = ChoiceFilter(choices=NP_DELIVERY_STATE, label='НП Статус', method='filter_by_state_of_np')
+    for_date_to_send = ChoiceFilter(
+        choices=DATE_TO_SEND_CHOICES,
+        label='Дата відправки',
+        method='filter_by_date_to_send',
+    )
     search_text = CharFilter(method='filter_by_search_text', label='Пошук...')
 
     class Meta:
         model = Order
-        fields = ['isComplete', 'for_state_of_client', 'for_np_delivery_state', 'search_text']
+        fields = [
+            'isComplete',
+            'for_state_of_client',
+            'for_np_delivery_state',
+            'for_date_to_send',
+            'search_text',
+        ]
 
     def __init__(self, *args, **kwargs):
         super(OrderFilter, self).__init__(*args, **kwargs)
@@ -97,9 +113,18 @@ class OrderFilter(django_filters.FilterSet):
             {'empty_label': 'Всі'})
         self.filters['for_np_delivery_state'].extra.update(
             {'empty_label': 'Всі'})
+        self.filters['for_date_to_send'].extra.update(
+            {'empty_label': 'Всі'})
         self.filters['search_text'].field.widget.attrs.update({
             'placeholder': 'Місто / Організація / № замовлення'
         })
+
+    def filter_by_is_complete(self, queryset, name, value):
+        if value == '1':
+            return queryset.filter(isComplete=True)
+        if value == '0':
+            return queryset.filter(isComplete=False)
+        return queryset
 
     def filter_by_state_of_client(self, queryset, name, value):
         if value == '1':
@@ -114,6 +139,17 @@ class OrderFilter(django_filters.FilterSet):
         elif value == '0':
             excluded_status_codes = [1, 2, 3, 4, 41, 5, 6, 7, 8, 10, 11, 12, 101, 102, 103, 104, 105, 106, 111, 112]
             return queryset.filter(Exists(np_for_order.filter(status_code__in=excluded_status_codes)))
+
+    def filter_by_date_to_send(self, queryset, name, value):
+        if not value:
+            return queryset
+        today = timezone.localdate()
+        qs = queryset.filter(isComplete=False, dateToSend__isnull=False)
+        if value == 'today':
+            return qs.filter(dateToSend=today)
+        if value == 'expired':
+            return qs.filter(dateToSend__lt=today)
+        return queryset
 
     def filter_by_search_text(self, queryset, name, value):
         if not value:

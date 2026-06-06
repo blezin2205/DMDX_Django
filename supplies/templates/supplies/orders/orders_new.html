@@ -46,9 +46,30 @@
 
 .orders-filter-grid {
     display: grid;
-    grid-template-columns: minmax(120px, 0.9fr) minmax(120px, 0.9fr) minmax(120px, 0.9fr) minmax(260px, 1.9fr);
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
     gap: 0.45rem 0.6rem;
     align-items: end;
+}
+
+.orders-filter-search-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.45rem;
+}
+
+.orders-filter-search-row .field-search {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.orders-filter-search-row .field-search .form-control {
+    width: 100%;
+}
+
+.orders-filter-search-row .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .orders-filter-panel .mb-3 {
@@ -66,12 +87,6 @@
     min-height: calc(1.5em + 0.45rem + 2px);
     padding: 0.2rem 0.5rem;
     font-size: 0.88rem;
-}
-
-.orders-filter-actions {
-    margin-top: 0.45rem;
-    display: flex;
-    justify-content: flex-end;
 }
 
 .orders-filter-hint {
@@ -208,9 +223,6 @@
         grid-template-columns: 1fr;
         gap: 0.35rem;
     }
-    .orders-filter-actions .btn {
-        width: 100%;
-    }
 }
 </style>
 
@@ -240,10 +252,11 @@
                     {% if request.user|has_group:"empl" or request.user.is_staff %}
                         <div>{{ orderFilter.form.for_state_of_client|as_crispy_field }}</div>
                         <div>{{ orderFilter.form.for_np_delivery_state|as_crispy_field }}</div>
+                        <div>{{ orderFilter.form.for_date_to_send|as_crispy_field }}</div>
                     {% endif %}
-                    <div class="field-search">{{ orderFilter.form.search_text|as_crispy_field }}</div>
                 </div>
-                <div class="orders-filter-actions">
+                <div class="orders-filter-search-row">
+                    <div class="field-search">{{ orderFilter.form.search_text|as_crispy_field }}</div>
                     <button class="btn btn-primary btn-sm" type="submit">
                         <i class="bi bi-search me-1"></i>Застосувати
                     </button>
@@ -816,7 +829,7 @@
         }
         if (!filterForm) return '';
         var fd = new FormData(filterForm);
-        ['isComplete', 'for_state_of_client', 'for_np_delivery_state', 'search_text'].forEach(function (name) {
+        ['isComplete', 'for_state_of_client', 'for_np_delivery_state', 'for_date_to_send', 'search_text'].forEach(function (name) {
             fd.get(name);
         });
         var parts = [];

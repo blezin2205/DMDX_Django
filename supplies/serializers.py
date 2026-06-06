@@ -130,6 +130,11 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
 class UserSerializer(serializers.ModelSerializer):
+    is_empl = serializers.SerializerMethodField()
+
     class Meta:
         model = CustomUser
         fields = '__all__'
+
+    def get_is_empl(self, user):
+        return user.groups.filter(name='empl').exists()
