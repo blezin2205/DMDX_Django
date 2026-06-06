@@ -72,6 +72,7 @@ Flask==2.1.1
 fonttools==4.53.1
 frozenlist==1.4.1
 future==1.0.0
+firebase-admin==6.6.0
 google-api-core==2.7.2
 google-api-python-client==2.44.0
 google-auth==2.32.0

@@ -302,6 +302,9 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '1803152934:AAFjutMUtAz3wFS
 TELEGRAM_WEBHOOK_SECRET = os.getenv('TELEGRAM_WEBHOOK_SECRET', '')
 
 # Firebase Cloud Messaging (server-side).
+# Heroku: set FIREBASE_CREDENTIALS_JSON to the service-account JSON (single line).
+# Local/docker: file path via FIREBASE_CREDENTIALS_PATH or default file in project root.
+FIREBASE_CREDENTIALS_JSON = os.getenv('FIREBASE_CREDENTIALS_JSON', '')
 FIREBASE_CREDENTIALS_PATH = os.getenv(
     'FIREBASE_CREDENTIALS_PATH',
     str(BASE_DIR / 'dmdx-django-firebase-adminsdk-jo7r9-ceae2ff3e5.json'),

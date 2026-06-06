@@ -1,3 +1,4 @@
+import json
 import logging
 from pathlib import Path
 
@@ -22,27 +23,38 @@ PREORDER_PUSH_CONFIG = {
 }
 
 
+def _load_firebase_certificate():
+    cred_json = (getattr(settings, 'FIREBASE_CREDENTIALS_JSON', None) or '').strip()
+    if cred_json:
+        from firebase_admin import credentials
+        return credentials.Certificate(json.loads(cred_json))
+
+    cred_path = getattr(settings, 'FIREBASE_CREDENTIALS_PATH', None)
+    if not cred_path:
+        return None
+
+    path = Path(cred_path)
+    if not path.exists():
+        logger.warning('Firebase credentials file not found: %s', path)
+        return None
+
+    from firebase_admin import credentials
+    return credentials.Certificate(str(path))
+
+
 def _init_firebase():
     global _firebase_initialized
     if _firebase_initialized:
         return True
 
-    cred_path = getattr(settings, 'FIREBASE_CREDENTIALS_PATH', None)
-    if not cred_path:
-        return False
-
-    path = Path(cred_path)
-    if not path.exists():
-        logger.warning('Firebase credentials file not found: %s', path)
-        return False
-
     try:
         import firebase_admin
-        from firebase_admin import credentials
 
         if not firebase_admin._apps:
-            cred = credentials.Certificate(str(path))
-            firebase_admin.initialize_app(cred)
+            certificate = _load_firebase_certificate()
+            if certificate is None:
+                return False
+            firebase_admin.initialize_app(certificate)
         _firebase_initialized = True
         return True
     except Exception:
