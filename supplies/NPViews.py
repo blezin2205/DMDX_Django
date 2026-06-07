@@ -19,7 +19,7 @@ import aiohttp
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, Iterable, List, Tuple
 import time
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 import ssl
 from django.core.paginator import Paginator
@@ -744,9 +744,13 @@ def complete_all_orders_with_np_status_code():
     logger.info("Starting evening task execution")
     
     try:
-        # Get orders that need processing
-        orders = Order.objects.filter(statusnpparselfromdoucmentid__isnull=False, isComplete=False).distinct()
-        logger.info(f"Found {orders.count()} orders with status code greater than 3 to process")
+        # Незавершені з NP-накладною, або завершені зі скасованою накладною (status_code=2)
+        orders = Order.objects.filter(
+            statusnpparselfromdoucmentid__isnull=False,
+        ).filter(
+            Q(isComplete=False) | Q(statusnpparselfromdoucmentid__status_code='2'),
+        ).distinct()
+        logger.info(f"Found {orders.count()} orders to process")
         
         # Create a list to store order details for the final log
         order_details_list = []
