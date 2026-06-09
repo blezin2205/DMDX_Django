@@ -106,10 +106,8 @@ class CreateClientForm(ModelForm):
         self.fields['allowed_categories'].label = "Дозволені категорії"
         self.fields['isPrivatePlace'].label = "Приватна організація"
         self.fields['city_ref'].widget.attrs.update({'class': 'form-select'})
-        self.fields['allowed_categories'].widget.attrs.update({
-            'class': 'form-select category-multiselect mb-1',
-            'size': '6',
-        })
+        self.fields['allowed_categories'].widget = forms.CheckboxSelectMultiple()
+        self.fields['allowed_categories'].queryset = Category.objects.order_by('name')
 
 
     def clean_organization_code(self):
@@ -132,18 +130,23 @@ class ClientForm(ModelForm):
         self.fields['city_ref'].label = "Місто"
         self.fields['address'].label = "Адреса"
         self.fields['link'].label = "Ссилка"
+        self.fields['allowed_categories'].label = "Дозволені категорії"
         self.fields['address_NP'].label = "Адреса відправки"
         self.fields['isPrivatePlace'].label = "Приватна організація"
         self.fields['worker_NP'].label = "Контакта особа отримання відправки"
-        self.fields['organization_code'].label = "ЄДРПОУ (Якщо поле заповнене, організація буде додана в НП)"
+        self.fields['organization_code'].label = "ЄДРПОУ"
         self.fields['city_ref'].widget.attrs.update({'class': 'form-select'})
+        self.fields['allowed_categories'].widget = forms.CheckboxSelectMultiple()
+        self.fields['allowed_categories'].queryset = Category.objects.order_by('name')
         self.fields['address_NP'].widget.attrs.update({'class': 'form-select'})
         self.fields['worker_NP'].widget.attrs.update({'class': 'form-select'})
-        if self.instance.isAddedToNP:
-            self.fields.pop('organization_code')
 
     def clean_organization_code(self):
-        orgCode = self.cleaned_data['organization_code']
+        orgCode = (self.cleaned_data.get('organization_code') or '').strip()
+        if not orgCode:
+            return None
+        if len(orgCode) != 8:
+            raise forms.ValidationError("ЄДРПОУ має 8 цифр!")
         if orgCode and not orgCode.isdigit():
             raise forms.ValidationError("Тільки цифри!")
         return orgCode
@@ -194,16 +197,16 @@ class CreateUserForm(UserCreationForm):
     places = forms.ModelMultipleChoiceField(
         queryset=Place.objects.all(),
         required=False,
-        widget=forms.SelectMultiple(),
+        widget=forms.CheckboxSelectMultiple(),
         label="Організації (Place)",
-        help_text="Щоб обрати кілька — утримуйте Ctrl"
+        help_text="Клікніть по потрібних організаціях, щоб вибрати кілька"
     )
     allowed_categories = forms.ModelMultipleChoiceField(
         queryset=Category.objects.all(),
         required=False,
-        widget=forms.SelectMultiple(),
+        widget=forms.CheckboxSelectMultiple(),
         label="Дозволені категорії",
-        help_text=mark_safe("Щоб обрати кілька — утримуйте Ctrl<br>Обрані категорії буде додано до всіх вибраних організацій")
+        help_text=mark_safe("Клікніть по потрібних категоріях, щоб вибрати кілька<br>Обрані категорії буде додано до всіх вибраних організацій")
     )
 
     class Meta:
@@ -217,9 +220,8 @@ class CreateUserForm(UserCreationForm):
         self.fields['last_name'].label = "Прізвище"
         self.fields['password1'].label = "Пароль"
         self.fields['password2'].label = "Підтвердження пароля"
-        multiselect_attrs = {'class': 'form-select category-multiselect mb-1', 'size': '6'}
-        self.fields['places'].widget.attrs.update(multiselect_attrs)
-        self.fields['allowed_categories'].widget.attrs.update(multiselect_attrs)
+        self.fields['places'].queryset = Place.objects.select_related('city_ref').order_by('name')
+        self.fields['allowed_categories'].queryset = Category.objects.order_by('name')
 
     def save(self, commit=True):
         user = super().save(commit=commit)

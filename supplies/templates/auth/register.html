@@ -102,11 +102,39 @@
                 </div>
 
                 <label class="category-field-label" for="id_places">Організації</label>
-                {{ form.places }}
+                <div class="input-group category-form-input mb-2">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text"
+                           id="places-chip-filter"
+                           class="form-control"
+                           placeholder="Пошук організації..."
+                           autocomplete="off"
+                           data-chip-filter
+                           data-chip-group-id="places-chip-list">
+                </div>
+                <div class="category-chip-list mb-2" id="places-chip-list" data-chip-group>
+                    {% for checkbox in form.places %}
+                    <label class="category-chip" for="{{ checkbox.id_for_label }}">
+                        {{ checkbox.tag }}
+                        <span>{{ checkbox.choice_label }}</span>
+                    </label>
+                    {% empty %}
+                    <div class="text-muted small">Організації відсутні.</div>
+                    {% endfor %}
+                </div>
                 <p class="text-muted small mb-3">{{ form.places.help_text }}</p>
 
                 <label class="category-field-label" for="id_allowed_categories">Дозволені категорії</label>
-                {{ form.allowed_categories }}
+                <div class="category-chip-list mb-2" data-chip-group>
+                    {% for checkbox in form.allowed_categories %}
+                    <label class="category-chip" for="{{ checkbox.id_for_label }}">
+                        {{ checkbox.tag }}
+                        <span>{{ checkbox.choice_label }}</span>
+                    </label>
+                    {% empty %}
+                    <div class="text-muted small">Категорії відсутні.</div>
+                    {% endfor %}
+                </div>
                 <p class="text-muted small mb-4">{{ form.allowed_categories.help_text|safe }}</p>
 
                 <button class="btn btn-primary px-4" type="submit">
@@ -181,5 +209,85 @@
     border-color: #86b7fe;
     box-shadow: 0 0 0 0.16rem rgba(13, 110, 253, 0.14);
 }
+
+.category-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.category-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.48rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.5);
+    background: #fff;
+    cursor: pointer;
+    color: #334155;
+    font-size: 0.9rem;
+    user-select: none;
+    transition: all 0.15s ease;
+}
+
+.category-chip:hover {
+    background: #f8fafc;
+    border-color: rgba(100, 116, 139, 0.65);
+}
+
+.category-chip input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.category-chip.is-selected {
+    background: #e8f0ff;
+    border-color: rgba(59, 130, 246, 0.55);
+    color: #1e40af;
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.25);
+}
 </style>
+<script>
+(function () {
+    function normalizeText(value) {
+        return (value || '').toLowerCase().trim();
+    }
+
+    function initChipGroup(group) {
+        var chips = group.querySelectorAll('.category-chip');
+        chips.forEach(function (chip) {
+            var input = chip.querySelector('input[type="checkbox"]');
+            if (!input) return;
+            chip.classList.toggle('is-selected', input.checked);
+            input.addEventListener('change', function () {
+                chip.classList.toggle('is-selected', input.checked);
+            });
+        });
+    }
+
+    function initChipFilter(input) {
+        var groupId = input.getAttribute('data-chip-group-id');
+        var group = groupId ? document.getElementById(groupId) : null;
+        if (!group) {
+            return;
+        }
+        var chips = Array.prototype.slice.call(group.querySelectorAll('.category-chip'));
+        input.addEventListener('input', function () {
+            var query = normalizeText(input.value);
+            chips.forEach(function (chip) {
+                var textNode = chip.querySelector('span');
+                var chipText = normalizeText(textNode ? textNode.textContent : chip.textContent);
+                chip.classList.toggle('d-none', Boolean(query) && !chipText.includes(query));
+            });
+        });
+    }
+
+    document.querySelectorAll('[data-chip-group]').forEach(initChipGroup);
+    document.querySelectorAll('[data-chip-filter]').forEach(initChipFilter);
+})();
+</script>
 {% endblock %}

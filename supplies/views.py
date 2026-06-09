@@ -2986,12 +2986,13 @@ def editClientInfo(request, client_id):
 
         if 'generalSave' in request.POST:
             if form.is_valid():
-                try:
-                    organization_code = form.cleaned_data['organization_code']
-                except:
-                    organization_code = None
+                saved_client = form.save(commit=False)
+                organization_code = form.cleaned_data.get('organization_code')
+                current_organization_code = (client.organization_code or '').strip() or None
+                organization_code_changed = organization_code != current_organization_code
 
-                if organization_code is not None:
+                # Update NP counterparty only when EDRPOU changed.
+                if organization_code_changed and organization_code:
                     params = {
                         "apiKey": settings.NOVA_POSHTA_API_KEY,
                         "modelName": "Counterparty",
@@ -3007,11 +3008,10 @@ def editClientInfo(request, client_id):
                     print('------------------ generalSave ---------------')
                     print(list)
                     if list:
-                        client.organization_code = data["data"][0]["EDRPOU"]
-                        client.isAddedToNP = True
-                        client.name_in_NP = data["data"][0]["Description"]
-                        client.ref_NP = data["data"][0]["Ref"]
-                        client.save()
+                        saved_client.organization_code = data["data"][0]["EDRPOU"]
+                        saved_client.isAddedToNP = True
+                        saved_client.name_in_NP = data["data"][0]["Description"]
+                        saved_client.ref_NP = data["data"][0]["Ref"]
                     if data["errors"]:
                         errors = data["errors"]
                         print(errors)
@@ -3019,7 +3019,15 @@ def editClientInfo(request, client_id):
                             messages.info(request, error)
                             return redirect(reverse('editClientInfo', kwargs={'client_id': client_id}))
 
-                form.save()
+                # Allow deleting EDRPOU by clearing the field.
+                if organization_code_changed and not organization_code:
+                    saved_client.organization_code = None
+                    saved_client.isAddedToNP = False
+                    saved_client.name_in_NP = None
+                    saved_client.ref_NP = None
+
+                saved_client.save()
+                form.save_m2m()
                 return redirect('/clientsInfo')
 
     return render(request, 'supplies/clients/editClientDetail.html',

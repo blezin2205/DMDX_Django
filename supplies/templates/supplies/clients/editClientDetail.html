@@ -38,17 +38,77 @@
             {{ form.city_ref|as_crispy_field }}
             {{ form.address|as_crispy_field }}
             {{ form.link|as_crispy_field }}
+            {{ form.isPrivatePlace|as_crispy_field }}
+          </div>
+        </section>
 
-            {% if not place.isAddedToNP %}
-              {{ form.organization_code|as_crispy_field }}
-            {% else %}
-              <div class="client-edit-readonly-badge mb-3">
-                <span class="text-secondary small text-uppercase fw-semibold d-block mb-1" style="letter-spacing: 0.03em;">ЄДРПОУ</span>
-                <span class="fw-semibold text-break">{{ place.organization_code }}</span>
+        <section class="client-edit-section client-edit-section--muted" aria-labelledby="client-edit-categories-heading">
+          <h2 id="client-edit-categories-heading" class="client-edit-section-header mb-0 h6">
+            <i class="bi bi-tags" aria-hidden="true"></i>
+            Дозволені категорії
+          </h2>
+          <div class="client-edit-section-body">
+            <label class="form-label d-block mb-2">{{ form.allowed_categories.label }}</label>
+            <div class="client-edit-category-chips mb-3" id="allowed-categories-checkboxes">
+              {% for checkbox in form.allowed_categories %}
+                <label class="client-edit-category-chip" for="{{ checkbox.id_for_label }}">
+                  {{ checkbox.tag }}
+                  <span>{{ checkbox.choice_label }}</span>
+                </label>
+              {% empty %}
+                <div class="text-muted small">Категорії відсутні.</div>
+              {% endfor %}
+            </div>
+            {% if form.allowed_categories.errors %}
+              <div class="text-danger small mb-2">
+                {{ form.allowed_categories.errors|join:", " }}
               </div>
             {% endif %}
+            <!-- <div class="client-edit-readonly-badge mb-0 small text-muted">
+              Клікніть по кнопках категорій: натиснули - вибрано, натиснули ще раз - знято.
+            </div> -->
+          </div>
+        </section>
 
-            {{ form.isPrivatePlace|as_crispy_field }}
+        <section class="client-edit-section client-edit-section--muted" aria-labelledby="client-edit-org-code-heading">
+          <h2 id="client-edit-org-code-heading" class="client-edit-section-header mb-0 h6">
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+            ЄДРПОУ
+          </h2>
+          <div class="client-edit-section-body">
+            <div class="client-edit-readonly-badge mb-3">
+              <span class="text-secondary small text-uppercase fw-semibold d-block mb-1" style="letter-spacing: 0.03em;">Поточне значення</span>
+              <span class="fw-semibold text-break" id="organization-code-value">
+                {% if form.organization_code.value %}
+                  {{ form.organization_code.value }}
+                {% elif place.organization_code %}
+                  {{ place.organization_code }}
+                {% else %}
+                  Не вказано
+                {% endif %}
+              </span>
+            </div>
+
+            <!-- <div class="small text-muted mb-3">
+              Щоб уникнути випадкового редагування, поле приховане. Натисніть <i class="bi bi-pencil"></i> для зміни
+              або <i class="bi bi-trash"></i> для видалення. Запит до API Нової Пошти виконується лише якщо ЄДРПОУ було змінено.
+            </div> -->
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <button type="button" class="btn btn-sm btn-outline-primary" id="edit-organization-code-btn">
+                <i class="bi bi-pencil me-1" aria-hidden="true"></i>Редагувати
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger" id="delete-organization-code-btn">
+                <i class="bi bi-trash me-1" aria-hidden="true"></i>Видалити
+              </button>
+            </div>
+
+            <div id="organization-code-edit-wrap" class="{% if not form.organization_code.errors %}d-none{% endif %}">
+              {{ form.organization_code|as_crispy_field }}
+              <div class="small text-muted">
+                Введіть 8 цифр або залиште порожнім для видалення.
+              </div>
+            </div>
           </div>
         </section>
 
@@ -123,6 +183,55 @@
 {% block extra_js %}
 <script>
 (function () {
+    function bindCategoryChipButtons() {
+        var container = document.getElementById('allowed-categories-checkboxes');
+        if (!container) {
+            return;
+        }
+
+        function syncChipState(label) {
+            var checkbox = label.querySelector('input[type="checkbox"]');
+            if (!checkbox) {
+                return;
+            }
+            label.classList.toggle('is-selected', checkbox.checked);
+        }
+
+        var chipLabels = container.querySelectorAll('.client-edit-category-chip');
+        chipLabels.forEach(function (label) {
+            syncChipState(label);
+            var checkbox = label.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    syncChipState(label);
+                });
+            }
+        });
+    }
+
+    function bindOrganizationCodeActions() {
+        var editBtn = document.getElementById('edit-organization-code-btn');
+        var deleteBtn = document.getElementById('delete-organization-code-btn');
+        var editWrap = document.getElementById('organization-code-edit-wrap');
+        var valueNode = document.getElementById('organization-code-value');
+        var orgInput = document.getElementById('id_organization_code');
+        if (!editBtn || !deleteBtn || !editWrap || !valueNode || !orgInput) {
+            return;
+        }
+
+        editBtn.addEventListener('click', function () {
+            editWrap.classList.remove('d-none');
+            orgInput.focus();
+            orgInput.select();
+        });
+
+        deleteBtn.addEventListener('click', function () {
+            orgInput.value = '';
+            valueNode.textContent = 'Не вказано';
+            editWrap.classList.add('d-none');
+        });
+    }
+
     function bindEditClientWorkerModalSubmit(addWorkerUrl) {
         $('#addNewLotForm').off('submit.editClientWorker').on('submit.editClientWorker', function (e) {
             e.preventDefault();
@@ -177,6 +286,9 @@
     }
 
     $(function () {
+        bindCategoryChipButtons();
+        bindOrganizationCodeActions();
+
         var $btn = $('#edit-client-open-add-worker-modal');
         if (!$btn.length) {
             return;
