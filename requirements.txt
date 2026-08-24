@@ -155,7 +155,6 @@ s3transfer==0.6.0
 scikit-learn==1.6.1
 scipy==1.15.2
 selection==0.0.21
-self==2020.12.3
 sentry-sdk==1.39.1
 service-identity==24.1.0
 setuptools==70.2.0
