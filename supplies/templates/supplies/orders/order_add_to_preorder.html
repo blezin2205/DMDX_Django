@@ -1,149 +1,89 @@
-{% load bootstrap %}
-{% load crispy_forms_filters %}
-{% load static %}
-<div class="container-fluid bg-light rounded-3 p-0">
-<div class="modal-header py-2">
-    <h6 class="modal-title" id="addToPreorderModalLabel">Додати до передзамовлення</h6>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-</div>
-
-<div class="modal-body p-0" style="min-height: 330px;">
-    <div class="container-fluid p-3">
-        <div class="row">
-            <div class="col-12">
-                <div class="bg-info-subtle p-3 rounded-3">
-                    <h5><i class="bi bi-info-circle-fill text-primary"></i> Ця організація має незавершені передзамовлення!</h5>
-                    <ul>
-                        <li>
-                            <small class="text-muted d-block p-0 fst-italic">
-                                Якщо ви хочете привязати ваше замовлення до існуючого передзамовлення, виберіть його зі списку нижче.<br>
-                                Всі товари з вашого замовлення, які є у вибраному передзамовленні будуть додані до цього передзамовлення.
-                            </small>
-                        </li>
-                        <li>
-                            <small class="text-muted d-block p-0 fst-italic">
-                                Для перегляду деталей передзамовлення, натисніть на його номер.
-                            </small>
-                        </li>
-                        <li>
-                            <span class="badge bg-info mx-2">
-                                <i class="bi bi-check-circle"></i>
-                            </span>
-                            <small class="text-muted p-0 fst-italic">Означає, що передзамовлення має товари, що є в замовленні</small>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="preorder-list mt-3">
-                    {% for preorder in preorders %}
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <input class="form-check-input" type="radio" name="selectedPreorder" id="preorder{{ preorder.id }}" value="{{ preorder.id }}">
-                        <button class="btn btn-link preorder-detail-btn" type="button" data-preorder-id="{{ preorder.id }}">
-                            {% if preorder.isPreorder %} Передзамовлення {% else %} Договір {% endif %} №{{ preorder.id }}
-                            {% if preorder.comment %} | {{ preorder.comment }} {% endif %}
-                            {% if preorder.hasSupsInOrder %}
-                            <span class="badge bg-info mx-2">
-                                <i class="bi bi-check-circle"></i>
-                            </span>
-                            {% endif %}
-                        </button>
-                    </div>
-                    {% endfor %}
-                </div>
-                <div class="d-flex justify-content-evenly gap-2">
-                    <button class="btn btn-outline-primary" type="submit" name="save">Зберегти</button>
-                  </div>
+<div class="modal-header preorder-picker-header">
+    <div class="d-flex align-items-center gap-3 min-w-0">
+        <span class="preorder-picker-heading-icon" aria-hidden="true">
+            <i class="bi bi-clipboard2-plus"></i>
+        </span>
+        <div class="min-w-0">
+            <h5 class="modal-title mb-0" id="addNewLotModalLabel">Додати до передзамовлення</h5>
+            <div class="small text-muted text-truncate">
+                Замовлення №{{ order.id }} · {{ order.place.name }}
             </div>
         </div>
     </div>
-</div>
+    <button type="button" class="btn-close flex-shrink-0" data-bs-dismiss="modal" aria-label="Закрити"></button>
 </div>
 
-<script>
-    $(document).ready(function() {
-        $('.preorder-detail-btn').on('click', function(e) {
-            e.preventDefault();
-            const preorderId = $(this).data('preorder-id');
-            showModal('#preorderDetailInfoModalInCart', '#preorderDetailInfoContent', `/preorder-detail-modal/${preorderId}`, 'Завантаження деталей передзамовлення...');
-        });
-    });
-</script>
+<div class="modal-body preorder-picker-body">
+    <div class="preorder-picker-note">
+        <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+        <span>
+            Виберіть передзамовлення для прив’язки. Будуть пов’язані лише ті товари,
+            які вже є у вибраному передзамовленні.
+        </span>
+    </div>
 
-<!-- Supply History Modal -->
-<div class="modal fade" id="preorderDetailInfoModalInCart" tabindex="-1" aria-labelledby="preorderDetailInfoModalInCartLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered {% if request.user_agent.is_mobile %} modal-fullscreen-sm-down{% else %} modal-xl{% endif %}">
-        <div class="modal-content">
-            <div class="modal-header justify-content-center position-relative py-2">
-                <h5 class="modal-title d-flex flex-column gap-0 text-center pe-5" id="preorderDetailInfoModalInCartLabel" style="font-size: 1rem;">
-                    <div class="d-flex align-items-center gap-1 justify-content-center">
-                        <span>Деталі передзамовлення</span>
-                    </div>
-                    <div class="text-muted small" style="font-size: 0.85rem;"></div>
-                </h5>
-                <button type="button" class="btn-close position-absolute end-0 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="d-flex align-items-center justify-content-between gap-2 mt-3 mb-2">
+        <span class="small fw-semibold text-uppercase text-muted">Доступні варіанти</span>
+        <span class="badge rounded-pill text-bg-light border">{{ preorders|length }}</span>
+    </div>
+
+    <div class="preorder-picker-list" role="radiogroup" aria-label="Виберіть передзамовлення">
+        {% for preorder in preorders %}
+            <div class="preorder-picker-item">
+                <input class="form-check-input preorder-picker-radio"
+                       type="radio"
+                       name="selectedPreorder"
+                       id="preorder{{ preorder.id }}"
+                       value="{{ preorder.id }}"
+                       aria-label="Вибрати {% if preorder.isPreorder %}передзамовлення{% else %}договір{% endif %} №{{ preorder.id }}">
+
+                <div class="preorder-picker-copy">
+                    <button class="preorder-picker-title preorder-detail-btn"
+                            type="button"
+                            data-preorder-id="{{ preorder.id }}"
+                            title="Відкрити деталі на весь екран">
+                        <span class="badge {% if preorder.isPreorder %}text-bg-primary{% else %}text-bg-secondary{% endif %}">
+                            {% if preorder.isPreorder %}Передзамовлення{% else %}Договір{% endif %}
+                        </span>
+                        <span>№{{ preorder.id }}</span>
+                        <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
+                    </button>
+                    {% if preorder.comment %}
+                        <div class="preorder-picker-comment" title="{{ preorder.comment }}">
+                            {{ preorder.comment }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                {% if preorder.hasSupsInOrder %}
+                    <span class="badge preorder-picker-match-badge" title="Є товари, що також присутні в замовленні">
+                        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Є спільні товари</span>
+                    </span>
+                {% endif %}
             </div>
-            <div class="modal-body p-0" id="preorderDetailInfoContent" style="height: calc(100vh - 100px);">
-                <!-- Content will be loaded here -->
+        {% empty %}
+            <div class="preorder-picker-empty">
+                <i class="bi bi-inbox" aria-hidden="true"></i>
+                <span>Незавершених передзамовлень не знайдено</span>
             </div>
-        </div>
+        {% endfor %}
+    </div>
+
+    <div class="preorder-picker-legend">
+        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+        Зелена позначка означає, що передзамовлення має спільні товари з цим замовленням.
     </div>
 </div>
 
-
-
-<style>
-@media (max-width: 575.98px) {
-    #preorderDetailInfoModalInCart .modal-content {
-        height: 100vh;
-        margin: 0;
-        border-radius: 0;
-    }
-    #preorderDetailInfoModalInCart .modal-header {
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #dee2e6;
-    }
-    #preorderDetailInfoModalInCart .modal-body {
-        height: calc(100vh - 56px); /* 56px is the height of modal-header */
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 0;
-    }
-    #preorderDetailInfoModalInCart .container-fluid {
-        padding-left: 0;
-        padding-right: 0;
-    }
-    #addNewLotModal .modal-content {
-        height: 100vh;
-        margin: 0;
-        border-radius: 0;
-    }
-    #addNewLotModal .modal-header {
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #dee2e6;
-    }
-    #addNewLotModal .modal-body {
-        height: calc(100vh - 56px);
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 0;
-    }
-    #addNewLotModal .container-fluid {
-        padding-left: 0;
-        padding-right: 0;
-    }
-}
-
-.loading-state {
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 200px;
-}
-</style>
+<div class="modal-footer preorder-picker-footer">
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Скасувати</button>
+    <button class="btn btn-sm btn-primary d-inline-flex align-items-center gap-2"
+            id="addToPreorderSubmit"
+            type="submit"
+            name="save"
+            disabled>
+        <i class="bi bi-link-45deg" aria-hidden="true"></i>
+        Додати до передзамовлення
+    </button>
+</div>

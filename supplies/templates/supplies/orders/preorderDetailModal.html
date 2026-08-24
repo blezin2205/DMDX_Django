@@ -2,7 +2,7 @@
 {% load mathfilters %}
 
 <style>
-.modal-form {
+.preorder-detail-modal-content.modal-form {
     max-height: calc(100vh - 100px);
     overflow-y: auto;
     scrollbar-width: none; /* Firefox */
@@ -11,90 +11,91 @@
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
-.modal-form::-webkit-scrollbar {
+.preorder-detail-modal-content.modal-form::-webkit-scrollbar {
     display: none;
 }
 
-.modal-body-content {
+.preorder-detail-modal-content .modal-body-content {
     padding: 1rem;
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
 }
 
-.alert {
+.preorder-detail-modal-content .alert {
     margin-bottom: 1rem;
     word-wrap: break-word;
 }
 
 /* Mobile-specific styles */
 @media (max-width: 768px) {
-    .modal-form {
+    .preorder-detail-modal-content.modal-form {
         max-height: calc(100vh - 100px);
     }
     
-    .modal-body-content {
+    .preorder-detail-modal-content .modal-body-content {
         padding: 0.5rem;
     }
     
     /* Ensure buttons have enough space at the bottom */
-    .d-flex.gap-2.justify-content-center {
+    .preorder-detail-modal-content .d-flex.gap-2.justify-content-center {
         margin-bottom: 1rem;
         flex-wrap: wrap;
     }
     
     /* Adjust alert spacing on mobile */
-    .alert {
+    .preorder-detail-modal-content .alert {
         margin-bottom: 0.75rem;
     }
 
     /* Fix hstack overflow on mobile */
-    .hstack {
+    .preorder-detail-modal-content .hstack {
         flex-wrap: wrap;
         gap: 0.5rem !important;
     }
 
-    .hstack .col-sm {
+    .preorder-detail-modal-content .hstack .col-sm {
         flex: 1 1 calc(50% - 0.5rem);
         min-width: 0;
     }
 
     /* Ensure form inputs don't overflow */
-    .form-control, .form-select {
+    .preorder-detail-modal-content .form-control,
+    .preorder-detail-modal-content .form-select {
         max-width: 100%;
     }
 
     /* Adjust button sizes for better mobile fit */
-    .btn {
+    .preorder-detail-modal-content .btn {
         padding: 0.375rem 0.75rem;
         font-size: 0.875rem;
     }
 
     /* Adjust table for mobile */
-    .table-responsive {
+    .preorder-detail-modal-content .table-responsive {
         margin: 0 -0.5rem;
     }
 
-    .table {
+    .preorder-detail-modal-content .table {
         font-size: 0.875rem;
     }
 
     /* Adjust card spacing on mobile */
-    .card {
+    .preorder-detail-modal-content .card {
         margin-bottom: 1rem;
     }
 
-    .card-header {
+    .preorder-detail-modal-content .card-header {
         padding: 0.75rem;
     }
 
-    .card-body {
+    .preorder-detail-modal-content .card-body {
         padding: 0.75rem;
     }
 }
 </style>
 
-<div class="container modal-form py-1">
+<div class="container-fluid modal-form preorder-detail-modal-content py-1">
     <!-- Order Header Card -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-light">
@@ -218,5 +219,4 @@
         </div>
     </div>
 </div>
-
 

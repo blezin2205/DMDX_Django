@@ -167,6 +167,20 @@
             </form>
         </div>
 
+        {% if request.user|has_group:"empl" or request.user.is_staff %}
+            {% if order.place and not order.place.isDocumentsRequired %}
+                <div class="card-footer px-3 py-2 {% if not order.isComplete %}border-start border-4{% endif %}"
+                     style="{% if order.isComplete %}background-color: rgba(108, 117, 125, 0.12);{% else %}background-color: rgba(255, 152, 0, 0.14); border-left-color: #f57c00 !important;{% endif %}">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi {% if order.isComplete %}bi-file-earmark-x text-secondary{% else %}bi-exclamation-triangle-fill{% endif %}"
+                           {% if not order.isComplete %}style="color: #e65100;"{% endif %}></i>
+                        <span class="small fw-semibold {% if order.isComplete %}text-secondary{% endif %}"
+                              {% if not order.isComplete %}style="color: #bf4b00;"{% endif %}>Без документів для цієї організації</span>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+
         {% if order.has_status_np %}
         <div class="card-footer py-2 px-3 border-bottom bg-light">
             <div class="d-flex align-items-center gap-2 mb-2">
@@ -313,6 +327,38 @@
     </div>
 </div>
 
+<div class="modal fade"
+     id="orderPreorderDetailModal"
+     tabindex="-1"
+     aria-labelledby="orderPreorderDetailModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header order-preorder-detail-header">
+                <div class="d-flex align-items-center gap-3 min-w-0">
+                    <span class="order-preorder-detail-heading-icon" aria-hidden="true">
+                        <i class="bi bi-clipboard2-data"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h5 class="modal-title mb-0" id="orderPreorderDetailModalLabel">Деталі передзамовлення</h5>
+                        <div class="small text-muted" id="orderPreorderDetailModalSubtitle"></div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close flex-shrink-0" data-bs-dismiss="modal" aria-label="Закрити"></button>
+            </div>
+            <div class="modal-body p-0" id="orderPreorderDetailContent">
+                <div class="loading-state">
+                    <div class="loading-container">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Завантаження...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="text/javascript">
     window.mytest = function() {
         var isValid = confirm('Ви хочете видалити це замовлення ?');
@@ -367,6 +413,71 @@
     }
 
     $(function() {
+        var addToPreorderModalElement = document.getElementById('addNewLotModal');
+        var preorderDetailModalElement = document.getElementById('orderPreorderDetailModal');
+        var reopenPreorderPicker = false;
+
+        if (preorderDetailModalElement && preorderDetailModalElement.parentElement !== document.body) {
+            document.body.appendChild(preorderDetailModalElement);
+        }
+
+        function setPreorderPickerDialog() {
+            $('#addNewLotModal .modal-dialog')
+                .removeClass('modal-xl gen-sup-info-modal-dialog')
+                .addClass('modal-dialog-centered order-preorder-picker-dialog');
+        }
+
+        function openPreorderDetailModal(preorderId) {
+            $('#orderPreorderDetailModalSubtitle').text('Передзамовлення №' + preorderId);
+            showModal(
+                '#orderPreorderDetailModal',
+                '#orderPreorderDetailContent',
+                `/preorder-detail-modal/${preorderId}`,
+                'Завантаження деталей передзамовлення...'
+            );
+        }
+
+        $(document).on('click', '#addNewLotContent .preorder-picker-item', function(e) {
+            if ($(e.target).closest('.preorder-detail-btn, .preorder-picker-radio').length) return;
+            $(this).find('.preorder-picker-radio').prop('checked', true).trigger('change');
+        });
+
+        $(document).on('change', '#addNewLotContent .preorder-picker-radio', function() {
+            $('#addNewLotContent .preorder-picker-item').removeClass('is-selected');
+            $(this).closest('.preorder-picker-item').addClass('is-selected');
+            $('#addToPreorderSubmit').prop('disabled', false);
+        });
+
+        $(document).on('click', '#addNewLotContent .preorder-detail-btn', function(e) {
+            e.preventDefault();
+            if (reopenPreorderPicker) return;
+
+            var preorderId = $(this).data('preorder-id');
+            reopenPreorderPicker = true;
+
+            if (addToPreorderModalElement && addToPreorderModalElement.classList.contains('show')) {
+                addToPreorderModalElement.addEventListener('hidden.bs.modal', function() {
+                    openPreorderDetailModal(preorderId);
+                }, { once: true });
+                bootstrap.Modal.getOrCreateInstance(addToPreorderModalElement).hide();
+            } else {
+                openPreorderDetailModal(preorderId);
+            }
+        });
+
+        if (preorderDetailModalElement) {
+            preorderDetailModalElement.addEventListener('hidden.bs.modal', function() {
+                $('#orderPreorderDetailContent').empty();
+                $('#orderPreorderDetailModalSubtitle').empty();
+
+                if (reopenPreorderPicker && addToPreorderModalElement) {
+                    reopenPreorderPicker = false;
+                    setPreorderPickerDialog();
+                    bootstrap.Modal.getOrCreateInstance(addToPreorderModalElement).show();
+                }
+            });
+        }
+
         var highlightedSupplyId = {{ highlighted_sup_id|default:0 }};
         if (highlightedSupplyId) {
             var targetRow = document.getElementById('order-detail-supply-row-' + highlightedSupplyId);
@@ -395,6 +506,10 @@
 
         $('#addNewLotModal').on('hidden.bs.modal.genSupInfo', function() {
             $(this).find('.modal-dialog').removeClass('modal-dialog-centered modal-xl gen-sup-info-modal-dialog');
+        });
+
+        $('#addNewLotModal').on('hidden.bs.modal.preorderPicker', function() {
+            $(this).find('.modal-dialog').removeClass('order-preorder-picker-dialog');
         });
 
         document.body.addEventListener('htmx:beforeSwap', function(evt) {
@@ -438,14 +553,21 @@
             e.preventDefault();
             const orderId = $(this).data('order-id');
             const url = `/order_add_to_preorder/${orderId}`;
-            showModal('#addNewLotModal', '#addNewLotContent', url, 'Завантаження історії...', (data) => {
+            setPreorderPickerDialog();
+            showModal('#addNewLotModal', '#addNewLotContent', url, 'Завантаження передзамовлень...', (data) => {
+                $('#addToPreorderSubmit').prop(
+                    'disabled',
+                    !$('#addNewLotContent .preorder-picker-radio:checked').length
+                );
                 $('#addNewLotForm').off('submit');
                 $('#addNewLotForm').on('submit', function(e) {
                     e.preventDefault();
                     const formData = new FormData(this);
-                    let submitter = e.originalEvent.submitter
+                    let submitter = e.originalEvent.submitter;
                     if (submitter) {
                         formData.append(submitter.name, submitter.value);
+                    } else {
+                        formData.append('save', '');
                     }
 
                     fetch(url, {
