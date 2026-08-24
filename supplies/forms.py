@@ -105,6 +105,7 @@ class CreateClientForm(ModelForm):
         self.fields['organization_code'].label = "ЄДРПОУ"
         self.fields['allowed_categories'].label = "Дозволені категорії"
         self.fields['isPrivatePlace'].label = "Приватна організація"
+        self.fields['isDocumentsRequired'].label = "Потрібні документи для замовлень"
         self.fields['city_ref'].widget.attrs.update({'class': 'form-select'})
         self.fields['allowed_categories'].widget = forms.CheckboxSelectMultiple()
         self.fields['allowed_categories'].queryset = Category.objects.order_by('name')
@@ -133,6 +134,7 @@ class ClientForm(ModelForm):
         self.fields['allowed_categories'].label = "Дозволені категорії"
         self.fields['address_NP'].label = "Адреса відправки"
         self.fields['isPrivatePlace'].label = "Приватна організація"
+        self.fields['isDocumentsRequired'].label = "Потрібні документи для замовлень"
         self.fields['worker_NP'].label = "Контакта особа отримання відправки"
         self.fields['organization_code'].label = "ЄДРПОУ"
         self.fields['city_ref'].widget.attrs.update({'class': 'form-select'})

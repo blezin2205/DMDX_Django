@@ -24,9 +24,17 @@
                    
                     <h5 class="client-name mb-2">{{client.name}}</h5>
                     <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge client_card_header_badge  {% if client.isPrivatePlace %} bg-warning {% else %} bg-primary {% endif %}">
-                            {% if client.isPrivatePlace %} Приватні {% else %} Державні {% endif %}
-                        </span>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="badge client_card_header_badge {% if client.isPrivatePlace %} bg-warning {% else %} bg-primary {% endif %}">
+                                {% if client.isPrivatePlace %}Приватні{% else %}Державні{% endif %}
+                            </span>
+                            {% if not client.isDocumentsRequired %}
+                                <span class="badge client_card_header_badge bg-secondary" title="Замовлення без документів">
+                                    <i class="bi bi-file-earmark me-1" aria-hidden="true"></i>
+                                    Замовлення без документів
+                                </span>
+                            {% endif %}
+                        </div>
                         <div class="action-buttons">
                             <button class="btn btn-sm btn-outline-primary add-worker-for-client-btn" data-client-id="{{ client.id }}" role="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Додати нового працівника"> <i class="bi bi-person-plus"></i></button>
                             

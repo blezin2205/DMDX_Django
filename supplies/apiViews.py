@@ -806,20 +806,29 @@ class DesktopFcmDeviceAPIView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication, JWTAuthentication]
 
+    @staticmethod
+    def _save_fcm_device_for_user(user, token, platform='android'):
+        token = (token or '').strip()
+        if not token:
+            return False
+        platform = (platform or 'android').strip() or 'android'
+        FcmDevice.objects.update_or_create(
+            token=token,
+            defaults={
+                'user': user,
+                'platform': platform,
+                'is_active': True,
+            },
+        )
+        return True
+
     def post(self, request):
         token = (request.data.get('token') or '').strip()
         platform = (request.data.get('platform') or 'android').strip()
         if not token:
             return Response({'error': 'token is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        FcmDevice.objects.update_or_create(
-            token=token,
-            defaults={
-                'user': request.user,
-                'platform': platform,
-                'is_active': True,
-            },
-        )
+        self._save_fcm_device_for_user(request.user, token, platform)
         return Response({'success': True}, status=status.HTTP_200_OK)
 
     def delete(self, request):
@@ -2467,6 +2476,7 @@ def _serialize_client_card(place):
         'address': place.address,
         'link': place.link,
         'isPrivatePlace': place.isPrivatePlace,
+        'isDocumentsRequired': place.isDocumentsRequired,
         'counts': {
             'orders': getattr(place, 'card_order_count', 0) or 0,
             'preorders': getattr(place, 'card_preorder_count', 0) or 0,
@@ -3018,6 +3028,30 @@ class LoginAPIView(APIView):
                 # Create both Token and JWT token
                 token, created = Token.objects.get_or_create(user=user)
                 jwt_token = create_jwt_token(user)
+
+                # Optional fallback: allow mobile clients to send FCM token on login
+                # so push starts working without requiring manual toggle interaction.
+                fcm_token = (
+                    request.data.get('fcm_token')
+                    or request.data.get('push_token')
+                    or request.data.get('device_token')
+                    or request.headers.get('X-FCM-Token')
+                    or ''
+                )
+                fcm_platform = (
+                    request.data.get('platform')
+                    or request.data.get('device_platform')
+                    or request.headers.get('X-Device-Platform')
+                    or 'android'
+                )
+                try:
+                    DesktopFcmDeviceAPIView._save_fcm_device_for_user(
+                        user=user,
+                        token=fcm_token,
+                        platform=fcm_platform,
+                    )
+                except Exception:
+                    logger.exception('Failed to register FCM token on login for user=%s', user.pk)
                 
                 # Serialize the User object
                 user_serializer = UserSerializer(user)

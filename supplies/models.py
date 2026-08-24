@@ -328,6 +328,7 @@ class Place(models.Model):
     address_NP = models.OneToOneField('DeliveryPlace', on_delete=models.SET_NULL, null=True, blank=True, unique=True)
     isAddedToNP = models.BooleanField(default=False, blank=True)
     isPrivatePlace = models.BooleanField(default=False, blank=True)
+    isDocumentsRequired = models.BooleanField(default=True, blank=True)
     name_in_NP = models.CharField(max_length=200, null=True, blank=True)
 
     def get_place_name(self):
